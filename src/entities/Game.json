@@ -1,0 +1,51 @@
+{
+  "name": "Game",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "home_team_id": {
+      "type": "string",
+      "description": "Reference to home team"
+    },
+    "away_team_id": {
+      "type": "string",
+      "description": "Reference to away team"
+    },
+    "game_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of the game"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed"
+      ],
+      "default": "scheduled",
+      "description": "Game status"
+    },
+    "home_score": {
+      "type": "number",
+      "default": 0
+    },
+    "away_score": {
+      "type": "number",
+      "default": 0
+    },
+    "location": {
+      "type": "string",
+      "description": "Game venue"
+    }
+  },
+  "required": [
+    "league_id",
+    "home_team_id",
+    "away_team_id",
+    "game_date"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Team name"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "color": {
+      "type": "string",
+      "description": "Team primary color (hex code)",
+      "default": "#f97316"
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "losses": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "name",
+    "league_id"
+  ]
+}

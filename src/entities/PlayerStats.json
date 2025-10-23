@@ -1,0 +1,73 @@
+{
+  "name": "PlayerStats",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "Reference to the game"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "Reference to the player"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team"
+    },
+    "is_starter": {
+      "type": "boolean",
+      "default": false
+    },
+    "points_2": {
+      "type": "number",
+      "default": 0,
+      "description": "2-point field goals made"
+    },
+    "points_3": {
+      "type": "number",
+      "default": 0,
+      "description": "3-point field goals made"
+    },
+    "offensive_rebounds": {
+      "type": "number",
+      "default": 0
+    },
+    "defensive_rebounds": {
+      "type": "number",
+      "default": 0
+    },
+    "assists": {
+      "type": "number",
+      "default": 0
+    },
+    "steals": {
+      "type": "number",
+      "default": 0
+    },
+    "blocks": {
+      "type": "number",
+      "default": 0
+    },
+    "turnovers": {
+      "type": "number",
+      "default": 0
+    },
+    "fouls": {
+      "type": "number",
+      "default": 0
+    },
+    "technical_fouls": {
+      "type": "number",
+      "default": 0
+    },
+    "unsportsmanlike_fouls": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "game_id",
+    "player_id",
+    "team_id"
+  ]
+}

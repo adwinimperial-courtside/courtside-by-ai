@@ -1,0 +1,116 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Plus, Calendar, Play } from "lucide-react";
+import { format } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+
+import CreateGameDialog from "../components/schedule/CreateGameDialog";
+import GameCard from "../components/schedule/GameCard";
+
+export default function SchedulePage() {
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  const { data: leagues } = useQuery({
+    queryKey: ['leagues'],
+    queryFn: () => base44.entities.League.list(),
+    initialData: [],
+  });
+
+  const { data: teams } = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => base44.entities.Team.list(),
+    initialData: [],
+  });
+
+  const { data: games, isLoading } = useQuery({
+    queryKey: ['games'],
+    queryFn: () => base44.entities.Game.list('-game_date'),
+    initialData: [],
+  });
+
+  const createGameMutation = useMutation({
+    mutationFn: (gameData) => base44.entities.Game.create(gameData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+      setShowCreateDialog(false);
+    },
+  });
+
+  const startGame = (game) => {
+    navigate(createPageUrl(`LiveGame?gameId=${game.id}`));
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Calendar className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Schedule</h1>
+            </div>
+            <p className="text-slate-600 ml-15">Manage game schedules and matchups</p>
+          </div>
+          <Button 
+            onClick={() => setShowCreateDialog(true)}
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/30 h-12 px-6"
+            disabled={teams.length < 2}
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Schedule Game
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-white rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : games.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+              <Calendar className="w-12 h-12 text-slate-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+              {teams.length < 2 ? "Need More Teams" : "No Games Scheduled"}
+            </h3>
+            <p className="text-slate-600 text-center mb-8 max-w-md">
+              {teams.length < 2 
+                ? "You need at least 2 teams to schedule a game"
+                : "Start scheduling games for your league"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {games.map((game) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                teams={teams}
+                leagues={leagues}
+                onStartGame={() => startGame(game)}
+              />
+            ))}
+          </div>
+        )}
+
+        <CreateGameDialog
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSubmit={(data) => createGameMutation.mutate(data)}
+          isLoading={createGameMutation.isPending}
+          leagues={leagues}
+          teams={teams}
+        />
+      </div>
+    </div>
+  );
+}

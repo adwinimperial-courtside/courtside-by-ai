@@ -1,0 +1,22 @@
+{
+  "name": "League",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the league"
+    },
+    "season": {
+      "type": "string",
+      "description": "Season year (e.g., 2024-2025)"
+    },
+    "description": {
+      "type": "string",
+      "description": "League description"
+    }
+  },
+  "required": [
+    "name",
+    "season"
+  ]
+}
