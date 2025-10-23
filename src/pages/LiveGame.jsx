@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, X } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -19,14 +19,13 @@ export default function LiveGamePage() {
   const [homeStarters, setHomeStarters] = useState([]);
   const [awayStarters, setAwayStarters] = useState([]);
 
-  const { data: game, isLoading: gameLoading } = useQuery({
-    queryKey: ['game', gameId],
-    queryFn: async () => {
-      const games = await base44.entities.Game.filter({ id: gameId });
-      return games[0];
-    },
-    enabled: !!gameId,
+  const { data: allGames, isLoading: gamesLoading } = useQuery({
+    queryKey: ['games'],
+    queryFn: () => base44.entities.Game.list(),
+    initialData: [],
   });
+
+  const game = allGames.find(g => g.id === gameId);
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
@@ -42,7 +41,11 @@ export default function LiveGamePage() {
 
   const { data: existingStats } = useQuery({
     queryKey: ['playerStats', gameId],
-    queryFn: () => base44.entities.PlayerStats.filter({ game_id: gameId }),
+    queryFn: async () => {
+      if (!gameId) return [];
+      const allStats = await base44.entities.PlayerStats.list();
+      return allStats.filter(s => s.game_id === gameId);
+    },
     initialData: [],
     enabled: !!gameId,
   });
@@ -51,7 +54,6 @@ export default function LiveGamePage() {
     mutationFn: ({ gameId, data }) => base44.entities.Game.update(gameId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['games'] });
-      queryClient.invalidateQueries({ queryKey: ['game', gameId] });
     },
   });
 
@@ -72,19 +74,36 @@ export default function LiveGamePage() {
     }
   }, [game, existingStats]);
 
-  if (!gameId || gameLoading) {
+  if (!gameId) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center text-white">
+          <h2 className="text-2xl font-bold mb-4">No Game Selected</h2>
+          <Button onClick={() => navigate(createPageUrl("Schedule"))}>
+            Back to Schedule
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (gamesLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4" />
+          <p className="text-white">Loading game...</p>
+        </div>
       </div>
     );
   }
 
   if (!game) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Not Found</h2>
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
+        <div className="text-center text-white">
+          <h2 className="text-2xl font-bold mb-4">Game Not Found</h2>
+          <p className="text-slate-400 mb-6">The game you're looking for doesn't exist.</p>
           <Button onClick={() => navigate(createPageUrl("Schedule"))}>
             Back to Schedule
           </Button>
