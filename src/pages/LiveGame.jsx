@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -19,34 +18,37 @@ export default function LiveGamePage() {
   const [homeStarters, setHomeStarters] = useState([]);
   const [awayStarters, setAwayStarters] = useState([]);
 
-  const { data: allGames, isLoading: gamesLoading } = useQuery({
+  const { data: games = [], isLoading: gamesLoading } = useQuery({
     queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list(),
-    initialData: [],
+    queryFn: async () => {
+      const result = await base44.entities.Game.list();
+      return result || [];
+    },
   });
 
-  const game = allGames.find(g => g.id === gameId);
-
-  const { data: teams } = useQuery({
+  const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
-    initialData: [],
+    queryFn: async () => {
+      const result = await base44.entities.Team.list();
+      return result || [];
+    },
   });
 
-  const { data: players } = useQuery({
+  const { data: players = [] } = useQuery({
     queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
-    initialData: [],
+    queryFn: async () => {
+      const result = await base44.entities.Player.list();
+      return result || [];
+    },
   });
 
-  const { data: existingStats } = useQuery({
+  const { data: existingStats = [] } = useQuery({
     queryKey: ['playerStats', gameId],
     queryFn: async () => {
       if (!gameId) return [];
       const allStats = await base44.entities.PlayerStats.list();
-      return allStats.filter(s => s.game_id === gameId);
+      return (allStats || []).filter(s => s.game_id === gameId);
     },
-    initialData: [],
     enabled: !!gameId,
   });
 
@@ -57,8 +59,10 @@ export default function LiveGamePage() {
     },
   });
 
+  const game = games.find(g => g.id === gameId);
+
   useEffect(() => {
-    if (game && existingStats.length > 0) {
+    if (game && existingStats && existingStats.length > 0) {
       const homeStarterIds = existingStats
         .filter(s => s.team_id === game.home_team_id && s.is_starter)
         .map(s => s.player_id);
@@ -123,29 +127,34 @@ export default function LiveGamePage() {
       return;
     }
 
-    const statsToCreate = [
-      ...homeStarters.map(playerId => ({
-        game_id: gameId,
-        player_id: playerId,
-        team_id: game.home_team_id,
-        is_starter: true,
-      })),
-      ...awayStarters.map(playerId => ({
-        game_id: gameId,
-        player_id: playerId,
-        team_id: game.away_team_id,
-        is_starter: true,
-      }))
-    ];
+    try {
+      const statsToCreate = [
+        ...homeStarters.map(playerId => ({
+          game_id: gameId,
+          player_id: playerId,
+          team_id: game.home_team_id,
+          is_starter: true,
+        })),
+        ...awayStarters.map(playerId => ({
+          game_id: gameId,
+          player_id: playerId,
+          team_id: game.away_team_id,
+          is_starter: true,
+        }))
+      ];
 
-    await base44.entities.PlayerStats.bulkCreate(statsToCreate);
-    await updateGameMutation.mutateAsync({
-      gameId,
-      data: { status: 'in_progress' }
-    });
-    
-    queryClient.invalidateQueries({ queryKey: ['playerStats', gameId] });
-    setIsSetupComplete(true);
+      await base44.entities.PlayerStats.bulkCreate(statsToCreate);
+      await updateGameMutation.mutateAsync({
+        gameId,
+        data: { status: 'in_progress' }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['playerStats', gameId] });
+      setIsSetupComplete(true);
+    } catch (error) {
+      console.error("Error starting game:", error);
+      alert("Error starting game. Please try again.");
+    }
   };
 
   if (!isSetupComplete) {
