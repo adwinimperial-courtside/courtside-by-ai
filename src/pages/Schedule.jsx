@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, Play } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -42,7 +41,8 @@ export default function SchedulePage() {
   });
 
   const startGame = (game) => {
-    navigate(createPageUrl(`LiveGame?gameId=${game.id}`));
+    const baseUrl = createPageUrl("LiveGame");
+    navigate(`${baseUrl}?gameId=${game.id}`);
   };
 
   return (
