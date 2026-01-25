@@ -234,10 +234,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
           {playerStats && (
             <div className="flex justify-between text-xs text-slate-300 pt-3 mt-3 border-t border-white/10">
+              <span>{totalPoints} PTS</span>
               <span>{(playerStats.offensive_rebounds || 0) + (playerStats.defensive_rebounds || 0)} REB</span>
               <span>{playerStats.assists || 0} AST</span>
-              <span>{playerStats.steals || 0} STL</span>
-              <span>{playerStats.blocks || 0} BLK</span>
+              <span>{playerStats.fouls || 0} FOULS</span>
             </div>
           )}
         </motion.button>
