@@ -31,7 +31,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
   const queryClient = useQueryClient();
 
-  const activePlayers = existingStats.filter(s => s.is_starter || s.minutes_played > 0);
+  const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
   const updateStatMutation = useMutation({
