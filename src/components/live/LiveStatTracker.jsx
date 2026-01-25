@@ -11,6 +11,7 @@ import ScoreHeader from "./ScoreHeader";
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-500' },
   { key: 'points_3', label: '3PT', points: 3, color: 'bg-purple-500' },
+  { key: 'free_throws', label: 'FT', points: 1, color: 'bg-indigo-500' },
   { key: 'offensive_rebounds', label: 'OREB', points: 0, color: 'bg-green-500' },
   { key: 'defensive_rebounds', label: 'DREB', points: 0, color: 'bg-green-600' },
   { key: 'assists', label: 'AST', points: 0, color: 'bg-yellow-500' },
@@ -198,7 +199,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const PlayerButton = ({ player, teamColor, onSubClick }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
-    const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3);
+    const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
 
     return (
