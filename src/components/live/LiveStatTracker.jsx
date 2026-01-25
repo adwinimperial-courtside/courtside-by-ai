@@ -25,7 +25,9 @@ const STAT_TYPES = [
 export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats, onBack }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showSubDialog, setShowSubDialog] = useState(false);
-  const [playerToReplace, setPlayerToReplace] = useState(null);
+  const [playersToReplace, setPlayersToReplace] = useState([]);
+  const [replacementPlayers, setReplacementPlayers] = useState([]);
+  const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
   const queryClient = useQueryClient();
 
   const activePlayers = existingStats.filter(s => s.is_starter || s.minutes_played > 0);
@@ -96,37 +98,61 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
   };
 
-  const handleSubstitution = async (newPlayerId) => {
-    if (!playerToReplace) return;
+  const handleConfirmSubstitution = async () => {
+    if (playersToReplace.length !== replacementPlayers.length) return;
 
-    const oldPlayerStat = existingStats.find(s => s.player_id === playerToReplace.id);
-    if (oldPlayerStat) {
-      await updateStatMutation.mutateAsync({
-        statId: oldPlayerStat.id,
-        updates: { is_starter: false }
-      });
-    }
+    for (let i = 0; i < playersToReplace.length; i++) {
+      const playerOut = playersToReplace[i];
+      const playerInId = replacementPlayers[i];
 
-    const existingNewPlayerStat = existingStats.find(s => s.player_id === newPlayerId);
-    if (existingNewPlayerStat) {
-      await updateStatMutation.mutateAsync({
-        statId: existingNewPlayerStat.id,
-        updates: { is_starter: true }
-      });
-    } else {
-      await createStatMutation.mutateAsync({
-        game_id: game.id,
-        player_id: newPlayerId,
-        team_id: playerToReplace.team_id,
-        is_starter: true,
-      });
+      const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
+      if (oldPlayerStat) {
+        await updateStatMutation.mutateAsync({
+          statId: oldPlayerStat.id,
+          updates: { is_starter: false }
+        });
+      }
+
+      const existingNewPlayerStat = existingStats.find(s => s.player_id === playerInId);
+      if (existingNewPlayerStat) {
+        await updateStatMutation.mutateAsync({
+          statId: existingNewPlayerStat.id,
+          updates: { is_starter: true }
+        });
+      } else {
+        await createStatMutation.mutateAsync({
+          game_id: game.id,
+          player_id: playerInId,
+          team_id: playerOut.team_id,
+          is_starter: true,
+        });
+      }
+
+      if (selectedPlayer?.id === playerOut.id) {
+        setSelectedPlayer(null);
+      }
     }
 
     setShowSubDialog(false);
-    setPlayerToReplace(null);
-    if (selectedPlayer?.id === playerToReplace.id) {
-      setSelectedPlayer(null);
-    }
+    setPlayersToReplace([]);
+    setReplacementPlayers([]);
+    setSubStep('select_out');
+  };
+
+  const togglePlayerToReplace = (player) => {
+    setPlayersToReplace(prev => 
+      prev.some(p => p.id === player.id)
+        ? prev.filter(p => p.id !== player.id)
+        : [...prev, player]
+    );
+  };
+
+  const toggleReplacementPlayer = (playerId) => {
+    setReplacementPlayers(prev => 
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : [...prev, playerId]
+    );
   };
 
   const handleEndGame = async () => {
@@ -229,28 +255,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  const BenchPlayerButton = ({ player, teamColor }) => {
-    return (
-      <motion.button
-        whileTap={{ scale: 0.95 }}
-        onClick={() => handleSubstitution(player.id)}
-        className="w-full p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all"
-      >
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg"
-            style={{ backgroundColor: teamColor || '#f97316' }}
-          >
-            {player.jersey_number}
-          </div>
-          <div className="text-left flex-1 min-w-0">
-            <p className="font-semibold text-white truncate">{player.name}</p>
-            <p className="text-sm text-slate-400">{player.position}</p>
-          </div>
-        </div>
-      </motion.button>
-    );
-  };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -299,7 +304,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   player={player} 
                   teamColor={homeTeam?.color}
                   onSubClick={(p) => {
-                    setPlayerToReplace(p);
+                    setPlayersToReplace([p]);
+                    setSubStep('select_in');
                     setShowSubDialog(true);
                   }}
                 />
@@ -348,7 +354,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
             {/* Substitution Button */}
             <Button
-              onClick={() => setShowSubDialog(true)}
+              onClick={() => {
+                setPlayersToReplace([]);
+                setReplacementPlayers([]);
+                setSubStep('select_out');
+                setShowSubDialog(true);
+              }}
               className="w-full h-16 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-lg shadow-lg"
             >
               <RefreshCw className="w-6 h-6 mr-3" />
@@ -375,7 +386,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   player={player} 
                   teamColor={awayTeam?.color}
                   onSubClick={(p) => {
-                    setPlayerToReplace(p);
+                    setPlayersToReplace([p]);
+                    setSubStep('select_in');
                     setShowSubDialog(true);
                   }}
                 />
@@ -390,11 +402,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <DialogContent className="bg-slate-900 text-white border-slate-700 max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {playerToReplace ? `Substitute ${playerToReplace.name}` : 'Select Player to Substitute'}
+              {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
             </DialogTitle>
+            <p className="text-slate-400 text-sm mt-2">
+              {subStep === 'select_out' 
+                ? 'Click on players you want to substitute (can select multiple)'
+                : `Select ${playersToReplace.length} replacement player${playersToReplace.length > 1 ? 's' : ''}`
+              }
+            </p>
           </DialogHeader>
           
-          {!playerToReplace ? (
+          {subStep === 'select_out' ? (
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
@@ -407,25 +425,33 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   {homeTeam?.name}
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
-                  {homeActivePlayers.map(player => (
-                    <Button
-                      key={player.id}
-                      variant="outline"
-                      className="justify-start h-auto p-3 border-slate-700 hover:bg-slate-800"
-                      onClick={() => setPlayerToReplace(player)}
-                    >
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
-                        style={{ backgroundColor: homeTeam?.color }}
+                  {homeActivePlayers.map(player => {
+                    const isSelected = playersToReplace.some(p => p.id === player.id);
+                    return (
+                      <Button
+                        key={player.id}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                        onClick={() => togglePlayerToReplace(player)}
                       >
-                        {player.jersey_number}
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold">{player.name}</p>
-                        <p className="text-sm text-slate-400">{player.position}</p>
-                      </div>
-                    </Button>
-                  ))}
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
+                          style={{ backgroundColor: homeTeam?.color }}
+                        >
+                          {player.jersey_number}
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold">{player.name}</p>
+                          <p className="text-sm text-slate-400">{player.position}</p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-6 h-6 rounded-full bg-white text-cyan-600 flex items-center justify-center font-bold">
+                            ✓
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
               
@@ -440,62 +466,129 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   {awayTeam?.name}
                 </h3>
                 <div className="grid grid-cols-1 gap-2">
-                  {awayActivePlayers.map(player => (
-                    <Button
-                      key={player.id}
-                      variant="outline"
-                      className="justify-start h-auto p-3 border-slate-700 hover:bg-slate-800"
-                      onClick={() => setPlayerToReplace(player)}
-                    >
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
-                        style={{ backgroundColor: awayTeam?.color }}
+                  {awayActivePlayers.map(player => {
+                    const isSelected = playersToReplace.some(p => p.id === player.id);
+                    return (
+                      <Button
+                        key={player.id}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                        onClick={() => togglePlayerToReplace(player)}
                       >
-                        {player.jersey_number}
-                      </div>
-                      <div className="text-left">
-                        <p className="font-semibold">{player.name}</p>
-                        <p className="text-sm text-slate-400">{player.position}</p>
-                      </div>
-                    </Button>
-                  ))}
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
+                          style={{ backgroundColor: awayTeam?.color }}
+                        >
+                          {player.jersey_number}
+                        </div>
+                        <div className="text-left flex-1">
+                          <p className="font-semibold">{player.name}</p>
+                          <p className="text-sm text-slate-400">{player.position}</p>
+                        </div>
+                        {isSelected && (
+                          <div className="w-6 h-6 rounded-full bg-white text-cyan-600 flex items-center justify-center font-bold">
+                            ✓
+                          </div>
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="bg-slate-800 rounded-lg p-4 flex items-center gap-3">
-                <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl"
-                  style={{ backgroundColor: playerToReplace.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
-                >
-                  {playerToReplace.jersey_number}
-                </div>
-                <div>
-                  <p className="font-semibold text-lg">{playerToReplace.name}</p>
-                  <p className="text-slate-400">{playerToReplace.position} • Coming Out</p>
-                </div>
-              </div>
-
-              <p className="text-center text-slate-400 font-semibold">SELECT REPLACEMENT</p>
-
-              <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
-                {(playerToReplace.team_id === game.home_team_id ? homeBenchPlayers : awayBenchPlayers).map(player => (
-                  <BenchPlayerButton
-                    key={player.id}
-                    player={player}
-                    teamColor={playerToReplace.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color}
-                  />
-                ))}
               </div>
 
               <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => setPlayerToReplace(null)}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                disabled={playersToReplace.length === 0}
+                onClick={() => setSubStep('select_in')}
               >
-                Back
+                Next: Select Replacements ({playersToReplace.length} selected)
               </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="bg-slate-800 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-slate-400 font-semibold">COMING OUT:</p>
+                {playersToReplace.map(player => (
+                  <div key={player.id} className="flex items-center gap-3">
+                    <div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: player.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
+                    >
+                      {player.jersey_number}
+                    </div>
+                    <div>
+                      <p className="font-semibold">{player.name}</p>
+                      <p className="text-sm text-slate-400">{player.position}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-center text-slate-400 font-semibold">
+                SELECT {playersToReplace.length} REPLACEMENT{playersToReplace.length > 1 ? 'S' : ''} ({replacementPlayers.length}/{playersToReplace.length})
+              </p>
+
+              <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+                {playersToReplace.map(playerOut => {
+                  const benchPlayers = playerOut.team_id === game.home_team_id ? homeBenchPlayers : awayBenchPlayers;
+                  const teamColor = playerOut.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
+                  
+                  return (
+                    <div key={playerOut.id}>
+                      <p className="text-sm text-slate-400 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
+                      {benchPlayers.map(player => {
+                        const isSelected = replacementPlayers.includes(player.id);
+                        const canSelect = !replacementPlayers.includes(player.id) || isSelected;
+                        return (
+                          <Button
+                            key={player.id}
+                            variant={isSelected ? "default" : "outline"}
+                            disabled={!canSelect}
+                            className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-600 hover:bg-green-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                            onClick={() => toggleReplacementPlayer(player.id)}
+                          >
+                            <div 
+                              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
+                              style={{ backgroundColor: teamColor }}
+                            >
+                              {player.jersey_number}
+                            </div>
+                            <div className="text-left flex-1">
+                              <p className="font-semibold">{player.name}</p>
+                              <p className="text-sm text-slate-400">{player.position}</p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-6 h-6 rounded-full bg-white text-green-600 flex items-center justify-center font-bold">
+                                ✓
+                              </div>
+                            )}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setSubStep('select_out');
+                    setReplacementPlayers([]);
+                  }}
+                >
+                  Back
+                </Button>
+                <Button
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                  disabled={replacementPlayers.length !== playersToReplace.length}
+                  onClick={handleConfirmSubstitution}
+                >
+                  Confirm Substitution
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
