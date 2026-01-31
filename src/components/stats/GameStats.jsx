@@ -1,0 +1,146 @@
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar, ChevronRight } from "lucide-react";
+import { format } from "date-fns";
+
+export default function GameStats({ games, teams, players, stats }) {
+  const completedGames = games
+    .filter(g => g.status === 'completed')
+    .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
+
+  const getTopPerformer = (gameId) => {
+    const gameStats = stats.filter(s => s.game_id === gameId);
+    if (gameStats.length === 0) return null;
+
+    const playerWithStats = gameStats.map(stat => {
+      const player = players.find(p => p.id === stat.player_id);
+      const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+      return { player, stat, points };
+    });
+
+    return playerWithStats.sort((a, b) => b.points - a.points)[0];
+  };
+
+  return (
+    <Card className="border-slate-200">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-purple-600" />
+          Game Statistics
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {completedGames.length === 0 ? (
+          <p className="text-slate-500 text-center py-8">No completed games yet</p>
+        ) : (
+          <div className="space-y-4">
+            {completedGames.map(game => {
+              const homeTeam = teams.find(t => t.id === game.home_team_id);
+              const awayTeam = teams.find(t => t.id === game.away_team_id);
+              const topPerformer = getTopPerformer(game.id);
+              const gamePlayerStats = stats.filter(s => s.game_id === game.id);
+              
+              const homeStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
+              const awayStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id);
+              
+              const homeTeamStats = {
+                rebounds: homeStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
+                assists: homeStats.reduce((acc, s) => acc + (s.assists || 0), 0),
+                fouls: homeStats.reduce((acc, s) => acc + (s.fouls || 0), 0),
+              };
+              
+              const awayTeamStats = {
+                rebounds: awayStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
+                assists: awayStats.reduce((acc, s) => acc + (s.assists || 0), 0),
+                fouls: awayStats.reduce((acc, s) => acc + (s.fouls || 0), 0),
+              };
+
+              return (
+                <Card key={game.id} className="border-slate-200 bg-gradient-to-br from-white to-slate-50">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-sm text-slate-500">
+                        {format(new Date(game.game_date), 'MMM d, yyyy • h:mm a')}
+                      </p>
+                      <span className="text-xs px-3 py-1 bg-green-100 text-green-700 rounded-full font-medium">
+                        Final
+                      </span>
+                    </div>
+
+                    {/* Score Display */}
+                    <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center mb-6">
+                      {/* Away Team */}
+                      <div className="text-right">
+                        <div className="flex items-center justify-end gap-3 mb-2">
+                          <span className="text-lg font-semibold text-slate-900">{awayTeam?.name}</span>
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                          >
+                            {awayTeam?.name?.[0]}
+                          </div>
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          {awayTeamStats.rebounds} REB • {awayTeamStats.assists} AST • {awayTeamStats.fouls} FOULS
+                        </p>
+                      </div>
+
+                      {/* Score */}
+                      <div className="text-center px-6">
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl font-bold text-slate-900">{game.away_score || 0}</span>
+                          <span className="text-2xl text-slate-400">-</span>
+                          <span className="text-3xl font-bold text-slate-900">{game.home_score || 0}</span>
+                        </div>
+                      </div>
+
+                      {/* Home Team */}
+                      <div className="text-left">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div 
+                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                          >
+                            {homeTeam?.name?.[0]}
+                          </div>
+                          <span className="text-lg font-semibold text-slate-900">{homeTeam?.name}</span>
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          {homeTeamStats.rebounds} REB • {homeTeamStats.assists} AST • {homeTeamStats.fouls} FOULS
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Top Performer */}
+                    {topPerformer && (
+                      <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+                        <p className="text-xs font-semibold text-purple-600 mb-2">TOP PERFORMER</p>
+                        <div className="flex items-center gap-3">
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: teams.find(t => t.id === topPerformer.player?.team_id)?.color || '#f97316' }}
+                          >
+                            {topPerformer.player?.jersey_number}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-slate-900">{topPerformer.player?.name}</p>
+                            <p className="text-sm text-slate-600">{teams.find(t => t.id === topPerformer.player?.team_id)?.name}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-purple-600">{topPerformer.points}</p>
+                            <p className="text-xs text-slate-500">points</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
