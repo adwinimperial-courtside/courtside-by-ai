@@ -174,28 +174,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  const handleUndo = async () => {
-    if (gameLog.length === 0) return;
-
-    const lastAction = gameLog[0];
-    
+  const handleUndo = async (logEntry) => {
     // Revert the stat
-    const updates = { [lastAction.statType.key]: lastAction.oldValue };
-    await updateStatMutation.mutateAsync({ statId: lastAction.statId, updates });
+    const updates = { [logEntry.statType.key]: logEntry.oldValue };
+    await updateStatMutation.mutateAsync({ statId: logEntry.statId, updates });
 
     // Revert score if it was a scoring action
-    if (lastAction.statType.points > 0) {
+    if (logEntry.statType.points > 0) {
       await updateGameMutation.mutateAsync({
         gameId: game.id,
         data: { 
-          home_score: lastAction.oldScores.home,
-          away_score: lastAction.oldScores.away
+          home_score: logEntry.oldScores.home,
+          away_score: logEntry.oldScores.away
         }
       });
     }
 
     // Remove from log
-    setGameLog(prev => prev.slice(1));
+    setGameLog(prev => prev.filter(log => log.id !== logEntry.id));
   };
 
   const handleEndGame = async () => {
@@ -395,28 +391,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </div>
 
               {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  onClick={() => {
-                    setPlayersToReplace([]);
-                    setReplacementPlayers([]);
-                    setSubStep('select_out');
-                    setShowSubDialog(true);
-                  }}
-                  className="h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow-lg"
-                >
-                  <RefreshCw className="w-5 h-5 mr-2" />
-                  Substitution
-                </Button>
-                <Button
-                  onClick={handleUndo}
-                  disabled={gameLog.length === 0}
-                  className="h-14 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-base shadow-lg disabled:opacity-30"
-                >
-                  <Undo2 className="w-5 h-5 mr-2" />
-                  Undo Last Action
-                </Button>
-              </div>
+              <Button
+                onClick={() => {
+                  setPlayersToReplace([]);
+                  setReplacementPlayers([]);
+                  setSubStep('select_out');
+                  setShowSubDialog(true);
+                }}
+                className="w-full h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow-lg"
+              >
+                <RefreshCw className="w-5 h-5 mr-2" />
+                Make Substitution
+              </Button>
             </div>
 
             {/* Away Team Active Players */}
@@ -496,6 +482,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                           {format(log.timestamp, 'HH:mm:ss')}
                         </p>
                       </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUndo(log)}
+                        className="h-8 w-8 p-0 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex-shrink-0"
+                      >
+                        <Undo2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </motion.div>
                 ))
