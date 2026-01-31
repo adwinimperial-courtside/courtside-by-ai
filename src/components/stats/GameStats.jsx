@@ -1,10 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 
 export default function GameStats({ games, teams, players, stats }) {
+  const [expandedGame, setExpandedGame] = useState(null);
+  
   const completedGames = games
     .filter(g => g.status === 'completed')
     .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
@@ -55,6 +58,10 @@ export default function GameStats({ games, teams, players, stats }) {
                 assists: awayStats.reduce((acc, s) => acc + (s.assists || 0), 0),
                 fouls: awayStats.reduce((acc, s) => acc + (s.fouls || 0), 0),
               };
+
+              const isExpanded = expandedGame === game.id;
+              const homePlayerStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
+              const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id);
 
               return (
                 <Card key={game.id} className="border-slate-200 bg-gradient-to-br from-white to-slate-50">
@@ -130,6 +137,160 @@ export default function GameStats({ games, teams, players, stats }) {
                           <div className="text-right">
                             <p className="text-2xl font-bold text-purple-600">{topPerformer.points}</p>
                             <p className="text-xs text-slate-500">points</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* View Details Button */}
+                    <Button
+                      variant="outline"
+                      onClick={() => setExpandedGame(isExpanded ? null : game.id)}
+                      className="w-full mt-4"
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="w-4 h-4 mr-2" />
+                          Hide Details
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-4 h-4 mr-2" />
+                          View Player Stats
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Expanded Player Stats */}
+                    {isExpanded && (
+                      <div className="mt-6 space-y-6">
+                        {/* Away Team Stats */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div 
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                              style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                            >
+                              {awayTeam?.name?.[0]}
+                            </div>
+                            <h4 className="font-semibold text-slate-900">{awayTeam?.name}</h4>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Player</TableHead>
+                                  <TableHead className="text-center">PTS</TableHead>
+                                  <TableHead className="text-center">REB</TableHead>
+                                  <TableHead className="text-center">AST</TableHead>
+                                  <TableHead className="text-center">STL</TableHead>
+                                  <TableHead className="text-center">BLK</TableHead>
+                                  <TableHead className="text-center">FOULS</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {awayPlayerStats.map(stat => {
+                                  const player = players.find(p => p.id === stat.player_id);
+                                  const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                                  const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                                  return (
+                                    <TableRow key={stat.id}>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <div 
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                            style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                                          >
+                                            {player?.jersey_number}
+                                          </div>
+                                          <span className="text-sm">{player?.name}</span>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-center font-semibold">{points}</TableCell>
+                                      <TableCell className="text-center">{rebounds}</TableCell>
+                                      <TableCell className="text-center">{stat.assists || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.steals || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                <TableRow className="bg-slate-50 font-semibold">
+                                  <TableCell>TEAM TOTALS</TableCell>
+                                  <TableCell className="text-center">{game.away_score || 0}</TableCell>
+                                  <TableCell className="text-center">{awayTeamStats.rebounds}</TableCell>
+                                  <TableCell className="text-center">{awayTeamStats.assists}</TableCell>
+                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">{awayTeamStats.fouls}</TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
+                          </div>
+                        </div>
+
+                        {/* Home Team Stats */}
+                        <div>
+                          <div className="flex items-center gap-2 mb-3">
+                            <div 
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                              style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                            >
+                              {homeTeam?.name?.[0]}
+                            </div>
+                            <h4 className="font-semibold text-slate-900">{homeTeam?.name}</h4>
+                          </div>
+                          <div className="overflow-x-auto">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Player</TableHead>
+                                  <TableHead className="text-center">PTS</TableHead>
+                                  <TableHead className="text-center">REB</TableHead>
+                                  <TableHead className="text-center">AST</TableHead>
+                                  <TableHead className="text-center">STL</TableHead>
+                                  <TableHead className="text-center">BLK</TableHead>
+                                  <TableHead className="text-center">FOULS</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {homePlayerStats.map(stat => {
+                                  const player = players.find(p => p.id === stat.player_id);
+                                  const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                                  const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                                  return (
+                                    <TableRow key={stat.id}>
+                                      <TableCell>
+                                        <div className="flex items-center gap-2">
+                                          <div 
+                                            className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                            style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                                          >
+                                            {player?.jersey_number}
+                                          </div>
+                                          <span className="text-sm">{player?.name}</span>
+                                        </div>
+                                      </TableCell>
+                                      <TableCell className="text-center font-semibold">{points}</TableCell>
+                                      <TableCell className="text-center">{rebounds}</TableCell>
+                                      <TableCell className="text-center">{stat.assists || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.steals || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
+                                <TableRow className="bg-slate-50 font-semibold">
+                                  <TableCell>TEAM TOTALS</TableCell>
+                                  <TableCell className="text-center">{game.home_score || 0}</TableCell>
+                                  <TableCell className="text-center">{homeTeamStats.rebounds}</TableCell>
+                                  <TableCell className="text-center">{homeTeamStats.assists}</TableCell>
+                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">{homeTeamStats.fouls}</TableCell>
+                                </TableRow>
+                              </TableBody>
+                            </Table>
                           </div>
                         </div>
                       </div>

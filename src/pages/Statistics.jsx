@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Filter } from "lucide-react";
 
 import TeamStandings from "../components/stats/TeamStandings";
+import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
 import GameStats from "../components/stats/GameStats";
@@ -148,6 +149,9 @@ export default function StatisticsPage() {
             <TabsTrigger value="standings" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
               Team Standings
             </TabsTrigger>
+            <TabsTrigger value="teamstats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+              Team Stats
+            </TabsTrigger>
             <TabsTrigger value="players" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
               Player Stats
             </TabsTrigger>
@@ -163,6 +167,15 @@ export default function StatisticsPage() {
             <TeamStandings 
               teams={filteredTeams}
               games={filteredGames}
+              leagues={leagues}
+            />
+          </TabsContent>
+
+          <TabsContent value="teamstats">
+            <TeamStats 
+              teams={filteredTeams}
+              games={filteredGames}
+              stats={filteredStats}
               leagues={leagues}
             />
           </TabsContent>
