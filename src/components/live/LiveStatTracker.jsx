@@ -3,8 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity } from "lucide-react";
 import { motion } from "framer-motion";
+import { format } from "date-fns";
 
 import ScoreHeader from "./ScoreHeader";
 
@@ -29,6 +30,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [playersToReplace, setPlayersToReplace] = useState([]);
   const [replacementPlayers, setReplacementPlayers] = useState([]);
   const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
+  const [gameLog, setGameLog] = useState([]);
   const queryClient = useQueryClient();
 
   const activePlayers = existingStats.filter(s => s.is_starter);
@@ -81,6 +83,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     const currentValue = playerStat[statType.key] || 0;
     const updates = { [statType.key]: currentValue + 1 };
+    
+    const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
     await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
 
@@ -97,6 +101,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           : { away_score: newScore }
       });
     }
+
+    // Add to game log
+    const logEntry = {
+      id: Date.now(),
+      timestamp: new Date(),
+      player: selectedPlayer,
+      statType: statType,
+      statId: playerStat.id,
+      oldValue: currentValue,
+      newValue: currentValue + 1,
+      oldScores: oldScores,
+      teamColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color
+    };
+    setGameLog(prev => [logEntry, ...prev]);
   };
 
   const handleConfirmSubstitution = async () => {
@@ -156,6 +174,30 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
+  const handleUndo = async () => {
+    if (gameLog.length === 0) return;
+
+    const lastAction = gameLog[0];
+    
+    // Revert the stat
+    const updates = { [lastAction.statType.key]: lastAction.oldValue };
+    await updateStatMutation.mutateAsync({ statId: lastAction.statId, updates });
+
+    // Revert score if it was a scoring action
+    if (lastAction.statType.points > 0) {
+      await updateGameMutation.mutateAsync({
+        gameId: game.id,
+        data: { 
+          home_score: lastAction.oldScores.home,
+          away_score: lastAction.oldScores.away
+        }
+      });
+    }
+
+    // Remove from log
+    setGameLog(prev => prev.slice(1));
+  };
+
   const handleEndGame = async () => {
     if (!confirm("Are you sure you want to end this game? This cannot be undone.")) {
       return;
@@ -205,52 +247,49 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return (
       <div className="relative">
         <motion.button
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.92 }}
           onClick={() => setSelectedPlayer(player)}
-          className={`w-full p-4 rounded-xl transition-all ${
+          className={`w-full p-3 rounded-xl transition-all ${
             isSelected
               ? 'ring-4 ring-offset-2 ring-offset-slate-900'
               : 'hover:bg-white/10'
           } bg-white/5 border-2 ${isSelected ? 'border-white' : 'border-white/10'}`}
           style={isSelected ? { ringColor: teamColor, backgroundColor: `${teamColor}30` } : {}}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-center gap-2">
             <div 
               className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
               style={{ backgroundColor: teamColor || '#f97316' }}
             >
               {player.jersey_number}
             </div>
-            <div className="text-left flex-1 min-w-0">
-              <p className="font-semibold text-white truncate">{player.name}</p>
-              <p className="text-sm text-slate-400">{player.position}</p>
+            <div className="text-center w-full">
+              <p className="font-semibold text-white text-sm truncate">{player.name}</p>
+              <p className="text-xs text-slate-400">{player.position}</p>
             </div>
             {playerStats && (
-              <div className="text-right">
-                <p className="text-2xl font-bold text-white">{totalPoints}</p>
+              <div className="text-center pt-2 border-t border-white/10 w-full">
+                <p className="text-xl font-bold text-white">{totalPoints}</p>
                 <p className="text-xs text-slate-400">PTS</p>
+                <div className="flex justify-around text-xs text-slate-300 mt-1">
+                  <span>{(playerStats.offensive_rebounds || 0) + (playerStats.defensive_rebounds || 0)} R</span>
+                  <span>{playerStats.assists || 0} A</span>
+                  <span>{playerStats.fouls || 0} F</span>
+                </div>
               </div>
             )}
           </div>
-          {playerStats && (
-            <div className="flex justify-between text-xs text-slate-300 pt-3 mt-3 border-t border-white/10">
-              <span>{totalPoints} PTS</span>
-              <span>{(playerStats.offensive_rebounds || 0) + (playerStats.defensive_rebounds || 0)} REB</span>
-              <span>{playerStats.assists || 0} AST</span>
-              <span>{playerStats.fouls || 0} FOULS</span>
-            </div>
-          )}
         </motion.button>
         <Button
           size="sm"
           variant="destructive"
-          className="absolute -top-2 -right-2 w-8 h-8 rounded-full p-0 shadow-lg"
+          className="absolute -top-2 -right-2 w-7 h-7 rounded-full p-0 shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             onSubClick(player);
           }}
         >
-          <X className="w-4 h-4" />
+          <X className="w-3 h-3" />
         </Button>
       </div>
     );
@@ -260,21 +299,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="max-w-[1400px] mx-auto px-4 py-4">
+        <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
             onClick={onBack}
-            className="text-white hover:bg-white/10"
+            className="text-white hover:bg-white/10 h-12 px-6 text-base"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-5 h-5 mr-2" />
             Exit
           </Button>
           <Button
             onClick={handleEndGame}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-12 px-6 text-base"
           >
-            <Trophy className="w-4 h-4 mr-2" />
+            <Trophy className="w-5 h-5 mr-2" />
             End Game
           </Button>
         </div>
@@ -285,114 +324,182 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           awayTeam={awayTeam}
         />
 
-        <div className="mt-8 space-y-6">
-          {/* Home Team Active Players */}
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-              >
-                {homeTeam?.name?.[0]}
+        <div className="mt-4 grid lg:grid-cols-[1fr,380px] gap-4">
+          {/* Main Content */}
+          <div className="space-y-4">
+            {/* Home Team Active Players */}
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                >
+                  {homeTeam?.name?.[0]}
+                </div>
+                <h2 className="text-xl font-bold text-white">{homeTeam?.name}</h2>
+                <span className="ml-auto text-slate-400 text-sm">Active: {homeActivePlayers.length}/5</span>
               </div>
-              <h2 className="text-2xl font-bold text-white">{homeTeam?.name}</h2>
-              <span className="ml-auto text-slate-400 text-sm">Active: {homeActivePlayers.length}/5</span>
+              <div className="grid grid-cols-5 gap-3">
+                {homeActivePlayers.map((player) => (
+                  <PlayerButton 
+                    key={player.id} 
+                    player={player} 
+                    teamColor={homeTeam?.color}
+                    onSubClick={(p) => {
+                      setPlayersToReplace([p]);
+                      setSubStep('select_in');
+                      setShowSubDialog(true);
+                    }}
+                  />
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              {homeActivePlayers.map((player) => (
-                <PlayerButton 
-                  key={player.id} 
-                  player={player} 
-                  teamColor={homeTeam?.color}
-                  onSubClick={(p) => {
-                    setPlayersToReplace([p]);
-                    setSubStep('select_in');
+
+            {/* Stat Control Center */}
+            <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 backdrop-blur border-2 border-orange-500/30 rounded-2xl p-5">
+              <div className="text-center mb-5">
+                {selectedPlayer ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <div 
+                      className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg"
+                      style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
+                    >
+                      {selectedPlayer.jersey_number}
+                    </div>
+                    <div className="text-left">
+                      <p className="text-2xl font-bold text-white">{selectedPlayer.name}</p>
+                      <p className="text-slate-400">Recording stats for this player</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-2xl font-bold text-white mb-2">Select a Player</p>
+                    <p className="text-slate-400">Tap any active player to start tracking</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Stat Buttons - Optimized for tablet */}
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {STAT_TYPES.map((stat) => (
+                  <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                    <Button
+                      onClick={() => handleStatClick(stat)}
+                      disabled={!selectedPlayer}
+                      className={`w-full h-20 text-white font-bold text-base ${stat.color} hover:opacity-90 disabled:opacity-30 shadow-lg`}
+                    >
+                      {stat.label}
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => {
+                    setPlayersToReplace([]);
+                    setReplacementPlayers([]);
+                    setSubStep('select_out');
                     setShowSubDialog(true);
                   }}
-                />
-              ))}
+                  className="h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow-lg"
+                >
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Substitution
+                </Button>
+                <Button
+                  onClick={handleUndo}
+                  disabled={gameLog.length === 0}
+                  className="h-14 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-base shadow-lg disabled:opacity-30"
+                >
+                  <Undo2 className="w-5 h-5 mr-2" />
+                  Undo Last Action
+                </Button>
+              </div>
+            </div>
+
+            {/* Away Team Active Players */}
+            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div 
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                >
+                  {awayTeam?.name?.[0]}
+                </div>
+                <h2 className="text-xl font-bold text-white">{awayTeam?.name}</h2>
+                <span className="ml-auto text-slate-400 text-sm">Active: {awayActivePlayers.length}/5</span>
+              </div>
+              <div className="grid grid-cols-5 gap-3">
+                {awayActivePlayers.map((player) => (
+                  <PlayerButton 
+                    key={player.id} 
+                    player={player} 
+                    teamColor={awayTeam?.color}
+                    onSubClick={(p) => {
+                      setPlayersToReplace([p]);
+                      setSubStep('select_in');
+                      setShowSubDialog(true);
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Substitution and Stat Buttons */}
-          <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 backdrop-blur border-2 border-orange-500/30 rounded-2xl p-6">
-            <div className="text-center mb-6">
-              {selectedPlayer ? (
-                <div className="flex items-center justify-center gap-3">
-                  <div 
-                    className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg"
-                    style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
-                  >
-                    {selectedPlayer.jersey_number}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-2xl font-bold text-white">{selectedPlayer.name}</p>
-                    <p className="text-slate-400">Recording stats for this player</p>
-                  </div>
+          {/* Activity Log Sidebar */}
+          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 h-[calc(100vh-180px)] flex flex-col">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
+              <Activity className="w-5 h-5 text-orange-500" />
+              <h3 className="text-lg font-bold text-white">Game Activity</h3>
+              <span className="ml-auto text-sm text-slate-400">{gameLog.length} actions</span>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+              {gameLog.length === 0 ? (
+                <div className="text-center py-12">
+                  <Activity className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400 text-sm">No actions yet</p>
+                  <p className="text-slate-500 text-xs mt-1">Stats will appear here</p>
                 </div>
               ) : (
-                <div>
-                  <p className="text-2xl font-bold text-white mb-2">Select a Player</p>
-                  <p className="text-slate-400">Click on any active player to start tracking stats</p>
-                </div>
-              )}
-            </div>
-
-            {/* Stat Buttons */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 mb-6">
-              {STAT_TYPES.map((stat) => (
-                <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.95 : 1 }}>
-                  <Button
-                    onClick={() => handleStatClick(stat)}
-                    disabled={!selectedPlayer}
-                    className={`w-full h-24 text-white font-bold text-lg ${stat.color} hover:opacity-90 disabled:opacity-30`}
+                gameLog.map((log, index) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`p-3 rounded-lg bg-white/5 border border-white/10 ${index === 0 ? 'ring-2 ring-amber-500/50' : ''}`}
                   >
-                    {stat.label}
-                  </Button>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Substitution Button */}
-            <Button
-              onClick={() => {
-                setPlayersToReplace([]);
-                setReplacementPlayers([]);
-                setSubStep('select_out');
-                setShowSubDialog(true);
-              }}
-              className="w-full h-16 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-lg shadow-lg"
-            >
-              <RefreshCw className="w-6 h-6 mr-3" />
-              Make Substitution
-            </Button>
-          </div>
-
-          {/* Away Team Active Players */}
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
-                style={{ backgroundColor: awayTeam?.color || '#f97316' }}
-              >
-                {awayTeam?.name?.[0]}
-              </div>
-              <h2 className="text-2xl font-bold text-white">{awayTeam?.name}</h2>
-              <span className="ml-auto text-slate-400 text-sm">Active: {awayActivePlayers.length}/5</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              {awayActivePlayers.map((player) => (
-                <PlayerButton 
-                  key={player.id} 
-                  player={player} 
-                  teamColor={awayTeam?.color}
-                  onSubClick={(p) => {
-                    setPlayersToReplace([p]);
-                    setSubStep('select_in');
-                    setShowSubDialog(true);
-                  }}
-                />
-              ))}
+                    <div className="flex items-start gap-3">
+                      <div 
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
+                        style={{ backgroundColor: log.teamColor }}
+                      >
+                        {log.player.jersey_number}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm truncate">{log.player.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span 
+                            className={`text-xs px-2 py-0.5 rounded text-white font-bold ${log.statType.color}`}
+                          >
+                            {log.statType.label}
+                          </span>
+                          {log.statType.points > 0 && (
+                            <span className="text-xs text-green-400 font-bold">
+                              +{log.statType.points} pts
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {format(log.timestamp, 'HH:mm:ss')}
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </div>
           </div>
         </div>
