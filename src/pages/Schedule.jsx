@@ -32,6 +32,18 @@ export default function SchedulePage() {
     initialData: [],
   });
 
+  const { data: players } = useQuery({
+    queryKey: ['players'],
+    queryFn: () => base44.entities.Player.list(),
+    initialData: [],
+  });
+
+  const { data: allStats } = useQuery({
+    queryKey: ['allPlayerStats'],
+    queryFn: () => base44.entities.PlayerStats.list(),
+    initialData: [],
+  });
+
   const createGameMutation = useMutation({
     mutationFn: (gameData) => base44.entities.Game.create(gameData),
     onSuccess: () => {
@@ -96,6 +108,8 @@ export default function SchedulePage() {
                 game={game}
                 teams={teams}
                 leagues={leagues}
+                players={players}
+                stats={allStats}
                 onStartGame={() => startGame(game)}
               />
             ))}
