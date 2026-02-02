@@ -14,13 +14,31 @@ export default function TeamStandings({ teams, games, leagues }) {
     const totalGames = wins + losses;
     const winPct = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0.0';
 
+    // Calculate points differential
+    let pointsFor = 0;
+    let pointsAgainst = 0;
+    teamGames.forEach(game => {
+      if (game.home_team_id === team.id) {
+        pointsFor += game.home_score || 0;
+        pointsAgainst += game.away_score || 0;
+      } else {
+        pointsFor += game.away_score || 0;
+        pointsAgainst += game.home_score || 0;
+      }
+    });
+    const pointsDiff = pointsFor - pointsAgainst;
+
     return {
       ...team,
       wins,
       losses,
-      winPct: parseFloat(winPct)
+      winPct: parseFloat(winPct),
+      pointsDiff
     };
-  }).sort((a, b) => b.winPct - a.winPct);
+  }).sort((a, b) => {
+    if (b.winPct !== a.winPct) return b.winPct - a.winPct;
+    return b.pointsDiff - a.pointsDiff;
+  });
 
   return (
     <Card className="border-slate-200">
@@ -43,6 +61,7 @@ export default function TeamStandings({ teams, games, leagues }) {
                 <TableHead className="text-center">W</TableHead>
                 <TableHead className="text-center">L</TableHead>
                 <TableHead className="text-center">Win %</TableHead>
+                <TableHead className="text-center">+/-</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -64,6 +83,9 @@ export default function TeamStandings({ teams, games, leagues }) {
                     <TableCell className="text-center font-semibold text-green-600">{team.wins}</TableCell>
                     <TableCell className="text-center font-semibold text-red-600">{team.losses}</TableCell>
                     <TableCell className="text-center font-semibold">{team.winPct}%</TableCell>
+                    <TableCell className={`text-center font-semibold ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                      {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
+                    </TableCell>
                   </TableRow>
                 );
               })}
