@@ -28,18 +28,14 @@ export default function TeamStats({ teams, games, stats, leagues }) {
     return {
       ...team,
       gamesPlayed,
-      totalPoints: totals.points,
-      totalOffensiveRebounds: totals.offensiveRebounds,
-      totalDefensiveRebounds: totals.defensiveRebounds,
-      totalRebounds: totals.rebounds,
-      totalAssists: totals.assists,
-      totalSteals: totals.steals,
-      totalBlocks: totals.blocks,
-      totalTurnovers: totals.turnovers,
-      totalFouls: totals.fouls,
       ppg: gamesPlayed > 0 ? (totals.points / gamesPlayed).toFixed(1) : '0.0',
       rpg: gamesPlayed > 0 ? (totals.rebounds / gamesPlayed).toFixed(1) : '0.0',
       apg: gamesPlayed > 0 ? (totals.assists / gamesPlayed).toFixed(1) : '0.0',
+      orebpg: gamesPlayed > 0 ? (totals.offensiveRebounds / gamesPlayed).toFixed(1) : '0.0',
+      drebpg: gamesPlayed > 0 ? (totals.defensiveRebounds / gamesPlayed).toFixed(1) : '0.0',
+      stlpg: gamesPlayed > 0 ? (totals.steals / gamesPlayed).toFixed(1) : '0.0',
+      blkpg: gamesPlayed > 0 ? (totals.blocks / gamesPlayed).toFixed(1) : '0.0',
+      topg: gamesPlayed > 0 ? (totals.turnovers / gamesPlayed).toFixed(1) : '0.0',
     };
   }).filter(t => t.gamesPlayed > 0).sort((a, b) => b.totalPoints - a.totalPoints);
 
@@ -48,7 +44,7 @@ export default function TeamStats({ teams, games, stats, leagues }) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-purple-600" />
-          Team Statistics
+          Team Statistics (Per Game Averages)
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -62,9 +58,9 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                   <TableHead>Team</TableHead>
                   <TableHead>League</TableHead>
                   <TableHead className="text-center">GP</TableHead>
-                  <TableHead className="text-center">PPG</TableHead>
-                  <TableHead className="text-center">RPG</TableHead>
-                  <TableHead className="text-center">APG</TableHead>
+                  <TableHead className="text-center">PTS</TableHead>
+                  <TableHead className="text-center">REB</TableHead>
+                  <TableHead className="text-center">AST</TableHead>
                   <TableHead className="text-center">OREB</TableHead>
                   <TableHead className="text-center">DREB</TableHead>
                   <TableHead className="text-center">STL</TableHead>
@@ -93,11 +89,11 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                       <TableCell className="text-center font-semibold text-purple-600">{team.ppg}</TableCell>
                       <TableCell className="text-center">{team.rpg}</TableCell>
                       <TableCell className="text-center">{team.apg}</TableCell>
-                      <TableCell className="text-center">{team.totalOffensiveRebounds}</TableCell>
-                      <TableCell className="text-center">{team.totalDefensiveRebounds}</TableCell>
-                      <TableCell className="text-center">{team.totalSteals}</TableCell>
-                      <TableCell className="text-center">{team.totalBlocks}</TableCell>
-                      <TableCell className="text-center">{team.totalTurnovers}</TableCell>
+                      <TableCell className="text-center">{team.orebpg}</TableCell>
+                      <TableCell className="text-center">{team.drebpg}</TableCell>
+                      <TableCell className="text-center">{team.stlpg}</TableCell>
+                      <TableCell className="text-center">{team.blkpg}</TableCell>
+                      <TableCell className="text-center">{team.topg}</TableCell>
                     </TableRow>
                   );
                 })}
