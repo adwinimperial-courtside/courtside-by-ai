@@ -65,11 +65,8 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                   <TableHead className="text-center">PPG</TableHead>
                   <TableHead className="text-center">RPG</TableHead>
                   <TableHead className="text-center">APG</TableHead>
-                  <TableHead className="text-center">Total PTS</TableHead>
                   <TableHead className="text-center">OREB</TableHead>
                   <TableHead className="text-center">DREB</TableHead>
-                  <TableHead className="text-center">Total REB</TableHead>
-                  <TableHead className="text-center">Total AST</TableHead>
                   <TableHead className="text-center">STL</TableHead>
                   <TableHead className="text-center">BLK</TableHead>
                   <TableHead className="text-center">TO</TableHead>
@@ -96,11 +93,8 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                       <TableCell className="text-center font-semibold text-purple-600">{team.ppg}</TableCell>
                       <TableCell className="text-center">{team.rpg}</TableCell>
                       <TableCell className="text-center">{team.apg}</TableCell>
-                      <TableCell className="text-center font-semibold">{team.totalPoints}</TableCell>
                       <TableCell className="text-center">{team.totalOffensiveRebounds}</TableCell>
                       <TableCell className="text-center">{team.totalDefensiveRebounds}</TableCell>
-                      <TableCell className="text-center">{team.totalRebounds}</TableCell>
-                      <TableCell className="text-center">{team.totalAssists}</TableCell>
                       <TableCell className="text-center">{team.totalSteals}</TableCell>
                       <TableCell className="text-center">{team.totalBlocks}</TableCell>
                       <TableCell className="text-center">{team.totalTurnovers}</TableCell>
