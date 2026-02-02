@@ -13,13 +13,15 @@ export default function TeamStats({ teams, games, stats, leagues }) {
     
     const totals = teamStats.reduce((acc, stat) => ({
       points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
+      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
+      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
       rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
       assists: acc.assists + (stat.assists || 0),
       steals: acc.steals + (stat.steals || 0),
       blocks: acc.blocks + (stat.blocks || 0),
       turnovers: acc.turnovers + (stat.turnovers || 0),
       fouls: acc.fouls + (stat.fouls || 0),
-    }), { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0 });
+    }), { points: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0 });
 
     const gamesPlayed = teamGames.length;
 
@@ -27,6 +29,8 @@ export default function TeamStats({ teams, games, stats, leagues }) {
       ...team,
       gamesPlayed,
       totalPoints: totals.points,
+      totalOffensiveRebounds: totals.offensiveRebounds,
+      totalDefensiveRebounds: totals.defensiveRebounds,
       totalRebounds: totals.rebounds,
       totalAssists: totals.assists,
       totalSteals: totals.steals,
@@ -62,8 +66,13 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                   <TableHead className="text-center">RPG</TableHead>
                   <TableHead className="text-center">APG</TableHead>
                   <TableHead className="text-center">Total PTS</TableHead>
+                  <TableHead className="text-center">OREB</TableHead>
+                  <TableHead className="text-center">DREB</TableHead>
                   <TableHead className="text-center">Total REB</TableHead>
                   <TableHead className="text-center">Total AST</TableHead>
+                  <TableHead className="text-center">STL</TableHead>
+                  <TableHead className="text-center">BLK</TableHead>
+                  <TableHead className="text-center">TO</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -88,8 +97,13 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                       <TableCell className="text-center">{team.rpg}</TableCell>
                       <TableCell className="text-center">{team.apg}</TableCell>
                       <TableCell className="text-center font-semibold">{team.totalPoints}</TableCell>
+                      <TableCell className="text-center">{team.totalOffensiveRebounds}</TableCell>
+                      <TableCell className="text-center">{team.totalDefensiveRebounds}</TableCell>
                       <TableCell className="text-center">{team.totalRebounds}</TableCell>
                       <TableCell className="text-center">{team.totalAssists}</TableCell>
+                      <TableCell className="text-center">{team.totalSteals}</TableCell>
+                      <TableCell className="text-center">{team.totalBlocks}</TableCell>
+                      <TableCell className="text-center">{team.totalTurnovers}</TableCell>
                     </TableRow>
                   );
                 })}

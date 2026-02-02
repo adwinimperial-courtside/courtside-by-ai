@@ -181,10 +181,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                 <TableRow>
                                   <TableHead>Player</TableHead>
                                   <TableHead className="text-center">PTS</TableHead>
+                                  <TableHead className="text-center">2PT</TableHead>
+                                  <TableHead className="text-center">3PT</TableHead>
+                                  <TableHead className="text-center">FT</TableHead>
+                                  <TableHead className="text-center">OREB</TableHead>
+                                  <TableHead className="text-center">DREB</TableHead>
                                   <TableHead className="text-center">REB</TableHead>
                                   <TableHead className="text-center">AST</TableHead>
                                   <TableHead className="text-center">STL</TableHead>
                                   <TableHead className="text-center">BLK</TableHead>
+                                  <TableHead className="text-center">TO</TableHead>
                                   <TableHead className="text-center">FOULS</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -207,10 +213,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-center font-semibold">{points}</TableCell>
+                                      <TableCell className="text-center">{stat.points_2 || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.offensive_rebounds || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.defensive_rebounds || 0}</TableCell>
                                       <TableCell className="text-center">{rebounds}</TableCell>
                                       <TableCell className="text-center">{stat.assists || 0}</TableCell>
                                       <TableCell className="text-center">{stat.steals || 0}</TableCell>
                                       <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
                                       <TableCell className="text-center">{stat.fouls || 0}</TableCell>
                                     </TableRow>
                                   );
@@ -218,10 +230,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                 <TableRow className="bg-slate-50 font-semibold">
                                   <TableCell>TEAM TOTALS</TableCell>
                                   <TableCell className="text-center">{game.away_score || 0}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.defensive_rebounds || 0), 0)}</TableCell>
                                   <TableCell className="text-center">{awayTeamStats.rebounds}</TableCell>
                                   <TableCell className="text-center">{awayTeamStats.assists}</TableCell>
-                                  <TableCell className="text-center">-</TableCell>
-                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.steals || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)}</TableCell>
                                   <TableCell className="text-center">{awayTeamStats.fouls}</TableCell>
                                 </TableRow>
                               </TableBody>
@@ -246,10 +264,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                 <TableRow>
                                   <TableHead>Player</TableHead>
                                   <TableHead className="text-center">PTS</TableHead>
+                                  <TableHead className="text-center">2PT</TableHead>
+                                  <TableHead className="text-center">3PT</TableHead>
+                                  <TableHead className="text-center">FT</TableHead>
+                                  <TableHead className="text-center">OREB</TableHead>
+                                  <TableHead className="text-center">DREB</TableHead>
                                   <TableHead className="text-center">REB</TableHead>
                                   <TableHead className="text-center">AST</TableHead>
                                   <TableHead className="text-center">STL</TableHead>
                                   <TableHead className="text-center">BLK</TableHead>
+                                  <TableHead className="text-center">TO</TableHead>
                                   <TableHead className="text-center">FOULS</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -272,10 +296,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                         </div>
                                       </TableCell>
                                       <TableCell className="text-center font-semibold">{points}</TableCell>
+                                      <TableCell className="text-center">{stat.points_2 || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.offensive_rebounds || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.defensive_rebounds || 0}</TableCell>
                                       <TableCell className="text-center">{rebounds}</TableCell>
                                       <TableCell className="text-center">{stat.assists || 0}</TableCell>
                                       <TableCell className="text-center">{stat.steals || 0}</TableCell>
                                       <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                                      <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
                                       <TableCell className="text-center">{stat.fouls || 0}</TableCell>
                                     </TableRow>
                                   );
@@ -283,10 +313,16 @@ export default function GameStats({ games, teams, players, stats }) {
                                 <TableRow className="bg-slate-50 font-semibold">
                                   <TableCell>TEAM TOTALS</TableCell>
                                   <TableCell className="text-center">{game.home_score || 0}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.defensive_rebounds || 0), 0)}</TableCell>
                                   <TableCell className="text-center">{homeTeamStats.rebounds}</TableCell>
                                   <TableCell className="text-center">{homeTeamStats.assists}</TableCell>
-                                  <TableCell className="text-center">-</TableCell>
-                                  <TableCell className="text-center">-</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.steals || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)}</TableCell>
+                                  <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)}</TableCell>
                                   <TableCell className="text-center">{homeTeamStats.fouls}</TableCell>
                                 </TableRow>
                               </TableBody>

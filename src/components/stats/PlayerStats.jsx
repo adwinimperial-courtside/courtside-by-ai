@@ -9,7 +9,12 @@ export default function PlayerStats({ players, teams, stats }) {
     const team = teams.find(t => t.id === player.team_id);
     
     const totals = playerStats.reduce((acc, stat) => ({
-      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3),
+      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
+      points_2: acc.points_2 + (stat.points_2 || 0),
+      points_3: acc.points_3 + (stat.points_3 || 0),
+      freeThrows: acc.freeThrows + (stat.free_throws || 0),
+      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
+      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
       rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
       assists: acc.assists + (stat.assists || 0),
       steals: acc.steals + (stat.steals || 0),
@@ -17,7 +22,7 @@ export default function PlayerStats({ players, teams, stats }) {
       turnovers: acc.turnovers + (stat.turnovers || 0),
       fouls: acc.fouls + (stat.fouls || 0),
       games: acc.games + 1
-    }), { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, games: 0 });
+    }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, games: 0 });
 
     return {
       ...player,
@@ -49,10 +54,17 @@ export default function PlayerStats({ players, teams, stats }) {
                   <TableHead>Team</TableHead>
                   <TableHead className="text-center">GP</TableHead>
                   <TableHead className="text-center">PTS</TableHead>
+                  <TableHead className="text-center">2PT</TableHead>
+                  <TableHead className="text-center">3PT</TableHead>
+                  <TableHead className="text-center">FT</TableHead>
+                  <TableHead className="text-center">OREB</TableHead>
+                  <TableHead className="text-center">DREB</TableHead>
                   <TableHead className="text-center">REB</TableHead>
                   <TableHead className="text-center">AST</TableHead>
                   <TableHead className="text-center">STL</TableHead>
                   <TableHead className="text-center">BLK</TableHead>
+                  <TableHead className="text-center">TO</TableHead>
+                  <TableHead className="text-center">FOULS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -72,10 +84,17 @@ export default function PlayerStats({ players, teams, stats }) {
                     <TableCell className="text-slate-600">{player.team?.name}</TableCell>
                     <TableCell className="text-center">{player.games}</TableCell>
                     <TableCell className="text-center font-semibold">{player.points}</TableCell>
+                    <TableCell className="text-center">{player.points_2}</TableCell>
+                    <TableCell className="text-center">{player.points_3}</TableCell>
+                    <TableCell className="text-center">{player.freeThrows}</TableCell>
+                    <TableCell className="text-center">{player.offensiveRebounds}</TableCell>
+                    <TableCell className="text-center">{player.defensiveRebounds}</TableCell>
                     <TableCell className="text-center">{player.rebounds}</TableCell>
                     <TableCell className="text-center">{player.assists}</TableCell>
                     <TableCell className="text-center">{player.steals}</TableCell>
                     <TableCell className="text-center">{player.blocks}</TableCell>
+                    <TableCell className="text-center">{player.turnovers}</TableCell>
+                    <TableCell className="text-center">{player.fouls}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
