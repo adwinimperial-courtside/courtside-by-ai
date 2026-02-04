@@ -30,11 +30,39 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [playersToReplace, setPlayersToReplace] = useState([]);
   const [replacementPlayers, setReplacementPlayers] = useState([]);
   const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
-  const [gameLog, setGameLog] = useState([]);
   const queryClient = useQueryClient();
+
+  const { data: gameLogs = [] } = useQuery({
+    queryKey: ['gameLogs', game.id],
+    queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
+  });
 
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
+
+  const gameLog = gameLogs.map(log => {
+    const player = players.find(p => p.id === log.player_id);
+    const teamColor = log.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
+    return {
+      id: log.id,
+      timestamp: new Date(log.created_date),
+      player: player,
+      statType: {
+        key: log.stat_type,
+        label: log.stat_label,
+        points: log.stat_points,
+        color: log.stat_color
+      },
+      statId: log.player_stat_id,
+      oldValue: log.old_value,
+      newValue: log.new_value,
+      oldScores: {
+        home: log.old_home_score,
+        away: log.old_away_score
+      },
+      teamColor: teamColor
+    };
+  });
 
   const updateStatMutation = useMutation({
     mutationFn: async ({ statId, updates }) => {
@@ -75,6 +103,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
+  const createLogMutation = useMutation({
+    mutationFn: async (logData) => {
+      return await base44.entities.GameLog.create(logData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+    },
+  });
+
+  const deleteLogMutation = useMutation({
+    mutationFn: async (logId) => {
+      return await base44.entities.GameLog.delete(logId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+    },
+  });
+
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
 
@@ -102,19 +148,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
-    // Add to game log
-    const logEntry = {
-      id: Date.now(),
-      timestamp: new Date(),
-      player: selectedPlayer,
-      statType: statType,
-      statId: playerStat.id,
-      oldValue: currentValue,
-      newValue: currentValue + 1,
-      oldScores: oldScores,
-      teamColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color
-    };
-    setGameLog(prev => [logEntry, ...prev]);
+    // Add to game log database
+    await createLogMutation.mutateAsync({
+      game_id: game.id,
+      player_id: selectedPlayer.id,
+      team_id: selectedPlayer.team_id,
+      stat_type: statType.key,
+      stat_label: statType.label,
+      stat_points: statType.points,
+      stat_color: statType.color,
+      player_stat_id: playerStat.id,
+      old_value: currentValue,
+      new_value: currentValue + 1,
+      old_home_score: oldScores.home,
+      old_away_score: oldScores.away
+    });
   };
 
   const handleConfirmSubstitution = async () => {
@@ -190,8 +238,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
-    // Remove from log
-    setGameLog(prev => prev.filter(log => log.id !== logEntry.id));
+    // Remove from log database
+    await deleteLogMutation.mutateAsync(logEntry.id);
   };
 
   const handleEndGame = async () => {
