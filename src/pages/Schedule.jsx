@@ -14,14 +14,31 @@ export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState("all");
   const [selectedTeam, setSelectedTeam] = useState("all");
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     initialData: [],
   });
+
+  const assignedLeagues = currentUser?.assigned_league_ids 
+    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
+    : [];
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
