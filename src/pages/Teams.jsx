@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -10,10 +10,19 @@ import CreateTeamDialog from "../components/teams/CreateTeamDialog";
 import TeamDetailView from "../components/teams/TeamDetailView";
 
 export default function TeamsPage() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const leagueIdFromUrl = urlParams.get('league');
+  
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState("all");
+  const [selectedLeague, setSelectedLeague] = useState(leagueIdFromUrl || "all");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (leagueIdFromUrl) {
+      setSelectedLeague(leagueIdFromUrl);
+    }
+  }, [leagueIdFromUrl]);
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],

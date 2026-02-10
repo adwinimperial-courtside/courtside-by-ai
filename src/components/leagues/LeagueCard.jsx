@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Trophy, Users, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function LeagueCard({ league }) {
   return (
@@ -10,7 +12,8 @@ export default function LeagueCard({ league }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Card className="group hover:shadow-xl transition-all duration-300 border-slate-200 bg-white overflow-hidden cursor-pointer">
+      <Link to={`${createPageUrl("Teams")}?league=${league.id}`}>
+        <Card className="group hover:shadow-xl transition-all duration-300 border-slate-200 bg-white overflow-hidden cursor-pointer">
         <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-600" />
         <CardHeader className="pb-4">
           <div className="flex items-start justify-between">
@@ -40,6 +43,7 @@ export default function LeagueCard({ league }) {
           </div>
         </CardContent>
       </Card>
+      </Link>
     </motion.div>
   );
 }
