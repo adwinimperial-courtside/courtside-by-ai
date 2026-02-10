@@ -209,7 +209,7 @@ export default function AdminTools() {
                     </Button>
                   ) : (
                     <EditGameEntry
-                      leagues={leagues}
+                      leagues={filteredLeagues}
                       teams={teams}
                       players={players}
                       onClose={() => {
