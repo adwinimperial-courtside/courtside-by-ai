@@ -26,12 +26,6 @@ export default function LeaguesPage() {
     fetchUser();
   }, []);
 
-  React.useEffect(() => {
-    if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
-      setDefaultLeagueMutation.mutate(filteredLeagues[0].id);
-    }
-  }, [filteredLeagues, currentUser]);
-
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list('-created_date'),
@@ -41,6 +35,12 @@ export default function LeaguesPage() {
   const filteredLeagues = currentUser?.assigned_league_ids 
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : [];
+
+  React.useEffect(() => {
+    if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
+      setDefaultLeagueMutation.mutate(filteredLeagues[0].id);
+    }
+  }, [filteredLeagues, currentUser, setDefaultLeagueMutation]);
 
   const createLeagueMutation = useMutation({
     mutationFn: (leagueData) => base44.entities.League.create(leagueData),
