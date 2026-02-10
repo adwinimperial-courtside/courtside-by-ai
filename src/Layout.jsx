@@ -2,7 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Shield, Eye } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Shield, Eye, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
