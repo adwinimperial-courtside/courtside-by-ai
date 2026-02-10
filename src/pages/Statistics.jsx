@@ -217,6 +217,22 @@ export default function StatisticsPage() {
               stats={allStats}
             />
           </TabsContent>
+
+          <TabsContent value="awards">
+            {selectedLeague === "all" ? (
+              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+                <p className="text-slate-500 text-center">Please select a league to view award leaders</p>
+              </div>
+            ) : (
+              <AwardLeaders
+                league={leagues.find(l => l.id === selectedLeague)}
+                teams={teams}
+                games={games}
+                players={players}
+                stats={allStats}
+              />
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </div>
