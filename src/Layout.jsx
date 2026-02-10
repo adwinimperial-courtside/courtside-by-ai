@@ -24,11 +24,6 @@ const navigationItems = [
         icon: Trophy
       },
       {
-        title: "League IDs",
-        url: createPageUrl("LeagueIDs"),
-        icon: Shield
-      },
-      {
         title: "Teams",
         url: createPageUrl("Teams"),
         icon: Users
