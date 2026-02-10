@@ -8,7 +8,6 @@ import { Plus, Settings, RefreshCw, Trash2, Trophy } from "lucide-react";
 import ManualGameEntry from "../components/admin/ManualGameEntry";
 import EditGameEntry from "../components/admin/EditGameEntry";
 import DeleteGameEntry from "../components/admin/DeleteGameEntry";
-import UserLeagueAssignment from "../components/admin/UserLeagueAssignment";
 import { findPlayerOfGame } from "../components/utils/pogCalculator";
 
 export default function AdminTools() {
