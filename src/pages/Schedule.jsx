@@ -117,7 +117,7 @@ export default function SchedulePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Leagues</SelectItem>
-                {leagues.map(league => (
+                {assignedLeagues.map(league => (
                   <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
                 ))}
               </SelectContent>
