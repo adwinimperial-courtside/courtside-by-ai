@@ -19,6 +19,11 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     completed: "bg-green-100 text-green-800"
   };
 
+  const entryTypeColors = {
+    manual: "bg-purple-100 text-purple-800",
+    digital: "bg-cyan-100 text-cyan-800"
+  };
+
   const gamePlayerStats = stats?.filter(s => s.game_id === game.id) || [];
   const homePlayerStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id);
@@ -52,6 +57,11 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                 <Badge className={statusColors[game.status]}>
                   {game.status === 'in_progress' ? 'Live' : game.status.replace('_', ' ')}
                 </Badge>
+                {game.entry_type && (
+                  <Badge className={entryTypeColors[game.entry_type]}>
+                    {game.entry_type === 'manual' ? 'Manual Entry' : 'Digital Entry'}
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-2 mb-4">

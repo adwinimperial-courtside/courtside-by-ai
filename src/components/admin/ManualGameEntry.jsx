@@ -40,6 +40,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         away_score: data.away_score,
         location: data.location || 'Not specified',
         player_of_game: data.player_of_game || null,
+        entry_type: 'manual',
       });
 
       // Create player stats
