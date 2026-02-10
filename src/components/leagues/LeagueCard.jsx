@@ -91,7 +91,7 @@ export default function LeagueCard({ league, userType }) {
           </div>
         </CardContent>
       </Card>
+      {CardElement}
       </Link>
-    </motion.div>
   );
 }
