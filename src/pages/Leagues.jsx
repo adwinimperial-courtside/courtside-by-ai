@@ -32,16 +32,6 @@ export default function LeaguesPage() {
     initialData: [],
   });
 
-  const filteredLeagues = currentUser?.assigned_league_ids 
-    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
-    : [];
-
-  React.useEffect(() => {
-    if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
-      setDefaultLeagueMutation.mutate(filteredLeagues[0].id);
-    }
-  }, [filteredLeagues, currentUser, setDefaultLeagueMutation]);
-
   const createLeagueMutation = useMutation({
     mutationFn: (leagueData) => base44.entities.League.create(leagueData),
     onSuccess: () => {
@@ -56,6 +46,16 @@ export default function LeaguesPage() {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
   });
+
+  const filteredLeagues = currentUser?.assigned_league_ids 
+    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
+    : [];
+
+  React.useEffect(() => {
+    if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
+      setDefaultLeagueMutation.mutate(filteredLeagues[0].id);
+    }
+  }, [filteredLeagues, currentUser, setDefaultLeagueMutation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
