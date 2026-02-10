@@ -252,8 +252,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const awayScore = game.away_score || 0;
     const homeWins = homeScore > awayScore;
 
-    // Calculate Player of the Game automatically
-    const playerOfGameId = findPlayerOfGame(existingStats);
+    // Calculate Player of the Game automatically from winning team
+    const playerOfGameId = findPlayerOfGame(existingStats, game);
 
     await updateGameMutation.mutateAsync({
       gameId: game.id,
