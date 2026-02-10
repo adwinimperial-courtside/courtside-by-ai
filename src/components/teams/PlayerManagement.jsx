@@ -122,8 +122,10 @@ export default function PlayerManagement({ teamId, team }) {
 
     setIsUploading(true);
     try {
+      const uploadResponse = await base44.integrations.Core.UploadFile({ file });
+      
       const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: file,
+        file_url: uploadResponse.file_url,
         json_schema: {
           type: "object",
           properties: {
@@ -146,9 +148,11 @@ export default function PlayerManagement({ teamId, team }) {
         }));
 
         setTableData([...tableData, ...mappedRows]);
+      } else {
+        console.error("Extraction failed:", extractedData);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error processing file:", error);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
