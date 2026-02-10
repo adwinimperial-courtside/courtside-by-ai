@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Shield, Eye } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
