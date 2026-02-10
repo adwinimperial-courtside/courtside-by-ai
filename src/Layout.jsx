@@ -112,6 +112,8 @@ export default function Layout({ children }) {
     return [];
   };
 
+  const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer";
+
   return (
     <SidebarProvider>
       <style>{`
