@@ -43,15 +43,32 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
       // Create player stats
       await Promise.all(
-        data.playerStats.map(stat =>
-          base44.entities.PlayerStats.create({
+        data.playerStats.map(stat => {
+          // Calculate points_2 from total_points, points_3, and free_throws
+          const points3Value = (stat.stats.points_3 || 0) * 3;
+          const ftValue = stat.stats.free_throws || 0;
+          const totalPoints = stat.stats.total_points || 0;
+          const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+          
+          return base44.entities.PlayerStats.create({
             game_id: game.id,
             player_id: stat.player_id,
             team_id: stat.team_id,
             is_starter: true,
-            ...stat.stats,
-          })
-        )
+            points_2: points2Value,
+            points_3: stat.stats.points_3,
+            free_throws: stat.stats.free_throws,
+            offensive_rebounds: stat.stats.offensive_rebounds,
+            defensive_rebounds: stat.stats.defensive_rebounds,
+            assists: stat.stats.assists,
+            steals: stat.stats.steals,
+            blocks: stat.stats.blocks,
+            turnovers: stat.stats.turnovers,
+            fouls: stat.stats.fouls,
+            technical_fouls: stat.stats.technical_fouls,
+            unsportsmanlike_fouls: stat.stats.unsportsmanlike_fouls,
+          });
+        })
       );
 
       // Update team records
@@ -141,12 +158,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
-    const homeScore = homeStats.reduce((sum, ps) =>
-      sum + (ps.stats.points_2 * 2) + (ps.stats.points_3 * 3) + ps.stats.free_throws, 0
-    );
-    const awayScore = awayStats.reduce((sum, ps) =>
-      sum + (ps.stats.points_2 * 2) + (ps.stats.points_3 * 3) + ps.stats.free_throws, 0
-    );
+    const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+    const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
 
     setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
   };
@@ -278,16 +291,16 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">2PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
                   <th className="px-3 py-2 text-center font-semibold">3PT</th>
                   <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
                   <th className="px-3 py-2 text-center font-semibold">STL</th>
                   <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
                   <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
                   <th className="px-3 py-2 text-center font-semibold">TF</th>
                   <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
                 </tr>
@@ -297,14 +310,14 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                     <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
                     <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_2} onChange={(e) => updatePlayerStat(ps.player_id, 'points_2', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
@@ -329,16 +342,16 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">2PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
                   <th className="px-3 py-2 text-center font-semibold">3PT</th>
                   <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
                   <th className="px-3 py-2 text-center font-semibold">STL</th>
                   <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
                   <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
                   <th className="px-3 py-2 text-center font-semibold">TF</th>
                   <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
                 </tr>
@@ -348,14 +361,14 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                     <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
                     <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_2} onChange={(e) => updatePlayerStat(ps.player_id, 'points_2', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
