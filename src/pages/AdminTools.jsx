@@ -141,139 +141,151 @@ export default function AdminTools() {
         </div>
 
         <div className="grid gap-6">
-          <Card className="border-slate-200 shadow-lg">
-            <CardHeader className="border-b border-slate-200 bg-white">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-blue-600" />
-                Recalculate Game Scores
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Fix scores for all completed games by recalculating from player statistics
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Button
-                onClick={recalculateGameScores}
-                disabled={isRecalculating}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
-                {isRecalculating ? 'Recalculating...' : 'Recalculate All Game Scores'}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Game Management Section */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Management</h2>
+            <div className="grid gap-4">
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-orange-600" />
+                    Manual Game Entry
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Add completed games with full statistics when not using the live tracker
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {!showManualEntry ? (
+                    <Button
+                      onClick={() => setShowManualEntry(true)}
+                      className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add New Game
+                    </Button>
+                  ) : (
+                    <ManualGameEntry
+                      leagues={leagues}
+                      teams={teams}
+                      players={players}
+                      onClose={() => setShowManualEntry(false)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card className="border-slate-200 shadow-lg">
-            <CardHeader className="border-b border-slate-200 bg-white">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-amber-500" />
-                Calculate Player of the Game
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Automatically calculate and assign Player of the Game for all completed games
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Button
-                onClick={calculateMissingPOG}
-                disabled={isCalculatingPOG}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
-              >
-                <Trophy className={`w-4 h-4 mr-2 ${isCalculatingPOG ? 'animate-spin' : ''}`} />
-                {isCalculatingPOG ? 'Calculating...' : 'Calculate All Player of the Game'}
-              </Button>
-            </CardContent>
-          </Card>
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-blue-600" />
+                    Edit Game
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Edit statistics for completed games
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {!showEditEntry ? (
+                    <Button
+                      onClick={() => setShowEditEntry(true)}
+                      className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Edit Game
+                    </Button>
+                  ) : (
+                    <EditGameEntry
+                      leagues={leagues}
+                      teams={teams}
+                      players={players}
+                      onClose={() => setShowEditEntry(false)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
 
-          <Card className="border-slate-200 shadow-lg">
-            <CardHeader className="border-b border-slate-200 bg-white">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Plus className="w-5 h-5 text-orange-600" />
-                Manual Game Entry
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Add completed games with full statistics when not using the live tracker
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {!showManualEntry ? (
-                <Button
-                  onClick={() => setShowManualEntry(true)}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add New Game
-                </Button>
-              ) : (
-                <ManualGameEntry
-                  leagues={leagues}
-                  teams={teams}
-                  players={players}
-                  onClose={() => setShowManualEntry(false)}
-                />
-              )}
-            </CardContent>
-          </Card>
+              <Card className="border-slate-200 shadow-lg border-red-200">
+                <CardHeader className="border-b border-slate-200 bg-red-50">
+                  <CardTitle className="text-xl flex items-center gap-2 text-red-700">
+                    <Trash2 className="w-5 h-5" />
+                    Delete Game
+                  </CardTitle>
+                  <p className="text-sm text-red-600 mt-2">
+                    Permanently delete games and all associated data
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  {!showDeleteEntry ? (
+                    <Button
+                      onClick={() => setShowDeleteEntry(true)}
+                      variant="destructive"
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Game
+                    </Button>
+                  ) : (
+                    <DeleteGameEntry
+                      leagues={leagues}
+                      teams={teams}
+                      onClose={() => setShowDeleteEntry(false)}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
-          <Card className="border-slate-200 shadow-lg">
-            <CardHeader className="border-b border-slate-200 bg-white">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Settings className="w-5 h-5 text-blue-600" />
-                Edit Game
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Edit statistics for completed games
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {!showEditEntry ? (
-                <Button
-                  onClick={() => setShowEditEntry(true)}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Edit Game
-                </Button>
-              ) : (
-                <EditGameEntry
-                  leagues={leagues}
-                  teams={teams}
-                  players={players}
-                  onClose={() => setShowEditEntry(false)}
-                />
-              )}
-            </CardContent>
-          </Card>
+          {/* Recalculate Section */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Recalculate</h2>
+            <div className="grid gap-4">
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <RefreshCw className="w-5 h-5 text-blue-600" />
+                    Recalculate Game Scores
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Fix scores for all completed games by recalculating from player statistics
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Button
+                    onClick={recalculateGameScores}
+                    disabled={isRecalculating}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
+                    {isRecalculating ? 'Recalculating...' : 'Recalculate All Game Scores'}
+                  </Button>
+                </CardContent>
+              </Card>
 
-          <Card className="border-slate-200 shadow-lg border-red-200">
-            <CardHeader className="border-b border-slate-200 bg-red-50">
-              <CardTitle className="text-xl flex items-center gap-2 text-red-700">
-                <Trash2 className="w-5 h-5" />
-                Delete Game
-              </CardTitle>
-              <p className="text-sm text-red-600 mt-2">
-                Permanently delete games and all associated data
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {!showDeleteEntry ? (
-                <Button
-                  onClick={() => setShowDeleteEntry(true)}
-                  variant="destructive"
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Game
-                </Button>
-              ) : (
-                <DeleteGameEntry
-                  leagues={leagues}
-                  teams={teams}
-                  onClose={() => setShowDeleteEntry(false)}
-                />
-              )}
-            </CardContent>
-          </Card>
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-500" />
+                    Calculate Player of the Game
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Automatically calculate and assign Player of the Game for all completed games
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Button
+                    onClick={calculateMissingPOG}
+                    disabled={isCalculatingPOG}
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+                  >
+                    <Trophy className={`w-4 h-4 mr-2 ${isCalculatingPOG ? 'animate-spin' : ''}`} />
+                    {isCalculatingPOG ? 'Calculating...' : 'Calculate All Player of the Game'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>
