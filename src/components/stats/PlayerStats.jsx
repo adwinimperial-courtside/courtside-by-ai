@@ -73,29 +73,55 @@ export default function PlayerStats({ players, teams, stats }) {
         {playerAggregates.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No player stats yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Player</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="text-center">GP</TableHead>
-                  <TableHead className="text-center">PPG</TableHead>
-                  <TableHead className="text-center">2PM</TableHead>
-                  <TableHead className="text-center">3PM</TableHead>
-                  <TableHead className="text-center">FTM</TableHead>
-                  <TableHead className="text-center">OREB</TableHead>
-                  <TableHead className="text-center">DREB</TableHead>
-                  <TableHead className="text-center">RPG</TableHead>
-                  <TableHead className="text-center">APG</TableHead>
-                  <TableHead className="text-center">SPG</TableHead>
-                  <TableHead className="text-center">BPG</TableHead>
-                  <TableHead className="text-center">TPG</TableHead>
-                  <TableHead className="text-center">FPG</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {playerAggregates.map((player) => (
+           <div className="overflow-x-auto">
+             <Table>
+               <TableHeader>
+                 <TableRow>
+                   <TableHead>Player</TableHead>
+                   <TableHead>Team</TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("games")}>
+                     <div className="flex items-center justify-center gap-1">GP <SortIcon field="games" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("ppg")}>
+                     <div className="flex items-center justify-center gap-1">PPG <SortIcon field="ppg" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("points_2")}>
+                     <div className="flex items-center justify-center gap-1">2PM <SortIcon field="points_2" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("points_3")}>
+                     <div className="flex items-center justify-center gap-1">3PM <SortIcon field="points_3" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("freeThrows")}>
+                     <div className="flex items-center justify-center gap-1">FTM <SortIcon field="freeThrows" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("offensiveRebounds")}>
+                     <div className="flex items-center justify-center gap-1">OREB <SortIcon field="offensiveRebounds" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("defensiveRebounds")}>
+                     <div className="flex items-center justify-center gap-1">DREB <SortIcon field="defensiveRebounds" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("rpg")}>
+                     <div className="flex items-center justify-center gap-1">RPG <SortIcon field="rpg" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("apg")}>
+                     <div className="flex items-center justify-center gap-1">APG <SortIcon field="apg" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("steals")}>
+                     <div className="flex items-center justify-center gap-1">SPG <SortIcon field="steals" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("blocks")}>
+                     <div className="flex items-center justify-center gap-1">BPG <SortIcon field="blocks" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("turnovers")}>
+                     <div className="flex items-center justify-center gap-1">TPG <SortIcon field="turnovers" /></div>
+                   </TableHead>
+                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("fouls")}>
+                     <div className="flex items-center justify-center gap-1">FPG <SortIcon field="fouls" /></div>
+                   </TableHead>
+                 </TableRow>
+               </TableHeader>
+               <TableBody>
+                 {sortedData.map((player) => (
                   <TableRow key={player.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
