@@ -180,14 +180,16 @@ export default function PlayerManagement({ teamId, team, userType }) {
         <CardHeader className="border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl">Players</CardTitle>
-            <Button
-              onClick={handleSaveAllPlayers}
-              disabled={isSaving || isLoading}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              {isSaving ? "Saving..." : "Save All"}
-            </Button>
+            {!isViewer && (
+              <Button
+                onClick={handleSaveAllPlayers}
+                disabled={isSaving || isLoading}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {isSaving ? "Saving..." : "Save All"}
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="pt-6">
