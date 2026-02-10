@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,9 +10,26 @@ import { motion } from "framer-motion";
 
 export default function GameCard({ game, teams, leagues, players, stats, onStartGame }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const homeTeam = teams.find(t => t.id === game.home_team_id);
-  const awayTeam = teams.find(t => t.id === game.away_team_id);
-  const league = leagues.find(l => l.id === game.league_id);
+  const [liveGame, setLiveGame] = useState(game);
+
+  useEffect(() => {
+    setLiveGame(game);
+  }, [game]);
+
+  useEffect(() => {
+    if (game.status === 'in_progress') {
+      const unsubscribe = base44.entities.Game.subscribe((event) => {
+        if (event.id === game.id && event.type === 'update') {
+          setLiveGame(event.data);
+        }
+      });
+      return unsubscribe;
+    }
+  }, [game.id, game.status]);
+
+  const homeTeam = teams.find(t => t.id === liveGame.home_team_id);
+  const awayTeam = teams.find(t => t.id === liveGame.away_team_id);
+  const league = leagues.find(l => l.id === liveGame.league_id);
 
   const statusColors = {
     scheduled: "bg-blue-100 text-blue-800",
@@ -24,9 +42,9 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     digital: "bg-cyan-100 text-cyan-800"
   };
 
-  const gamePlayerStats = stats?.filter(s => s.game_id === game.id) || [];
-  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
-  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id);
+  const gamePlayerStats = stats?.filter(s => s.game_id === liveGame.id) || [];
+  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id);
+  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id);
 
   const homeTeamStats = {
     rebounds: homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
@@ -54,12 +72,12 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                     {league.name}
                   </Badge>
                 )}
-                <Badge className={statusColors[game.status]}>
-                  {game.status === 'in_progress' ? 'Live' : game.status.replace('_', ' ')}
+                <Badge className={statusColors[liveGame.status]}>
+                  {liveGame.status === 'in_progress' ? 'Live' : liveGame.status.replace('_', ' ')}
                 </Badge>
-                {game.entry_type && (
-                  <Badge className={entryTypeColors[game.entry_type]}>
-                    {game.entry_type === 'manual' ? 'Manual Entry' : 'Digital Entry'}
+                {liveGame.entry_type && (
+                  <Badge className={entryTypeColors[liveGame.entry_type]}>
+                    {liveGame.entry_type === 'manual' ? 'Manual Entry' : 'Digital Entry'}
                   </Badge>
                 )}
               </div>
@@ -75,8 +93,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                     </div>
                     <span className="font-semibold text-slate-900">{homeTeam?.name}</span>
                   </div>
-                  {game.status === 'completed' && (
-                    <span className="text-2xl font-bold text-slate-900">{game.home_score}</span>
+                  {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
+                    <span className="text-2xl font-bold text-slate-900">{liveGame.home_score}</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
@@ -89,8 +107,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                     </div>
                     <span className="font-semibold text-slate-900">{awayTeam?.name}</span>
                   </div>
-                  {game.status === 'completed' && (
-                    <span className="text-2xl font-bold text-slate-900">{game.away_score}</span>
+                  {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
+                    <span className="text-2xl font-bold text-slate-900">{liveGame.away_score}</span>
                   )}
                 </div>
               </div>
@@ -98,19 +116,19 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{format(new Date(game.game_date), "MMM d, yyyy • h:mm a")}</span>
+                  <span>{format(new Date(liveGame.game_date), "MMM d, yyyy • h:mm a")}</span>
                 </div>
-                {game.location && (
+                {liveGame.location && (
                   <div className="flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
-                    <span>{game.location}</span>
+                    <span>{liveGame.location}</span>
                   </div>
                 )}
               </div>
             </div>
 
             <div>
-              {game.status === 'scheduled' && (
+              {liveGame.status === 'scheduled' && (
                 <Button
                   onClick={onStartGame}
                   className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
@@ -119,7 +137,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   Start Game
                 </Button>
               )}
-              {game.status === 'in_progress' && (
+              {liveGame.status === 'in_progress' && (
                 <Button
                   onClick={onStartGame}
                   variant="outline"
@@ -128,7 +146,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   Continue
                 </Button>
               )}
-              {game.status === 'completed' && (
+              {liveGame.status === 'completed' && (
                 <Button 
                   variant="outline"
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -151,7 +169,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
           </div>
 
           {/* Expanded Stats for Completed Games */}
-          {game.status === 'completed' && isExpanded && (
+          {liveGame.status === 'completed' && isExpanded && (
             <div className="mt-6 pt-6 border-t border-slate-200 space-y-6">
               {/* Away Team Stats */}
               <div>
@@ -221,7 +239,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                       })}
                       <TableRow className="bg-slate-50 font-semibold">
                         <TableCell>TEAM TOTALS</TableCell>
-                        <TableCell className="text-center">{game.away_score || 0}</TableCell>
+                        <TableCell className="text-center">{liveGame.away_score || 0}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
@@ -307,7 +325,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                       })}
                       <TableRow className="bg-slate-50 font-semibold">
                         <TableCell>TEAM TOTALS</TableCell>
-                        <TableCell className="text-center">{game.home_score || 0}</TableCell>
+                        <TableCell className="text-center">{liveGame.home_score || 0}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
