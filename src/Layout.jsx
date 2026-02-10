@@ -118,7 +118,7 @@ export default function Layout({ children }) {
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
         <Sidebar className="border-r border-slate-200 bg-white/80 backdrop-blur-sm">
           <SidebarHeader className="border-b border-slate-200 p-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
                 <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
               </div>
@@ -127,6 +127,13 @@ export default function Layout({ children }) {
                 <p className="text-xs text-slate-500">Pro League Manager</p>
               </div>
             </div>
+
+            {!isLoading && currentUser && (
+              <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2">
+                {getUserTypeIcon()}
+                <span className="text-xs font-semibold text-slate-700">{getUserTypeLabel()}</span>
+              </div>
+            )}
           </SidebarHeader>
           
           <SidebarContent className="p-3">
