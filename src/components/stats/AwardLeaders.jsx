@@ -212,7 +212,6 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                     <TableHead>Player</TableHead>
                     <TableHead>Team</TableHead>
                     <TableHead className="text-center">GP</TableHead>
-                    <TableHead className="text-center">GP %</TableHead>
                     <TableHead className="text-center">Avg GIS</TableHead>
                     <TableHead className="text-center">MVP Score</TableHead>
                     <TableHead>Award</TableHead>
@@ -225,7 +224,6 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                       <TableCell className="font-medium">{candidate.player.name}</TableCell>
                       <TableCell>{candidate.team.name}</TableCell>
                       <TableCell className="text-center">{candidate.gp}</TableCell>
-                      <TableCell className="text-center">{candidate.gpPct}%</TableCell>
                       <TableCell className="text-center">{candidate.avgGis}</TableCell>
                       <TableCell className="text-center font-bold text-purple-600">{candidate.mvpScore}</TableCell>
                       <TableCell>
