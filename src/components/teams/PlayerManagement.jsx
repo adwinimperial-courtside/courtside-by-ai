@@ -122,10 +122,8 @@ export default function PlayerManagement({ teamId, team }) {
 
     setIsUploading(true);
     try {
-      const fileUrl = await base44.integrations.Core.UploadFile({ file });
-      
       const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: fileUrl.file_url,
+        file_url: file,
         json_schema: {
           type: "object",
           properties: {
