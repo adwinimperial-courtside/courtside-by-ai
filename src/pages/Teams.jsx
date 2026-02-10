@@ -222,31 +222,33 @@ export default function TeamsPage() {
                     league={leagues.find(l => l.id === team.league_id)}
                     onClick={() => setSelectedTeam(team)}
                   />
-                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 w-8 p-0 bg-white shadow-md"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTeamToEdit(team);
-                        setShowEditDialog(true);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-md"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setTeamToDelete(team);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {currentUser?.user_type !== "viewer" && (
+                    <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="h-8 w-8 p-0 bg-white shadow-md"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTeamToEdit(team);
+                          setShowEditDialog(true);
+                        }}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-md"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTeamToDelete(team);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
