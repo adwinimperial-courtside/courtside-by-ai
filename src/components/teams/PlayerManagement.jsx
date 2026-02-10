@@ -218,7 +218,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
                           onChange={(e) => handleRowChange(index, 'name', e.target.value)}
                           placeholder="Player name"
                           className="border-0 p-1 h-8"
-                          disabled={isSaving}
+                          disabled={isSaving || isViewer}
                         />
                       </TableCell>
                       <TableCell>
