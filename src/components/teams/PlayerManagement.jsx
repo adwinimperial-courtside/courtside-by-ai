@@ -27,37 +27,53 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function PlayerManagement({ teamId, team }) {
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [playerToDelete, setPlayerToDelete] = useState(null);
-  const [formData, setFormData] = useState({ name: "", jersey_number: "", position: "PG" });
+  const [tableData, setTableData] = useState([]);
   const queryClient = useQueryClient();
+  const [isSaving, setIsSaving] = useState(false);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', teamId],
     queryFn: () => base44.entities.Player.filter({ team_id: teamId }),
+    onSuccess: (data) => {
+      const initialData = [...data];
+      while (initialData.length < 12) {
+        initialData.push({ id: null, name: "", jersey_number: "", position: "PG" });
+      }
+      setTableData(initialData);
+    }
   });
 
-  const createPlayerMutation = useMutation({
-    mutationFn: (playerData) => base44.entities.Player.create({
-      ...playerData,
-      team_id: teamId
-    }),
-    onSuccess: () => {
+  const handleSaveAllPlayers = async () => {
+    setIsSaving(true);
+    try {
+      for (const row of tableData) {
+        if (row.name && row.jersey_number) {
+          if (row.id) {
+            await base44.entities.Player.update(row.id, {
+              name: row.name,
+              jersey_number: row.jersey_number,
+              position: row.position
+            });
+          } else {
+            await base44.entities.Player.create({
+              name: row.name,
+              jersey_number: row.jersey_number,
+              position: row.position,
+              team_id: teamId
+            });
+          }
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ['players', teamId] });
-      setShowAddDialog(false);
-      setFormData({ name: "", jersey_number: "", position: "PG" });
-    },
-  });
-
-  const updatePlayerMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Player.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['players', teamId] });
-      setEditingPlayer(null);
-      setFormData({ name: "", jersey_number: "", position: "PG" });
-    },
-  });
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+    } catch (error) {
+      console.error("Error saving players:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const deletePlayerMutation = useMutation({
     mutationFn: (playerId) => base44.entities.Player.delete(playerId),
@@ -75,38 +91,20 @@ export default function PlayerManagement({ teamId, team }) {
     },
   });
 
-  const handleAddClick = () => {
-    setEditingPlayer(null);
-    setFormData({ name: "", jersey_number: "", position: "PG" });
-    setShowAddDialog(true);
+  const handleRowChange = (index, field, value) => {
+    const newData = [...tableData];
+    newData[index] = { ...newData[index], [field]: value };
+    setTableData(newData);
   };
 
-  const handleEditClick = (player) => {
-    setEditingPlayer(player);
-    setFormData({
-      name: player.name,
-      jersey_number: player.jersey_number,
-      position: player.position
-    });
-    setShowAddDialog(true);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingPlayer) {
-      updatePlayerMutation.mutate({
-        id: editingPlayer.id,
-        data: formData
-      });
+  const handleDeleteRow = (index) => {
+    const row = tableData[index];
+    if (row.id) {
+      setPlayerToDelete(row);
     } else {
-      createPlayerMutation.mutate(formData);
+      const newData = tableData.filter((_, i) => i !== index);
+      setTableData([...newData, { id: null, name: "", jersey_number: "", position: "PG" }]);
     }
-  };
-
-  const handleCloseDialog = () => {
-    setShowAddDialog(false);
-    setEditingPlayer(null);
-    setFormData({ name: "", jersey_number: "", position: "PG" });
   };
 
   const isCaptain = (playerId) => team?.team_captain === playerId;
@@ -118,11 +116,12 @@ export default function PlayerManagement({ teamId, team }) {
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl">Players</CardTitle>
             <Button
-              onClick={handleAddClick}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+              onClick={handleSaveAllPlayers}
+              disabled={isSaving || isLoading}
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Player
+              {isSaving ? "Saving..." : "Save All"}
             </Button>
           </div>
         </CardHeader>
@@ -130,10 +129,6 @@ export default function PlayerManagement({ teamId, team }) {
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-pulse text-slate-400">Loading players...</div>
-            </div>
-          ) : players.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-slate-500">No players added yet</p>
             </div>
           ) : (
             <div className="border border-slate-200 rounded-lg overflow-hidden">
@@ -148,52 +143,71 @@ export default function PlayerManagement({ teamId, team }) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {players.map((player) => (
-                    <TableRow key={player.id} className="hover:bg-slate-50">
-                      <TableCell className="font-medium text-slate-900">{player.name}</TableCell>
-                      <TableCell className="text-slate-600">{player.jersey_number}</TableCell>
+                  {tableData.map((row, index) => (
+                    <TableRow key={index} className="hover:bg-slate-50">
                       <TableCell>
-                        <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-                          {player.position}
-                        </Badge>
+                        <Input
+                          value={row.name}
+                          onChange={(e) => handleRowChange(index, 'name', e.target.value)}
+                          placeholder="Player name"
+                          className="border-0 p-1 h-8"
+                          disabled={isSaving}
+                        />
                       </TableCell>
                       <TableCell>
-                        {isCaptain(player.id) ? (
-                          <Badge className="bg-amber-100 text-amber-800 flex items-center gap-1 w-fit">
-                            <Crown className="w-3 h-3" />
-                            Captain
-                          </Badge>
-                        ) : (
+                        <Input
+                          type="number"
+                          value={row.jersey_number}
+                          onChange={(e) => handleRowChange(index, 'jersey_number', parseInt(e.target.value) || "")}
+                          placeholder="#"
+                          className="border-0 p-1 h-8"
+                          min="0"
+                          max="99"
+                          disabled={isSaving}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={row.position}
+                          onValueChange={(value) => handleRowChange(index, 'position', value)}
+                          disabled={isSaving}
+                        >
+                          <SelectTrigger className="h-8 border-0 p-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="PG">PG</SelectItem>
+                            <SelectItem value="SG">SG</SelectItem>
+                            <SelectItem value="SF">SF</SelectItem>
+                            <SelectItem value="PF">PF</SelectItem>
+                            <SelectItem value="C">C</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        {row.id && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => setAsCaptainMutation.mutate(player.id)}
-                            className="text-xs text-slate-500 hover:text-amber-600"
-                            disabled={setAsCaptainMutation.isPending}
+                            onClick={() => setAsCaptainMutation.mutate(row.id)}
+                            className={`text-xs ${isCaptain(row.id) ? 'bg-amber-100 text-amber-800' : 'text-slate-500 hover:text-amber-600'}`}
+                            disabled={isSaving || setAsCaptainMutation.isPending || !row.name}
                           >
-                            Set Captain
+                            {isCaptain(row.id) ? <Crown className="w-3 h-3 mr-1" /> : null}
+                            {isCaptain(row.id) ? "Captain" : "Set"}
                           </Button>
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEditClick(player)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit2 className="w-4 h-4 text-blue-600" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setPlayerToDelete(player)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Trash2 className="w-4 h-4 text-red-600" />
-                          </Button>
-                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteRow(index)}
+                          className="h-8 w-8 p-0"
+                          disabled={isSaving}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-600" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -204,81 +218,7 @@ export default function PlayerManagement({ teamId, team }) {
         </CardContent>
       </Card>
 
-      <Dialog open={showAddDialog} onOpenChange={handleCloseDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingPlayer ? "Edit Player" : "Add New Player"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Player Name</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="e.g., LeBron James"
-                required
-                className="mt-1.5"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="jersey">Jersey Number</Label>
-                <Input
-                  id="jersey"
-                  type="number"
-                  value={formData.jersey_number}
-                  onChange={(e) => setFormData({ ...formData, jersey_number: parseInt(e.target.value) || "" })}
-                  placeholder="e.g., 23"
-                  required
-                  className="mt-1.5"
-                  min="0"
-                  max="99"
-                />
-              </div>
-              <div>
-                <Label htmlFor="position">Position</Label>
-                <Select
-                  value={formData.position}
-                  onValueChange={(value) => setFormData({ ...formData, position: value })}
-                >
-                  <SelectTrigger className="mt-1.5">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PG">PG</SelectItem>
-                    <SelectItem value="SG">SG</SelectItem>
-                    <SelectItem value="SF">SF</SelectItem>
-                    <SelectItem value="PF">PF</SelectItem>
-                    <SelectItem value="C">C</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-                disabled={createPlayerMutation.isPending || updatePlayerMutation.isPending}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createPlayerMutation.isPending || updatePlayerMutation.isPending}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-              >
-                {createPlayerMutation.isPending || updatePlayerMutation.isPending
-                  ? "Saving..."
-                  : editingPlayer
-                  ? "Update Player"
-                  : "Add Player"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+
 
       <AlertDialog open={!!playerToDelete} onOpenChange={(open) => !open && setPlayerToDelete(null)}>
         <AlertDialogContent>
@@ -289,13 +229,23 @@ export default function PlayerManagement({ teamId, team }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="flex justify-end gap-3">
-            <AlertDialogCancel disabled={deletePlayerMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deletePlayerMutation.mutate(playerToDelete.id)}
-              disabled={deletePlayerMutation.isPending}
+              onClick={async () => {
+                setIsSaving(true);
+                try {
+                  await base44.entities.Player.delete(playerToDelete.id);
+                  queryClient.invalidateQueries({ queryKey: ['players', teamId] });
+                  queryClient.invalidateQueries({ queryKey: ['teams'] });
+                  setPlayerToDelete(null);
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
               className="bg-red-600 hover:bg-red-700"
             >
-              {deletePlayerMutation.isPending ? "Deleting..." : "Delete"}
+              {isSaving ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
