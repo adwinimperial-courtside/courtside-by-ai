@@ -26,7 +26,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function PlayerManagement({ teamId, team }) {
+export default function PlayerManagement({ teamId, team, userType }) {
+  const isViewer = userType === "viewer";
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [playerToDelete, setPlayerToDelete] = useState(null);
   const [tableData, setTableData] = useState(
