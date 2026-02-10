@@ -446,14 +446,14 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => awayFileInputRef.current?.click()}
               className="gap-2"
             >
               <Upload className="w-4 h-4" />
               Import CSV
             </Button>
             <input
-              ref={fileInputRef}
+              ref={awayFileInputRef}
               type="file"
               accept=".csv"
               onChange={(e) => handleCsvImport(e, gameData.away_team_id)}
