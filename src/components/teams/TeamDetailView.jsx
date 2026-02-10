@@ -81,6 +81,20 @@ export default function TeamDetailView({ team, onBack }) {
               <div>
                 <h1 className="text-3xl md:text-4xl font-bold text-slate-900">{team.name}</h1>
                 <p className="text-slate-600">Team Roster</p>
+                <div className="flex flex-wrap gap-4 mt-3">
+                  {team.head_coach && (
+                    <div className="text-sm">
+                      <span className="text-slate-600">Head Coach:</span>
+                      <span className="font-semibold text-slate-900 ml-2">{team.head_coach}</span>
+                    </div>
+                  )}
+                  {team.manager && (
+                    <div className="text-sm">
+                      <span className="text-slate-600">Manager:</span>
+                      <span className="font-semibold text-slate-900 ml-2">{team.manager}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -125,7 +139,11 @@ export default function TeamDetailView({ team, onBack }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <PlayerCard player={player} teamColor={team.color} />
+                <PlayerCard 
+                  player={player} 
+                  teamColor={team.color}
+                  isTeamCaptain={team.team_captain === player.id}
+                />
               </motion.div>
             ))}
           </div>
