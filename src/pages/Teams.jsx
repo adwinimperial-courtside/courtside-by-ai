@@ -2,11 +2,21 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, ArrowLeft } from "lucide-react";
+import { Plus, Users, ArrowLeft, Edit2, Trash2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import TeamCard from "../components/teams/TeamCard";
 import CreateTeamDialog from "../components/teams/CreateTeamDialog";
+import EditTeamDialog from "../components/teams/EditTeamDialog";
 import TeamDetailView from "../components/teams/TeamDetailView";
 
 export default function TeamsPage() {
@@ -14,6 +24,9 @@ export default function TeamsPage() {
   const leagueIdFromUrl = urlParams.get('league');
   
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [teamToEdit, setTeamToEdit] = useState(null);
+  const [teamToDelete, setTeamToDelete] = useState(null);
   const [selectedLeague, setSelectedLeague] = useState(leagueIdFromUrl || "all");
   const [selectedTeam, setSelectedTeam] = useState(null);
   const queryClient = useQueryClient();
@@ -38,7 +51,7 @@ export default function TeamsPage() {
 
   const createTeamMutation = useMutation({
     mutationFn: async (teamData) => {
-      const { captain, ...teamInfo } = teamData;
+      const { captain, players: newPlayers, ...teamInfo } = teamData;
       
       // Create the team
       const newTeam = await base44.entities.Team.create(teamInfo);
@@ -57,6 +70,17 @@ export default function TeamsPage() {
           team_captain: captainPlayer.id
         });
       }
+
+      // Create players if provided
+      if (newPlayers && newPlayers.length > 0) {
+        const playerData = newPlayers.map(p => ({
+          name: p.name,
+          team_id: newTeam.id,
+          jersey_number: p.jersey_number,
+          position: p.position
+        }));
+        await base44.entities.Player.bulkCreate(playerData);
+      }
       
       return newTeam;
     },
@@ -64,6 +88,60 @@ export default function TeamsPage() {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowCreateDialog(false);
+    },
+  });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: async (teamData) => {
+      const { players: newPlayers, ...teamInfo } = teamData;
+      
+      // Update the team
+      await base44.entities.Team.update(teamToEdit.id, teamInfo);
+      
+      // Create new players if provided
+      if (newPlayers && newPlayers.length > 0) {
+        const playerData = newPlayers.map(p => ({
+          name: p.name,
+          team_id: teamToEdit.id,
+          jersey_number: p.jersey_number,
+          position: p.position
+        }));
+        await base44.entities.Player.bulkCreate(playerData);
+      }
+      
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      setShowEditDialog(false);
+      setTeamToEdit(null);
+    },
+  });
+
+  const deleteTeamMutation = useMutation({
+    mutationFn: async (teamId) => {
+      // Delete all players for this team
+      const teamPlayers = await base44.entities.Player.filter({ team_id: teamId });
+      for (const player of teamPlayers) {
+        await base44.entities.Player.delete(player.id);
+      }
+      
+      // Delete all games for this team
+      const games = await base44.entities.Game.filter({});
+      const teamGames = games.filter(g => g.home_team_id === teamId || g.away_team_id === teamId);
+      for (const game of teamGames) {
+        await base44.entities.Game.delete(game.id);
+      }
+      
+      // Delete the team
+      await base44.entities.Team.delete(teamId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+      setTeamToDelete(null);
     },
   });
 
@@ -142,15 +220,43 @@ export default function TeamsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTeams.map((team) => (
-              <TeamCard 
-                key={team.id} 
-                team={team} 
-                league={leagues.find(l => l.id === team.league_id)}
-                onClick={() => setSelectedTeam(team)}
-              />
-            ))}
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTeams.map((team) => (
+                <div key={team.id} className="group relative">
+                  <TeamCard 
+                    team={team} 
+                    league={leagues.find(l => l.id === team.league_id)}
+                    onClick={() => setSelectedTeam(team)}
+                  />
+                  <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-8 w-8 p-0 bg-white shadow-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTeamToEdit(team);
+                        setShowEditDialog(true);
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-8 w-8 p-0 bg-red-600 hover:bg-red-700 shadow-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTeamToDelete(team);
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -161,6 +267,35 @@ export default function TeamsPage() {
           isLoading={createTeamMutation.isPending}
           leagues={leagues}
         />
+
+        <EditTeamDialog
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          team={teamToEdit}
+          onSubmit={(data) => updateTeamMutation.mutate(data)}
+          isLoading={updateTeamMutation.isPending}
+        />
+
+        <AlertDialog open={!!teamToDelete} onOpenChange={(open) => !open && setTeamToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Team</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete "{teamToDelete?.name}"? This will also delete all players and games associated with this team. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex justify-end gap-3">
+              <AlertDialogCancel disabled={deleteTeamMutation.isPending}>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteTeamMutation.mutate(teamToDelete.id)}
+                disabled={deleteTeamMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteTeamMutation.isPending ? "Deleting..." : "Delete"}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
