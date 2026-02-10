@@ -109,7 +109,7 @@ export default function Layout({ children }) {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
                 </div>
-                <h1 className="text-lg font-bold text-slate-900">BasketStats</h1>
+                <h1 className="text-lg font-bold text-slate-900">Courtside by AI</h1>
               </div>
             </div>
           </header>
