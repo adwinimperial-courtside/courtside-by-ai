@@ -25,6 +25,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   });
   const [playerStats, setPlayerStats] = useState([]);
   const [winningTeamId, setWinningTeamId] = useState("");
+  const [confirmationData, setConfirmationData] = useState(null);
 
   const homeTeamPlayers = players.filter(p => p.team_id === gameData.home_team_id);
   const awayTeamPlayers = players.filter(p => p.team_id === gameData.away_team_id);
