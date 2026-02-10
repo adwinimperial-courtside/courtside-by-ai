@@ -29,15 +29,24 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     color: "#f97316",
     logo_url: "",
     head_coach: "",
-    manager: "",
-    team_captain: ""
+    manager: ""
+  });
+  const [captainData, setCaptainData] = useState({
+    name: "",
+    jersey_number: "",
+    position: "PG"
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "", team_captain: "" });
+    const submitData = { ...formData };
+    if (captainData.name && captainData.jersey_number) {
+      submitData.captain = captainData;
+    }
+    onSubmit(submitData);
+    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "" });
+    setCaptainData({ name: "", jersey_number: "", position: "PG" });
   };
 
   const handleLogoUpload = async (e) => {
@@ -111,6 +120,50 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               placeholder="e.g., Jane Doe"
               className="mt-1.5"
             />
+          </div>
+          <div className="border-t border-slate-200 pt-4 mt-4">
+            <h3 className="font-semibold text-slate-900 mb-3">Team Captain (Optional)</h3>
+            <div>
+              <Label htmlFor="captain_name">Captain Name</Label>
+              <Input
+                id="captain_name"
+                value={captainData.name}
+                onChange={(e) => setCaptainData({ ...captainData, name: e.target.value })}
+                placeholder="e.g., LeBron James"
+                className="mt-1.5"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              <div>
+                <Label htmlFor="captain_jersey">Jersey Number</Label>
+                <Input
+                  id="captain_jersey"
+                  type="number"
+                  value={captainData.jersey_number}
+                  onChange={(e) => setCaptainData({ ...captainData, jersey_number: parseInt(e.target.value) || "" })}
+                  placeholder="e.g., 23"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="captain_position">Position</Label>
+                <Select
+                  value={captainData.position}
+                  onValueChange={(value) => setCaptainData({ ...captainData, position: value })}
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PG">PG</SelectItem>
+                    <SelectItem value="SG">SG</SelectItem>
+                    <SelectItem value="SF">SF</SelectItem>
+                    <SelectItem value="PF">PF</SelectItem>
+                    <SelectItem value="C">C</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
           <div>
             <Label htmlFor="logo">Team Logo (Optional)</Label>
