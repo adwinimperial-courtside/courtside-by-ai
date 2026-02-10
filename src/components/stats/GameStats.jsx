@@ -122,12 +122,16 @@ export default function GameStats({ games, teams, players, stats }) {
                       {/* Home Team */}
                       <div className="text-left">
                         <div className="flex items-center gap-3 mb-2">
-                          <div 
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                            style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-                          >
-                            {homeTeam?.name?.[0]}
-                          </div>
+                          {homeTeam?.logo_url ? (
+                            <img src={homeTeam.logo_url} alt={homeTeam.name} className="w-10 h-10 rounded-lg object-cover" />
+                          ) : (
+                            <div 
+                              className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                              style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                            >
+                              {homeTeam?.name?.[0]}
+                            </div>
+                          )}
                           <span className="text-lg font-semibold text-slate-900">{homeTeam?.name}</span>
                         </div>
                         <p className="text-sm text-slate-500">
