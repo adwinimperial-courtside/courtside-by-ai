@@ -288,6 +288,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <th className="px-3 py-2 text-center font-semibold">BLK</th>
                   <th className="px-3 py-2 text-center font-semibold">TO</th>
                   <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                  <th className="px-3 py-2 text-center font-semibold">TF</th>
+                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
                 </tr>
               </thead>
               <tbody>
