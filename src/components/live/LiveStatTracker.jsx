@@ -11,18 +11,18 @@ import ScoreHeader from "./ScoreHeader";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 
 const STAT_TYPES = [
-  { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-500' },
-  { key: 'points_3', label: '3PT', points: 3, color: 'bg-purple-500' },
-  { key: 'free_throws', label: 'FT', points: 1, color: 'bg-indigo-500' },
-  { key: 'offensive_rebounds', label: 'OREB', points: 0, color: 'bg-green-500' },
-  { key: 'defensive_rebounds', label: 'DREB', points: 0, color: 'bg-green-600' },
-  { key: 'assists', label: 'AST', points: 0, color: 'bg-yellow-500' },
-  { key: 'steals', label: 'STL', points: 0, color: 'bg-orange-500' },
-  { key: 'blocks', label: 'BLK', points: 0, color: 'bg-red-500' },
-  { key: 'turnovers', label: 'TO', points: 0, color: 'bg-gray-500' },
-  { key: 'fouls', label: 'FOUL', points: 0, color: 'bg-slate-500' },
-  { key: 'technical_fouls', label: 'TECH', points: 0, color: 'bg-rose-600' },
-  { key: 'unsportsmanlike_fouls', label: 'UNSP', points: 0, color: 'bg-red-700' },
+  { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
+  { key: 'points_3', label: '3PT', points: 3, color: 'bg-purple-600 hover:bg-purple-700' },
+  { key: 'free_throws', label: 'FT', points: 1, color: 'bg-indigo-600 hover:bg-indigo-700' },
+  { key: 'offensive_rebounds', label: 'OREB', points: 0, color: 'bg-emerald-500 hover:bg-emerald-600' },
+  { key: 'defensive_rebounds', label: 'DREB', points: 0, color: 'bg-green-600 hover:bg-green-700' },
+  { key: 'assists', label: 'AST', points: 0, color: 'bg-amber-500 hover:bg-amber-600' },
+  { key: 'steals', label: 'STL', points: 0, color: 'bg-orange-600 hover:bg-orange-700' },
+  { key: 'blocks', label: 'BLK', points: 0, color: 'bg-red-600 hover:bg-red-700' },
+  { key: 'turnovers', label: 'TO', points: 0, color: 'bg-slate-700 hover:bg-slate-800' },
+  { key: 'fouls', label: 'FOUL', points: 0, color: 'bg-slate-600 hover:bg-slate-700' },
+  { key: 'technical_fouls', label: 'TECH', points: 0, color: 'bg-pink-600 hover:bg-pink-700' },
+  { key: 'unsportsmanlike_fouls', label: 'UNSP', points: 0, color: 'bg-rose-700 hover:bg-rose-800' },
 ];
 
 export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats, onBack }) {
@@ -437,7 +437,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                     <Button
                       onClick={() => handleStatClick(stat)}
                       disabled={!selectedPlayer}
-                      className={`w-full h-20 text-white font-bold text-base ${stat.color} hover:opacity-90 disabled:opacity-30 shadow-lg`}
+                      className={`w-full h-20 text-white font-bold text-lg ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
                     >
                       {stat.label}
                     </Button>
