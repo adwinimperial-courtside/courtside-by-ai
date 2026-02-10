@@ -176,7 +176,7 @@ export default function AdminTools() {
                     </Button>
                   ) : (
                     <ManualGameEntry
-                      leagues={leagues}
+                      leagues={filteredLeagues}
                       teams={teams}
                       players={players}
                       onClose={() => {
