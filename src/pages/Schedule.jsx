@@ -123,7 +123,17 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {isLoading ? (
+        {selectedLeague === "all" ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4">
+            <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+              <Calendar className="w-12 h-12 text-blue-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Select a League</h3>
+            <p className="text-slate-600 text-center max-w-md">
+              Please select a league from the filter above to view and manage games.
+            </p>
+          </div>
+        ) : isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 bg-white rounded-2xl animate-pulse" />
