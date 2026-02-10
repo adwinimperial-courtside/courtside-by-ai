@@ -92,12 +92,19 @@ export default function LeaguesPage() {
              </p>
            </div>
          ) : (
-           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {filteredLeagues.map((league) => (
-               <LeagueCard key={league.id} league={league} userType={currentUser?.user_type} />
-             ))}
-           </div>
-         )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredLeagues.map((league) => (
+                <LeagueCard 
+                  key={league.id} 
+                  league={league} 
+                  userType={currentUser?.user_type}
+                  isDefault={currentUser?.default_league_id === league.id}
+                  onSetDefault={setDefaultLeagueMutation.mutate}
+                  multipleLeagues={filteredLeagues.length > 1}
+                />
+              ))}
+            </div>
+          )}
 
         <CreateLeagueDialog
           open={showCreateDialog}
