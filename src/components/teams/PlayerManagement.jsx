@@ -241,7 +241,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
                         <Select
                           value={row.position}
                           onValueChange={(value) => handleRowChange(index, 'position', value)}
-                          disabled={isSaving}
+                          disabled={isSaving || isViewer}
                         >
                           <SelectTrigger className="h-8 border-0 p-1">
                             <SelectValue />
