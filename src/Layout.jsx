@@ -143,7 +143,7 @@ export default function Layout({ children }) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) =>
+                  {getVisibleNavigationItems().map((item) =>
                   <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                       asChild
