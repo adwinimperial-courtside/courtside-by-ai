@@ -9,7 +9,20 @@ import TeamLogo from "./TeamLogo";
 
 export default function TeamDetailView({ team, onBack }) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const handleLogoUpload = async (e) => {
     const file = e.target.files?.[0];
