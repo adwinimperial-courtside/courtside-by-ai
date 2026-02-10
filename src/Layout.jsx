@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Trophy, Users, Calendar, BarChart3, Settings } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +41,11 @@ const navigationItems = [
   title: "Statistics",
   url: createPageUrl("Statistics"),
   icon: BarChart3
+},
+{
+  title: "Award Leaders",
+  url: createPageUrl("AwardLeaders"),
+  icon: Medal
 }];
 
 const adminItems = [
