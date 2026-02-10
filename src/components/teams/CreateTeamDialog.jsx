@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { Upload } from "lucide-react";
+import PlayerTableInput from "./PlayerTableInput";
 
 const TEAM_COLORS = [
   { name: "Orange", value: "#f97316" },
@@ -36,6 +37,9 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     jersey_number: "",
     position: "PG"
   });
+  const [players, setPlayers] = useState(
+    Array(15).fill(null).map(() => ({ name: "", jersey_number: "", position: "PG" }))
+  );
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleSubmit = (e) => {
@@ -44,9 +48,14 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     if (captainData.name && captainData.jersey_number) {
       submitData.captain = captainData;
     }
+    const validPlayers = players.filter(p => p.name && p.jersey_number);
+    if (validPlayers.length > 0) {
+      submitData.players = validPlayers;
+    }
     onSubmit(submitData);
     setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "" });
     setCaptainData({ name: "", jersey_number: "", position: "PG" });
+    setPlayers(Array(15).fill(null).map(() => ({ name: "", jersey_number: "", position: "PG" })));
   };
 
   const handleLogoUpload = async (e) => {
@@ -121,6 +130,11 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               className="mt-1.5"
             />
           </div>
+          <div>
+            <Label>Add Players</Label>
+            <PlayerTableInput players={players} onChange={setPlayers} />
+          </div>
+
           <div className="border-t border-slate-200 pt-4 mt-4">
             <h3 className="font-semibold text-slate-900 mb-3">Team Captain (Optional)</h3>
             <div>
