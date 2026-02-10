@@ -242,6 +242,9 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     );
   }
 
+  const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
+  const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-100 p-4 rounded-lg">
@@ -259,34 +262,100 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card className="p-4">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+      <div className="space-y-6">
+        <div>
+          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: homeTeam?.color }}>
               {homeTeam?.name?.[0]}
             </div>
             {homeTeam?.name}
           </h3>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {playerStats.filter(ps => ps.team_id === gameData.home_team_id).map(ps => (
-              <PlayerStatRow key={ps.player_id} playerStat={ps} updateStat={updatePlayerStat} />
-            ))}
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold">#</th>
+                  <th className="px-3 py-2 text-left font-semibold">Player</th>
+                  <th className="px-3 py-2 text-center font-semibold">2PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">FT</th>
+                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">AST</th>
+                  <th className="px-3 py-2 text-center font-semibold">STL</th>
+                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                  <th className="px-3 py-2 text-center font-semibold">TO</th>
+                  <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {homeStats.map((ps, idx) => (
+                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+                    <td className="px-3 py-2">{ps.player_name}</td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_2} onChange={(e) => updatePlayerStat(ps.player_id, 'points_2', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </Card>
+        </div>
 
-        <Card className="p-4">
-          <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+        <div>
+          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
               {awayTeam?.name?.[0]}
             </div>
             {awayTeam?.name}
           </h3>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {playerStats.filter(ps => ps.team_id === gameData.away_team_id).map(ps => (
-              <PlayerStatRow key={ps.player_id} playerStat={ps} updateStat={updatePlayerStat} />
-            ))}
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold">#</th>
+                  <th className="px-3 py-2 text-left font-semibold">Player</th>
+                  <th className="px-3 py-2 text-center font-semibold">2PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">FT</th>
+                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
+                  <th className="px-3 py-2 text-center font-semibold">AST</th>
+                  <th className="px-3 py-2 text-center font-semibold">STL</th>
+                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                  <th className="px-3 py-2 text-center font-semibold">TO</th>
+                  <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {awayStats.map((ps, idx) => (
+                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+                    <td className="px-3 py-2">{ps.player_name}</td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_2} onChange={(e) => updatePlayerStat(ps.player_id, 'points_2', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </Card>
+        </div>
       </div>
 
       <div className="flex gap-3">
@@ -303,131 +372,6 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           {createGameMutation.isPending ? 'Saving...' : 'Save Game'}
         </Button>
       </div>
-    </div>
-  );
-}
-
-function PlayerStatRow({ playerStat, updateStat }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div className="border border-slate-200 rounded-lg p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-orange-600 text-white flex items-center justify-center text-xs font-bold">
-            {playerStat.jersey_number}
-          </div>
-          <span className="font-medium text-sm">{playerStat.player_name}</span>
-        </div>
-        <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)}>
-          {expanded ? '−' : '+'}
-        </Button>
-      </div>
-
-      {expanded && (
-        <div className="grid grid-cols-3 gap-2 mt-3">
-          <div>
-            <Label className="text-xs">2PT</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.points_2}
-              onChange={(e) => updateStat(playerStat.player_id, 'points_2', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">3PT</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.points_3}
-              onChange={(e) => updateStat(playerStat.player_id, 'points_3', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">FT</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.free_throws}
-              onChange={(e) => updateStat(playerStat.player_id, 'free_throws', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">OREB</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.offensive_rebounds}
-              onChange={(e) => updateStat(playerStat.player_id, 'offensive_rebounds', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">DREB</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.defensive_rebounds}
-              onChange={(e) => updateStat(playerStat.player_id, 'defensive_rebounds', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">AST</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.assists}
-              onChange={(e) => updateStat(playerStat.player_id, 'assists', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">STL</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.steals}
-              onChange={(e) => updateStat(playerStat.player_id, 'steals', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">BLK</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.blocks}
-              onChange={(e) => updateStat(playerStat.player_id, 'blocks', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">TO</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.turnovers}
-              onChange={(e) => updateStat(playerStat.player_id, 'turnovers', e.target.value)}
-              className="h-8"
-            />
-          </div>
-          <div>
-            <Label className="text-xs">FOULS</Label>
-            <Input
-              type="number"
-              min="0"
-              value={playerStat.stats.fouls}
-              onChange={(e) => updateStat(playerStat.player_id, 'fouls', e.target.value)}
-              className="h-8"
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
