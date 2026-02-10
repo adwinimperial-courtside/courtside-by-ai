@@ -233,8 +233,6 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     } catch (error) {
       alert("Error reading CSV file. Ensure it has columns: PLAYER, POINTS, 3 POINTS, FT, ASSIST, STEAL, BLOCK, OREB, DREB, TURNOVER, FOUL, TECHNICAL, UNSPORTSMANLIKE");
     }
-
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const calculateScores = () => {
