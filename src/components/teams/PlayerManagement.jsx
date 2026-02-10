@@ -54,17 +54,17 @@ export default function PlayerManagement({ teamId, team }) {
     setIsSaving(true);
     try {
       for (const row of tableData) {
-        if (row.name && row.jersey_number) {
+        if (row.name && row.jersey_number !== '') {
           if (row.id) {
             await base44.entities.Player.update(row.id, {
               name: row.name,
-              jersey_number: row.jersey_number,
+              jersey_number: parseInt(row.jersey_number),
               position: row.position
             });
           } else {
             await base44.entities.Player.create({
               name: row.name,
-              jersey_number: row.jersey_number,
+              jersey_number: parseInt(row.jersey_number),
               position: row.position,
               team_id: teamId
             });
