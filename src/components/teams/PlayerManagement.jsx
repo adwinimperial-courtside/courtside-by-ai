@@ -270,15 +270,17 @@ export default function PlayerManagement({ teamId, team, userType }) {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteRow(index)}
-                          className="h-8 w-8 p-0"
-                          disabled={isSaving}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
+                        {!isViewer && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteRow(index)}
+                            className="h-8 w-8 p-0"
+                            disabled={isSaving}
+                          >
+                            <Trash2 className="w-4 h-4 text-red-600" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
