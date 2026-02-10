@@ -129,16 +129,26 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
         if (!playerDpoyScores[playerStat.player_id]) {
           playerDpoyScores[playerStat.player_id] = {
             gp: 0,
-            steals: 0,
-            blocks: 0,
-            dreb: 0,
+            sumDefGis: 0,
+            sumTech: 0,
+            sumUnsp: 0,
             teamId: playerStat.team_id
           };
         }
+        
+        const defGis = 3.0 * (playerStat.steals || 0) +
+          2.5 * (playerStat.blocks || 0) +
+          1.5 * (playerStat.offensive_rebounds || 0) +
+          1.0 * (playerStat.defensive_rebounds || 0) -
+          1.5 * (playerStat.fouls || 0) -
+          2.0 * (playerStat.turnovers || 0) -
+          3.0 * (playerStat.technical_fouls || 0) -
+          4.0 * (playerStat.unsportsmanlike_fouls || 0);
+
         playerDpoyScores[playerStat.player_id].gp += 1;
-        playerDpoyScores[playerStat.player_id].steals += playerStat.steals || 0;
-        playerDpoyScores[playerStat.player_id].blocks += playerStat.blocks || 0;
-        playerDpoyScores[playerStat.player_id].dreb += playerStat.defensive_rebounds || 0;
+        playerDpoyScores[playerStat.player_id].sumDefGis += defGis;
+        playerDpoyScores[playerStat.player_id].sumTech += playerStat.technical_fouls || 0;
+        playerDpoyScores[playerStat.player_id].sumUnsp += playerStat.unsportsmanlike_fouls || 0;
       });
     });
 
@@ -148,24 +158,25 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
         const team = teams.find(t => t.id === data.teamId);
         const tg = teamGames[data.teamId];
 
-        if (!player || !team || tg === undefined) return null;
+        if (!player || !team || tg === undefined || data.gp === 0 || tg === 0) return null;
 
-        const gpPct = tg > 0 ? data.gp / tg : 0;
+        const gpPct = data.gp / tg;
         const eligible = gpPct >= 0.60;
 
         if (!eligible) return null;
 
-        // DPOY score: weighted combination of defensive stats
-        const dpoyScore = (2.5 * data.steals + 2.0 * data.blocks + 1.0 * data.dreb) / data.gp;
+        const avgDefGis = data.sumDefGis / data.gp;
+        const dpoyScore = avgDefGis + 10 * gpPct - 2 * data.sumTech - 3 * data.sumUnsp;
 
         return {
           playerId,
           player,
           team,
           gp: data.gp,
-          spg: (data.steals / data.gp).toFixed(1),
-          bpg: (data.blocks / data.gp).toFixed(1),
-          drpg: (data.dreb / data.gp).toFixed(1),
+          avgDefGis: avgDefGis.toFixed(1),
+          gpPct: (gpPct * 100).toFixed(1),
+          sumTech: data.sumTech,
+          sumUnsp: data.sumUnsp,
           dpoyScore: dpoyScore.toFixed(1),
           dpoyScoreNum: dpoyScore
         };
