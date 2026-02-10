@@ -46,8 +46,17 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
   const editedBadgeColor = "bg-amber-100 text-amber-800";
 
   const gamePlayerStats = stats?.filter(s => s.game_id === liveGame.id) || [];
-  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id);
-  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id);
+  
+  const hasPlayerStats = (stat) => {
+    const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+    return points > 0 || (stat.offensive_rebounds || 0) > 0 || (stat.defensive_rebounds || 0) > 0 || 
+           (stat.assists || 0) > 0 || (stat.steals || 0) > 0 || (stat.blocks || 0) > 0 || 
+           (stat.turnovers || 0) > 0 || (stat.fouls || 0) > 0 || (stat.technical_fouls || 0) > 0 || 
+           (stat.unsportsmanlike_fouls || 0) > 0;
+  };
+  
+  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && hasPlayerStats(s));
+  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
 
   const homeTeamStats = {
     rebounds: homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
