@@ -3,14 +3,16 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, RefreshCw } from "lucide-react";
+import { Plus, Settings, RefreshCw, Trash2 } from "lucide-react";
 
 import ManualGameEntry from "../components/admin/ManualGameEntry";
 import EditGameEntry from "../components/admin/EditGameEntry";
+import DeleteGameEntry from "../components/admin/DeleteGameEntry";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showEditEntry, setShowEditEntry] = useState(false);
+  const [showDeleteEntry, setShowDeleteEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const queryClient = useQueryClient();
 
@@ -161,6 +163,36 @@ export default function AdminTools() {
                   teams={teams}
                   players={players}
                   onClose={() => setShowEditEntry(false)}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-lg border-red-200">
+            <CardHeader className="border-b border-slate-200 bg-red-50">
+              <CardTitle className="text-xl flex items-center gap-2 text-red-700">
+                <Trash2 className="w-5 h-5" />
+                Delete Game
+              </CardTitle>
+              <p className="text-sm text-red-600 mt-2">
+                Permanently delete games and all associated data
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {!showDeleteEntry ? (
+                <Button
+                  onClick={() => setShowDeleteEntry(true)}
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete Game
+                </Button>
+              ) : (
+                <DeleteGameEntry
+                  leagues={leagues}
+                  teams={teams}
+                  onClose={() => setShowDeleteEntry(false)}
                 />
               )}
             </CardContent>
