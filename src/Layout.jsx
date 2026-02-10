@@ -59,6 +59,51 @@ const adminItems = [
 
 export default function Layout({ children }) {
   const location = useLocation();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const getUserTypeIcon = () => {
+    if (!currentUser?.user_type) return null;
+    if (currentUser.user_type === "app_admin") return <Shield className="w-4 h-4" />;
+    if (currentUser.user_type === "league_admin") return <Trophy className="w-4 h-4" />;
+    if (currentUser.user_type === "viewer") return <Eye className="w-4 h-4" />;
+    return null;
+  };
+
+  const getUserTypeLabel = () => {
+    if (!currentUser?.user_type) return "";
+    return currentUser.user_type.replace("_", " ").toUpperCase();
+  };
+
+  const getVisibleNavigationItems = () => {
+    if (!currentUser) return navigationItems;
+    
+    if (currentUser.user_type === "app_admin") {
+      return navigationItems;
+    }
+    
+    if (currentUser.user_type === "league_admin" || currentUser.user_type === "viewer") {
+      return navigationItems.filter(item => 
+        ["Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
+      );
+    }
+    
+    return navigationItems;
+  };
 
   return (
     <SidebarProvider>
