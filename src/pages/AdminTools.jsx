@@ -89,8 +89,8 @@ export default function AdminTools() {
         // Get stats for this game
         const gameStats = stats.filter(s => s.game_id === game.id);
         
-        // Calculate POG
-        const playerOfGameId = findPlayerOfGame(gameStats);
+        // Calculate POG from winning team
+        const playerOfGameId = findPlayerOfGame(gameStats, game);
         
         // Verify the player exists
         const playerExists = playerOfGameId ? allPlayers.some(p => p.id === playerOfGameId) : false;
