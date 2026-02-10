@@ -15,7 +15,8 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger } from
+  SidebarTrigger,
+  useSidebar } from
 "@/components/ui/sidebar";
 
 const navigationItems = [
@@ -69,6 +70,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isMobile, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -132,6 +134,12 @@ export default function Layout({ children }) {
     base44.auth.logout();
   };
 
+  const handleNavigationClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <SidebarProvider>
       <style>{`
@@ -189,7 +197,7 @@ export default function Layout({ children }) {
                       location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
                       }>
 
-                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
                         </Link>
@@ -216,7 +224,7 @@ export default function Layout({ children }) {
                           location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
                           }>
 
-                            <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                            <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                               <item.icon className="w-5 h-5" />
                               <span>{item.title}</span>
                             </Link>
@@ -242,7 +250,7 @@ export default function Layout({ children }) {
                             location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
                             }>
 
-                              <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                              <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                                 <item.icon className="w-5 h-5" />
                                 <span>{item.title}</span>
                               </Link>
