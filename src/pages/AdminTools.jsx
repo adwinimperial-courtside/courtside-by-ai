@@ -243,7 +243,7 @@ export default function AdminTools() {
                     </Button>
                   ) : (
                     <DeleteGameEntry
-                      leagues={leagues}
+                      leagues={filteredLeagues}
                       teams={teams}
                       onClose={() => setShowDeleteEntry(false)}
                     />
