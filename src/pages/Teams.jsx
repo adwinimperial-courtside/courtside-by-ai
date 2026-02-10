@@ -202,11 +202,11 @@ export default function TeamsPage() {
               <Users className="w-12 h-12 text-slate-400" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {leagues.length === 0 ? "Create a League First" : "No Teams Yet"}
+              {assignedLeagues.length === 0 ? "No Leagues Assigned" : "No Teams Yet"}
             </h3>
             <p className="text-slate-600 text-center mb-8 max-w-md">
-              {leagues.length === 0 
-                ? "You need to create a league before adding teams"
+              {assignedLeagues.length === 0 
+                ? "You haven't been assigned to any leagues yet"
                 : "Start building your league by adding teams"}
             </p>
           </div>
