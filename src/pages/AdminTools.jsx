@@ -16,25 +16,22 @@ export default function AdminTools() {
   const [showDeleteEntry, setShowDeleteEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
 
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
+  const { data: currentUser } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+    initialData: null,
+  });
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
   });
+
+  const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
+    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
+    : leagues;
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
