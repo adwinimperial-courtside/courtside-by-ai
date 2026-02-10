@@ -1,11 +1,12 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Calendar } from "lucide-react";
+import { Trophy, Users, Calendar, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { Button } from "@/components/ui/button";
 
-export default function LeagueCard({ league, userType }) {
+export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues }) {
   const isViewer = userType === "viewer";
 
   const cardContent = (
