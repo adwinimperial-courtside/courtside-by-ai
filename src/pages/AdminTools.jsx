@@ -202,7 +202,10 @@ export default function AdminTools() {
                       leagues={leagues}
                       teams={teams}
                       players={players}
-                      onClose={() => setShowEditEntry(false)}
+                      onClose={() => {
+                        queryClient.invalidateQueries({ queryKey: ['players'] });
+                        setShowEditEntry(false);
+                      }}
                     />
                   )}
                 </CardContent>
