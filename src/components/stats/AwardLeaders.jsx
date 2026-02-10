@@ -261,9 +261,10 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                     <TableHead>Player</TableHead>
                     <TableHead>Team</TableHead>
                     <TableHead className="text-center">GP</TableHead>
-                    <TableHead className="text-center">SPG</TableHead>
-                    <TableHead className="text-center">BPG</TableHead>
-                    <TableHead className="text-center">DRPG</TableHead>
+                    <TableHead className="text-center">GP %</TableHead>
+                    <TableHead className="text-center">Avg DEF_GIS</TableHead>
+                    <TableHead className="text-center">Tech</TableHead>
+                    <TableHead className="text-center">Unsp</TableHead>
                     <TableHead className="text-center">DPOY Score</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -274,9 +275,10 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                       <TableCell className="font-medium">{leader.player.name}</TableCell>
                       <TableCell>{leader.team.name}</TableCell>
                       <TableCell className="text-center">{leader.gp}</TableCell>
-                      <TableCell className="text-center">{leader.spg}</TableCell>
-                      <TableCell className="text-center">{leader.bpg}</TableCell>
-                      <TableCell className="text-center">{leader.drpg}</TableCell>
+                      <TableCell className="text-center">{leader.gpPct}%</TableCell>
+                      <TableCell className="text-center">{leader.avgDefGis}</TableCell>
+                      <TableCell className="text-center">{leader.sumTech}</TableCell>
+                      <TableCell className="text-center">{leader.sumUnsp}</TableCell>
                       <TableCell className="text-center font-bold text-blue-600">{leader.dpoyScore}</TableCell>
                     </TableRow>
                   ))}
