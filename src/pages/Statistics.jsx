@@ -105,12 +105,13 @@ export default function StatisticsPage() {
             <Filter className="w-5 h-5 text-purple-600" />
             <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">League</label>
               <Select value={selectedLeague} onValueChange={(value) => {
                 setSelectedLeague(value);
                 setSelectedTeam("all");
+                setSelectedPlayer("all");
               }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select league" />
@@ -127,7 +128,10 @@ export default function StatisticsPage() {
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700 mb-2 block">Team</label>
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+              <Select value={selectedTeam} onValueChange={(value) => {
+                setSelectedTeam(value);
+                setSelectedPlayer("all");
+              }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select team" />
                 </SelectTrigger>
@@ -136,6 +140,22 @@ export default function StatisticsPage() {
                   {availableTeams.map(team => (
                     <SelectItem key={team.id} value={team.id}>
                       {team.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-slate-700 mb-2 block">Player</label>
+              <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select player" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Players</SelectItem>
+                  {filteredPlayers.map(player => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
