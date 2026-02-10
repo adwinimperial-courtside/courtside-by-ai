@@ -55,6 +55,7 @@ import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
+import AwardLeaders from './pages/AwardLeaders';
 import __Layout from './Layout.jsx';
 
 
@@ -67,6 +68,7 @@ export const PAGES = {
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
+    "AwardLeaders": AwardLeaders,
 }
 
 export const pagesConfig = {
