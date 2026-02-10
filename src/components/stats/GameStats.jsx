@@ -51,9 +51,9 @@ export default function GameStats({ games, teams, players, stats }) {
         ) : (
           <div className="space-y-4">
             {completedGames.map(game => {
-              const homeTeam = teams.find(t => t.id === game.home_team_id);
-              const awayTeam = teams.find(t => t.id === game.away_team_id);
-              const topPerformer = getTopPerformer(game.id);
+               const homeTeam = teams.find(t => t.id === game.home_team_id);
+               const awayTeam = teams.find(t => t.id === game.away_team_id);
+               const topPerformer = getTopPerformer(game);
               const gamePlayerStats = stats.filter(s => s.game_id === game.id);
               
               const homeStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
