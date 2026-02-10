@@ -12,8 +12,21 @@ export default function GameStats({ games, teams, players, stats }) {
     .filter(g => g.status === 'completed')
     .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
 
+  const hasStats = (stat) => {
+    return (stat.points_2 || 0) > 0 || 
+           (stat.points_3 || 0) > 0 || 
+           (stat.free_throws || 0) > 0 || 
+           (stat.offensive_rebounds || 0) > 0 || 
+           (stat.defensive_rebounds || 0) > 0 || 
+           (stat.assists || 0) > 0 || 
+           (stat.steals || 0) > 0 || 
+           (stat.blocks || 0) > 0 || 
+           (stat.turnovers || 0) > 0 || 
+           (stat.fouls || 0) > 0;
+  };
+
   const getTopPerformer = (gameId) => {
-    const gameStats = stats.filter(s => s.game_id === gameId);
+    const gameStats = stats.filter(s => s.game_id === gameId && hasStats(s));
     if (gameStats.length === 0) return null;
 
     const playerWithStats = gameStats.map(stat => {
