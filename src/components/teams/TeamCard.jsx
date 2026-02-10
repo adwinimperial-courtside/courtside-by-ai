@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
+import TeamLogo from "./TeamLogo";
 
 export default function TeamCard({ team, league, onClick }) {
   return (
@@ -26,11 +27,22 @@ export default function TeamCard({ team, league, onClick }) {
                 </Badge>
               )}
             </div>
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform"
-              style={{ backgroundColor: `${team.color || '#f97316'}20` }}
-            >
-              <Users className="w-6 h-6" style={{ color: team.color || '#f97316' }} />
+            <div className="group-hover:scale-110 transition-transform">
+              {team.logo_url ? (
+                <img 
+                  src={team.logo_url} 
+                  alt={team.name}
+                  className="w-16 h-16 rounded-xl object-cover border-2"
+                  style={{ borderColor: team.color || '#f97316' }}
+                />
+              ) : (
+                <div 
+                  className="w-16 h-16 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: `${team.color || '#f97316'}20` }}
+                >
+                  <Users className="w-8 h-8" style={{ color: team.color || '#f97316' }} />
+                </div>
+              )}
             </div>
           </div>
         </CardHeader>
