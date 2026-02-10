@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Calendar, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -11,6 +12,8 @@ import GameCard from "../components/schedule/GameCard";
 
 export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedLeague, setSelectedLeague] = useState("all");
+  const [selectedTeam, setSelectedTeam] = useState("all");
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -57,6 +60,12 @@ export default function SchedulePage() {
     navigate(`${baseUrl}?gameId=${game.id}`);
   };
 
+  const filteredGames = games.filter(game => {
+    const leagueMatch = selectedLeague === "all" || game.league_id === selectedLeague;
+    const teamMatch = selectedTeam === "all" || game.home_team_id === selectedTeam || game.away_team_id === selectedTeam;
+    return leagueMatch && teamMatch;
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -80,13 +89,45 @@ export default function SchedulePage() {
           </Button>
         </div>
 
+        <div className="flex gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Leagues" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leagues</SelectItem>
+                {leagues.map(league => (
+                  <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-500" />
+            <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="All Teams" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Teams</SelectItem>
+                {teams.map(team => (
+                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
-        ) : games.length === 0 ? (
+        ) : filteredGames.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-12 h-12 text-slate-400" />
@@ -102,7 +143,7 @@ export default function SchedulePage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {games.map((game) => (
+            {filteredGames.map((game) => (
               <GameCard
                 key={game.id}
                 game={game}
