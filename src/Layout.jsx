@@ -1,76 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Shield, Eye, LogOut } from "lucide-react";
+import { Shield, Eye, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger,
-  useSidebar } from
+  SidebarTrigger } from
 "@/components/ui/sidebar";
-
-const navigationItems = [
-      {
-        title: "Leagues",
-        url: createPageUrl("Leagues"),
-        icon: Trophy
-      },
-      {
-        title: "Teams",
-        url: createPageUrl("Teams"),
-        icon: Users
-      },
-      {
-        title: "Schedule",
-        url: createPageUrl("Schedule"),
-        icon: Calendar
-      },
-      {
-        title: "Standings",
-        url: createPageUrl("Standings"),
-        icon: Trophy
-      },
-      {
-        title: "Statistics",
-        url: createPageUrl("Statistics"),
-        icon: BarChart3
-      },
-      {
-        title: "Award Leaders",
-        url: createPageUrl("AwardLeaders"),
-        icon: Medal
-      }];
-
-const adminItems = [
-{
-  title: "Admin Tools",
-  url: createPageUrl("AdminTools"),
-  icon: Settings
-}];
-
-const ownerItems = [
-{
-  title: "Owner Tools",
-  url: createPageUrl("OwnerTools"),
-  icon: Settings
-}];
+import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 
 
 export default function Layout({ children }) {
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { isMobile, setOpenMobile } = useSidebar();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -99,45 +44,12 @@ export default function Layout({ children }) {
     return currentUser.user_type.replace("_", " ").toUpperCase();
   };
 
-  const getVisibleNavigationItems = () => {
-    if (!currentUser) return navigationItems;
 
-    if (currentUser.user_type === "app_admin") {
-      return navigationItems;
-    }
-
-    if (currentUser.user_type === "league_admin" || currentUser.user_type === "viewer") {
-      return navigationItems.filter(item => 
-        ["Leagues", "Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
-      );
-    }
-
-    return navigationItems;
-  };
-
-  const getVisibleAdminItems = () => {
-    if (!currentUser) return [];
-    if (currentUser.user_type === "app_admin") return adminItems;
-    if (currentUser.user_type === "league_admin") return adminItems;
-    return [];
-  };
-
-  const getVisibleOwnerItems = () => {
-    if (!currentUser) return [];
-    if (currentUser.user_type === "app_admin") return ownerItems;
-    return [];
-  };
 
   const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer";
 
   const handleLogout = () => {
     base44.auth.logout();
-  };
-
-  const handleNavigationClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
   };
 
   return (
@@ -181,89 +93,12 @@ export default function Layout({ children }) {
               </div>
             )}
           </SidebarHeader>
-          
-          <SidebarContent className="p-3">
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
-                Navigation
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {getVisibleNavigationItems().map((item) =>
-                  <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                      asChild
-                      className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
-                      }>
 
-                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
-                          <item.icon className="w-5 h-5" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            
-            {!isViewerWithoutAdminAccess && (
-              <>
-                <SidebarGroup>
-                  <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
-                    Admin
-                  </SidebarGroupLabel>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {getVisibleAdminItems().map((item) =>
-                      <SidebarMenuItem key={item.title}>
-                          <SidebarMenuButton
-                          asChild
-                          className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                          location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
-                          }>
-
-                            <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
-                              <item.icon className="w-5 h-5" />
-                              <span>{item.title}</span>
-                            </Link>
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      )}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-
-                {getVisibleOwnerItems().length > 0 && (
-                  <SidebarGroup>
-                    <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
-                      Owner
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent>
-                      <SidebarMenu>
-                        {getVisibleOwnerItems().map((item) =>
-                        <SidebarMenuItem key={item.title}>
-                            <SidebarMenuButton
-                            asChild
-                            className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                            location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
-                            }>
-
-                              <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
-                                <item.icon className="w-5 h-5" />
-                                <span>{item.title}</span>
-                              </Link>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        )}
-                      </SidebarMenu>
-                    </SidebarGroupContent>
-                  </SidebarGroup>
-                )}
-              </>
-            )}
-          </SidebarContent>
+          <SidebarMenuContent 
+            currentUser={currentUser} 
+            location={location} 
+            isViewerWithoutAdminAccess={isViewerWithoutAdminAccess}
+          />
         </Sidebar>
 
         <main className="flex-1 flex flex-col">
