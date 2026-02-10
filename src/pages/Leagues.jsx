@@ -14,17 +14,17 @@ export default function LeaguesPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
 
+  const { data: user } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+    initialData: null,
+  });
+
   React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, [user]);
 
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],
