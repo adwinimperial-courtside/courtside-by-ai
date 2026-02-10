@@ -435,12 +435,30 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         </div>
 
         <div>
-          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
-              {awayTeam?.name?.[0]}
-            </div>
-            {awayTeam?.name}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
+                {awayTeam?.name?.[0]}
+              </div>
+              {awayTeam?.name}
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Import CSV
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={(e) => handleCsvImport(e, gameData.away_team_id)}
+              className="hidden"
+            />
+          </div>
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
