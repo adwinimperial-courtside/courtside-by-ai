@@ -9,6 +9,7 @@ import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
 import GameStats from "../components/stats/GameStats";
+import AwardLeaders from "../components/stats/AwardLeaders";
 
 export default function StatisticsPage() {
   const [selectedLeague, setSelectedLeague] = useState("all");
