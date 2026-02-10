@@ -47,24 +47,24 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AdminTools from './pages/AdminTools';
 import Home from './pages/Home';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
 import Schedule from './pages/Schedule';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
-import AdminTools from './pages/AdminTools';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "AdminTools": AdminTools,
     "Home": Home,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
     "Schedule": Schedule,
     "Statistics": Statistics,
     "Teams": Teams,
-    "AdminTools": AdminTools,
 }
 
 export const pagesConfig = {
