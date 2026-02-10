@@ -264,6 +264,23 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const homeTeam = teams.find(t => t.id === gameData.home_team_id);
   const awayTeam = teams.find(t => t.id === gameData.away_team_id);
 
+  if (confirmationData) {
+    return (
+      <GameConfirmationModal
+        isOpen={!!confirmationData}
+        game={confirmationData}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        playerOfGame={confirmationData.player_of_game}
+        players={players}
+        onClose={() => {
+          setConfirmationData(null);
+          onClose();
+        }}
+      />
+    );
+  }
+
   if (step === 1) {
     return (
       <div className="space-y-6">
