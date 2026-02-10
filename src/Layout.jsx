@@ -98,7 +98,7 @@ export default function Layout({ children }) {
 
     if (currentUser.user_type === "league_admin" || currentUser.user_type === "viewer") {
       return navigationItems.filter(item => 
-        ["Leagues", "League IDs", "Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
+        ["Leagues", "Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
       );
     }
 
