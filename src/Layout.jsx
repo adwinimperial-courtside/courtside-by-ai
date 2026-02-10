@@ -18,36 +18,41 @@ import {
 "@/components/ui/sidebar";
 
 const navigationItems = [
-{
-  title: "Leagues",
-  url: createPageUrl("Leagues"),
-  icon: Trophy
-},
-{
-  title: "Teams",
-  url: createPageUrl("Teams"),
-  icon: Users
-},
-{
-  title: "Schedule",
-  url: createPageUrl("Schedule"),
-  icon: Calendar
-},
-{
-  title: "Standings",
-  url: createPageUrl("Standings"),
-  icon: Trophy
-},
-{
-  title: "Statistics",
-  url: createPageUrl("Statistics"),
-  icon: BarChart3
-},
-{
-  title: "Award Leaders",
-  url: createPageUrl("AwardLeaders"),
-  icon: Medal
-}];
+      {
+        title: "Leagues",
+        url: createPageUrl("Leagues"),
+        icon: Trophy
+      },
+      {
+        title: "League IDs",
+        url: createPageUrl("LeagueIDs"),
+        icon: Shield
+      },
+      {
+        title: "Teams",
+        url: createPageUrl("Teams"),
+        icon: Users
+      },
+      {
+        title: "Schedule",
+        url: createPageUrl("Schedule"),
+        icon: Calendar
+      },
+      {
+        title: "Standings",
+        url: createPageUrl("Standings"),
+        icon: Trophy
+      },
+      {
+        title: "Statistics",
+        url: createPageUrl("Statistics"),
+        icon: BarChart3
+      },
+      {
+        title: "Award Leaders",
+        url: createPageUrl("AwardLeaders"),
+        icon: Medal
+      }];
 
 const adminItems = [
 {
