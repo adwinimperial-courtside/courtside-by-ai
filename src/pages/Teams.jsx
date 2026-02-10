@@ -27,28 +27,27 @@ export default function TeamsPage() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [teamToEdit, setTeamToEdit] = useState(null);
   const [teamToDelete, setTeamToDelete] = useState(null);
-  const [selectedLeague, setSelectedLeague] = useState(leagueIdFromUrl || "all");
+  const [selectedLeague, setSelectedLeague] = useState(leagueIdFromUrl || null);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (leagueIdFromUrl) {
-      setSelectedLeague(leagueIdFromUrl);
-    }
-  }, [leagueIdFromUrl]);
 
   React.useEffect(() => {
     const fetchUser = async () => {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
+        if (!leagueIdFromUrl && user?.default_league_id) {
+          setSelectedLeague(user.default_league_id);
+        } else if (!leagueIdFromUrl) {
+          setSelectedLeague("all");
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       }
     };
     fetchUser();
-  }, []);
+  }, [leagueIdFromUrl]);
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
