@@ -33,10 +33,12 @@ export default function LeagueCard({ league, userType }) {
             {league.description}
           </p>
         )}
-        <div className="flex items-center gap-2 text-sm text-slate-600">
-          <Users className="w-4 h-4 text-indigo-500" />
-          <span className="font-medium">{isViewer ? "View league details" : "Manage teams and schedule"}</span>
-        </div>
+        {!isViewer && (
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <Users className="w-4 h-4 text-indigo-500" />
+            <span className="font-medium">Manage teams and schedule</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
