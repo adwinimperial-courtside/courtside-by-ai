@@ -77,30 +77,49 @@ export default function AdminTools() {
   const calculateMissingPOG = async () => {
     setIsCalculatingPOG(true);
     try {
-      // Get all completed games
+      // Get all data
       const games = await base44.entities.Game.filter({ status: 'completed' });
       const stats = await base44.entities.PlayerStats.list();
+      const allPlayers = await base44.entities.Player.list();
 
       let updatedCount = 0;
+      let clearedCount = 0;
 
       for (const game of games) {
         // Get stats for this game
         const gameStats = stats.filter(s => s.game_id === game.id);
         
-        // Calculate POG if missing or recalculate for all
+        // Calculate POG
         const playerOfGameId = findPlayerOfGame(gameStats);
         
-        if (playerOfGameId && game.player_of_game !== playerOfGameId) {
+        // Verify the player exists
+        const playerExists = playerOfGameId ? allPlayers.some(p => p.id === playerOfGameId) : false;
+        
+        if (playerOfGameId && playerExists) {
+          // Update with valid POG
+          if (game.player_of_game !== playerOfGameId) {
+            await base44.entities.Game.update(game.id, {
+              player_of_game: playerOfGameId,
+            });
+            updatedCount++;
+          }
+        } else if (game.player_of_game) {
+          // Clear invalid POG reference
           await base44.entities.Game.update(game.id, {
-            player_of_game: playerOfGameId,
+            player_of_game: null,
           });
-          updatedCount++;
+          clearedCount++;
         }
       }
 
       queryClient.invalidateQueries({ queryKey: ['games'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
-      alert(`Successfully calculated Player of the Game for ${updatedCount} game(s)!`);
+      
+      let message = `Updated ${updatedCount} game(s)`;
+      if (clearedCount > 0) {
+        message += ` and cleared ${clearedCount} invalid reference(s)`;
+      }
+      alert(message + '!');
     } catch (error) {
       alert('Error calculating Player of the Game: ' + error.message);
     } finally {
