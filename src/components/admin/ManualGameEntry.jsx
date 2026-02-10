@@ -56,8 +56,14 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         };
       });
 
-      // Calculate Player of the Game automatically
-      const playerOfGameId = findPlayerOfGame(statsForDb);
+      // Calculate Player of the Game automatically from winning team
+      const gameForPOG = {
+        home_team_id: data.home_team_id,
+        away_team_id: data.away_team_id,
+        home_score: data.home_score,
+        away_score: data.away_score
+      };
+      const playerOfGameId = findPlayerOfGame(statsForDb, gameForPOG);
 
       // Create game
       const game = await base44.entities.Game.create({
