@@ -172,6 +172,68 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     );
   };
 
+  const fileInputRef = useRef(null);
+
+  const handleCsvImport = async (e, teamId) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const lines = text.trim().split('\n');
+      
+      const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
+      const nameIdx = headers.findIndex(h => h === 'NAME');
+      const ptsIdx = headers.findIndex(h => h === 'PTS');
+      const tptIdx = headers.findIndex(h => h === '3PT');
+      const ftIdx = headers.findIndex(h => h === 'FT');
+      const astIdx = headers.findIndex(h => h === 'AST');
+      const stlIdx = headers.findIndex(h => h === 'STL');
+      const orebIdx = headers.findIndex(h => h === 'OREB');
+      const drebIdx = headers.findIndex(h => h === 'DREB');
+      const toIdx = headers.findIndex(h => h === 'TO');
+      const foulIdx = headers.findIndex(h => h === 'FOUL');
+      const tfIdx = headers.findIndex(h => h === 'TF');
+      const unspoIdx = headers.findIndex(h => h === 'UNSPO');
+
+      setPlayerStats(prev =>
+        prev.map(ps => {
+          if (ps.team_id !== teamId) return ps;
+
+          const playerRow = lines.slice(1).find(line => {
+            const cols = line.split(',').map(c => c.trim());
+            return cols[nameIdx]?.toLowerCase() === ps.player_name.toLowerCase();
+          });
+
+          if (!playerRow) return ps;
+
+          const cols = playerRow.split(',').map(c => c.trim());
+          return {
+            ...ps,
+            stats: {
+              ...ps.stats,
+              total_points: parseInt(cols[ptsIdx]) || 0,
+              points_3: parseInt(cols[tptIdx]) || 0,
+              free_throws: parseInt(cols[ftIdx]) || 0,
+              assists: parseInt(cols[astIdx]) || 0,
+              steals: parseInt(cols[stlIdx]) || 0,
+              offensive_rebounds: parseInt(cols[orebIdx]) || 0,
+              defensive_rebounds: parseInt(cols[drebIdx]) || 0,
+              turnovers: parseInt(cols[toIdx]) || 0,
+              fouls: parseInt(cols[foulIdx]) || 0,
+              technical_fouls: parseInt(cols[tfIdx]) || 0,
+              unsportsmanlike_fouls: parseInt(cols[unspoIdx]) || 0,
+            }
+          };
+        })
+      );
+    } catch (error) {
+      alert("Error reading CSV file. Ensure it has columns: Name, PTS, 3PT, FT, AST, STL, OREB, DREB, TO, FOUL, TF, UNSPO");
+    }
+
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const calculateScores = () => {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
