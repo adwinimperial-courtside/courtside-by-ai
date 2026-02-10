@@ -135,13 +135,13 @@ export default function StatisticsPage() {
                   <SelectValue placeholder="Select league" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Leagues</SelectItem>
-                  {leagues.map(league => (
-                    <SelectItem key={league.id} value={league.id}>
-                      {league.name} ({league.season})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                   <SelectItem value="all">All Leagues</SelectItem>
+                   {assignedLeagues.map(league => (
+                     <SelectItem key={league.id} value={league.id}>
+                       {league.name} ({league.season})
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
               </Select>
             </div>
             <div>
