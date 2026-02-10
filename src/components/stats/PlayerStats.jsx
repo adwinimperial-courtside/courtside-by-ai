@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User } from "lucide-react";
+import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 export default function PlayerStats({ players, teams, stats }) {
+  const [sortField, setSortField] = useState("points");
+  const [sortDirection, setSortDirection] = useState("desc");
+
   const playerAggregates = players.map(player => {
     const playerStats = stats.filter(s => s.player_id === player.id);
     const team = teams.find(t => t.id === player.team_id);
@@ -32,7 +35,31 @@ export default function PlayerStats({ players, teams, stats }) {
       rpg: totals.games > 0 ? (totals.rebounds / totals.games).toFixed(1) : '0.0',
       apg: totals.games > 0 ? (totals.assists / totals.games).toFixed(1) : '0.0'
     };
-  }).filter(p => p.games > 0).sort((a, b) => b.points - a.points);
+  }).filter(p => p.games > 0);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
+
+  const sortedData = [...playerAggregates].sort((a, b) => {
+    const aVal = typeof a[sortField] === 'string' ? parseFloat(a[sortField]) : a[sortField];
+    const bVal = typeof b[sortField] === 'string' ? parseFloat(b[sortField]) : b[sortField];
+    
+    if (sortDirection === "asc") {
+      return aVal - bVal;
+    }
+    return bVal - aVal;
+  });
+
+  const SortIcon = ({ field }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4 opacity-40" />;
+    return sortDirection === "asc" ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />;
+  };
 
   return (
     <Card className="border-slate-200">
