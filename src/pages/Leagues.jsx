@@ -44,6 +44,13 @@ export default function LeaguesPage() {
     },
   });
 
+  const setDefaultLeagueMutation = useMutation({
+    mutationFn: (leagueId) => base44.auth.updateMe({ default_league_id: leagueId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user'] });
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
