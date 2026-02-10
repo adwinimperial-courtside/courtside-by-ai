@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Shield } from "lucide-react";
+import TeamLogo from "../teams/TeamLogo";
 
 export default function TeamStats({ teams, games, stats, leagues }) {
   const teamStatistics = teams.map(team => {
@@ -56,7 +57,7 @@ export default function TeamStats({ teams, games, stats, leagues }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Team</TableHead>
-                  <TableHead>League</TableHead>
+                  <TableHead className="hidden md:table-cell">League</TableHead>
                   <TableHead className="text-center">GP</TableHead>
                   <TableHead className="text-center">PTS</TableHead>
                   <TableHead className="text-center">REB</TableHead>
@@ -74,17 +75,12 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                   return (
                     <TableRow key={team.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                            style={{ backgroundColor: team.color || '#f97316' }}
-                          >
-                            {team.name?.[0]}
-                          </div>
-                          <span className="font-medium">{team.name}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <TeamLogo team={team} size="sm" />
+                          <span className="font-medium truncate text-sm md:text-base">{team.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-600">{league?.name}</TableCell>
+                      <TableCell className="hidden md:table-cell text-slate-600 text-sm">{league?.name}</TableCell>
                       <TableCell className="text-center">{team.gamesPlayed}</TableCell>
                       <TableCell className="text-center font-semibold text-purple-600">{team.ppg}</TableCell>
                       <TableCell className="text-center">{team.rpg}</TableCell>

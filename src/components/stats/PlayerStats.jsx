@@ -76,10 +76,10 @@ export default function PlayerStats({ players, teams, stats }) {
            <div className="overflow-x-auto">
              <Table>
                <TableHeader>
-                 <TableRow>
-                   <TableHead>Player</TableHead>
-                   <TableHead>Team</TableHead>
-                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("games")}>
+                  <TableRow>
+                    <TableHead>Player</TableHead>
+                    <TableHead className="hidden md:table-cell">Team</TableHead>
+                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("games")}>
                      <div className="flex items-center justify-center gap-1">GP <SortIcon field="games" /></div>
                    </TableHead>
                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("ppg")}>
@@ -124,17 +124,17 @@ export default function PlayerStats({ players, teams, stats }) {
                  {sortedData.map((player) => (
                   <TableRow key={player.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                           style={{ backgroundColor: player.team?.color || '#f97316' }}
                         >
                           {player.jersey_number}
                         </div>
-                        <span className="font-medium">{player.name}</span>
+                        <span className="font-medium truncate text-sm md:text-base">{player.name}</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-slate-600">{player.team?.name}</TableCell>
+                    <TableCell className="hidden md:table-cell text-slate-600 text-sm">{player.team?.name}</TableCell>
                     <TableCell className="text-center">{player.games}</TableCell>
                     <TableCell className="text-center font-semibold">{player.ppg}</TableCell>
                     <TableCell className="text-center">{(player.points_2 / player.games).toFixed(1)}</TableCell>
