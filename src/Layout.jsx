@@ -57,6 +57,13 @@ const adminItems = [
   icon: Settings
 }];
 
+const ownerItems = [
+{
+  title: "Owner Tools",
+  url: createPageUrl("OwnerTools"),
+  icon: Settings
+}];
+
 
 export default function Layout({ children }) {
   const location = useLocation();
