@@ -120,6 +120,12 @@ export default function Layout({ children }) {
     return [];
   };
 
+  const getVisibleOwnerItems = () => {
+    if (!currentUser) return [];
+    if (currentUser.user_type === "app_admin") return ownerItems;
+    return [];
+  };
+
   const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer";
 
   const handleLogout = () => {
