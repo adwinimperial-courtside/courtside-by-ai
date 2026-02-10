@@ -256,7 +256,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
                         </Select>
                       </TableCell>
                       <TableCell>
-                        {row.id && (
+                        {row.id && !isViewer && (
                           <Button
                             size="sm"
                             variant="ghost"
