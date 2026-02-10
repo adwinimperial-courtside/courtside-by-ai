@@ -17,6 +17,19 @@ export default function LiveGamePage() {
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [homeStarters, setHomeStarters] = useState([]);
   const [awayStarters, setAwayStarters] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: games = [], isLoading: gamesLoading } = useQuery({
     queryKey: ['games'],
