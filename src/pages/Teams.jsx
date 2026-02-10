@@ -172,23 +172,23 @@ export default function TeamsPage() {
           </Button>
         </div>
 
-        {leagues.length > 0 && (
-          <div className="mb-8">
-            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-              <SelectTrigger className="w-full sm:w-64 h-12 bg-white border-slate-200">
-                <SelectValue placeholder="Filter by league" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leagues</SelectItem>
-                {leagues.map(league => (
-                  <SelectItem key={league.id} value={league.id}>
-                    {league.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {assignedLeagues.length > 0 && (
+           <div className="mb-8">
+             <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+               <SelectTrigger className="w-full sm:w-64 h-12 bg-white border-slate-200">
+                 <SelectValue placeholder="Filter by league" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="all">All Leagues</SelectItem>
+                 {assignedLeagues.map(league => (
+                   <SelectItem key={league.id} value={league.id}>
+                     {league.name}
+                   </SelectItem>
+                 ))}
+               </SelectContent>
+             </Select>
+           </div>
+         )}
 
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
