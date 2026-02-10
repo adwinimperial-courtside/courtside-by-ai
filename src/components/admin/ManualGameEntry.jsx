@@ -108,12 +108,11 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
       return game;
     },
-    onSuccess: () => {
+    onSuccess: (game) => {
       queryClient.invalidateQueries({ queryKey: ['games'] });
       queryClient.invalidateQueries({ queryKey: ['playerStats'] });
       queryClient.invalidateQueries({ queryKey: ['teams'] });
-      alert('Game added successfully!');
-      onClose();
+      setConfirmationData(game);
     },
   });
 
