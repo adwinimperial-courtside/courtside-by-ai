@@ -95,7 +95,7 @@ export default function TeamDetailView({ team, onBack }) {
             </div>
             </div>
 
-            <PlayerManagement teamId={team.id} team={team} />
+            <PlayerManagement teamId={team.id} team={team} userType={currentUser?.user_type} />
       </div>
     </div>
   );
