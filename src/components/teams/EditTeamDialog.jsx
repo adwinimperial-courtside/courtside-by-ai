@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { Upload } from "lucide-react";
-import PlayerTableInput from "./PlayerTableInput";
 
 const TEAM_COLORS = [
   { name: "Orange", value: "#f97316" },
@@ -29,9 +28,9 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
     color: "#f97316",
     logo_url: "",
     head_coach: "",
-    manager: ""
+    manager: "",
+    team_captain: ""
   });
-  const [players, setPlayers] = useState([]);
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
@@ -41,20 +40,15 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
         color: team.color || "#f97316",
         logo_url: team.logo_url || "",
         head_coach: team.head_coach || "",
-        manager: team.manager || ""
+        manager: team.manager || "",
+        team_captain: team.team_captain || ""
       });
     }
   }, [team, open]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const validPlayers = players.filter(p => p.name && p.jersey_number);
-    const submitData = { ...formData };
-    if (validPlayers.length > 0) {
-      submitData.players = validPlayers;
-    }
-    onSubmit(submitData);
-    setPlayers([]);
+    onSubmit(formData);
   };
 
   const handleLogoUpload = async (e) => {
@@ -173,12 +167,6 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
                 />
               ))}
             </div>
-          </div>
-
-          <div>
-            <Label>Add/Edit Players</Label>
-            <PlayerTableInput players={players} onChange={setPlayers} />
-            <p className="text-xs text-slate-500 mt-2">Only filled rows will be added as new players</p>
           </div>
 
           <DialogFooter>
