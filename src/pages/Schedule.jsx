@@ -12,7 +12,7 @@ import GameCard from "../components/schedule/GameCard";
 
 export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [selectedLeague, setSelectedLeague] = useState("all");
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
@@ -23,6 +23,11 @@ export default function SchedulePage() {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
+        if (user?.default_league_id) {
+          setSelectedLeague(user.default_league_id);
+        } else {
+          setSelectedLeague("all");
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       }
