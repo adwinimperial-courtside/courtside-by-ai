@@ -9,33 +9,33 @@ export default function LeagueCard({ league, userType }) {
   const isViewer = userType === "viewer";
 
   const cardContent = (
-    <Card className="group hover:shadow-xl transition-all duration-300 border-slate-200 bg-white overflow-hidden cursor-pointer">
-      <div className="h-2 bg-gradient-to-r from-orange-500 to-orange-600" />
+    <Card className="group hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden cursor-pointer bg-gradient-to-br from-indigo-50 to-blue-50">
+      <div className="h-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600" />
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
            <div className="flex-1">
-             <CardTitle className="text-xl font-bold text-slate-900 mb-1 group-hover:text-orange-600 transition-colors">
+             <CardTitle className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-1 group-hover:from-indigo-700 group-hover:to-blue-700 transition-all">
                {league.name}
              </CardTitle>
-             <div className="flex items-center gap-2 text-sm text-slate-500">
-               <Calendar className="w-4 h-4" />
+             <div className="flex items-center gap-2 text-sm text-slate-600">
+               <Calendar className="w-4 h-4 text-indigo-500" />
                <span>{league.season}</span>
              </div>
            </div>
-          <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center group-hover:bg-orange-100 transition-colors">
-            <Trophy className="w-6 h-6 text-orange-600" />
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg">
+            <Trophy className="w-6 h-6 text-white" />
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {league.description && (
-          <p className="text-slate-600 text-sm line-clamp-2 mb-4">
+          <p className="text-slate-700 text-sm line-clamp-2 mb-4">
             {league.description}
           </p>
         )}
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <Users className="w-4 h-4" />
-          <span>{isViewer ? "View league details" : "Manage teams and schedule"}</span>
+        <div className="flex items-center gap-2 text-sm text-slate-600">
+          <Users className="w-4 h-4 text-indigo-500" />
+          <span className="font-medium">{isViewer ? "View league details" : "Manage teams and schedule"}</span>
         </div>
       </CardContent>
     </Card>
