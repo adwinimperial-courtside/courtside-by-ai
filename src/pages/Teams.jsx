@@ -137,7 +137,7 @@ export default function TeamsPage() {
   });
 
   const filteredTeams = selectedLeague === "all" 
-    ? teams 
+    ? teams.filter(team => assignedLeagues.some(l => l.id === team.league_id))
     : teams.filter(team => team.league_id === selectedLeague);
 
   if (selectedTeam) {
