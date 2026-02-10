@@ -122,37 +122,35 @@ export default function PlayerManagement({ teamId, team }) {
 
     setIsUploading(true);
     try {
-      const uploadResponse = await base44.integrations.Core.UploadFile({ file });
+      const text = await file.text();
+      const lines = text.trim().split('\n');
       
-      const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url: uploadResponse.file_url,
-        json_schema: {
-          type: "object",
-          properties: {
-            Name: { type: "string" },
-            Number: { type: "number" }
-          }
-        }
-      });
-
-      if (extractedData.status === "success" && extractedData.output) {
-        const importedRows = Array.isArray(extractedData.output) 
-          ? extractedData.output 
-          : [extractedData.output];
-        
-        const mappedRows = importedRows.map(row => ({
-          id: null,
-          name: row.Name || "",
-          jersey_number: row.Number || "",
-          position: "PG"
-        }));
-
-        setTableData([...tableData, ...mappedRows]);
-      } else {
-        console.error("Extraction failed:", extractedData);
+      // Parse CSV/XLSX-exported-as-CSV format
+      const headers = lines[0].split(',').map(h => h.trim());
+      const nameIndex = headers.findIndex(h => h.toLowerCase().includes('name'));
+      const numberIndex = headers.findIndex(h => h.toLowerCase().includes('number'));
+      
+      if (nameIndex === -1 || numberIndex === -1) {
+        alert('File must contain "Name" and "Number" columns');
+        return;
       }
+
+      const mappedRows = lines.slice(1)
+        .map(line => {
+          const cols = line.split(',').map(c => c.trim());
+          return {
+            id: null,
+            name: cols[nameIndex] || "",
+            jersey_number: parseInt(cols[numberIndex]) || "",
+            position: "PG"
+          };
+        })
+        .filter(row => row.name && row.jersey_number);
+
+      setTableData([...tableData, ...mappedRows]);
     } catch (error) {
-      console.error("Error processing file:", error);
+      console.error("Error parsing file:", error);
+      alert("Error reading file. Please ensure it's a valid CSV file.");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
