@@ -258,12 +258,14 @@ export default function AdminTools() {
           </div>
 
           {/* User Management Section */}
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">User Management</h2>
-            <div className="grid gap-4">
-              <UserLeagueAssignment />
+          {currentUser?.user_type === "app_admin" && (
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">User Management</h2>
+              <div className="grid gap-4">
+                <UserLeagueAssignment />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Recalculate Section */}
            <div>
