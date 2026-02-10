@@ -27,14 +27,17 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     name: "",
     league_id: "",
     color: "#f97316",
-    logo_url: ""
+    logo_url: "",
+    head_coach: "",
+    manager: "",
+    team_captain: ""
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "" });
+    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "", team_captain: "" });
   };
 
   const handleLogoUpload = async (e) => {
@@ -88,6 +91,26 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label htmlFor="head_coach">Head Coach (Optional)</Label>
+            <Input
+              id="head_coach"
+              value={formData.head_coach}
+              onChange={(e) => setFormData({ ...formData, head_coach: e.target.value })}
+              placeholder="e.g., John Smith"
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="manager">Manager (Optional)</Label>
+            <Input
+              id="manager"
+              value={formData.manager}
+              onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
+              placeholder="e.g., Jane Doe"
+              className="mt-1.5"
+            />
           </div>
           <div>
             <Label htmlFor="logo">Team Logo (Optional)</Label>
