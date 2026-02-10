@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import TeamLogo from "../teams/TeamLogo";
@@ -123,6 +123,18 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   </div>
                 )}
               </div>
+
+              {liveGame.status === 'completed' && liveGame.player_of_game && (
+                <div className="mt-3 pt-3 border-t border-slate-200">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Trophy className="w-4 h-4 text-amber-500" />
+                    <span className="text-slate-600">Player of the Game:</span>
+                    <span className="font-semibold text-slate-900">
+                      {players?.find(p => p.id === liveGame.player_of_game)?.name || 'Unknown'}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>
