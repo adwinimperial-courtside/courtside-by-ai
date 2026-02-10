@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Crown } from "lucide-react";
+import { Plus, Edit2, Trash2, Crown, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,8 @@ export default function PlayerManagement({ teamId, team }) {
   );
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', teamId],
@@ -112,6 +114,47 @@ export default function PlayerManagement({ teamId, team }) {
 
   const handleAddRow = () => {
     setTableData([...tableData, { id: null, name: "", jersey_number: "", position: "PG" }]);
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileUrl = await base44.integrations.Core.UploadFile({ file });
+      
+      const extractedData = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url: fileUrl.file_url,
+        json_schema: {
+          type: "object",
+          properties: {
+            name: { type: "string" },
+            number: { type: "number" }
+          }
+        }
+      });
+
+      if (extractedData.status === "success" && extractedData.output) {
+        const importedRows = Array.isArray(extractedData.output) 
+          ? extractedData.output 
+          : [extractedData.output];
+        
+        const mappedRows = importedRows.map(row => ({
+          id: null,
+          name: row.name || "",
+          jersey_number: row.number || "",
+          position: "PG"
+        }));
+
+        setTableData([...tableData, ...mappedRows]);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const isCaptain = (playerId) => team?.team_captain === playerId;
@@ -223,16 +266,32 @@ export default function PlayerManagement({ teamId, team }) {
             </div>
           )}
           {!isLoading && (
-            <div className="flex justify-center pt-4">
+            <div className="flex justify-center gap-3 pt-4">
               <Button
                 onClick={handleAddRow}
                 variant="outline"
                 className="border-slate-300 text-slate-700 hover:bg-slate-50"
-                disabled={isSaving}
+                disabled={isSaving || isUploading}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add More Rows
               </Button>
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                disabled={isSaving || isUploading}
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                {isUploading ? "Uploading..." : "Import CSV/Excel"}
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
             </div>
           )}
         </CardContent>
