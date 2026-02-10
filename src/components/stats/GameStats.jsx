@@ -91,16 +91,20 @@ export default function GameStats({ games, teams, players, stats }) {
                     {/* Score Display */}
                     <div className="grid grid-cols-[1fr,auto,1fr] gap-4 items-center mb-6">
                       {/* Away Team */}
-                      <div className="text-right">
-                        <div className="flex items-center justify-end gap-3 mb-2">
-                          <span className="text-lg font-semibold text-slate-900">{awayTeam?.name}</span>
-                          <div 
-                            className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                            style={{ backgroundColor: awayTeam?.color || '#f97316' }}
-                          >
-                            {awayTeam?.name?.[0]}
-                          </div>
-                        </div>
+                       <div className="text-right">
+                         <div className="flex items-center justify-end gap-3 mb-2">
+                           <span className="text-lg font-semibold text-slate-900">{awayTeam?.name}</span>
+                           {awayTeam?.logo_url ? (
+                             <img src={awayTeam.logo_url} alt={awayTeam.name} className="w-10 h-10 rounded-lg object-cover" />
+                           ) : (
+                             <div 
+                               className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                               style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                             >
+                               {awayTeam?.name?.[0]}
+                             </div>
+                           )}
+                         </div>
                         <p className="text-sm text-slate-500">
                           {awayTeamStats.rebounds} REB • {awayTeamStats.assists} AST • {awayTeamStats.fouls} FOULS
                         </p>
