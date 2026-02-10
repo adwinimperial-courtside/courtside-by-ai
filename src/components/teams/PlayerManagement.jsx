@@ -147,7 +147,9 @@ export default function PlayerManagement({ teamId, team }) {
         })
         .filter(row => row.name && row.jersey_number);
 
-      setTableData([...tableData, ...mappedRows]);
+      // Remove empty rows and add imported data
+      const filteredData = tableData.filter(row => row.name && row.jersey_number);
+      setTableData([...filteredData, ...mappedRows]);
     } catch (error) {
       console.error("Error parsing file:", error);
       alert("Error reading file. Please ensure it's a valid CSV file.");
