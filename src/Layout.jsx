@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Shield, Eye, LogOut, Trophy } from "lucide-react";
+import { Shield, Eye, LogOut, Trophy, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -104,7 +104,11 @@ export default function Layout({ children }) {
         <main className="flex-1 flex flex-col">
           <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden sticky top-0 z-10">
             <div className="flex items-center gap-4">
-              <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200" />
+              <Button variant="ghost" asChild className="p-0 h-12 w-12 hover:bg-orange-100 rounded-xl transition-colors">
+                <SidebarTrigger>
+                  <Circle className="w-6 h-6 text-orange-500 fill-orange-500" />
+                </SidebarTrigger>
+              </Button>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
