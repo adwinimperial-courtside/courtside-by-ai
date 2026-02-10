@@ -34,12 +34,28 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
             {league.description}
           </p>
         )}
-        {!isViewer && (
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <Users className="w-4 h-4 text-indigo-500" />
-            <span className="font-medium">Manage teams and schedule</span>
-          </div>
-        )}
+        <div className="space-y-3">
+          {!isViewer && (
+            <div className="flex items-center gap-2 text-sm text-slate-600">
+              <Users className="w-4 h-4 text-indigo-500" />
+              <span className="font-medium">Manage teams and schedule</span>
+            </div>
+          )}
+          {multipleLeagues && (
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                onSetDefault(league.id);
+              }}
+              variant={isDefault ? "default" : "outline"}
+              size="sm"
+              className={`w-full ${isDefault ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}
+            >
+              <Star className={`w-4 h-4 mr-2 ${isDefault ? "fill-white" : ""}`} />
+              {isDefault ? "Default League" : "Set as Default"}
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
