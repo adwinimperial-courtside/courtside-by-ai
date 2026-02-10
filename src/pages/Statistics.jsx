@@ -13,6 +13,7 @@ import GameStats from "../components/stats/GameStats";
 export default function StatisticsPage() {
   const [selectedLeague, setSelectedLeague] = useState("all");
   const [selectedTeam, setSelectedTeam] = useState("all");
+  const [selectedPlayer, setSelectedPlayer] = useState("all");
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
