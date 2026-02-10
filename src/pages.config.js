@@ -53,11 +53,11 @@ import Home from './pages/Home';
 import LeagueIDs from './pages/LeagueIDs';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
+import OwnerTools from './pages/OwnerTools';
 import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
-import OwnerTools from './pages/OwnerTools';
 import __Layout from './Layout.jsx';
 
 
@@ -68,11 +68,11 @@ export const PAGES = {
     "LeagueIDs": LeagueIDs,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
+    "OwnerTools": OwnerTools,
     "Schedule": Schedule,
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
-    "OwnerTools": OwnerTools,
 }
 
 export const pagesConfig = {

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Settings, Key } from "lucide-react";
-import UserLeagueAssignment from "../components/admin/UserLeagueAssignment";
+import UserManagement from "../components/admin/UserManagement";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
