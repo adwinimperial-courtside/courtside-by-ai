@@ -147,8 +147,22 @@ export default function PlayerManagement({ teamId, team }) {
         })
         .filter(row => row.name && row.jersey_number);
 
-      // Remove empty rows and add imported data
-      const filteredData = tableData.filter(row => row.name && row.jersey_number);
+      // Remove empty rows and duplicates, keeping captain if exists
+      let filteredData = tableData.filter(row => row.name && row.jersey_number);
+      
+      mappedRows.forEach(newRow => {
+        const duplicateIndex = filteredData.findIndex(
+          row => row.name === newRow.name && row.jersey_number === newRow.jersey_number
+        );
+        if (duplicateIndex !== -1) {
+          const existingRow = filteredData[duplicateIndex];
+          // Keep the one with captain flag, remove the duplicate
+          if (!existingRow.is_captain) {
+            filteredData.splice(duplicateIndex, 1);
+          }
+        }
+      });
+
       setTableData([...filteredData, ...mappedRows]);
     } catch (error) {
       console.error("Error parsing file:", error);
