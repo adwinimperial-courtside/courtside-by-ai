@@ -244,8 +244,16 @@ export default function AdminTools() {
             </div>
           </div>
 
-          {/* Recalculate Section */}
+          {/* User Management Section */}
           <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">User Management</h2>
+            <div className="grid gap-4">
+              <UserLeagueAssignment />
+            </div>
+          </div>
+
+          {/* Recalculate Section */}
+           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recalculate</h2>
             <div className="grid gap-4">
               <Card className="border-slate-200 shadow-lg">
