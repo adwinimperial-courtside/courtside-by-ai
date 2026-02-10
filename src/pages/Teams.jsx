@@ -51,37 +51,7 @@ export default function TeamsPage() {
 
   const createTeamMutation = useMutation({
     mutationFn: async (teamData) => {
-      const { captain, players: newPlayers, ...teamInfo } = teamData;
-      
-      // Create the team
-      const newTeam = await base44.entities.Team.create(teamInfo);
-      
-      // If captain data is provided, create the captain as a player and update team
-      if (captain && captain.name && captain.jersey_number) {
-        const captainPlayer = await base44.entities.Player.create({
-          name: captain.name,
-          team_id: newTeam.id,
-          jersey_number: captain.jersey_number,
-          position: captain.position
-        });
-        
-        // Update team with captain reference
-        await base44.entities.Team.update(newTeam.id, {
-          team_captain: captainPlayer.id
-        });
-      }
-
-      // Create players if provided
-      if (newPlayers && newPlayers.length > 0) {
-        const playerData = newPlayers.map(p => ({
-          name: p.name,
-          team_id: newTeam.id,
-          jersey_number: p.jersey_number,
-          position: p.position
-        }));
-        await base44.entities.Player.bulkCreate(playerData);
-      }
-      
+      const newTeam = await base44.entities.Team.create(teamData);
       return newTeam;
     },
     onSuccess: () => {
@@ -93,22 +63,7 @@ export default function TeamsPage() {
 
   const updateTeamMutation = useMutation({
     mutationFn: async (teamData) => {
-      const { players: newPlayers, ...teamInfo } = teamData;
-      
-      // Update the team
-      await base44.entities.Team.update(teamToEdit.id, teamInfo);
-      
-      // Create new players if provided
-      if (newPlayers && newPlayers.length > 0) {
-        const playerData = newPlayers.map(p => ({
-          name: p.name,
-          team_id: teamToEdit.id,
-          jersey_number: p.jersey_number,
-          position: p.position
-        }));
-        await base44.entities.Player.bulkCreate(playerData);
-      }
-      
+      await base44.entities.Team.update(teamToEdit.id, teamData);
       return true;
     },
     onSuccess: () => {
