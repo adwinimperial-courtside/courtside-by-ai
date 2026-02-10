@@ -106,8 +106,12 @@ export default function PlayerManagement({ teamId, team }) {
       setPlayerToDelete(row);
     } else {
       const newData = tableData.filter((_, i) => i !== index);
-      setTableData([...newData, { id: null, name: "", jersey_number: "", position: "PG" }]);
+      setTableData(newData);
     }
+  };
+
+  const handleAddRow = () => {
+    setTableData([...tableData, { id: null, name: "", jersey_number: "", position: "PG" }]);
   };
 
   const isCaptain = (playerId) => team?.team_captain === playerId;
@@ -216,6 +220,19 @@ export default function PlayerManagement({ teamId, team }) {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {!isLoading && (
+            <div className="flex justify-center pt-4">
+              <Button
+                onClick={handleAddRow}
+                variant="outline"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                disabled={isSaving}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add More Rows
+              </Button>
             </div>
           )}
         </CardContent>
