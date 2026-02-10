@@ -26,6 +26,12 @@ export default function LeaguesPage() {
     fetchUser();
   }, []);
 
+  React.useEffect(() => {
+    if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
+      setDefaultLeagueMutation.mutate(filteredLeagues[0].id);
+    }
+  }, [filteredLeagues, currentUser]);
+
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list('-created_date'),
