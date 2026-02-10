@@ -37,9 +37,32 @@ export default function TeamsPage() {
   });
 
   const createTeamMutation = useMutation({
-    mutationFn: (teamData) => base44.entities.Team.create(teamData),
+    mutationFn: async (teamData) => {
+      const { captain, ...teamInfo } = teamData;
+      
+      // Create the team
+      const newTeam = await base44.entities.Team.create(teamInfo);
+      
+      // If captain data is provided, create the captain as a player and update team
+      if (captain && captain.name && captain.jersey_number) {
+        const captainPlayer = await base44.entities.Player.create({
+          name: captain.name,
+          team_id: newTeam.id,
+          jersey_number: captain.jersey_number,
+          position: captain.position
+        });
+        
+        // Update team with captain reference
+        await base44.entities.Team.update(newTeam.id, {
+          team_captain: captainPlayer.id
+        });
+      }
+      
+      return newTeam;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowCreateDialog(false);
     },
   });
