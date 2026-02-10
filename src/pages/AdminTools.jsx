@@ -99,6 +99,7 @@ export default function AdminTools() {
       }
 
       queryClient.invalidateQueries({ queryKey: ['games'] });
+      queryClient.invalidateQueries({ queryKey: ['players'] });
       alert(`Successfully calculated Player of the Game for ${updatedCount} game(s)!`);
     } catch (error) {
       alert('Error calculating Player of the Game: ' + error.message);

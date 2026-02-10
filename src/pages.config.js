@@ -52,9 +52,9 @@ import Home from './pages/Home';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
 import Schedule from './pages/Schedule';
+import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
-import Standings from './pages/Standings';
 import __Layout from './Layout.jsx';
 
 
@@ -64,9 +64,9 @@ export const PAGES = {
     "Leagues": Leagues,
     "LiveGame": LiveGame,
     "Schedule": Schedule,
+    "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
-    "Standings": Standings,
 }
 
 export const pagesConfig = {
