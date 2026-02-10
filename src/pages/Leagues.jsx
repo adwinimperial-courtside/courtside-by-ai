@@ -72,30 +72,23 @@ export default function LeaguesPage() {
               <div key={i} className="h-64 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
-        ) : leagues.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4">
-            <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
-              <Trophy className="w-12 h-12 text-slate-400" />
-            </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Leagues Yet</h3>
-            <p className="text-slate-600 text-center mb-8 max-w-md">
-              Get started by creating your first basketball league
-            </p>
-            <Button 
-              onClick={() => setShowCreateDialog(true)}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Your First League
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {leagues.map((league) => (
-              <LeagueCard key={league.id} league={league} />
-            ))}
-          </div>
-        )}
+        ) : filteredLeagues.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-20 px-4">
+             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+               <Trophy className="w-12 h-12 text-slate-400" />
+             </div>
+             <h3 className="text-2xl font-bold text-slate-900 mb-2">No Leagues Assigned</h3>
+             <p className="text-slate-600 text-center mb-8 max-w-md">
+               You haven't been assigned to any leagues yet. Contact an admin to get assigned.
+             </p>
+           </div>
+         ) : (
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+             {filteredLeagues.map((league) => (
+               <LeagueCard key={league.id} league={league} />
+             ))}
+           </div>
+         )}
 
         <CreateLeagueDialog
           open={showCreateDialog}
