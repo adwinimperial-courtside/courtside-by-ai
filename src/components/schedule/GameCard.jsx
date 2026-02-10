@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import TeamLogo from "../teams/TeamLogo";
 
 export default function GameCard({ game, teams, leagues, players, stats, onStartGame }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -92,12 +93,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-                    >
-                      {homeTeam?.name?.[0]}
-                    </div>
+                    <TeamLogo team={homeTeam} size="md" />
                     <span className="font-semibold text-slate-900">{homeTeam?.name}</span>
                   </div>
                   {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
@@ -106,12 +102,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div 
-                      className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: awayTeam?.color || '#f97316' }}
-                    >
-                      {awayTeam?.name?.[0]}
-                    </div>
+                    <TeamLogo team={awayTeam} size="md" />
                     <span className="font-semibold text-slate-900">{awayTeam?.name}</span>
                   </div>
                   {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
@@ -181,12 +172,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               {/* Away Team Stats */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                    style={{ backgroundColor: awayTeam?.color || '#f97316' }}
-                  >
-                    {awayTeam?.name?.[0]}
-                  </div>
+                  <TeamLogo team={awayTeam} size="md" />
                   <h4 className="font-semibold text-slate-900">{awayTeam?.name}</h4>
                   <span className="text-sm text-slate-500 ml-auto">
                     {awayTeamStats.rebounds} REB • {awayTeamStats.assists} AST
@@ -267,12 +253,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               {/* Home Team Stats */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                    style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-                  >
-                    {homeTeam?.name?.[0]}
-                  </div>
+                  <TeamLogo team={homeTeam} size="md" />
                   <h4 className="font-semibold text-slate-900">{homeTeam?.name}</h4>
                   <span className="text-sm text-slate-500 ml-auto">
                     {homeTeamStats.rebounds} REB • {homeTeamStats.assists} AST

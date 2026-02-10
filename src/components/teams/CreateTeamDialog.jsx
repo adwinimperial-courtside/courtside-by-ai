@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { base44 } from "@/api/base44Client";
+import { Upload } from "lucide-react";
 
 const TEAM_COLORS = [
   { name: "Orange", value: "#f97316" },
@@ -24,13 +26,30 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
   const [formData, setFormData] = useState({
     name: "",
     league_id: "",
-    color: "#f97316"
+    color: "#f97316",
+    logo_url: ""
   });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
-    setFormData({ name: "", league_id: "", color: "#f97316" });
+    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "" });
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setFormData({ ...formData, logo_url: file_url });
+    } catch (error) {
+      alert("Failed to upload logo: " + error.message);
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   return (
@@ -69,6 +88,45 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label htmlFor="logo">Team Logo (Optional)</Label>
+            <div className="mt-1.5">
+              {formData.logo_url ? (
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={formData.logo_url} 
+                    alt="Team logo" 
+                    className="w-16 h-16 object-cover rounded-lg border-2 border-slate-200"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo_url: "" })}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-slate-400 transition-colors">
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="w-6 h-6 text-slate-400" />
+                    <span className="text-sm text-slate-600">
+                      {uploadingLogo ? "Uploading..." : "Click to upload logo"}
+                    </span>
+                  </div>
+                  <input
+                    id="logo"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoUpload}
+                    disabled={uploadingLogo}
+                  />
+                </label>
+              )}
+            </div>
           </div>
           <div>
             <Label>Team Color</Label>

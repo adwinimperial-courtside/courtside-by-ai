@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Trophy } from "lucide-react";
+import TeamLogo from "../teams/TeamLogo";
 
 export default function TeamStandings({ teams, games, leagues }) {
   const teamStandings = teams.map(team => {
@@ -72,10 +73,7 @@ export default function TeamStandings({ teams, games, leagues }) {
                     <TableCell className="font-semibold">{index + 1}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="w-6 h-6 rounded-md"
-                          style={{ backgroundColor: team.color || '#f97316' }}
-                        />
+                        <TeamLogo team={team} size="sm" />
                         <span className="font-medium">{team.name}</span>
                       </div>
                     </TableCell>
