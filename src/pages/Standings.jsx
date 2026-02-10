@@ -7,7 +7,7 @@ import { Trophy, Filter } from "lucide-react";
 import TeamStandings from "../components/stats/TeamStandings";
 
 export default function StandingsPage() {
-  const [selectedLeague, setSelectedLeague] = useState("all");
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
   React.useEffect(() => {
@@ -15,6 +15,11 @@ export default function StandingsPage() {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
+        if (user?.default_league_id) {
+          setSelectedLeague(user.default_league_id);
+        } else {
+          setSelectedLeague("all");
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       }
