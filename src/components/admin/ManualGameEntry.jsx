@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card } from "@/components/ui/card";
 import { X, Save, Upload } from "lucide-react";
 import { findPlayerOfGame } from "../utils/pogCalculator";
+import GameConfirmationModal from "./GameConfirmationModal";
 
 export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
