@@ -172,7 +172,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     );
   };
 
-  const fileInputRef = useRef(null);
+  const homeFileInputRef = useRef(null);
+  const awayFileInputRef = useRef(null);
 
   const handleCsvImport = async (e, teamId) => {
     const file = e.target.files?.[0];
