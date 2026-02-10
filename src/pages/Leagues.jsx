@@ -11,13 +11,30 @@ import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 
 export default function LeaguesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list('-created_date'),
     initialData: [],
   });
+
+  const filteredLeagues = currentUser?.assigned_league_ids 
+    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
+    : [];
 
   const createLeagueMutation = useMutation({
     mutationFn: (leagueData) => base44.entities.League.create(leagueData),

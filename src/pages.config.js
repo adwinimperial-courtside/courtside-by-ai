@@ -48,29 +48,29 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AdminTools from './pages/AdminTools';
+import AwardLeaders from './pages/AwardLeaders';
 import Home from './pages/Home';
+import LeagueIDs from './pages/LeagueIDs';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
 import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
-import AwardLeaders from './pages/AwardLeaders';
-import LeagueIDs from './pages/LeagueIDs';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "AdminTools": AdminTools,
+    "AwardLeaders": AwardLeaders,
     "Home": Home,
+    "LeagueIDs": LeagueIDs,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
     "Schedule": Schedule,
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
-    "AwardLeaders": AwardLeaders,
-    "LeagueIDs": LeagueIDs,
 }
 
 export const pagesConfig = {
