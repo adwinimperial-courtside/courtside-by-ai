@@ -57,13 +57,15 @@ export default function LeaguesPage() {
             </div>
             <p className="text-slate-600 ml-15">Manage your basketball leagues and competitions</p>
           </div>
-          <Button 
-            onClick={() => setShowCreateDialog(true)}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/30 h-12 px-6"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Create League
-          </Button>
+          {currentUser?.user_type === "app_admin" && (
+             <Button 
+               onClick={() => setShowCreateDialog(true)}
+               className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg shadow-orange-500/30 h-12 px-6"
+             >
+               <Plus className="w-5 h-5 mr-2" />
+               Create League
+             </Button>
+           )}
         </div>
 
         {isLoading ? (
