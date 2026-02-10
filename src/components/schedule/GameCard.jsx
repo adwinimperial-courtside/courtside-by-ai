@@ -233,7 +233,6 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                       <TableRow className="bg-slate-50 font-semibold">
                         <TableCell>TEAM TOTALS</TableCell>
                         <TableCell className="text-center">{liveGame.away_score || 0}</TableCell>
-                        <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
@@ -244,6 +243,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)}</TableCell>
                         <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.fouls || 0), 0)}</TableCell>
+                        <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.technical_fouls || 0), 0)}</TableCell>
+                        <TableCell className="text-center">{awayPlayerStats.reduce((acc, s) => acc + (s.unsportsmanlike_fouls || 0), 0)}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -265,7 +266,6 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                       <TableRow>
                         <TableHead>Player</TableHead>
                         <TableHead className="text-center">PTS</TableHead>
-                        <TableHead className="text-center">2PT</TableHead>
                         <TableHead className="text-center">3PT</TableHead>
                         <TableHead className="text-center">FT</TableHead>
                         <TableHead className="text-center">OREB</TableHead>
@@ -276,6 +276,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                         <TableHead className="text-center">BLK</TableHead>
                         <TableHead className="text-center">TO</TableHead>
                         <TableHead className="text-center">F</TableHead>
+                        <TableHead className="text-center">TF</TableHead>
+                        <TableHead className="text-center">UNSPO</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -297,7 +299,6 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                               </div>
                             </TableCell>
                             <TableCell className="text-center font-semibold">{points}</TableCell>
-                            <TableCell className="text-center">{stat.points_2 || 0}</TableCell>
                             <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
                             <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
                             <TableCell className="text-center">{stat.offensive_rebounds || 0}</TableCell>
@@ -308,13 +309,14 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                             <TableCell className="text-center">{stat.blocks || 0}</TableCell>
                             <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
                             <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                            <TableCell className="text-center">{stat.technical_fouls || 0}</TableCell>
+                            <TableCell className="text-center">{stat.unsportsmanlike_fouls || 0}</TableCell>
                           </TableRow>
                         );
                       })}
                       <TableRow className="bg-slate-50 font-semibold">
                         <TableCell>TEAM TOTALS</TableCell>
                         <TableCell className="text-center">{liveGame.home_score || 0}</TableCell>
-                        <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
@@ -325,6 +327,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)}</TableCell>
                         <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.fouls || 0), 0)}</TableCell>
+                        <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.technical_fouls || 0), 0)}</TableCell>
+                        <TableCell className="text-center">{homePlayerStats.reduce((acc, s) => acc + (s.unsportsmanlike_fouls || 0), 0)}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
