@@ -256,7 +256,7 @@ export default function TeamsPage() {
           onOpenChange={setShowCreateDialog}
           onSubmit={(data) => createTeamMutation.mutate(data)}
           isLoading={createTeamMutation.isPending}
-          leagues={leagues}
+          leagues={assignedLeagues}
         />
 
         <EditTeamDialog
