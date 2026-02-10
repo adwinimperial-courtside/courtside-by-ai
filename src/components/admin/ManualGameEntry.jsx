@@ -17,6 +17,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     home_team_id: "",
     away_team_id: "",
     location: "",
+    player_of_game: "",
     home_score: 0,
     away_score: 0,
   });
@@ -37,6 +38,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         home_score: data.home_score,
         away_score: data.away_score,
         location: data.location || 'Not specified',
+        player_of_game: data.player_of_game || null,
       });
 
       // Create player stats
@@ -303,6 +305,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -333,6 +337,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <th className="px-3 py-2 text-center font-semibold">BLK</th>
                   <th className="px-3 py-2 text-center font-semibold">TO</th>
                   <th className="px-3 py-2 text-center font-semibold">FOULS</th>
+                  <th className="px-3 py-2 text-center font-semibold">TF</th>
+                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
                 </tr>
               </thead>
               <tbody>
@@ -350,12 +356,30 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
+      </div>
+
+      <div className="bg-slate-100 p-4 rounded-lg">
+        <Label className="font-semibold mb-2 block">Player of the Game (Optional)</Label>
+        <Select value={gameData.player_of_game} onValueChange={(value) => setGameData({ ...gameData, player_of_game: value })}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select player of the game" />
+          </SelectTrigger>
+          <SelectContent>
+            {[...homeStats, ...awayStats].map(ps => (
+              <SelectItem key={ps.player_id} value={ps.player_id}>
+                #{ps.jersey_number} {ps.player_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex gap-3">
