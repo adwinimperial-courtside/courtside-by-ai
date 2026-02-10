@@ -33,12 +33,14 @@ export default function SchedulePage() {
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list('-game_date'),
     initialData: [],
+    refetchOnMount: 'always',
   });
 
   const { data: players } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
     initialData: [],
+    refetchOnMount: 'always',
   });
 
   const { data: allStats } = useQuery({
