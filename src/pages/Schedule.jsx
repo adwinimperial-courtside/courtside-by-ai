@@ -86,8 +86,8 @@ export default function SchedulePage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -153,13 +153,13 @@ export default function SchedulePage() {
             </p>
           </div>
         ) : isLoading ? (
-          <div className="space-y-4">
+          <div className="w-full space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : filteredGames.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 px-4">
+          <div className="w-full flex flex-col items-center justify-center py-20 px-4">
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-12 h-12 text-slate-400" />
             </div>
@@ -173,7 +173,7 @@ export default function SchedulePage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="w-full space-y-4">
             {filteredGames.map((game) => (
               <GameCard
                 key={game.id}
