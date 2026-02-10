@@ -13,31 +13,31 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+  SidebarTrigger } from
+"@/components/ui/sidebar";
 
 const navigationItems = [
-  {
-    title: "Leagues",
-    url: createPageUrl("Leagues"),
-    icon: Trophy,
-  },
-  {
-    title: "Teams",
-    url: createPageUrl("Teams"),
-    icon: Users,
-  },
-  {
-    title: "Schedule",
-    url: createPageUrl("Schedule"),
-    icon: Calendar,
-  },
-  {
-    title: "Statistics",
-    url: createPageUrl("Statistics"),
-    icon: BarChart3,
-  },
-];
+{
+  title: "Leagues",
+  url: createPageUrl("Leagues"),
+  icon: Trophy
+},
+{
+  title: "Teams",
+  url: createPageUrl("Teams"),
+  icon: Users
+},
+{
+  title: "Schedule",
+  url: createPageUrl("Schedule"),
+  icon: Calendar
+},
+{
+  title: "Statistics",
+  url: createPageUrl("Statistics"),
+  icon: BarChart3
+}];
+
 
 export default function Layout({ children }) {
   const location = useLocation();
@@ -60,7 +60,7 @@ export default function Layout({ children }) {
                 <Play className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="font-bold text-slate-900 text-lg">BasketStats</h2>
+                <h2 className="font-bold text-slate-900 text-lg">Courtside by AI</h2>
                 <p className="text-xs text-slate-500">Pro League Manager</p>
               </div>
             </div>
@@ -73,21 +73,21 @@ export default function Layout({ children }) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navigationItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton 
-                        asChild 
-                        className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                          location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
-                        }`}
-                      >
+                  {navigationItems.map((item) =>
+                  <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                      asChild
+                      className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
+                      }>
+
                         <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  ))}
+                  )}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -112,6 +112,6 @@ export default function Layout({ children }) {
           </div>
         </main>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>);
+
 }
