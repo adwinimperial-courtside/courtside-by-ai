@@ -65,16 +65,20 @@ export default function PlayerTableInput({ players, onChange }) {
                   />
                 </TableCell>
                 <TableCell className="p-2">
-                  <Input
-                    type="number"
-                    value={player.jersey_number}
-                    onChange={(e) => handlePlayerChange(index, "jersey_number", parseInt(e.target.value) || "")}
-                    placeholder="0"
-                    className="h-8"
-                    min="0"
-                    max="99"
-                  />
-                </TableCell>
+                   <Input
+                     type="text"
+                     inputMode="numeric"
+                     value={player.jersey_number}
+                     onChange={(e) => {
+                       const val = e.target.value;
+                       if (val === '' || /^\d{0,2}$/.test(val)) {
+                         handlePlayerChange(index, "jersey_number", val);
+                       }
+                     }}
+                     placeholder="0"
+                     className="h-8"
+                   />
+                 </TableCell>
                 <TableCell className="p-2">
                   <Select
                     value={player.position}
