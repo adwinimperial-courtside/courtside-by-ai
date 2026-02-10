@@ -218,17 +218,21 @@ export default function PlayerManagement({ teamId, team }) {
                         />
                       </TableCell>
                       <TableCell>
-                        <Input
-                          type="number"
-                          value={row.jersey_number}
-                          onChange={(e) => handleRowChange(index, 'jersey_number', parseInt(e.target.value) || "")}
-                          placeholder="#"
-                          className="border-0 p-1 h-8"
-                          min="0"
-                          max="99"
-                          disabled={isSaving}
-                        />
-                      </TableCell>
+                         <Input
+                           type="text"
+                           inputMode="numeric"
+                           value={row.jersey_number}
+                           onChange={(e) => {
+                             const val = e.target.value;
+                             if (val === '' || /^\d{0,2}$/.test(val)) {
+                               handleRowChange(index, 'jersey_number', val);
+                             }
+                           }}
+                           placeholder="#"
+                           className="border-0 p-1 h-8"
+                           disabled={isSaving}
+                         />
+                       </TableCell>
                       <TableCell>
                         <Select
                           value={row.position}
