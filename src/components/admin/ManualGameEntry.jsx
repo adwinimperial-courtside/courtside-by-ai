@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { X, Save } from "lucide-react";
+import { findPlayerOfGame } from "../utils/pogCalculator";
 
 export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -29,6 +30,35 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
   const createGameMutation = useMutation({
     mutationFn: async (data) => {
+      // Prepare player stats for database
+      const statsForDb = data.playerStats.map(stat => {
+        const points3Value = (stat.stats.points_3 || 0) * 3;
+        const ftValue = stat.stats.free_throws || 0;
+        const totalPoints = stat.stats.total_points || 0;
+        const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+        
+        return {
+          player_id: stat.player_id,
+          team_id: stat.team_id,
+          is_starter: true,
+          points_2: points2Value,
+          points_3: stat.stats.points_3,
+          free_throws: stat.stats.free_throws,
+          offensive_rebounds: stat.stats.offensive_rebounds,
+          defensive_rebounds: stat.stats.defensive_rebounds,
+          assists: stat.stats.assists,
+          steals: stat.stats.steals,
+          blocks: stat.stats.blocks,
+          turnovers: stat.stats.turnovers,
+          fouls: stat.stats.fouls,
+          technical_fouls: stat.stats.technical_fouls,
+          unsportsmanlike_fouls: stat.stats.unsportsmanlike_fouls,
+        };
+      });
+
+      // Calculate Player of the Game automatically
+      const playerOfGameId = findPlayerOfGame(statsForDb);
+
       // Create game
       const game = await base44.entities.Game.create({
         league_id: data.league_id,
@@ -39,38 +69,18 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         home_score: data.home_score,
         away_score: data.away_score,
         location: data.location || 'Not specified',
-        player_of_game: data.player_of_game || null,
+        player_of_game: playerOfGameId,
         entry_type: 'manual',
       });
 
-      // Create player stats
+      // Create player stats with game_id
       await Promise.all(
-        data.playerStats.map(stat => {
-          // Calculate points_2 from total_points, points_3, and free_throws
-          const points3Value = (stat.stats.points_3 || 0) * 3;
-          const ftValue = stat.stats.free_throws || 0;
-          const totalPoints = stat.stats.total_points || 0;
-          const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
-          
-          return base44.entities.PlayerStats.create({
+        statsForDb.map(stat => 
+          base44.entities.PlayerStats.create({
+            ...stat,
             game_id: game.id,
-            player_id: stat.player_id,
-            team_id: stat.team_id,
-            is_starter: true,
-            points_2: points2Value,
-            points_3: stat.stats.points_3,
-            free_throws: stat.stats.free_throws,
-            offensive_rebounds: stat.stats.offensive_rebounds,
-            defensive_rebounds: stat.stats.defensive_rebounds,
-            assists: stat.stats.assists,
-            steals: stat.stats.steals,
-            blocks: stat.stats.blocks,
-            turnovers: stat.stats.turnovers,
-            fouls: stat.stats.fouls,
-            technical_fouls: stat.stats.technical_fouls,
-            unsportsmanlike_fouls: stat.stats.unsportsmanlike_fouls,
-          });
-        })
+          })
+        )
       );
 
       // Update team records
@@ -166,23 +176,17 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
   };
 
-  const proceedToPlayerSelection = () => {
+  const handleSubmit = () => {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
     const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
     const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
 
-    const winningTeam = homeScore > awayScore ? gameData.home_team_id : gameData.away_team_id;
-    
-    setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
-    setWinningTeamId(winningTeam);
-    setStep(3);
-  };
-
-  const handleSubmit = () => {
     createGameMutation.mutate({
       ...gameData,
+      home_score: homeScore,
+      away_score: awayScore,
       playerStats,
     });
   };
@@ -274,62 +278,6 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
   const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
-
-  if (step === 3) {
-    const winningTeamPlayers = playerStats.filter(ps => ps.team_id === winningTeamId);
-    const winningTeam = teams.find(t => t.id === winningTeamId);
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-300">
-          <div className="text-center mb-4">
-            <h3 className="text-2xl font-bold text-green-900 mb-2">Game Completed!</h3>
-            <div className="text-4xl font-bold text-green-700">
-              {gameData.home_score} - {gameData.away_score}
-            </div>
-            <p className="text-slate-600 mt-2">
-              {homeTeam?.name} vs {awayTeam?.name}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-slate-100 p-6 rounded-lg">
-          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: winningTeam?.color }}>
-              {winningTeam?.name?.[0]}
-            </div>
-            Select Player of the Game from {winningTeam?.name}
-          </h3>
-          <Select value={gameData.player_of_game} onValueChange={(value) => setGameData({ ...gameData, player_of_game: value })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select player of the game (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              {winningTeamPlayers.map(ps => (
-                <SelectItem key={ps.player_id} value={ps.player_id}>
-                  #{ps.jersey_number} {ps.player_name} - {ps.stats.total_points} PTS
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setStep(2)}>
-            Back to Stats
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={createGameMutation.isPending}
-            className="bg-gradient-to-r from-green-500 to-green-600 flex-1"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {createGameMutation.isPending ? 'Saving Game...' : 'Save Game'}
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -458,10 +406,12 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           Cancel
         </Button>
         <Button
-          onClick={proceedToPlayerSelection}
-          className="bg-gradient-to-r from-orange-500 to-orange-600"
+          onClick={handleSubmit}
+          disabled={createGameMutation.isPending}
+          className="bg-gradient-to-r from-green-500 to-green-600 flex-1"
         >
-          Next: Select Player of the Game
+          <Save className="w-4 h-4 mr-2" />
+          {createGameMutation.isPending ? 'Saving Game...' : 'Complete & Save Game'}
         </Button>
       </div>
     </div>

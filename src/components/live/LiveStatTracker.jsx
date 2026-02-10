@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 
 import ScoreHeader from "./ScoreHeader";
+import { findPlayerOfGame } from "../utils/pogCalculator";
 
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-500' },
@@ -251,9 +252,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const awayScore = game.away_score || 0;
     const homeWins = homeScore > awayScore;
 
+    // Calculate Player of the Game automatically
+    const playerOfGameId = findPlayerOfGame(existingStats);
+
     await updateGameMutation.mutateAsync({
       gameId: game.id,
-      data: { status: 'completed' }
+      data: { 
+        status: 'completed',
+        player_of_game: playerOfGameId
+      }
     });
 
     await updateTeamRecordMutation.mutateAsync({
