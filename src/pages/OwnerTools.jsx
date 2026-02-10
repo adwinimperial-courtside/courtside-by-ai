@@ -47,13 +47,7 @@ export default function OwnerTools() {
         </div>
 
         <div className="grid gap-6">
-          {/* User Management Section */}
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">User Management</h2>
-            <div className="grid gap-4">
-              <UserLeagueAssignment />
-            </div>
-          </div>
+          <UserManagement />
         </div>
       </div>
     </div>
