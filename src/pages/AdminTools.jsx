@@ -17,7 +17,20 @@ export default function AdminTools() {
   const [showDeleteEntry, setShowDeleteEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
