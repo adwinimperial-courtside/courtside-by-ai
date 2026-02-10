@@ -12,7 +12,7 @@ import GameStats from "../components/stats/GameStats";
 
 
 export default function StatisticsPage() {
-  const [selectedLeague, setSelectedLeague] = useState("all");
+  const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("all");
   const [selectedPlayer, setSelectedPlayer] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
@@ -22,6 +22,11 @@ export default function StatisticsPage() {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
+        if (user?.default_league_id) {
+          setSelectedLeague(user.default_league_id);
+        } else {
+          setSelectedLeague("all");
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       }
