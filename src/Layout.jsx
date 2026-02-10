@@ -104,12 +104,11 @@ export default function Layout({ children }) {
         <main className="flex-1 flex flex-col">
           <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden sticky top-0 z-10">
             <div className="flex items-center gap-4">
-              <button 
-                onClick={() => document.querySelector('[data-sidebar="trigger"]')?.click()}
-                className="hover:bg-orange-100 p-2 h-12 w-12 rounded-xl transition-colors flex items-center justify-center"
-              >
-                <Circle className="w-6 h-6 text-orange-500 fill-orange-500" />
-              </button>
+              <SidebarTrigger asChild>
+                <button className="hover:bg-orange-100 p-2 h-12 w-12 rounded-xl transition-colors flex items-center justify-center">
+                  <Circle className="w-6 h-6 text-orange-500 fill-orange-500" />
+                </button>
+              </SidebarTrigger>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
