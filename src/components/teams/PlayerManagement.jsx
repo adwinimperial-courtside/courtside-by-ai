@@ -288,7 +288,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
               </Table>
             </div>
           )}
-          {!isLoading && (
+          {!isLoading && !isViewer && (
             <div className="flex justify-center gap-3 pt-4">
               <Button
                 onClick={handleAddRow}
