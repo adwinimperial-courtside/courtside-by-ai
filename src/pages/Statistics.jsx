@@ -190,12 +190,12 @@ export default function StatisticsPage() {
           </TabsContent>
 
           <TabsContent value="players">
-            <PlayerStats
-              players={filteredPlayers}
-              teams={teams}
-              stats={filteredStats}
-            />
-          </TabsContent>
+             <PlayerStats
+               players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
+               teams={teams}
+               stats={filteredStats}
+             />
+           </TabsContent>
 
           <TabsContent value="leaders">
             <LeagueLeaders
