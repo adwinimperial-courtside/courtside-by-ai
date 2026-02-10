@@ -53,7 +53,7 @@ export default function Layout({ children }) {
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <style>{`
         :root {
           --primary: 222.2 47.4% 11.2%;
