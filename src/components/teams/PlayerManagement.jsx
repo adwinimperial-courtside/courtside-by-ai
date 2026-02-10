@@ -147,23 +147,20 @@ export default function PlayerManagement({ teamId, team }) {
         })
         .filter(row => row.name && row.jersey_number);
 
-      // Remove empty rows and duplicates, keeping captain if exists
+      // Remove empty rows and duplicates, keeping existing rows with captain flag
       let filteredData = tableData.filter(row => row.name && row.jersey_number);
       
+      // Only add imported rows that don't already exist
       mappedRows.forEach(newRow => {
-        const duplicateIndex = filteredData.findIndex(
+        const isDuplicate = filteredData.some(
           row => row.name === newRow.name && row.jersey_number === newRow.jersey_number
         );
-        if (duplicateIndex !== -1) {
-          const existingRow = filteredData[duplicateIndex];
-          // Keep the one with captain flag, remove the duplicate
-          if (!existingRow.is_captain) {
-            filteredData.splice(duplicateIndex, 1);
-          }
+        if (!isDuplicate) {
+          filteredData.push(newRow);
         }
       });
 
-      setTableData([...filteredData, ...mappedRows]);
+      setTableData(filteredData);
     } catch (error) {
       console.error("Error parsing file:", error);
       alert("Error reading file. Please ensure it's a valid CSV file.");
