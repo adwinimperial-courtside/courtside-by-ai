@@ -33,6 +33,11 @@ const navigationItems = [
   icon: Calendar
 },
 {
+  title: "Standings",
+  url: createPageUrl("Standings"),
+  icon: Trophy
+},
+{
   title: "Statistics",
   url: createPageUrl("Statistics"),
   icon: BarChart3

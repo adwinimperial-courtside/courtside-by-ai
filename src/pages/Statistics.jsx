@@ -5,7 +5,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Filter } from "lucide-react";
 
-import TeamStandings from "../components/stats/TeamStandings";
 import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
@@ -144,11 +143,8 @@ export default function StatisticsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="standings" className="space-y-6">
+        <Tabs defaultValue="teamstats" className="space-y-6">
           <TabsList className="bg-white border border-slate-200 p-1 h-auto flex-wrap">
-            <TabsTrigger value="standings" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-              Team Standings
-            </TabsTrigger>
             <TabsTrigger value="teamstats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
               Team Stats
             </TabsTrigger>
@@ -162,14 +158,6 @@ export default function StatisticsPage() {
               Game Stats
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="standings">
-            <TeamStandings 
-              teams={filteredTeams}
-              games={filteredGames}
-              leagues={leagues}
-            />
-          </TabsContent>
 
           <TabsContent value="teamstats">
             <TeamStats 

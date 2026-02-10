@@ -54,6 +54,7 @@ import LiveGame from './pages/LiveGame';
 import Schedule from './pages/Schedule';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
+import Standings from './pages/Standings';
 import __Layout from './Layout.jsx';
 
 
@@ -65,6 +66,7 @@ export const PAGES = {
     "Schedule": Schedule,
     "Statistics": Statistics,
     "Teams": Teams,
+    "Standings": Standings,
 }
 
 export const pagesConfig = {
