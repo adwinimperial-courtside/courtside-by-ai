@@ -22,7 +22,7 @@ export default function AddPlayerDialog({ open, onOpenChange, onSubmit, isLoadin
     e.preventDefault();
     onSubmit({
       ...formData,
-      jersey_number: parseInt(formData.jersey_number)
+      jersey_number: formData.jersey_number ? parseInt(formData.jersey_number) : ""
     });
     setFormData({ name: "", jersey_number: "", position: "" });
   };
