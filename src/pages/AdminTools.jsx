@@ -3,17 +3,19 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, Settings, RefreshCw, Trash2, Trophy } from "lucide-react";
 
 import ManualGameEntry from "../components/admin/ManualGameEntry";
 import EditGameEntry from "../components/admin/EditGameEntry";
 import DeleteGameEntry from "../components/admin/DeleteGameEntry";
+import { findPlayerOfGame } from "../components/utils/pogCalculator";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showEditEntry, setShowEditEntry] = useState(false);
   const [showDeleteEntry, setShowDeleteEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
+  const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: leagues = [] } = useQuery({
@@ -72,6 +74,39 @@ export default function AdminTools() {
     }
   };
 
+  const calculateMissingPOG = async () => {
+    setIsCalculatingPOG(true);
+    try {
+      // Get all completed games
+      const games = await base44.entities.Game.filter({ status: 'completed' });
+      const stats = await base44.entities.PlayerStats.list();
+
+      let updatedCount = 0;
+
+      for (const game of games) {
+        // Get stats for this game
+        const gameStats = stats.filter(s => s.game_id === game.id);
+        
+        // Calculate POG if missing or recalculate for all
+        const playerOfGameId = findPlayerOfGame(gameStats);
+        
+        if (playerOfGameId && game.player_of_game !== playerOfGameId) {
+          await base44.entities.Game.update(game.id, {
+            player_of_game: playerOfGameId,
+          });
+          updatedCount++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['games'] });
+      alert(`Successfully calculated Player of the Game for ${updatedCount} game(s)!`);
+    } catch (error) {
+      alert('Error calculating Player of the Game: ' + error.message);
+    } finally {
+      setIsCalculatingPOG(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -104,6 +139,28 @@ export default function AdminTools() {
               >
                 <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
                 {isRecalculating ? 'Recalculating...' : 'Recalculate All Game Scores'}
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-lg">
+            <CardHeader className="border-b border-slate-200 bg-white">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-500" />
+                Calculate Player of the Game
+              </CardTitle>
+              <p className="text-sm text-slate-600 mt-2">
+                Automatically calculate and assign Player of the Game for all completed games
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Button
+                onClick={calculateMissingPOG}
+                disabled={isCalculatingPOG}
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+              >
+                <Trophy className={`w-4 h-4 mr-2 ${isCalculatingPOG ? 'animate-spin' : ''}`} />
+                {isCalculatingPOG ? 'Calculating...' : 'Calculate All Player of the Game'}
               </Button>
             </CardContent>
           </Card>
