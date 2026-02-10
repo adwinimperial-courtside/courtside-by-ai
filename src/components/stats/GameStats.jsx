@@ -73,8 +73,8 @@ export default function GameStats({ games, teams, players, stats }) {
               };
 
               const isExpanded = expandedGame === game.id;
-              const homePlayerStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id);
-              const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id);
+              const homePlayerStats = gamePlayerStats.filter(s => s.team_id === game.home_team_id && hasStats(s));
+              const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === game.away_team_id && hasStats(s));
 
               return (
                 <Card key={game.id} className="border-slate-200 bg-gradient-to-br from-white to-slate-50">
