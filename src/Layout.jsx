@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Trophy, Users, Calendar, BarChart3, Play } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3 } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -56,8 +56,8 @@ export default function Layout({ children }) {
         <Sidebar className="border-r border-slate-200 bg-white/80 backdrop-blur-sm">
           <SidebarHeader className="border-b border-slate-200 p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Play className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 text-lg">Courtside by AI</h2>
@@ -99,8 +99,8 @@ export default function Layout({ children }) {
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-slate-100 p-2 rounded-lg transition-colors duration-200" />
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
-                  <Play className="w-4 h-4 text-white" />
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+                  <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/6117099c8_image.png" alt="Courtside by AI" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-lg font-bold text-slate-900">BasketStats</h1>
               </div>
