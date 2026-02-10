@@ -25,17 +25,16 @@ export default function GameStats({ games, teams, players, stats }) {
            (stat.fouls || 0) > 0;
   };
 
-  const getTopPerformer = (gameId) => {
-    const gameStats = stats.filter(s => s.game_id === gameId && hasStats(s));
-    if (gameStats.length === 0) return null;
+  const getTopPerformer = (game) => {
+    if (!game.player_of_game) return null;
+    
+    const playerStat = stats.find(s => s.game_id === game.id && s.player_id === game.player_of_game);
+    if (!playerStat) return null;
 
-    const playerWithStats = gameStats.map(stat => {
-      const player = players.find(p => p.id === stat.player_id);
-      const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-      return { player, stat, points };
-    });
-
-    return playerWithStats.sort((a, b) => b.points - a.points)[0];
+    const player = players.find(p => p.id === game.player_of_game);
+    const points = ((playerStat.points_2 || 0) * 2) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0);
+    
+    return { player, stat: playerStat, points };
   };
 
   return (
