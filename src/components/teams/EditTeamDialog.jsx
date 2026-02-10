@@ -28,8 +28,7 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
     color: "#f97316",
     logo_url: "",
     head_coach: "",
-    manager: "",
-    team_captain: ""
+    manager: ""
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -40,8 +39,7 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
         color: team.color || "#f97316",
         logo_url: team.logo_url || "",
         head_coach: team.head_coach || "",
-        manager: team.manager || "",
-        team_captain: team.team_captain || ""
+        manager: team.manager || ""
       });
     }
   }, [team, open]);
