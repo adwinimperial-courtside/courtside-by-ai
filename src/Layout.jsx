@@ -185,7 +185,7 @@ export default function Layout({ children }) {
               </SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {adminItems.map((item) =>
+                  {getVisibleAdminItems().map((item) =>
                   <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                       asChild
