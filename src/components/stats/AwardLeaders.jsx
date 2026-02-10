@@ -261,11 +261,9 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                     <TableHead>Player</TableHead>
                     <TableHead>Team</TableHead>
                     <TableHead className="text-center">GP</TableHead>
-                    <TableHead className="text-center">GP %</TableHead>
                     <TableHead className="text-center">Avg DEF_GIS</TableHead>
-                    <TableHead className="text-center">Tech</TableHead>
-                    <TableHead className="text-center">Unsp</TableHead>
                     <TableHead className="text-center">DPOY Score</TableHead>
+                    <TableHead className="text-center">Award</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -275,11 +273,9 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
                       <TableCell className="font-medium">{leader.player.name}</TableCell>
                       <TableCell>{leader.team.name}</TableCell>
                       <TableCell className="text-center">{leader.gp}</TableCell>
-                      <TableCell className="text-center">{leader.gpPct}%</TableCell>
                       <TableCell className="text-center">{leader.avgDefGis}</TableCell>
-                      <TableCell className="text-center">{leader.sumTech}</TableCell>
-                      <TableCell className="text-center">{leader.sumUnsp}</TableCell>
                       <TableCell className="text-center font-bold text-blue-600">{leader.dpoyScore}</TableCell>
+                      <TableCell className="text-center">{index === 0 ? <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">DPOY</span> : "-"}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
