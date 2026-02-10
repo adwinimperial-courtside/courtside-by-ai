@@ -42,6 +42,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     digital: "bg-cyan-100 text-cyan-800"
   };
 
+  const editedBadgeColor = "bg-amber-100 text-amber-800";
+
   const gamePlayerStats = stats?.filter(s => s.game_id === liveGame.id) || [];
   const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id);
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id);
@@ -78,6 +80,11 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                 {liveGame.entry_type && (
                   <Badge className={entryTypeColors[liveGame.entry_type]}>
                     {liveGame.entry_type === 'manual' ? 'Manual Entry' : 'Digital Entry'}
+                  </Badge>
+                )}
+                {liveGame.edited && (
+                  <Badge className={editedBadgeColor}>
+                    Edited
                   </Badge>
                 )}
               </div>

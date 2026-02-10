@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Plus, Settings, RefreshCw } from "lucide-react";
 
 import ManualGameEntry from "../components/admin/ManualGameEntry";
+import EditGameEntry from "../components/admin/EditGameEntry";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showEditEntry, setShowEditEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const queryClient = useQueryClient();
 
@@ -129,6 +131,36 @@ export default function AdminTools() {
                   teams={teams}
                   players={players}
                   onClose={() => setShowManualEntry(false)}
+                />
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-lg">
+            <CardHeader className="border-b border-slate-200 bg-white">
+              <CardTitle className="text-xl flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-600" />
+                Edit Game
+              </CardTitle>
+              <p className="text-sm text-slate-600 mt-2">
+                Edit statistics for completed games
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {!showEditEntry ? (
+                <Button
+                  onClick={() => setShowEditEntry(true)}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Edit Game
+                </Button>
+              ) : (
+                <EditGameEntry
+                  leagues={leagues}
+                  teams={teams}
+                  players={players}
+                  onClose={() => setShowEditEntry(false)}
                 />
               )}
             </CardContent>
