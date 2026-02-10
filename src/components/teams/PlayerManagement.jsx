@@ -129,8 +129,8 @@ export default function PlayerManagement({ teamId, team }) {
         json_schema: {
           type: "object",
           properties: {
-            name: { type: "string" },
-            number: { type: "number" }
+            Name: { type: "string" },
+            Number: { type: "number" }
           }
         }
       });
@@ -142,8 +142,8 @@ export default function PlayerManagement({ teamId, team }) {
         
         const mappedRows = importedRows.map(row => ({
           id: null,
-          name: row.name || "",
-          jersey_number: row.number || "",
+          name: row.Name || "",
+          jersey_number: row.Number || "",
           position: "PG"
         }));
 
