@@ -17,14 +17,9 @@ export default function LeagueCard({ league, userType }) {
              <CardTitle className="text-xl font-bold text-slate-900 mb-1 group-hover:text-orange-600 transition-colors">
                {league.name}
              </CardTitle>
-             <div className="flex flex-col gap-2 text-sm text-slate-500">
-               <div className="flex items-center gap-2">
-                 <Calendar className="w-4 h-4" />
-                 <span>{league.season}</span>
-               </div>
-               <div className="text-xs font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">
-                 ID: {league.id}
-               </div>
+             <div className="flex items-center gap-2 text-sm text-slate-500">
+               <Calendar className="w-4 h-4" />
+               <span>{league.season}</span>
              </div>
            </div>
           <div className="w-12 h-12 bg-orange-50 rounded-xl flex items-center justify-center group-hover:bg-orange-100 transition-colors">
