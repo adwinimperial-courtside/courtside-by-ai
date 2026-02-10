@@ -46,19 +46,23 @@ export default function AddPlayerDialog({ open, onOpenChange, onSubmit, isLoadin
             />
           </div>
           <div>
-            <Label htmlFor="jersey">Jersey Number</Label>
-            <Input
-              id="jersey"
-              type="number"
-              min="0"
-              max="99"
-              value={formData.jersey_number}
-              onChange={(e) => setFormData({ ...formData, jersey_number: e.target.value })}
-              placeholder="e.g., 23"
-              required
-              className="mt-1.5"
-            />
-          </div>
+             <Label htmlFor="jersey">Jersey Number</Label>
+             <Input
+               id="jersey"
+               type="text"
+               inputMode="numeric"
+               value={formData.jersey_number}
+               onChange={(e) => {
+                 const val = e.target.value;
+                 if (val === '' || /^\d{0,2}$/.test(val)) {
+                   setFormData({ ...formData, jersey_number: val });
+                 }
+               }}
+               placeholder="e.g., 23"
+               required
+               className="mt-1.5"
+             />
+           </div>
           <div>
             <Label htmlFor="position">Position</Label>
             <Select
