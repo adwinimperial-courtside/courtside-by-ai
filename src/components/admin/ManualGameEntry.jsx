@@ -22,6 +22,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     away_score: 0,
   });
   const [playerStats, setPlayerStats] = useState([]);
+  const [winningTeamId, setWinningTeamId] = useState("");
 
   const homeTeamPlayers = players.filter(p => p.team_id === gameData.home_team_id);
   const awayTeamPlayers = players.filter(p => p.team_id === gameData.away_team_id);
@@ -164,8 +165,21 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
   };
 
+  const proceedToPlayerSelection = () => {
+    const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
+    const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
+
+    const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+    const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+
+    const winningTeam = homeScore > awayScore ? gameData.home_team_id : gameData.away_team_id;
+    
+    setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
+    setWinningTeamId(winningTeam);
+    setStep(3);
+  };
+
   const handleSubmit = () => {
-    calculateScores();
     createGameMutation.mutate({
       ...gameData,
       playerStats,
@@ -259,6 +273,62 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
   const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
+
+  if (step === 3) {
+    const winningTeamPlayers = playerStats.filter(ps => ps.team_id === winningTeamId);
+    const winningTeam = teams.find(t => t.id === winningTeamId);
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-green-50 to-green-100 p-6 rounded-lg border-2 border-green-300">
+          <div className="text-center mb-4">
+            <h3 className="text-2xl font-bold text-green-900 mb-2">Game Completed!</h3>
+            <div className="text-4xl font-bold text-green-700">
+              {gameData.home_score} - {gameData.away_score}
+            </div>
+            <p className="text-slate-600 mt-2">
+              {homeTeam?.name} vs {awayTeam?.name}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-slate-100 p-6 rounded-lg">
+          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: winningTeam?.color }}>
+              {winningTeam?.name?.[0]}
+            </div>
+            Select Player of the Game from {winningTeam?.name}
+          </h3>
+          <Select value={gameData.player_of_game} onValueChange={(value) => setGameData({ ...gameData, player_of_game: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select player of the game (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              {winningTeamPlayers.map(ps => (
+                <SelectItem key={ps.player_id} value={ps.player_id}>
+                  #{ps.jersey_number} {ps.player_name} - {ps.stats.total_points} PTS
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setStep(2)}>
+            Back to Stats
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={createGameMutation.isPending}
+            className="bg-gradient-to-r from-green-500 to-green-600 flex-1"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            {createGameMutation.isPending ? 'Saving Game...' : 'Save Game'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -381,34 +451,16 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         </div>
       </div>
 
-      <div className="bg-slate-100 p-4 rounded-lg">
-        <Label className="font-semibold mb-2 block">Player of the Game (Optional)</Label>
-        <Select value={gameData.player_of_game} onValueChange={(value) => setGameData({ ...gameData, player_of_game: value })}>
-          <SelectTrigger>
-            <SelectValue placeholder="Select player of the game" />
-          </SelectTrigger>
-          <SelectContent>
-            {[...homeStats, ...awayStats].map(ps => (
-              <SelectItem key={ps.player_id} value={ps.player_id}>
-                #{ps.jersey_number} {ps.player_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <div className="flex gap-3">
         <Button variant="outline" onClick={onClose}>
           <X className="w-4 h-4 mr-2" />
           Cancel
         </Button>
         <Button
-          onClick={handleSubmit}
-          disabled={createGameMutation.isPending}
-          className="bg-gradient-to-r from-green-500 to-green-600"
+          onClick={proceedToPlayerSelection}
+          className="bg-gradient-to-r from-orange-500 to-orange-600"
         >
-          <Save className="w-4 h-4 mr-2" />
-          {createGameMutation.isPending ? 'Saving...' : 'Save Game'}
+          Next: Select Player of the Game
         </Button>
       </div>
     </div>
