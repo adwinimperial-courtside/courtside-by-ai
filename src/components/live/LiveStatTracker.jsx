@@ -505,7 +505,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   <p className="text-slate-400 text-xs mt-1">Stats will appear here</p>
                 </div>
               ) : (
-                gameLog.map((log, index) => (
+                gameLog.slice(0, 10).map((log, index) => (
                   <motion.div
                     key={log.id}
                     initial={{ opacity: 0, x: 20 }}
