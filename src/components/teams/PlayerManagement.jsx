@@ -43,12 +43,12 @@ export default function PlayerManagement({ teamId, team }) {
   });
 
   React.useEffect(() => {
-    const initialData = [...players];
+    const initialData = players.map(p => ({ ...p }));
     while (initialData.length < 12) {
       initialData.push({ id: null, name: "", jersey_number: "", position: "PG" });
     }
     setTableData(initialData);
-  }, [players]);
+  }, [players.length]);
 
   const handleSaveAllPlayers = async () => {
     setIsSaving(true);
