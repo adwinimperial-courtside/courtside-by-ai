@@ -98,14 +98,16 @@ export default function SchedulePage() {
             </div>
             <p className="text-slate-600 ml-15">Manage game schedules and matchups</p>
           </div>
-          <Button 
-            onClick={() => setShowCreateDialog(true)}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/30 h-12 px-6"
-            disabled={teams.length < 2}
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Schedule Game
-          </Button>
+          {currentUser?.user_type !== "viewer" && (
+            <Button 
+              onClick={() => setShowCreateDialog(true)}
+              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/30 h-12 px-6"
+              disabled={teams.length < 2}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Schedule Game
+            </Button>
+          )}
         </div>
 
         <div className="flex gap-4 mb-6">
