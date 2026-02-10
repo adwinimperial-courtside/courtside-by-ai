@@ -234,7 +234,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
                            }}
                            placeholder="#"
                            className="border-0 p-1 h-8"
-                           disabled={isSaving}
+                           disabled={isSaving || isViewer}
                          />
                        </TableCell>
                       <TableCell>
