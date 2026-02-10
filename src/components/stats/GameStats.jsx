@@ -275,12 +275,16 @@ export default function GameStats({ games, teams, players, stats }) {
                         {/* Home Team Stats */}
                         <div>
                           <div className="flex items-center gap-2 mb-3">
-                            <div 
-                              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-                              style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-                            >
-                              {homeTeam?.name?.[0]}
-                            </div>
+                            {homeTeam?.logo_url ? (
+                              <img src={homeTeam.logo_url} alt={homeTeam.name} className="w-8 h-8 rounded-lg object-cover" />
+                            ) : (
+                              <div 
+                                className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
+                                style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                              >
+                                {homeTeam?.name?.[0]}
+                              </div>
+                            )}
                             <h4 className="font-semibold text-slate-900">{homeTeam?.name}</h4>
                           </div>
                           <div className="overflow-x-auto">
