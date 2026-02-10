@@ -29,21 +29,24 @@ import {
 export default function PlayerManagement({ teamId, team }) {
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [playerToDelete, setPlayerToDelete] = useState(null);
-  const [tableData, setTableData] = useState([]);
+  const [tableData, setTableData] = useState(
+    Array(12).fill(null).map(() => ({ id: null, name: "", jersey_number: "", position: "PG" }))
+  );
   const queryClient = useQueryClient();
   const [isSaving, setIsSaving] = useState(false);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', teamId],
     queryFn: () => base44.entities.Player.filter({ team_id: teamId }),
-    onSuccess: (data) => {
-      const initialData = [...data];
-      while (initialData.length < 12) {
-        initialData.push({ id: null, name: "", jersey_number: "", position: "PG" });
-      }
-      setTableData(initialData);
-    }
   });
+
+  React.useEffect(() => {
+    const initialData = [...players];
+    while (initialData.length < 12) {
+      initialData.push({ id: null, name: "", jersey_number: "", position: "PG" });
+    }
+    setTableData(initialData);
+  }, [players]);
 
   const handleSaveAllPlayers = async () => {
     setIsSaving(true);
