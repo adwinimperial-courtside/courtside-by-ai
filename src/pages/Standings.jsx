@@ -8,12 +8,29 @@ import TeamStandings from "../components/stats/TeamStandings";
 
 export default function StandingsPage() {
   const [selectedLeague, setSelectedLeague] = useState("all");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await base44.auth.me();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Failed to fetch user:", error);
+      }
+    };
+    fetchUser();
+  }, []);
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     initialData: [],
   });
+
+  const assignedLeagues = currentUser?.assigned_league_ids 
+    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
+    : [];
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
