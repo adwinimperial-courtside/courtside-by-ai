@@ -95,20 +95,32 @@ export default function Layout({ children }) {
   };
 
   const getVisibleNavigationItems = () => {
-    if (!currentUser) return navigationItems;
-    
-    if (currentUser.user_type === "app_admin") {
+      if (!currentUser) return navigationItems;
+
+      if (currentUser.user_type === "app_admin") {
+        return navigationItems;
+      }
+
+      if (currentUser.user_type === "league_admin") {
+        return navigationItems.filter(item => 
+          ["Leagues", "League IDs", "Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
+        );
+      }
+
+      if (currentUser.user_type === "viewer") {
+        return navigationItems.filter(item => 
+          ["Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
+        );
+      }
+
       return navigationItems;
-    }
-    
-    if (currentUser.user_type === "league_admin" || currentUser.user_type === "viewer") {
-      return navigationItems.filter(item => 
-        ["Teams", "Schedule", "Standings", "Statistics", "Award Leaders"].includes(item.title)
-      );
-    }
-    
-    return navigationItems;
-  };
+    };
+
+    const getVisibleAdminItems = () => {
+      if (!currentUser) return [];
+      if (currentUser.user_type === "app_admin") return adminItems;
+      return [];
+    };
 
   return (
     <SidebarProvider>
