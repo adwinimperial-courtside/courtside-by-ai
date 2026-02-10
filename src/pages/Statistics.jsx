@@ -179,7 +179,10 @@ export default function StatisticsPage() {
             <TabsTrigger value="games" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
               Game Stats
             </TabsTrigger>
-          </TabsList>
+            <TabsTrigger value="awards" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+              Award Leaders
+            </TabsTrigger>
+            </TabsList>
 
           <TabsContent value="teamstats">
             <TeamStats 
