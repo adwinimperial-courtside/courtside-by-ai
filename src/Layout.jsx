@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Shield, Eye, LogOut } from "lucide-react";
+import { Shield, Eye, LogOut, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
