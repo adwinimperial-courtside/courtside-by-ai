@@ -143,8 +143,8 @@ export default function GameStats({ games, teams, players, stats }) {
                     {/* Top Performer */}
                     {topPerformer && (
                       <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
-                        <p className="text-xs font-semibold text-purple-600 mb-2">TOP PERFORMER</p>
-                        <div className="flex items-center gap-3">
+                        <p className="text-xs font-semibold text-purple-600 mb-3">TOP PERFORMER</p>
+                        <div className="flex items-center gap-4 mb-4">
                           <div 
                             className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
                             style={{ backgroundColor: teams.find(t => t.id === topPerformer.player?.team_id)?.color || '#f97316' }}
@@ -155,9 +155,27 @@ export default function GameStats({ games, teams, players, stats }) {
                             <p className="font-semibold text-slate-900">{topPerformer.player?.name}</p>
                             <p className="text-sm text-slate-600">{teams.find(t => t.id === topPerformer.player?.team_id)?.name}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-purple-600">{topPerformer.points}</p>
-                            <p className="text-xs text-slate-500">points</p>
+                        </div>
+                        <div className="grid grid-cols-5 gap-3">
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-purple-600">{topPerformer.points}</p>
+                            <p className="text-xs text-slate-600">PTS</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-purple-600">{(topPerformer.stat.offensive_rebounds || 0) + (topPerformer.stat.defensive_rebounds || 0)}</p>
+                            <p className="text-xs text-slate-600">REB</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-purple-600">{topPerformer.stat.assists || 0}</p>
+                            <p className="text-xs text-slate-600">AST</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-purple-600">{topPerformer.stat.steals || 0}</p>
+                            <p className="text-xs text-slate-600">STL</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-purple-600">{topPerformer.stat.blocks || 0}</p>
+                            <p className="text-xs text-slate-600">BLK</p>
                           </div>
                         </div>
                       </div>
