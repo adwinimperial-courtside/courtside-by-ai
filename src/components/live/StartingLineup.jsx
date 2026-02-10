@@ -51,10 +51,10 @@ export default function StartingLineup({
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-white/5 border-white/10 backdrop-blur">
-            <CardHeader className="border-b border-white/10">
+          <Card className="bg-white/70 border-slate-200 backdrop-blur">
+            <CardHeader className="border-b border-slate-200">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-white flex items-center gap-3">
+                <CardTitle className="text-slate-900 flex items-center gap-3">
                   <div 
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
                     style={{ backgroundColor: homeTeam?.color || '#f97316' }}
@@ -100,7 +100,7 @@ export default function StartingLineup({
             </CardContent>
           </Card>
 
-          <Card className="bg-white/60 border-slate-200 backdrop-blur">
+          <Card className="bg-white/70 border-slate-200 backdrop-blur">
             <CardHeader className="border-b border-slate-200">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-900 flex items-center gap-3">
@@ -154,7 +154,7 @@ export default function StartingLineup({
           <Button
             onClick={onStartGame}
             disabled={homeStarters.length !== 5 || awayStarters.length !== 5}
-            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 h-14 px-12 text-lg shadow-2xl shadow-orange-500/30"
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 h-14 px-12 text-lg shadow-lg shadow-indigo-500/30 text-white"
           >
             <Play className="w-5 h-5 mr-2" />
             Start Game

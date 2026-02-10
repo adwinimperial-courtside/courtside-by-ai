@@ -302,10 +302,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           onClick={() => setSelectedPlayer(player)}
           className={`w-full p-3 rounded-xl transition-all ${
             isSelected
-              ? 'ring-4 ring-offset-2 ring-offset-slate-900'
-              : 'hover:bg-white/10'
-          } bg-white/5 border-2 ${isSelected ? 'border-white' : 'border-white/10'}`}
-          style={isSelected ? { ringColor: teamColor, backgroundColor: `${teamColor}30` } : {}}
+              ? 'ring-4 ring-offset-2 ring-offset-indigo-100'
+              : 'hover:bg-slate-100'
+          } bg-white/70 border-2 ${isSelected ? 'border-indigo-400' : 'border-slate-200'}`}
+          style={isSelected ? { ringColor: teamColor, backgroundColor: `${teamColor}15` } : {}}
         >
           <div className="flex flex-col items-center gap-2">
             <div 
@@ -315,14 +315,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               {player.jersey_number}
             </div>
             <div className="text-center w-full">
-              <p className="font-semibold text-white text-sm truncate">{player.name}</p>
-              <p className="text-xs text-slate-400">{player.position}</p>
+              <p className="font-semibold text-slate-900 text-sm truncate">{player.name}</p>
+              <p className="text-xs text-slate-500">{player.position}</p>
             </div>
             {playerStats && (
-              <div className="text-center pt-2 border-t border-white/10 w-full">
-                <p className="text-xl font-bold text-white">{totalPoints}</p>
-                <p className="text-xs text-slate-400">PTS</p>
-                <div className="flex justify-around text-xs text-slate-300 mt-1">
+              <div className="text-center pt-2 border-t border-slate-200 w-full">
+                <p className="text-xl font-bold text-slate-900">{totalPoints}</p>
+                <p className="text-xs text-slate-500">PTS</p>
+                <div className="flex justify-around text-xs text-slate-600 mt-1">
                   <span>{(playerStats.offensive_rebounds || 0) + (playerStats.defensive_rebounds || 0)} R</span>
                   <span>{playerStats.assists || 0} A</span>
                   <span>{playerStats.fouls || 0} F</span>
@@ -349,20 +349,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       <div className="max-w-[1400px] mx-auto px-4 py-4">
         <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
             onClick={onBack}
-            className="text-white hover:bg-white/10 h-12 px-6 text-base"
+            className="text-slate-600 hover:bg-slate-200/50 h-12 px-6 text-base"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Exit
           </Button>
           <Button
             onClick={handleEndGame}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-12 px-6 text-base"
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-12 px-6 text-base text-white"
           >
             <Trophy className="w-5 h-5 mr-2" />
             End Game
@@ -379,7 +379,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           {/* Main Content */}
           <div className="space-y-4">
             {/* Home Team Active Players */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div 
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
@@ -387,8 +387,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 >
                   {homeTeam?.name?.[0]}
                 </div>
-                <h2 className="text-xl font-bold text-white">{homeTeam?.name}</h2>
-                <span className="ml-auto text-slate-400 text-sm">Active: {homeActivePlayers.length}/5</span>
+                <h2 className="text-xl font-bold text-slate-900">{homeTeam?.name}</h2>
+                <span className="ml-auto text-slate-500 text-sm">Active: {homeActivePlayers.length}/5</span>
               </div>
               <div className="grid grid-cols-5 gap-3">
                 {homeActivePlayers.map((player) => (
@@ -407,7 +407,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
 
             {/* Stat Control Center */}
-            <div className="bg-gradient-to-r from-orange-500/20 to-orange-600/20 backdrop-blur border-2 border-orange-500/30 rounded-2xl p-5">
+            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-5">
               <div className="text-center mb-5">
                 {selectedPlayer ? (
                   <div className="flex items-center justify-center gap-3">
@@ -418,14 +418,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       {selectedPlayer.jersey_number}
                     </div>
                     <div className="text-left">
-                      <p className="text-2xl font-bold text-white">{selectedPlayer.name}</p>
-                      <p className="text-slate-400">Recording stats for this player</p>
+                      <p className="text-2xl font-bold text-slate-900">{selectedPlayer.name}</p>
+                      <p className="text-slate-500">Recording stats for this player</p>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-2xl font-bold text-white mb-2">Select a Player</p>
-                    <p className="text-slate-400">Tap any active player to start tracking</p>
+                    <p className="text-2xl font-bold text-slate-900 mb-2">Select a Player</p>
+                    <p className="text-slate-500">Tap any active player to start tracking</p>
                   </div>
                 )}
               </div>
@@ -461,7 +461,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
 
             {/* Away Team Active Players */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
+            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
                 <div 
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
@@ -469,8 +469,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 >
                   {awayTeam?.name?.[0]}
                 </div>
-                <h2 className="text-xl font-bold text-white">{awayTeam?.name}</h2>
-                <span className="ml-auto text-slate-400 text-sm">Active: {awayActivePlayers.length}/5</span>
+                <h2 className="text-xl font-bold text-slate-900">{awayTeam?.name}</h2>
+                <span className="ml-auto text-slate-500 text-sm">Active: {awayActivePlayers.length}/5</span>
               </div>
               <div className="grid grid-cols-5 gap-3">
                 {awayActivePlayers.map((player) => (
@@ -490,19 +490,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           {/* Activity Log Sidebar */}
-          <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 h-[calc(100vh-180px)] flex flex-col">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/10">
-              <Activity className="w-5 h-5 text-orange-500" />
-              <h3 className="text-lg font-bold text-white">Game Activity</h3>
-              <span className="ml-auto text-sm text-slate-400">{gameLog.length} actions</span>
+          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5 h-[calc(100vh-180px)] flex flex-col">
+            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
+              <Activity className="w-5 h-5 text-indigo-500" />
+              <h3 className="text-lg font-bold text-slate-900">Game Activity</h3>
+              <span className="ml-auto text-sm text-slate-500">{gameLog.length} actions</span>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-2 pr-2">
               {gameLog.length === 0 ? (
                 <div className="text-center py-12">
-                  <Activity className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 text-sm">No actions yet</p>
-                  <p className="text-slate-500 text-xs mt-1">Stats will appear here</p>
+                  <Activity className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                  <p className="text-slate-500 text-sm">No actions yet</p>
+                  <p className="text-slate-400 text-xs mt-1">Stats will appear here</p>
                 </div>
               ) : (
                 gameLog.map((log, index) => (
@@ -510,7 +510,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                     key={log.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`p-3 rounded-lg bg-white/5 border border-white/10 ${index === 0 ? 'ring-2 ring-amber-500/50' : ''}`}
+                    className={`p-3 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
                   >
                     <div className="flex items-start gap-3">
                       <div 
@@ -520,7 +520,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         {log.player.jersey_number}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold text-sm truncate">{log.player.name}</p>
+                        <p className="text-slate-900 font-semibold text-sm truncate">{log.player.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span 
                             className={`text-xs px-2 py-0.5 rounded text-white font-bold ${log.statType.color}`}
@@ -528,12 +528,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                             {log.statType.label}
                           </span>
                           {log.statType.points > 0 && (
-                            <span className="text-xs text-green-400 font-bold">
+                            <span className="text-xs text-green-600 font-bold">
                               +{log.statType.points} pts
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">
+                        <p className="text-xs text-slate-500 mt-1">
                           {format(log.timestamp, 'HH:mm:ss')}
                         </p>
                       </div>
@@ -541,7 +541,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         size="sm"
                         variant="ghost"
                         onClick={() => handleUndo(log)}
-                        className="h-8 w-8 p-0 hover:bg-red-500/20 text-slate-400 hover:text-red-400 flex-shrink-0"
+                        className="h-8 w-8 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0"
                       >
                         <Undo2 className="w-4 h-4" />
                       </Button>
@@ -556,12 +556,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       {/* Substitution Dialog */}
       <Dialog open={showSubDialog} onOpenChange={setShowSubDialog}>
-        <DialogContent className="bg-slate-900 text-white border-slate-700 max-w-2xl">
+        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl">
+            <DialogTitle className="text-2xl text-slate-900">
               {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
             </DialogTitle>
-            <p className="text-slate-400 text-sm mt-2">
+            <p className="text-slate-500 text-sm mt-2">
               {subStep === 'select_out' 
                 ? 'Click on players you want to substitute (can select multiple)'
                 : `Select ${playersToReplace.length} replacement player${playersToReplace.length > 1 ? 's' : ''}`
@@ -574,7 +574,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white"
                     style={{ backgroundColor: homeTeam?.color }}
                   >
                     {homeTeam?.name?.[0]}
@@ -588,7 +588,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <Button
                         key={player.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`}
                         onClick={() => togglePlayerToReplace(player)}
                       >
                         <div 
@@ -599,10 +599,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         </div>
                         <div className="text-left flex-1">
                           <p className="font-semibold">{player.name}</p>
-                          <p className="text-sm text-slate-400">{player.position}</p>
+                          <p className="text-sm text-slate-500">{player.position}</p>
                         </div>
                         {isSelected && (
-                          <div className="w-6 h-6 rounded-full bg-white text-cyan-600 flex items-center justify-center font-bold">
+                          <div className="w-6 h-6 rounded-full bg-white text-cyan-500 flex items-center justify-center font-bold">
                             ✓
                           </div>
                         )}
@@ -615,7 +615,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               <div>
                 <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                   <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white"
                     style={{ backgroundColor: awayTeam?.color }}
                   >
                     {awayTeam?.name?.[0]}
@@ -629,7 +629,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <Button
                         key={player.id}
                         variant={isSelected ? "default" : "outline"}
-                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-600 hover:bg-cyan-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                        className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`}
                         onClick={() => togglePlayerToReplace(player)}
                       >
                         <div 
@@ -640,10 +640,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         </div>
                         <div className="text-left flex-1">
                           <p className="font-semibold">{player.name}</p>
-                          <p className="text-sm text-slate-400">{player.position}</p>
+                          <p className="text-sm text-slate-500">{player.position}</p>
                         </div>
                         {isSelected && (
-                          <div className="w-6 h-6 rounded-full bg-white text-cyan-600 flex items-center justify-center font-bold">
+                          <div className="w-6 h-6 rounded-full bg-white text-cyan-500 flex items-center justify-center font-bold">
                             ✓
                           </div>
                         )}
@@ -654,7 +654,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </div>
 
               <Button
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600"
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white"
                 disabled={playersToReplace.length === 0}
                 onClick={() => setSubStep('select_in')}
               >
@@ -663,8 +663,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-slate-800 rounded-lg p-4 space-y-2">
-                <p className="text-sm text-slate-400 font-semibold">COMING OUT:</p>
+              <div className="bg-slate-100 rounded-lg p-4 space-y-2">
+                <p className="text-sm text-slate-500 font-semibold">COMING OUT:</p>
                 {playersToReplace.map(player => (
                   <div key={player.id} className="flex items-center gap-3">
                     <div 
@@ -674,14 +674,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       {player.jersey_number}
                     </div>
                     <div>
-                      <p className="font-semibold">{player.name}</p>
-                      <p className="text-sm text-slate-400">{player.position}</p>
+                      <p className="font-semibold text-slate-900">{player.name}</p>
+                      <p className="text-sm text-slate-500">{player.position}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <p className="text-center text-slate-400 font-semibold">
+              <p className="text-center text-slate-600 font-semibold">
                 SELECT {playersToReplace.length} REPLACEMENT{playersToReplace.length > 1 ? 'S' : ''} ({replacementPlayers.length}/{playersToReplace.length})
               </p>
 
@@ -692,7 +692,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   
                   return (
                     <div key={playerOut.id}>
-                      <p className="text-sm text-slate-400 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
+                      <p className="text-sm text-slate-600 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
                       {benchPlayers.map(player => {
                         const isSelected = replacementPlayers.includes(player.id);
                         const canSelect = !replacementPlayers.includes(player.id) || isSelected;
@@ -701,7 +701,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                             key={player.id}
                             variant={isSelected ? "default" : "outline"}
                             disabled={!canSelect}
-                            className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-600 hover:bg-green-700' : 'border-slate-700 hover:bg-slate-800'}`}
+                            className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`}
                             onClick={() => toggleReplacementPlayer(player.id)}
                           >
                             <div 
@@ -712,7 +712,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                             </div>
                             <div className="text-left flex-1">
                               <p className="font-semibold">{player.name}</p>
-                              <p className="text-sm text-slate-400">{player.position}</p>
+                              <p className="text-sm text-slate-500">{player.position}</p>
                             </div>
                             {isSelected && (
                               <div className="w-6 h-6 rounded-full bg-white text-green-600 flex items-center justify-center font-bold">
@@ -730,7 +730,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-slate-300 hover:bg-slate-100"
                   onClick={() => {
                     setSubStep('select_out');
                     setReplacementPlayers([]);
@@ -739,7 +739,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   Back
                 </Button>
                 <Button
-                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
                   disabled={replacementPlayers.length !== playersToReplace.length}
                   onClick={handleConfirmSubstitution}
                 >
