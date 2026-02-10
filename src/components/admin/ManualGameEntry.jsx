@@ -183,18 +183,19 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
       const lines = text.trim().split('\n');
       
       const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
-      const nameIdx = headers.findIndex(h => h === 'NAME');
-      const ptsIdx = headers.findIndex(h => h === 'PTS');
-      const tptIdx = headers.findIndex(h => h === '3PT');
+      const playerIdx = headers.findIndex(h => h === 'PLAYER');
+      const ptsIdx = headers.findIndex(h => h === 'POINTS');
+      const tptIdx = headers.findIndex(h => h === '3 POINTS');
       const ftIdx = headers.findIndex(h => h === 'FT');
-      const astIdx = headers.findIndex(h => h === 'AST');
-      const stlIdx = headers.findIndex(h => h === 'STL');
+      const astIdx = headers.findIndex(h => h === 'ASSIST');
+      const stlIdx = headers.findIndex(h => h === 'STEAL');
+      const blkIdx = headers.findIndex(h => h === 'BLOCK');
       const orebIdx = headers.findIndex(h => h === 'OREB');
       const drebIdx = headers.findIndex(h => h === 'DREB');
-      const toIdx = headers.findIndex(h => h === 'TO');
+      const toIdx = headers.findIndex(h => h === 'TURNOVER');
       const foulIdx = headers.findIndex(h => h === 'FOUL');
-      const tfIdx = headers.findIndex(h => h === 'TF');
-      const unspoIdx = headers.findIndex(h => h === 'UNSPO');
+      const tfIdx = headers.findIndex(h => h === 'TECHNICAL');
+      const unspoIdx = headers.findIndex(h => h === 'UNSPORTSMANLIKE');
 
       setPlayerStats(prev =>
         prev.map(ps => {
@@ -202,7 +203,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
 
           const playerRow = lines.slice(1).find(line => {
             const cols = line.split(',').map(c => c.trim());
-            return cols[nameIdx]?.toLowerCase() === ps.player_name.toLowerCase();
+            return cols[playerIdx]?.toLowerCase() === ps.player_name.toLowerCase();
           });
 
           if (!playerRow) return ps;
@@ -217,6 +218,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
               free_throws: parseInt(cols[ftIdx]) || 0,
               assists: parseInt(cols[astIdx]) || 0,
               steals: parseInt(cols[stlIdx]) || 0,
+              blocks: parseInt(cols[blkIdx]) || 0,
               offensive_rebounds: parseInt(cols[orebIdx]) || 0,
               defensive_rebounds: parseInt(cols[drebIdx]) || 0,
               turnovers: parseInt(cols[toIdx]) || 0,
@@ -228,7 +230,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         })
       );
     } catch (error) {
-      alert("Error reading CSV file. Ensure it has columns: Name, PTS, 3PT, FT, AST, STL, OREB, DREB, TO, FOUL, TF, UNSPO");
+      alert("Error reading CSV file. Ensure it has columns: PLAYER, POINTS, 3 POINTS, FT, ASSIST, STEAL, BLOCK, OREB, DREB, TURNOVER, FOUL, TECHNICAL, UNSPORTSMANLIKE");
     }
 
     if (fileInputRef.current) fileInputRef.current.value = "";
