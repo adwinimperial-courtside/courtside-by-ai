@@ -34,6 +34,16 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
             {league.description}
           </p>
         )}
+        {userType === 'app_admin' && (
+          <div className="mb-4 p-3 bg-slate-50 rounded-lg text-sm space-y-1 border border-slate-200">
+            <p className="text-slate-600">
+              <span className="font-medium">Created by:</span> {league.created_by}
+            </p>
+            <p className="text-slate-600">
+              <span className="font-medium">Created:</span> {new Date(league.created_date).toLocaleString()}
+            </p>
+          </div>
+        )}
         <div className="space-y-3">
           {!isViewer && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
