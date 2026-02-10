@@ -9,7 +9,7 @@ import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
 import GameStats from "../components/stats/GameStats";
-import AwardLeaders from "../components/stats/AwardLeaders";
+
 
 export default function StatisticsPage() {
   const [selectedLeague, setSelectedLeague] = useState("all");
@@ -179,9 +179,6 @@ export default function StatisticsPage() {
             <TabsTrigger value="games" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
               Game Stats
             </TabsTrigger>
-            <TabsTrigger value="awards" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-              Award Leaders
-            </TabsTrigger>
             </TabsList>
 
           <TabsContent value="teamstats">
@@ -216,22 +213,6 @@ export default function StatisticsPage() {
               players={players}
               stats={allStats}
             />
-          </TabsContent>
-
-          <TabsContent value="awards">
-            {selectedLeague === "all" ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-                <p className="text-slate-500 text-center">Please select a league to view award leaders</p>
-              </div>
-            ) : (
-              <AwardLeaders
-                league={leagues.find(l => l.id === selectedLeague)}
-                teams={teams}
-                games={games}
-                players={players}
-                stats={allStats}
-              />
-            )}
           </TabsContent>
         </Tabs>
       </div>
