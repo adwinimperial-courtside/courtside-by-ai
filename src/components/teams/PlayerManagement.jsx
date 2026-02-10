@@ -138,14 +138,15 @@ export default function PlayerManagement({ teamId, team }) {
       const mappedRows = lines.slice(1)
         .map(line => {
           const cols = line.split(',').map(c => c.trim());
+          const num = parseInt(cols[numberIndex]);
           return {
             id: null,
             name: cols[nameIndex] || "",
-            jersey_number: parseInt(cols[numberIndex]) || "",
+            jersey_number: !isNaN(num) ? num : "",
             position: "PG"
           };
         })
-        .filter(row => row.name && row.jersey_number);
+        .filter(row => row.name && row.jersey_number !== "");
 
       // Remove empty rows and duplicates, keeping existing rows with captain flag
       let filteredData = tableData.filter(row => row.name && row.jersey_number);
