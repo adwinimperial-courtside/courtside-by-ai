@@ -6,9 +6,10 @@ export default function LeagueLeaders({ players, teams, stats }) {
   const playerAggregates = players.map(player => {
     const playerStats = stats.filter(s => s.player_id === player.id);
     const team = teams.find(t => t.id === player.team_id);
+    const gamesPlayed = playerStats.length;
     
     const totals = playerStats.reduce((acc, stat) => ({
-      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3),
+      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
       threes: acc.threes + (stat.points_3 || 0),
       rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
       assists: acc.assists + (stat.assists || 0),
@@ -16,16 +17,25 @@ export default function LeagueLeaders({ players, teams, stats }) {
       blocks: acc.blocks + (stat.blocks || 0),
     }), { points: 0, threes: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 });
 
-    return { ...player, team, ...totals };
+    return { 
+      ...player, 
+      team, 
+      points: gamesPlayed > 0 ? (totals.points / gamesPlayed) : 0,
+      threes: gamesPlayed > 0 ? (totals.threes / gamesPlayed) : 0,
+      rebounds: gamesPlayed > 0 ? (totals.rebounds / gamesPlayed) : 0,
+      assists: gamesPlayed > 0 ? (totals.assists / gamesPlayed) : 0,
+      steals: gamesPlayed > 0 ? (totals.steals / gamesPlayed) : 0,
+      blocks: gamesPlayed > 0 ? (totals.blocks / gamesPlayed) : 0,
+    };
   }).filter(p => stats.some(s => s.player_id === p.id));
 
   const categories = [
-    { key: 'points', label: 'Points Leaders', icon: '🏀' },
-    { key: 'threes', label: '3-Point Leaders', icon: '🎯' },
-    { key: 'rebounds', label: 'Rebound Leaders', icon: '💪' },
-    { key: 'assists', label: 'Assist Leaders', icon: '🤝' },
-    { key: 'steals', label: 'Steal Leaders', icon: '👐' },
-    { key: 'blocks', label: 'Block Leaders', icon: '🚫' },
+    { key: 'points', label: 'PPG Leaders', icon: '🏀' },
+    { key: 'threes', label: '3PM Leaders', icon: '🎯' },
+    { key: 'rebounds', label: 'RPG Leaders', icon: '💪' },
+    { key: 'assists', label: 'APG Leaders', icon: '🤝' },
+    { key: 'steals', label: 'SPG Leaders', icon: '👐' },
+    { key: 'blocks', label: 'BPG Leaders', icon: '🚫' },
   ];
 
   return (
@@ -68,7 +78,7 @@ export default function LeagueLeaders({ players, teams, stats }) {
                         <p className="font-medium text-sm truncate">{player.name}</p>
                         <p className="text-xs text-slate-500">{player.team?.name}</p>
                       </div>
-                      <p className="font-bold text-purple-600">{player[category.key]}</p>
+                      <p className="font-bold text-purple-600">{player[category.key].toFixed(1)}</p>
                     </div>
                   ))}
                 </div>

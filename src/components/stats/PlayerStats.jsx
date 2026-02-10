@@ -53,18 +53,18 @@ export default function PlayerStats({ players, teams, stats }) {
                   <TableHead>Player</TableHead>
                   <TableHead>Team</TableHead>
                   <TableHead className="text-center">GP</TableHead>
-                  <TableHead className="text-center">PTS</TableHead>
-                  <TableHead className="text-center">2PT</TableHead>
-                  <TableHead className="text-center">3PT</TableHead>
-                  <TableHead className="text-center">FT</TableHead>
+                  <TableHead className="text-center">PPG</TableHead>
+                  <TableHead className="text-center">2PM</TableHead>
+                  <TableHead className="text-center">3PM</TableHead>
+                  <TableHead className="text-center">FTM</TableHead>
                   <TableHead className="text-center">OREB</TableHead>
                   <TableHead className="text-center">DREB</TableHead>
-                  <TableHead className="text-center">REB</TableHead>
-                  <TableHead className="text-center">AST</TableHead>
-                  <TableHead className="text-center">STL</TableHead>
-                  <TableHead className="text-center">BLK</TableHead>
-                  <TableHead className="text-center">TO</TableHead>
-                  <TableHead className="text-center">FOULS</TableHead>
+                  <TableHead className="text-center">RPG</TableHead>
+                  <TableHead className="text-center">APG</TableHead>
+                  <TableHead className="text-center">SPG</TableHead>
+                  <TableHead className="text-center">BPG</TableHead>
+                  <TableHead className="text-center">TPG</TableHead>
+                  <TableHead className="text-center">FPG</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -83,18 +83,18 @@ export default function PlayerStats({ players, teams, stats }) {
                     </TableCell>
                     <TableCell className="text-slate-600">{player.team?.name}</TableCell>
                     <TableCell className="text-center">{player.games}</TableCell>
-                    <TableCell className="text-center font-semibold">{player.points}</TableCell>
-                    <TableCell className="text-center">{player.points_2}</TableCell>
-                    <TableCell className="text-center">{player.points_3}</TableCell>
-                    <TableCell className="text-center">{player.freeThrows}</TableCell>
-                    <TableCell className="text-center">{player.offensiveRebounds}</TableCell>
-                    <TableCell className="text-center">{player.defensiveRebounds}</TableCell>
-                    <TableCell className="text-center">{player.rebounds}</TableCell>
-                    <TableCell className="text-center">{player.assists}</TableCell>
-                    <TableCell className="text-center">{player.steals}</TableCell>
-                    <TableCell className="text-center">{player.blocks}</TableCell>
-                    <TableCell className="text-center">{player.turnovers}</TableCell>
-                    <TableCell className="text-center">{player.fouls}</TableCell>
+                    <TableCell className="text-center font-semibold">{player.ppg}</TableCell>
+                    <TableCell className="text-center">{(player.points_2 / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.points_3 / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.freeThrows / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.offensiveRebounds / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.defensiveRebounds / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{player.rpg}</TableCell>
+                    <TableCell className="text-center">{player.apg}</TableCell>
+                    <TableCell className="text-center">{(player.steals / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.blocks / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.turnovers / player.games).toFixed(1)}</TableCell>
+                    <TableCell className="text-center">{(player.fouls / player.games).toFixed(1)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
