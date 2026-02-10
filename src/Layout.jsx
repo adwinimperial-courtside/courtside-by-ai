@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Trophy, Users, Calendar, BarChart3 } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -36,6 +36,13 @@ const navigationItems = [
   title: "Statistics",
   url: createPageUrl("Statistics"),
   icon: BarChart3
+}];
+
+const adminItems = [
+{
+  title: "Admin Tools",
+  url: createPageUrl("AdminTools"),
+  icon: Settings
 }];
 
 
@@ -74,6 +81,31 @@ export default function Layout({ children }) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navigationItems.map((item) =>
+                  <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                      asChild
+                      className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''}`
+                      }>
+
+                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5">
+                          <item.icon className="w-5 h-5" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+                Admin
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {adminItems.map((item) =>
                   <SidebarMenuItem key={item.title}>
                       <SidebarMenuButton
                       asChild
