@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import UserManagement from "../components/admin/UserManagement";
 import PendingUserManagement from "../components/admin/PendingUserManagement";
 import ManageRequests from "../components/admin/ManageRequests";
+import LeagueAccessRequests from "../components/admin/LeagueAccessRequests";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -118,6 +119,13 @@ export default function OwnerTools() {
         </div>
 
         <div className="grid gap-6">
+          {/* League Access Requests */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">League Access Requests</h2>
+            <p className="text-slate-600 mb-4">Approve or reject user requests for league access</p>
+            <LeagueAccessRequests />
+          </div>
+
           {/* Manage Requests */}
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">League Setup Requests</h2>
