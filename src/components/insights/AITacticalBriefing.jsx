@@ -46,7 +46,7 @@ export default function AITacticalBriefing({
 
   const usageCounter = usageCounters[0];
   const briefingsUsed = usageCounter?.briefings_generated || 0;
-  const monthlyLimit = usageCounter?.monthly_limit || 2;
+  const monthlyLimit = usageCounter?.monthly_limit || 5;
   const briefingsRemaining = monthlyLimit - briefingsUsed;
   const hasReachedLimit = briefingsUsed >= monthlyLimit;
 
@@ -172,7 +172,7 @@ Keep output:
           league_id: selectedLeague,
           month_year: currentMonthYear,
           briefings_generated: 1,
-          monthly_limit: 2
+          monthly_limit: 5
         });
       }
 
