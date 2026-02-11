@@ -207,7 +207,10 @@ export default function CoachInsights() {
       const ppg = totalPts / gamesPlayed;
       const rpg = totalReb / gamesPlayed;
       const apg = totalAst / gamesPlayed;
-      const impact = ppg + (rpg * 1.2) + (apg * 1.5) + (totalStl / gamesPlayed) + (totalBlk / gamesPlayed);
+      const spg = totalStl / gamesPlayed;
+      const bpg = totalBlk / gamesPlayed;
+      const fpg = totalFouls / gamesPlayed;
+      const impact = ppg + (rpg * 1.2) + (apg * 1.5) + spg + bpg;
       const defensiveImpact = (totalStl + totalBlk - totalFouls) / gamesPlayed;
 
       return {
@@ -219,6 +222,9 @@ export default function CoachInsights() {
         ppg: ppg.toFixed(1),
         rpg: rpg.toFixed(1),
         apg: apg.toFixed(1),
+        spg: spg.toFixed(1),
+        bpg: bpg.toFixed(1),
+        fpg: fpg.toFixed(1),
       };
     }).filter(Boolean);
   }, [selectedTeam, players, playerStats]);
@@ -756,7 +762,11 @@ export default function CoachInsights() {
                         <div className="flex-1">
                           <div className="font-bold text-slate-900">#{player.jerseyNumber} {player.name}</div>
                           <div className="text-sm text-slate-600">
-                            {player.ppg} PPG · {player.rpg} RPG · {player.apg} APG
+                            {sortBy === 'defensive' ? (
+                              <>{player.spg} STL · {player.bpg} BLK · {player.fpg} FOULS</>
+                            ) : (
+                              <>{player.ppg} PPG · {player.rpg} RPG · {player.apg} APG</>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
