@@ -34,8 +34,9 @@ export default function Layout({ children }) {
         
         // Check if user has no assigned leagues and redirect to LeagueSelection
         if (user && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
-          if (location.pathname !== createPageUrl('LeagueSelection')) {
-            navigate(createPageUrl('LeagueSelection'));
+          const leagueSelectionPath = createPageUrl('LeagueSelection');
+          if (!location.pathname.includes('LeagueSelection')) {
+            navigate(leagueSelectionPath, { replace: true });
           }
         }
       } catch (error) {
@@ -45,7 +46,7 @@ export default function Layout({ children }) {
       }
     };
     fetchUser();
-  }, [location.pathname, navigate]);
+  }, [navigate]);
 
   const getUserTypeIcon = () => {
     if (!currentUser?.user_type) return null;
