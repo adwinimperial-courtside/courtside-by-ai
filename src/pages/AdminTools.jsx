@@ -352,6 +352,28 @@ export default function AdminTools() {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <RefreshCw className="w-5 h-5 text-purple-600" />
+                    Recalculate Team Standings
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Recalculate wins, losses, and point differentials for all teams based on completed games
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Button
+                    onClick={recalculateTeamStandings}
+                    disabled={isRecalculatingStandings}
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculatingStandings ? 'animate-spin' : ''}`} />
+                    {isRecalculatingStandings ? 'Recalculating...' : 'Recalculate All Team Standings'}
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
