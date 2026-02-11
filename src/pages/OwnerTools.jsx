@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserManagement from "../components/admin/UserManagement";
 import PendingUserManagement from "../components/admin/PendingUserManagement";
+import ManageRequests from "../components/admin/ManageRequests";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -117,6 +118,13 @@ export default function OwnerTools() {
         </div>
 
         <div className="grid gap-6">
+          {/* Manage Requests */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">League Setup Requests</h2>
+            <p className="text-slate-600 mb-4">View and manage incoming requests from the landing page</p>
+            <ManageRequests />
+          </div>
+
           <Card className="border-slate-200 shadow-lg">
             <CardHeader className="border-b border-slate-200 bg-white">
               <CardTitle className="text-xl flex items-center gap-2">

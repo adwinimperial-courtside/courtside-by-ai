@@ -37,17 +37,12 @@ export default function Landing() {
     setIsSubmitting(true);
 
     try {
-      await base44.integrations.Core.SendEmail({
-        to: "courtside@example.com",
-        subject: `League Setup Request - ${formData.leagueName}`,
-        body: `
-League Name: ${formData.leagueName}
-Contact Person: ${formData.contactPerson}
-Email: ${formData.email}
-
-Message:
-${formData.message}
-        `
+      await base44.entities.LeagueSetupRequest.create({
+        league_name: formData.leagueName,
+        contact_person: formData.contactPerson,
+        email: formData.email,
+        message: formData.message,
+        status: "pending"
       });
 
       setSubmitSuccess(true);
