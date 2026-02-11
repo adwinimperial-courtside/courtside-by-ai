@@ -16,6 +16,7 @@ export default function AdminTools() {
   const [showDeleteEntry, setShowDeleteEntry] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
+  const [isRecalculatingStandings, setIsRecalculatingStandings] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
