@@ -1,10 +1,5 @@
-// Placeholder file, this should be overridden by the generated code
-
+import Landing from "./Landing";
 
 export default function Home() {
-
-  return (
-    <div>
-    </div>
-  );
+  return <Landing />;
 }
