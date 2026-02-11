@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Settings, Key } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Settings, Key, Palette } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import UserManagement from "../components/admin/UserManagement";
 
 export default function OwnerTools() {
