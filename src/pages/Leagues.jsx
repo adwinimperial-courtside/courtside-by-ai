@@ -33,9 +33,22 @@ export default function LeaguesPage() {
   });
 
   const createLeagueMutation = useMutation({
-    mutationFn: (leagueData) => base44.entities.League.create(leagueData),
+    mutationFn: async (leagueData) => {
+      const newLeague = await base44.entities.League.create(leagueData);
+      
+      // If user is league_admin, add the new league to their assigned leagues
+      if (currentUser?.user_type === 'league_admin') {
+        const currentAssignedLeagues = currentUser.assigned_league_ids || [];
+        await base44.auth.updateMe({
+          assigned_league_ids: [...currentAssignedLeagues, newLeague.id]
+        });
+      }
+      
+      return newLeague;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      queryClient.invalidateQueries({ queryKey: ['user'] });
       setShowCreateDialog(false);
     },
   });
