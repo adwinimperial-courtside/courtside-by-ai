@@ -8,6 +8,19 @@ import UserManagement from "../components/admin/UserManagement";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [isGeneratingLogos, setIsGeneratingLogos] = useState(false);
+  const [logoProgress, setLogoProgress] = useState({ current: 0, total: 0, teamName: '' });
+  const queryClient = useQueryClient();
+
+  const { data: leagues = [] } = useQuery({
+    queryKey: ['leagues'],
+    queryFn: () => base44.entities.League.list(),
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => base44.entities.Team.list(),
+  });
 
   React.useEffect(() => {
     const fetchUser = async () => {
