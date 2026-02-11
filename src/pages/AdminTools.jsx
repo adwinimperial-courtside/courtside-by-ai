@@ -374,28 +374,6 @@ export default function AdminTools() {
                   </Button>
                 </CardContent>
               </Card>
-
-              <Card className="border-slate-200 shadow-lg">
-                <CardHeader className="border-b border-slate-200 bg-white">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Palette className="w-5 h-5 text-pink-600" />
-                    Generate Team Logos
-                  </CardTitle>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Generate AI-powered logos for all teams in Pinoy Basketball Open League Finland
-                  </p>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Button
-                    onClick={generateTeamLogos}
-                    disabled={isGeneratingLogos}
-                    className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
-                  >
-                    <Palette className={`w-4 h-4 mr-2 ${isGeneratingLogos ? 'animate-spin' : ''}`} />
-                    {isGeneratingLogos ? `Generating... (${logoProgress.current}/${logoProgress.total}) ${logoProgress.teamName}` : 'Generate All Team Logos'}
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>
