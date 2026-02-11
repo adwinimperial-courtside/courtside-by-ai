@@ -94,6 +94,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
     mutationFn: (playerId) => base44.entities.Team.update(teamId, { team_captain: playerId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      queryClient.invalidateQueries({ queryKey: ['players', teamId] });
     },
   });
 
