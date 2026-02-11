@@ -60,6 +60,7 @@ import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
+import LeagueSelection from './pages/LeagueSelection';
 import __Layout from './Layout.jsx';
 
 
@@ -77,6 +78,7 @@ export const PAGES = {
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
+    "LeagueSelection": LeagueSelection,
 }
 
 export const pagesConfig = {
