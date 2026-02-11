@@ -139,7 +139,18 @@ export default function OwnerTools() {
             </CardContent>
           </Card>
 
-          <UserManagement />
+          {/* Pending User Management */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Pending User Assignments</h2>
+            <p className="text-slate-600 mb-4">Pre-configure settings for users before they log in for the first time</p>
+            <PendingUserManagement />
+          </div>
+
+          {/* User Management */}
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">Existing Users</h2>
+            <UserManagement />
+          </div>
         </div>
       </div>
     </div>
