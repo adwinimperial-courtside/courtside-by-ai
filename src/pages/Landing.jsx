@@ -21,7 +21,6 @@ import {
   LogIn
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import { createPageUrl } from "./utils";
 
 export default function Landing() {
   const [formData, setFormData] = useState({
@@ -62,7 +61,7 @@ ${formData.message}
   };
 
   const handleLogin = () => {
-    window.location.href = createPageUrl("Leagues");
+    window.location.href = "/Leagues";
   };
 
   return (
