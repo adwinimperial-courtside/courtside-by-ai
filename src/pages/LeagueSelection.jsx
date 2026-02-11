@@ -16,6 +16,8 @@ import {
 export default function LeagueSelection() {
   const [selectedLeagues, setSelectedLeagues] = useState([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [isCheckingApproval, setIsCheckingApproval] = useState(false);
+  const [notApprovedMessage, setNotApprovedMessage] = useState("");
 
   const { data: currentUser } = useQuery({
     queryKey: ['user'],
@@ -59,6 +61,25 @@ export default function LeagueSelection() {
       return;
     }
     createRequestMutation.mutate(selectedLeagues);
+  };
+
+  const handleRefresh = async () => {
+    setIsCheckingApproval(true);
+    setNotApprovedMessage("");
+    
+    try {
+      const updatedUser = await base44.auth.me();
+      
+      if (updatedUser.assigned_league_ids && updatedUser.assigned_league_ids.length > 0) {
+        window.location.reload();
+      } else {
+        setNotApprovedMessage("Request has not yet been approved.");
+      }
+    } catch (error) {
+      setNotApprovedMessage("Error checking approval status. Please try again.");
+    } finally {
+      setIsCheckingApproval(false);
+    }
   };
 
   return (
@@ -126,13 +147,19 @@ export default function LeagueSelection() {
                 <p>Your request will be reviewed within 10 minutes.</p>
               </div>
               <p className="text-slate-600">
-                Please refresh the page to check if your request has been approved.
+                Click the button below to check if your request has been approved.
               </p>
+              {notApprovedMessage && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-yellow-800 text-sm font-medium">{notApprovedMessage}</p>
+                </div>
+              )}
               <Button
-                onClick={() => window.location.reload()}
+                onClick={handleRefresh}
+                disabled={isCheckingApproval}
                 className="w-full mt-4 bg-orange-600 hover:bg-orange-700"
               >
-                Refresh Page
+                {isCheckingApproval ? 'Checking...' : 'Refresh Page'}
               </Button>
             </AlertDialogDescription>
           </AlertDialogHeader>
