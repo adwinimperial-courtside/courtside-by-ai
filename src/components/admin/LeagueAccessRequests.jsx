@@ -27,15 +27,10 @@ export default function LeagueAccessRequests() {
 
   const approveMutation = useMutation({
     mutationFn: async (request) => {
-      const user = users.find(u => u.id === request.user_id);
-      
-      await base44.asServiceRole.entities.User.update(request.user_id, {
-        assigned_league_ids: request.requested_league_ids,
-        user_type: "viewer"
-      });
-
-      await base44.entities.LeagueAccessRequest.update(request.id, {
-        status: "approved"
+      await base44.functions.invoke('approveLeagueAccess', {
+        requestId: request.id,
+        userId: request.user_id,
+        leagueIds: request.requested_league_ids
       });
     },
     onSuccess: () => {
