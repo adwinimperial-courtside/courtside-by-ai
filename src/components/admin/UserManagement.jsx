@@ -18,7 +18,6 @@ import { ArrowLeft, ChevronRight } from "lucide-react";
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [formData, setFormData] = useState({
-    role: "",
     user_type: "",
     assigned_league_ids: [],
   });
@@ -37,7 +36,6 @@ export default function UserManagement() {
   const updateUserMutation = useMutation({
     mutationFn: (data) =>
       base44.entities.User.update(selectedUser.id, {
-        role: data.role,
         user_type: data.user_type,
         assigned_league_ids: data.assigned_league_ids,
       }),
@@ -45,7 +43,6 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       setSelectedUser(null);
       setFormData({
-        role: "",
         user_type: "",
         assigned_league_ids: [],
       });
@@ -55,7 +52,6 @@ export default function UserManagement() {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
     setFormData({
-      role: user.role || "user",
       user_type: user.user_type || "viewer",
       assigned_league_ids: user.assigned_league_ids || [],
     });
@@ -88,7 +84,6 @@ export default function UserManagement() {
             onClick={() => {
               setSelectedUser(null);
               setFormData({
-                role: "",
                 user_type: "",
                 assigned_league_ids: [],
               });
@@ -100,21 +95,15 @@ export default function UserManagement() {
           </Button>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
-          {/* Role Selection */}
+          {/* Display Role (read-only) */}
           <div>
             <Label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Role
+              Role (Read-only)
             </Label>
-            <Select value={formData.role} onValueChange={(val) => setFormData({ ...formData, role: val })}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select role..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-slate-500 mt-1">App-level access control</p>
+            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700">
+              {selectedUser.role === "admin" ? "Admin" : "User"}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Role can only be changed via platform settings</p>
           </div>
 
           {/* User Type Selection */}
