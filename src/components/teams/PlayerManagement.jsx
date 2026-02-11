@@ -43,6 +43,15 @@ export default function PlayerManagement({ teamId, team, userType }) {
     queryFn: () => base44.entities.Player.filter({ team_id: teamId }),
   });
 
+  const { data: currentTeam } = useQuery({
+    queryKey: ['team', teamId],
+    queryFn: async () => {
+      const teams = await base44.entities.Team.filter({ id: teamId });
+      return teams[0];
+    },
+    initialData: team,
+  });
+
   React.useEffect(() => {
     const initialData = players.map(p => ({ ...p }));
     while (initialData.length < 12) {
