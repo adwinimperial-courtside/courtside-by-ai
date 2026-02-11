@@ -183,7 +183,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
     }
   };
 
-  const isCaptain = (playerId) => team?.team_captain === playerId;
+  const isCaptain = (playerId) => currentTeam?.team_captain === playerId;
 
   return (
     <div className="space-y-6">
