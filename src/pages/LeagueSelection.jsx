@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,8 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { createPageUrl } from "../utils";
 
 export default function LeagueSelection() {
+  const navigate = useNavigate();
   const [selectedLeagues, setSelectedLeagues] = useState([]);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
@@ -71,7 +74,7 @@ export default function LeagueSelection() {
       const updatedUser = await base44.auth.me();
       
       if (updatedUser.assigned_league_ids && updatedUser.assigned_league_ids.length > 0) {
-        window.location.reload();
+        navigate(createPageUrl('Leagues'));
       } else {
         setNotApprovedMessage("Request has not yet been approved.");
       }
