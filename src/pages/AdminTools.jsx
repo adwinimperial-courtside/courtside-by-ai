@@ -191,6 +191,59 @@ export default function AdminTools() {
     }
   };
 
+  const generateTeamLogos = async () => {
+    if (!confirm('This will generate AI logos for teams in Pinoy Basketball Open League Finland. This may take several minutes. Continue?')) {
+      return;
+    }
+
+    setIsGeneratingLogos(true);
+    try {
+      const league = filteredLeagues.find(l => l.name === 'Pinoy Basketball Open League Finland');
+      if (!league) {
+        alert('League not found');
+        return;
+      }
+
+      const leagueTeams = teams.filter(t => t.league_id === league.id);
+      setLogoProgress({ current: 0, total: leagueTeams.length, teamName: '' });
+
+      const teamLogoPrompts = {
+        'Espoo Eagles': 'Modern basketball team logo for "Espoo Eagles" - featuring a majestic eagle with spread wings holding a basketball, use orange and white colors, professional sports team design, shield emblem style',
+        'Oulu Outlaws': 'Modern basketball team logo for "Oulu Outlaws" - featuring a cowboy or outlaw silhouette with a basketball, use green and black colors, professional sports team design, badge style',
+        'Kuopio Knights': 'Modern basketball team logo for "Kuopio Knights" - featuring a medieval knight helmet with a basketball, use purple and silver colors, professional sports team design, shield emblem style',
+        'Pori Phoenix': 'Modern basketball team logo for "Pori Phoenix" - featuring a rising phoenix bird with flames and a basketball, use orange and red colors, professional sports team design, circular emblem style',
+        'Helsinki Hawks': 'Modern basketball team logo for "Helsinki Hawks" - featuring an aggressive hawk head with a basketball, use blue and white colors, professional sports team design, modern badge style',
+        'Tampere Thunder': 'Modern basketball team logo for "Tampere Thunder" - featuring lightning bolt striking a basketball, use red and yellow colors, professional sports team design, dynamic shield style',
+        'Vantaa Vikings': 'Modern basketball team logo for "Vantaa Vikings" - featuring a viking helmet with horns and a basketball, use purple and gold colors, professional sports team design, shield emblem style',
+        'Turku Titans': 'Modern basketball team logo for "Turku Titans" - featuring a titan or giant figure with a basketball, use yellow and black colors, professional sports team design, powerful badge style',
+        'Jyväskylä Jets': 'Modern basketball team logo for "Jyväskylä Jets" - featuring a jet plane with a basketball trail, use cyan and white colors, professional sports team design, sleek modern emblem',
+        'Lahti Lions': 'Modern basketball team logo for "Lahti Lions" - featuring a roaring lion head with a basketball, use pink and red colors, professional sports team design, fierce shield style'
+      };
+
+      for (let i = 0; i < leagueTeams.length; i++) {
+        const team = leagueTeams[i];
+        setLogoProgress({ current: i + 1, total: leagueTeams.length, teamName: team.name });
+
+        const prompt = teamLogoPrompts[team.name] || `Modern professional basketball team logo for "${team.name}", dynamic design with basketball elements, team colors, shield or badge style`;
+
+        try {
+          const result = await base44.integrations.Core.GenerateImage({ prompt });
+          await base44.entities.Team.update(team.id, { logo_url: result.url });
+        } catch (error) {
+          console.error(`Failed to generate logo for ${team.name}:`, error);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      alert('Successfully generated logos for all teams!');
+    } catch (error) {
+      alert('Error generating logos: ' + error.message);
+    } finally {
+      setIsGeneratingLogos(false);
+      setLogoProgress({ current: 0, total: 0, teamName: '' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
