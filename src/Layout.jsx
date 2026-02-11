@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Shield, Eye, LogOut, Trophy, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import {
 "@/components/ui/sidebar";
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
+import { createPageUrl } from "./utils";
 
 
 export default function Layout({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,6 +31,13 @@ export default function Layout({ children }) {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
+        
+        // Check if user has no assigned leagues and redirect to LeagueSelection
+        if (user && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
+          if (location.pathname !== createPageUrl('LeagueSelection')) {
+            navigate(createPageUrl('LeagueSelection'));
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       } finally {
@@ -36,7 +45,7 @@ export default function Layout({ children }) {
       }
     };
     fetchUser();
-  }, []);
+  }, [location.pathname, navigate]);
 
   const getUserTypeIcon = () => {
     if (!currentUser?.user_type) return null;
