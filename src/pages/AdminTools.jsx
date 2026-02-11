@@ -138,6 +138,57 @@ export default function AdminTools() {
     }
   };
 
+  const recalculateTeamStandings = async () => {
+    setIsRecalculatingStandings(true);
+    try {
+      // Get all completed games
+      const allGames = await base44.entities.Game.filter({ status: 'completed' });
+      const allTeams = await base44.entities.Team.list();
+
+      // Group teams by league and calculate wins/losses
+      const teamStats = {};
+      
+      // Initialize all teams with 0 wins/losses
+      allTeams.forEach(team => {
+        teamStats[team.id] = { wins: 0, losses: 0 };
+      });
+
+      // Calculate wins and losses from completed games
+      allGames.forEach(game => {
+        if (game.home_score > game.away_score) {
+          // Home team won
+          teamStats[game.home_team_id].wins += 1;
+          teamStats[game.away_team_id].losses += 1;
+        } else if (game.away_score > game.home_score) {
+          // Away team won
+          teamStats[game.away_team_id].wins += 1;
+          teamStats[game.home_team_id].losses += 1;
+        }
+        // Ties are not counted
+      });
+
+      // Update all teams
+      let updatedCount = 0;
+      for (const team of allTeams) {
+        const stats = teamStats[team.id];
+        if (team.wins !== stats.wins || team.losses !== stats.losses) {
+          await base44.entities.Team.update(team.id, {
+            wins: stats.wins,
+            losses: stats.losses,
+          });
+          updatedCount++;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['teams'] });
+      alert(`Successfully recalculated standings for ${updatedCount} team(s)!`);
+    } catch (error) {
+      alert('Error recalculating standings: ' + error.message);
+    } finally {
+      setIsRecalculatingStandings(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
