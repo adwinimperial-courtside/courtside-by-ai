@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Target, Users, Trophy, Shield, ArrowUpDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Target, Users, Trophy, Shield, ArrowUpDown, AlertCircle, Lightbulb, Minus, Plus } from "lucide-react";
 
 export default function CoachInsights() {
   const [selectedLeague, setSelectedLeague] = useState("");
@@ -234,9 +234,41 @@ export default function CoachInsights() {
     }
   }, [playerRankings, sortBy]);
 
+  // Team Season Averages
+  const teamSeasonAverages = useMemo(() => {
+    if (!selectedTeam || teamGames.length === 0) return null;
+
+    let totalPoints = 0, totalAssists = 0, totalReboundMargin = 0, totalTurnovers = 0, totalRebounds = 0;
+
+    teamGames.forEach(game => {
+      const isHome = game.home_team_id === selectedTeam;
+      totalPoints += isHome ? game.home_score : game.away_score;
+
+      const teamStats = playerStats.filter(s => s.game_id === game.id && s.team_id === selectedTeam);
+      const oppStats = playerStats.filter(s => s.game_id === game.id && s.team_id !== selectedTeam);
+
+      totalAssists += teamStats.reduce((sum, s) => sum + (s.assists || 0), 0);
+      
+      const teamReb = teamStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+      const oppReb = oppStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+      totalRebounds += teamReb;
+      totalReboundMargin += (teamReb - oppReb);
+      
+      totalTurnovers += teamStats.reduce((sum, s) => sum + (s.turnovers || 0), 0);
+    });
+
+    return {
+      points: totalPoints / teamGames.length,
+      assists: totalAssists / teamGames.length,
+      rebounds: totalRebounds / teamGames.length,
+      reboundMargin: totalReboundMargin / teamGames.length,
+      turnovers: totalTurnovers / teamGames.length,
+    };
+  }, [selectedTeam, teamGames, playerStats]);
+
   // Last 3 Games Trend
   const last3GamesTrend = useMemo(() => {
-    if (!selectedTeam || teamGames.length === 0) return null;
+    if (!selectedTeam || teamGames.length === 0 || !teamSeasonAverages) return null;
 
     const recentGames = teamGames
       .sort((a, b) => new Date(b.game_date) - new Date(a.game_date))
@@ -262,14 +294,122 @@ export default function CoachInsights() {
       totalTurnovers += teamStats.reduce((sum, s) => sum + (s.turnovers || 0), 0);
     });
 
-    return {
-      points: (totalPoints / recentGames.length).toFixed(1),
-      assists: (totalAssists / recentGames.length).toFixed(1),
-      reboundMargin: (totalReboundMargin / recentGames.length).toFixed(1),
-      turnovers: (totalTurnovers / recentGames.length).toFixed(1),
-      gamesCount: recentGames.length,
+    const recent = {
+      points: totalPoints / recentGames.length,
+      assists: totalAssists / recentGames.length,
+      reboundMargin: totalReboundMargin / recentGames.length,
+      turnovers: totalTurnovers / recentGames.length,
     };
-  }, [selectedTeam, teamGames, playerStats]);
+
+    return {
+      points: recent.points.toFixed(1),
+      assists: recent.assists.toFixed(1),
+      reboundMargin: recent.reboundMargin.toFixed(1),
+      turnovers: recent.turnovers.toFixed(1),
+      gamesCount: recentGames.length,
+      momentum: {
+        points: recent.points > teamSeasonAverages.points ? 'up' : recent.points < teamSeasonAverages.points ? 'down' : 'stable',
+        rebounds: recent.reboundMargin > teamSeasonAverages.reboundMargin ? 'up' : recent.reboundMargin < teamSeasonAverages.reboundMargin ? 'down' : 'stable',
+        turnovers: recent.turnovers > teamSeasonAverages.turnovers ? 'up' : recent.turnovers < teamSeasonAverages.turnovers ? 'down' : 'stable',
+      }
+    };
+  }, [selectedTeam, teamGames, playerStats, teamSeasonAverages]);
+
+  // Key Insight - Identify strongest correlation with winning
+  const keyInsight = useMemo(() => {
+    if (!winLossComparison || winLossComparison.wins.count === 0 || winLossComparison.losses.count === 0) return null;
+
+    const wins = winLossComparison.wins.stats;
+    const losses = winLossComparison.losses.stats;
+
+    const differences = {
+      points: Math.abs(parseFloat(wins.points) - parseFloat(losses.points)),
+      assists: Math.abs(parseFloat(wins.assists) - parseFloat(losses.assists)),
+      reboundMargin: Math.abs(parseFloat(wins.reboundMargin) - parseFloat(losses.reboundMargin)),
+      turnovers: Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers)),
+    };
+
+    const maxDiff = Math.max(...Object.values(differences));
+    let message = "";
+    let metric = "";
+
+    if (differences.reboundMargin === maxDiff) {
+      message = "Rebounding margin shows the strongest correlation with winning.";
+      metric = "Rebound Margin";
+    } else if (differences.turnovers === maxDiff) {
+      message = "Turnover control is the biggest factor separating wins and losses.";
+      metric = "Turnovers";
+    } else if (differences.points === maxDiff) {
+      message = "Scoring production significantly impacts game outcomes.";
+      metric = "Points";
+    } else if (differences.assists === maxDiff) {
+      message = "Ball movement strongly influences winning results.";
+      metric = "Assists";
+    }
+
+    return { message, metric, maxDiff: maxDiff.toFixed(1) };
+  }, [winLossComparison]);
+
+  // Identify largest gap stat in Win vs Loss
+  const largestGapStat = useMemo(() => {
+    if (!winLossComparison) return null;
+
+    const wins = winLossComparison.wins.stats;
+    const losses = winLossComparison.losses.stats;
+
+    const differences = {
+      points: Math.abs(parseFloat(wins.points) - parseFloat(losses.points)),
+      assists: Math.abs(parseFloat(wins.assists) - parseFloat(losses.assists)),
+      reboundMargin: Math.abs(parseFloat(wins.reboundMargin) - parseFloat(losses.reboundMargin)),
+      turnovers: Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers)),
+    };
+
+    const maxDiff = Math.max(...Object.values(differences));
+    
+    if (differences.points === maxDiff) return 'points';
+    if (differences.assists === maxDiff) return 'assists';
+    if (differences.reboundMargin === maxDiff) return 'reboundMargin';
+    if (differences.turnovers === maxDiff) return 'turnovers';
+    
+    return null;
+  }, [winLossComparison]);
+
+  // Suggested Game Focus
+  const suggestedFocus = useMemo(() => {
+    if (!selectedOpponent || !opponentSnapshot || !teamSeasonAverages || !winLossComparison) return [];
+
+    const suggestions = [];
+    const wins = winLossComparison.wins.stats;
+    const losses = winLossComparison.losses.stats;
+
+    // Opponent rebounds vs team rebounds
+    if (parseFloat(opponentSnapshot.avgRebounds) > teamSeasonAverages.rebounds) {
+      suggestions.push("Focus on defensive rebounding.");
+    }
+
+    // Opponent turnovers
+    if (parseFloat(opponentSnapshot.avgTurnovers) < 10) {
+      suggestions.push("Increase defensive pressure.");
+    }
+
+    // Top scorer threat
+    if (opponentSnapshot.topScorer && parseFloat(opponentSnapshot.topScorer.ppg) > 20) {
+      suggestions.push(`Contain ${opponentSnapshot.topScorer.name}.`);
+    }
+
+    // Team rebound margin
+    if (teamSeasonAverages.reboundMargin < 0) {
+      suggestions.push("Prioritize rebounding discipline.");
+    }
+
+    // Turnovers in losses significantly higher
+    const turnoverGap = Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers));
+    if (turnoverGap > 3 && parseFloat(losses.turnovers) > parseFloat(wins.turnovers)) {
+      suggestions.push("Ball security must improve.");
+    }
+
+    return suggestions;
+  }, [selectedOpponent, opponentSnapshot, teamSeasonAverages, winLossComparison]);
 
   const selectedTeamName = teams.find(t => t.id === selectedTeam)?.name || "";
   const selectedOpponentName = teams.find(t => t.id === selectedOpponent)?.name || "";
@@ -327,6 +467,32 @@ export default function CoachInsights() {
           </Card>
         ) : (
           <div className="space-y-6">
+            {/* Key Insight */}
+            {keyInsight && (
+              <Card className="border-2 border-blue-300 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                <CardHeader className="border-b border-blue-200">
+                  <CardTitle className="flex items-center gap-2 text-blue-900">
+                    <Lightbulb className="w-6 h-6 text-blue-600" />
+                    Key Insight
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                      <AlertCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-lg font-semibold text-slate-900 mb-2">{keyInsight.message}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-blue-100 text-blue-800">{keyInsight.metric}</Badge>
+                        <span className="text-sm text-slate-600">Difference: {keyInsight.maxDiff}</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 1. Win vs Loss Comparison */}
             {winLossComparison && (
               <Card className="border-slate-200 shadow-lg">
@@ -345,21 +511,33 @@ export default function CoachInsights() {
                         In Wins ({winLossComparison.wins.count} games)
                       </h3>
                       <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Points:</span>
-                          <span className="font-bold text-green-700">{winLossComparison.wins.stats.points}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'points' ? 'bg-green-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'points' ? 'font-bold text-green-900' : 'text-slate-700'}`}>Avg Points:</span>
+                          <span className={`font-bold ${largestGapStat === 'points' ? 'text-green-900 text-lg' : 'text-green-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'points' && <TrendingUp className="w-4 h-4" />}
+                            {winLossComparison.wins.stats.points}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Assists:</span>
-                          <span className="font-bold text-green-700">{winLossComparison.wins.stats.assists}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'assists' ? 'bg-green-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'assists' ? 'font-bold text-green-900' : 'text-slate-700'}`}>Avg Assists:</span>
+                          <span className={`font-bold ${largestGapStat === 'assists' ? 'text-green-900 text-lg' : 'text-green-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'assists' && <TrendingUp className="w-4 h-4" />}
+                            {winLossComparison.wins.stats.assists}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Rebound Margin:</span>
-                          <span className="font-bold text-green-700">{winLossComparison.wins.stats.reboundMargin > 0 ? '+' : ''}{winLossComparison.wins.stats.reboundMargin}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'reboundMargin' ? 'bg-green-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'reboundMargin' ? 'font-bold text-green-900' : 'text-slate-700'}`}>Rebound Margin:</span>
+                          <span className={`font-bold ${largestGapStat === 'reboundMargin' ? 'text-green-900 text-lg' : 'text-green-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'reboundMargin' && <TrendingUp className="w-4 h-4" />}
+                            {winLossComparison.wins.stats.reboundMargin > 0 ? '+' : ''}{winLossComparison.wins.stats.reboundMargin}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Turnovers:</span>
-                          <span className="font-bold text-green-700">{winLossComparison.wins.stats.turnovers}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'turnovers' ? 'bg-green-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'turnovers' ? 'font-bold text-green-900' : 'text-slate-700'}`}>Avg Turnovers:</span>
+                          <span className={`font-bold ${largestGapStat === 'turnovers' ? 'text-green-900 text-lg' : 'text-green-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'turnovers' && <TrendingDown className="w-4 h-4" />}
+                            {winLossComparison.wins.stats.turnovers}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -370,23 +548,69 @@ export default function CoachInsights() {
                         In Losses ({winLossComparison.losses.count} games)
                       </h3>
                       <div className="space-y-3">
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Points:</span>
-                          <span className="font-bold text-red-700">{winLossComparison.losses.stats.points}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'points' ? 'bg-red-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'points' ? 'font-bold text-red-900' : 'text-slate-700'}`}>Avg Points:</span>
+                          <span className={`font-bold ${largestGapStat === 'points' ? 'text-red-900 text-lg' : 'text-red-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'points' && <TrendingDown className="w-4 h-4" />}
+                            {winLossComparison.losses.stats.points}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Assists:</span>
-                          <span className="font-bold text-red-700">{winLossComparison.losses.stats.assists}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'assists' ? 'bg-red-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'assists' ? 'font-bold text-red-900' : 'text-slate-700'}`}>Avg Assists:</span>
+                          <span className={`font-bold ${largestGapStat === 'assists' ? 'text-red-900 text-lg' : 'text-red-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'assists' && <TrendingDown className="w-4 h-4" />}
+                            {winLossComparison.losses.stats.assists}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Rebound Margin:</span>
-                          <span className="font-bold text-red-700">{winLossComparison.losses.stats.reboundMargin > 0 ? '+' : ''}{winLossComparison.losses.stats.reboundMargin}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'reboundMargin' ? 'bg-red-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'reboundMargin' ? 'font-bold text-red-900' : 'text-slate-700'}`}>Rebound Margin:</span>
+                          <span className={`font-bold ${largestGapStat === 'reboundMargin' ? 'text-red-900 text-lg' : 'text-red-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'reboundMargin' && <TrendingDown className="w-4 h-4" />}
+                            {winLossComparison.losses.stats.reboundMargin > 0 ? '+' : ''}{winLossComparison.losses.stats.reboundMargin}
+                          </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-700">Avg Turnovers:</span>
-                          <span className="font-bold text-red-700">{winLossComparison.losses.stats.turnovers}</span>
+                        <div className={`flex justify-between ${largestGapStat === 'turnovers' ? 'bg-red-100 -mx-2 px-2 py-1 rounded-lg' : ''}`}>
+                          <span className={`${largestGapStat === 'turnovers' ? 'font-bold text-red-900' : 'text-slate-700'}`}>Avg Turnovers:</span>
+                          <span className={`font-bold ${largestGapStat === 'turnovers' ? 'text-red-900 text-lg' : 'text-red-700'} flex items-center gap-1`}>
+                            {largestGapStat === 'turnovers' && <TrendingUp className="w-4 h-4" />}
+                            {winLossComparison.losses.stats.turnovers}
+                          </span>
                         </div>
                       </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Win Identity Snapshot */}
+            {winLossComparison && winLossComparison.wins.count > 0 && (
+              <Card className="border-slate-200 shadow-lg bg-gradient-to-br from-emerald-50 to-green-50">
+                <CardHeader className="border-b border-green-200">
+                  <CardTitle className="flex items-center gap-2 text-green-900">
+                    <Trophy className="w-5 h-5 text-green-600" />
+                    When We Win, We Average
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+                      <div className="text-3xl font-bold text-green-700">{winLossComparison.wins.stats.points}</div>
+                      <div className="text-sm text-slate-600 mt-1">Points</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+                      <div className="text-3xl font-bold text-green-700">{winLossComparison.wins.stats.assists}</div>
+                      <div className="text-sm text-slate-600 mt-1">Assists</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+                      <div className="text-3xl font-bold text-green-700">
+                        {winLossComparison.wins.stats.reboundMargin > 0 ? '+' : ''}{winLossComparison.wins.stats.reboundMargin}
+                      </div>
+                      <div className="text-sm text-slate-600 mt-1">Rebound Margin</div>
+                    </div>
+                    <div className="bg-white rounded-lg p-4 border-2 border-green-200 text-center">
+                      <div className="text-3xl font-bold text-green-700">{winLossComparison.wins.stats.turnovers}</div>
+                      <div className="text-sm text-slate-600 mt-1">Turnovers</div>
                     </div>
                   </div>
                 </CardContent>
@@ -476,6 +700,30 @@ export default function CoachInsights() {
               </CardContent>
             </Card>
 
+            {/* Suggested Game Focus */}
+            {selectedOpponent && suggestedFocus.length > 0 && (
+              <Card className="border-2 border-orange-300 shadow-lg bg-gradient-to-r from-orange-50 to-amber-50">
+                <CardHeader className="border-b border-orange-200">
+                  <CardTitle className="flex items-center gap-2 text-orange-900">
+                    <Target className="w-5 h-5 text-orange-600" />
+                    Suggested Game Focus
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <div className="space-y-3">
+                    {suggestedFocus.map((suggestion, idx) => (
+                      <div key={idx} className="flex items-start gap-3 bg-white rounded-lg p-4 border-2 border-orange-200">
+                        <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="text-white text-xs font-bold">{idx + 1}</span>
+                        </div>
+                        <p className="text-slate-900 font-medium">{suggestion}</p>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 4. Player Impact Rankings */}
             <Card className="border-slate-200 shadow-lg">
               <CardHeader className="border-b border-slate-200 bg-purple-50">
@@ -546,22 +794,55 @@ export default function CoachInsights() {
                 <CardContent className="pt-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="bg-white rounded-lg p-4 border-2 border-slate-200 text-center">
-                      <div className="text-3xl font-bold text-slate-900">{last3GamesTrend.points}</div>
-                      <div className="text-sm text-slate-600 mt-1">Avg Points</div>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        {last3GamesTrend.momentum.points === 'up' && <TrendingUp className="w-5 h-5 text-green-600" />}
+                        {last3GamesTrend.momentum.points === 'down' && <TrendingDown className="w-5 h-5 text-red-600" />}
+                        {last3GamesTrend.momentum.points === 'stable' && <Minus className="w-5 h-5 text-slate-400" />}
+                        <div className="text-3xl font-bold text-slate-900">{last3GamesTrend.points}</div>
+                      </div>
+                      <div className="text-sm text-slate-600">Avg Points</div>
+                      {last3GamesTrend.momentum.points === 'up' && (
+                        <Badge className="mt-2 bg-green-100 text-green-800 text-xs">Trending Up</Badge>
+                      )}
+                      {last3GamesTrend.momentum.points === 'down' && (
+                        <Badge className="mt-2 bg-red-100 text-red-800 text-xs">Trending Down</Badge>
+                      )}
                     </div>
                     <div className="bg-white rounded-lg p-4 border-2 border-slate-200 text-center">
                       <div className="text-3xl font-bold text-slate-900">{last3GamesTrend.assists}</div>
                       <div className="text-sm text-slate-600 mt-1">Avg Assists</div>
                     </div>
                     <div className="bg-white rounded-lg p-4 border-2 border-slate-200 text-center">
-                      <div className={`text-3xl font-bold ${last3GamesTrend.reboundMargin > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {last3GamesTrend.reboundMargin > 0 ? '+' : ''}{last3GamesTrend.reboundMargin}
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        {last3GamesTrend.momentum.rebounds === 'up' && <TrendingUp className="w-5 h-5 text-green-600" />}
+                        {last3GamesTrend.momentum.rebounds === 'down' && <TrendingDown className="w-5 h-5 text-red-600" />}
+                        {last3GamesTrend.momentum.rebounds === 'stable' && <Minus className="w-5 h-5 text-slate-400" />}
+                        <div className={`text-3xl font-bold ${last3GamesTrend.reboundMargin > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {last3GamesTrend.reboundMargin > 0 ? '+' : ''}{last3GamesTrend.reboundMargin}
+                        </div>
                       </div>
-                      <div className="text-sm text-slate-600 mt-1">Rebound Margin</div>
+                      <div className="text-sm text-slate-600">Rebound Margin</div>
+                      {last3GamesTrend.momentum.rebounds === 'up' && (
+                        <Badge className="mt-2 bg-green-100 text-green-800 text-xs">Trending Up</Badge>
+                      )}
+                      {last3GamesTrend.momentum.rebounds === 'down' && (
+                        <Badge className="mt-2 bg-red-100 text-red-800 text-xs">Trending Down</Badge>
+                      )}
                     </div>
                     <div className="bg-white rounded-lg p-4 border-2 border-slate-200 text-center">
-                      <div className="text-3xl font-bold text-slate-900">{last3GamesTrend.turnovers}</div>
-                      <div className="text-sm text-slate-600 mt-1">Avg Turnovers</div>
+                      <div className="flex items-center justify-center gap-2 mb-2">
+                        {last3GamesTrend.momentum.turnovers === 'up' && <TrendingUp className="w-5 h-5 text-red-600" />}
+                        {last3GamesTrend.momentum.turnovers === 'down' && <TrendingDown className="w-5 h-5 text-green-600" />}
+                        {last3GamesTrend.momentum.turnovers === 'stable' && <Minus className="w-5 h-5 text-slate-400" />}
+                        <div className="text-3xl font-bold text-slate-900">{last3GamesTrend.turnovers}</div>
+                      </div>
+                      <div className="text-sm text-slate-600">Avg Turnovers</div>
+                      {last3GamesTrend.momentum.turnovers === 'up' && (
+                        <Badge className="mt-2 bg-red-100 text-red-800 text-xs">Risk - Trending Up</Badge>
+                      )}
+                      {last3GamesTrend.momentum.turnovers === 'down' && (
+                        <Badge className="mt-2 bg-green-100 text-green-800 text-xs">Improved</Badge>
+                      )}
                     </div>
                   </div>
                 </CardContent>
