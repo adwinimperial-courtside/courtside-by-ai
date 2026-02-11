@@ -731,6 +731,18 @@ export default function CoachInsights() {
               </Card>
             )}
 
+            {/* AI Tactical Briefing */}
+            <AITacticalBriefing
+              selectedLeague={selectedLeague}
+              selectedTeam={selectedTeam}
+              selectedOpponent={selectedOpponent}
+              selectedTeamName={selectedTeamName}
+              selectedOpponentName={selectedOpponentName}
+              winLossComparison={winLossComparison}
+              opponentSnapshot={opponentSnapshot}
+              last3GamesTrend={last3GamesTrend}
+            />
+
             {/* 4. Player Impact Rankings */}
             <Card className="border-slate-200 shadow-lg">
               <CardHeader className="border-b border-slate-200 bg-purple-50">
