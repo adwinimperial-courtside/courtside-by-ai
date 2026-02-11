@@ -49,7 +49,7 @@ export default function Layout({ children }) {
   const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer";
 
   const handleLogout = () => {
-    base44.auth.logout();
+    base44.auth.logout('/');
   };
 
   return (
