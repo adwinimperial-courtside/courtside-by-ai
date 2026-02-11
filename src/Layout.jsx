@@ -19,6 +19,12 @@ export default function Layout({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Redirect from old domain to new domain
+    if (window.location.hostname === 'courtside-by-ai.base44.app') {
+      window.location.href = 'https://courtside-by-ai.com' + window.location.pathname + window.location.search;
+      return;
+    }
+
     const fetchUser = async () => {
       try {
         const user = await base44.auth.me();
