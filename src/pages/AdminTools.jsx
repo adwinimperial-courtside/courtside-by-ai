@@ -17,8 +17,6 @@ export default function AdminTools() {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
   const [isRecalculatingStandings, setIsRecalculatingStandings] = useState(false);
-  const [isGeneratingLogos, setIsGeneratingLogos] = useState(false);
-  const [logoProgress, setLogoProgress] = useState({ current: 0, total: 0, teamName: '' });
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
