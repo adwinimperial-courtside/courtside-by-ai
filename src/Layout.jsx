@@ -10,6 +10,7 @@ import {
   SidebarTrigger } from
 "@/components/ui/sidebar";
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
+import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 
 
 export default function Layout({ children }) {
@@ -54,6 +55,7 @@ export default function Layout({ children }) {
 
   return (
     <SidebarProvider defaultOpen={true}>
+      <ApplyPendingAssignments />
       <style>{`
         :root {
           --primary: 222.2 47.4% 11.2%;

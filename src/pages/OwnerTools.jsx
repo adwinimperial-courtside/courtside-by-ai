@@ -5,6 +5,7 @@ import { Settings, Key, Palette } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import UserManagement from "../components/admin/UserManagement";
+import PendingUserManagement from "../components/admin/PendingUserManagement";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
