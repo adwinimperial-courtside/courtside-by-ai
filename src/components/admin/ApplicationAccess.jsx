@@ -9,30 +9,33 @@ import { Clock, Check, X } from "lucide-react";
 export default function ApplicationAccess() {
   const queryClient = useQueryClient();
 
-  const { data: pendingUsers = [] } = useQuery({
-    queryKey: ['users', 'pending'],
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users', 'all'],
     queryFn: async () => {
-      const response = await base44.asServiceRole.users.listPendingUsers();
+      const response = await base44.asServiceRole.entities.User.list();
       return response;
     },
   });
 
-  const handleApprove = async (userEmail) => {
+  // Filter for users with status 'pending'
+  const pendingUsers = allUsers.filter(user => user.status === 'pending');
+
+  const handleApprove = async (userId) => {
     if (confirm('Approve this user?')) {
       try {
-        await base44.asServiceRole.users.approvePendingUser(userEmail);
-        queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
+        await base44.asServiceRole.entities.User.update(userId, { status: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
       } catch (error) {
         alert('Failed to approve user: ' + error.message);
       }
     }
   };
 
-  const handleDecline = async (userEmail) => {
+  const handleDecline = async (userId) => {
     if (confirm('Reject this user?')) {
       try {
-        await base44.asServiceRole.users.rejectPendingUser(userEmail);
-        queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
+        await base44.asServiceRole.entities.User.delete(userId);
+        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
       } catch (error) {
         alert('Failed to reject user: ' + error.message);
       }
@@ -57,7 +60,7 @@ export default function ApplicationAccess() {
           <div className="space-y-3">
             {pendingUsers.map((user) => (
               <div
-                key={user.email}
+                key={user.id}
                 className="p-4 bg-slate-50 border border-slate-200 rounded-lg"
               >
                 <div>
@@ -72,7 +75,7 @@ export default function ApplicationAccess() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApprove(user.email)}
+                      onClick={() => handleApprove(user.id)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -80,7 +83,7 @@ export default function ApplicationAccess() {
                       Approve
                     </Button>
                     <Button
-                      onClick={() => handleDecline(user.email)}
+                      onClick={() => handleDecline(user.id)}
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:bg-red-50 border-red-300"
