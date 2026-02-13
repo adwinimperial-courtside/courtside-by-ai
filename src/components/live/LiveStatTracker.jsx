@@ -349,8 +349,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="w-full px-4 py-4">
+    <div className="h-full flex flex-col bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="flex-1 w-full px-4 py-4 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <Button
             variant="ghost"
@@ -375,9 +375,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           awayTeam={awayTeam}
         />
 
-        <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-4 items-stretch">
+        <div className="flex-1 mt-4 grid grid-cols-1 lg:grid-cols-[1fr,380px] gap-4 overflow-hidden">
           {/* Main Content */}
-          <div className="space-y-4">
+          <div className="flex-1 space-y-4 overflow-y-auto">
             {/* Home Team Active Players */}
             <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-4">
