@@ -10,21 +10,26 @@ export default function ApplicationAccess() {
   const queryClient = useQueryClient();
 
   const { data: requests = [] } = useQuery({
-    queryKey: ['leagueSetupRequests'],
-    queryFn: () => base44.entities.LeagueSetupRequest.list(),
+    queryKey: ['pendingUserAssignments'],
+    queryFn: () => base44.entities.PendingUserAssignment.list(),
+  });
+
+  const { data: leagues = [] } = useQuery({
+    queryKey: ['leagues'],
+    queryFn: () => base44.entities.League.list(),
   });
 
   const approveMutation = useMutation({
-    mutationFn: (requestId) => base44.entities.LeagueSetupRequest.update(requestId, { status: 'done' }),
+    mutationFn: (requestId) => base44.entities.PendingUserAssignment.update(requestId, { applied: true }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leagueSetupRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingUserAssignments'] });
     },
   });
 
   const declineMutation = useMutation({
-    mutationFn: (requestId) => base44.entities.LeagueSetupRequest.delete(requestId),
+    mutationFn: (requestId) => base44.entities.PendingUserAssignment.delete(requestId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leagueSetupRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['pendingUserAssignments'] });
     },
   });
 
@@ -40,7 +45,15 @@ export default function ApplicationAccess() {
     }
   };
 
-  const pendingRequests = requests.filter(r => r.status === 'pending');
+  const getLeagueNames = (leagueIds) => {
+    if (!leagueIds || leagueIds.length === 0) return 'No leagues assigned';
+    return leagueIds.map(id => {
+      const league = leagues.find(l => l.id === id);
+      return league?.name || 'Unknown';
+    }).join(', ');
+  };
+
+  const pendingRequests = requests.filter(r => !r.applied);
 
   return (
     <Card className="border-slate-200 shadow-lg">
@@ -66,12 +79,13 @@ export default function ApplicationAccess() {
                 <div>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="font-medium text-slate-900">{request.contact_person || 'N/A'}</div>
-                      <div className="text-sm text-slate-600">{request.email}</div>
-                      <div className="text-sm text-slate-700 mt-1">League: {request.league_name}</div>
-                      {request.message && (
-                        <div className="text-sm text-slate-600 mt-1">{request.message}</div>
-                      )}
+                      <div className="font-medium text-slate-900">{request.email}</div>
+                      <div className="text-sm text-slate-700 mt-1">
+                        <span className="font-medium">Role:</span> {request.user_type?.replace('_', ' ').toUpperCase()}
+                      </div>
+                      <div className="text-sm text-slate-600 mt-1">
+                        <span className="font-medium">Leagues:</span> {getLeagueNames(request.assigned_league_ids)}
+                      </div>
                       <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
                         <Clock className="w-3 h-3" />
                         {new Date(request.created_date).toLocaleString()}
