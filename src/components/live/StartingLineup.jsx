@@ -17,6 +17,9 @@ export default function StartingLineup({
   onStartGame,
   onBack
 }) {
+  const sortedHomePlayers = [...homePlayers].sort((a, b) => a.jersey_number - b.jersey_number);
+  const sortedAwayPlayers = [...awayPlayers].sort((a, b) => a.jersey_number - b.jersey_number);
+
   const toggleHomeStarter = (playerId) => {
     if (homeStarters.includes(playerId)) {
       onHomeStartersChange(homeStarters.filter(id => id !== playerId));
@@ -70,12 +73,12 @@ export default function StartingLineup({
               {homePlayers.length === 0 ? (
                 <p className="text-slate-500 text-center py-8">No players available</p>
               ) : (
-                homePlayers.map(player => (
+                sortedHomePlayers.map(player => (
                   <div
                     key={player.id}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
                       homeStarters.includes(player.id) 
-                        ? 'bg-indigo-100/80 border border-indigo-300' 
+                        ? 'bg-green-100/80 border border-green-300' 
                         : 'hover:bg-slate-100/50'
                     }`}
                     onClick={() => toggleHomeStarter(player.id)}
@@ -85,8 +88,7 @@ export default function StartingLineup({
                       className="border-slate-400"
                     />
                     <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-green-600"
                     >
                       {player.jersey_number}
                     </div>
@@ -119,12 +121,12 @@ export default function StartingLineup({
               {awayPlayers.length === 0 ? (
                 <p className="text-slate-500 text-center py-8">No players available</p>
               ) : (
-                awayPlayers.map(player => (
+                sortedAwayPlayers.map(player => (
                   <div
                     key={player.id}
                     className={`flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer ${
                       awayStarters.includes(player.id) 
-                        ? 'bg-indigo-100/80 border border-indigo-300' 
+                        ? 'bg-blue-100/80 border border-blue-300' 
                         : 'hover:bg-slate-100/50'
                     }`}
                     onClick={() => toggleAwayStarter(player.id)}
@@ -134,8 +136,7 @@ export default function StartingLineup({
                       className="border-slate-400"
                     />
                     <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                      style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-600"
                     >
                       {player.jersey_number}
                     </div>
