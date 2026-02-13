@@ -9,33 +9,30 @@ import { Clock, Check, X } from "lucide-react";
 export default function ApplicationAccess() {
   const queryClient = useQueryClient();
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['users', 'all'],
+  const { data: pendingUsers = [] } = useQuery({
+    queryKey: ['users', 'pending'],
     queryFn: async () => {
-      const response = await base44.asServiceRole.entities.User.list();
+      const response = await base44.asServiceRole.users.listPendingUsers();
       return response;
     },
   });
 
-  // Filter for pending users (invited but not yet registered)
-  const pendingUsers = allUsers.filter(user => user.status === 'invited' || user.invited_at);
-
-  const handleApprove = async (userId) => {
+  const handleApprove = async (userEmail) => {
     if (confirm('Approve this user?')) {
       try {
-        await base44.asServiceRole.entities.User.update(userId, { status: 'active' });
-        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
+        await base44.asServiceRole.users.approvePendingUser(userEmail);
+        queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
       } catch (error) {
         alert('Failed to approve user: ' + error.message);
       }
     }
   };
 
-  const handleDecline = async (userId) => {
-    if (confirm('Reject this user? This will remove their invitation.')) {
+  const handleDecline = async (userEmail) => {
+    if (confirm('Reject this user?')) {
       try {
-        await base44.asServiceRole.entities.User.delete(userId);
-        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
+        await base44.asServiceRole.users.rejectPendingUser(userEmail);
+        queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
       } catch (error) {
         alert('Failed to reject user: ' + error.message);
       }
@@ -75,7 +72,7 @@ export default function ApplicationAccess() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApprove(user.id)}
+                      onClick={() => handleApprove(user.email)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -83,7 +80,7 @@ export default function ApplicationAccess() {
                       Approve
                     </Button>
                     <Button
-                      onClick={() => handleDecline(user.id)}
+                      onClick={() => handleDecline(user.email)}
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:bg-red-50 border-red-300"
