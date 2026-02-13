@@ -61,7 +61,7 @@ const adminItems = [
 
 const ownerItems = [
   {
-    title: "Owner Tools",
+    title: "Request Management",
     url: createPageUrl("OwnerTools"),
     icon: Settings
   }
