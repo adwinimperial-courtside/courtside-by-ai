@@ -107,16 +107,16 @@ export default function PlayerStats({ players, teams, stats }) {
                      <div className="flex items-center justify-center gap-1">APG <SortIcon field="apg" /></div>
                    </TableHead>
                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("steals")}>
-                     <div className="flex items-center justify-center gap-1">SPG <SortIcon field="steals" /></div>
+                     <div className="flex items-center justify-center gap-1">STL <SortIcon field="steals" /></div>
                    </TableHead>
                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("blocks")}>
-                     <div className="flex items-center justify-center gap-1">BPG <SortIcon field="blocks" /></div>
+                     <div className="flex items-center justify-center gap-1">BLK <SortIcon field="blocks" /></div>
                    </TableHead>
                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("turnovers")}>
-                     <div className="flex items-center justify-center gap-1">TPG <SortIcon field="turnovers" /></div>
+                     <div className="flex items-center justify-center gap-1">TO <SortIcon field="turnovers" /></div>
                    </TableHead>
                    <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("fouls")}>
-                     <div className="flex items-center justify-center gap-1">FPG <SortIcon field="fouls" /></div>
+                     <div className="flex items-center justify-center gap-1">PF <SortIcon field="fouls" /></div>
                    </TableHead>
                  </TableRow>
                </TableHeader>
