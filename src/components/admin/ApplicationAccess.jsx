@@ -7,8 +7,8 @@ import { Clock } from "lucide-react";
 
 export default function ApplicationAccess() {
   const { data: requests = [] } = useQuery({
-    queryKey: ['leagueAccessRequests'],
-    queryFn: () => base44.entities.LeagueAccessRequest.list(),
+    queryKey: ['leagueSetupRequests'],
+    queryFn: () => base44.entities.LeagueSetupRequest.list(),
   });
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
@@ -36,8 +36,12 @@ export default function ApplicationAccess() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <div className="font-medium text-slate-900">{request.user_name || 'N/A'}</div>
-                    <div className="text-sm text-slate-600">{request.user_email}</div>
+                    <div className="font-medium text-slate-900">{request.contact_person || 'N/A'}</div>
+                    <div className="text-sm text-slate-600">{request.email}</div>
+                    <div className="text-sm text-slate-700 mt-1">League: {request.league_name}</div>
+                    {request.message && (
+                      <div className="text-sm text-slate-600 mt-1">{request.message}</div>
+                    )}
                     <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
                       <Clock className="w-3 h-3" />
                       {new Date(request.created_date).toLocaleString()}
