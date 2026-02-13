@@ -53,6 +53,7 @@ import CoachInsights from './pages/CoachInsights';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import LeagueIDs from './pages/LeagueIDs';
+import LeagueSelection from './pages/LeagueSelection';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
 import OwnerTools from './pages/OwnerTools';
@@ -60,7 +61,6 @@ import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
-import LeagueSelection from './pages/LeagueSelection';
 import __Layout from './Layout.jsx';
 
 
@@ -71,6 +71,7 @@ export const PAGES = {
     "Home": Home,
     "Landing": Landing,
     "LeagueIDs": LeagueIDs,
+    "LeagueSelection": LeagueSelection,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
     "OwnerTools": OwnerTools,
@@ -78,7 +79,6 @@ export const PAGES = {
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
-    "LeagueSelection": LeagueSelection,
 }
 
 export const pagesConfig = {

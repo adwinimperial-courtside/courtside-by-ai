@@ -1,13 +1,14 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings, Key, Palette } from "lucide-react";
+import { Settings, Key, ClipboardList, Users, Shield, Eye } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import UserManagement from "../components/admin/UserManagement";
-import PendingUserManagement from "../components/admin/PendingUserManagement";
-import ManageRequests from "../components/admin/ManageRequests";
+import ApplicationAccess from "../components/admin/ApplicationAccess";
 import LeagueAccessRequests from "../components/admin/LeagueAccessRequests";
+import EnhancedUserManagement from "../components/admin/EnhancedUserManagement";
+import LeagueOwnersView from "../components/admin/LeagueOwnersView";
+import ViewersView from "../components/admin/ViewersView";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -118,54 +119,49 @@ export default function OwnerTools() {
           </div>
         </div>
 
-        <div className="grid gap-6">
-          {/* League Access Requests */}
+        <div className="grid gap-8">
+          {/* Request Management Section */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">League Access Requests</h2>
-            <p className="text-slate-600 mb-4">Approve or reject user requests for league access</p>
-            <LeagueAccessRequests />
+            <div className="flex items-center gap-3 mb-4">
+              <ClipboardList className="w-6 h-6 text-orange-600" />
+              <h2 className="text-2xl font-bold text-slate-900">Request Management</h2>
+            </div>
+            <div className="grid gap-6">
+              <div>
+                <ApplicationAccess />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">League Access Requests</h3>
+                <LeagueAccessRequests />
+              </div>
+            </div>
           </div>
 
-          {/* Manage Requests */}
+          {/* User Management Section */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">League Setup Requests</h2>
-            <p className="text-slate-600 mb-4">View and manage incoming requests from the landing page</p>
-            <ManageRequests />
+            <div className="flex items-center gap-3 mb-4">
+              <Users className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-slate-900">User Management</h2>
+            </div>
+            <EnhancedUserManagement />
           </div>
 
-          <Card className="border-slate-200 shadow-lg">
-            <CardHeader className="border-b border-slate-200 bg-white">
-              <CardTitle className="text-xl flex items-center gap-2">
-                <Palette className="w-5 h-5 text-pink-600" />
-                Generate Team Logos
-              </CardTitle>
-              <p className="text-sm text-slate-600 mt-2">
-                Generate AI-powered logos for all teams in Pinoy Basketball Open League Finland
-              </p>
-            </CardHeader>
-            <CardContent className="pt-6">
-              <Button
-                onClick={generateTeamLogos}
-                disabled={isGeneratingLogos}
-                className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700"
-              >
-                <Palette className={`w-4 h-4 mr-2 ${isGeneratingLogos ? 'animate-spin' : ''}`} />
-                {isGeneratingLogos ? `Generating... (${logoProgress.current}/${logoProgress.total}) ${logoProgress.teamName}` : 'Generate All Team Logos'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Pending User Management */}
+          {/* League Owners Section */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Pending User Assignments</h2>
-            <p className="text-slate-600 mb-4">Pre-configure settings for users before they log in for the first time</p>
-            <PendingUserManagement />
+            <div className="flex items-center gap-3 mb-4">
+              <Shield className="w-6 h-6 text-purple-600" />
+              <h2 className="text-2xl font-bold text-slate-900">League Owners</h2>
+            </div>
+            <LeagueOwnersView />
           </div>
 
-          {/* User Management */}
+          {/* Viewers Section */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-4">Existing Users</h2>
-            <UserManagement />
+            <div className="flex items-center gap-3 mb-4">
+              <Eye className="w-6 h-6 text-blue-600" />
+              <h2 className="text-2xl font-bold text-slate-900">Viewers</h2>
+            </div>
+            <ViewersView />
           </div>
         </div>
       </div>
