@@ -390,7 +390,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <h2 className="text-xl font-bold text-slate-900">{homeTeam?.name}</h2>
                 <span className="ml-auto text-slate-500 text-sm">Active: {homeActivePlayers.length}/5</span>
               </div>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {homeActivePlayers.map((player) => (
                   <PlayerButton 
                     key={player.id} 
@@ -431,7 +431,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </div>
 
               {/* Stat Buttons - Optimized for tablet */}
-              <div className="grid grid-cols-6 gap-2 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 mb-4">
                 {STAT_TYPES.map((stat) => (
                   <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
                     <Button
@@ -472,7 +472,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <h2 className="text-xl font-bold text-slate-900">{awayTeam?.name}</h2>
                 <span className="ml-auto text-slate-500 text-sm">Active: {awayActivePlayers.length}/5</span>
               </div>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {awayActivePlayers.map((player) => (
                   <PlayerButton 
                     key={player.id} 
