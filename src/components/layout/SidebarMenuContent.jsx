@@ -88,13 +88,21 @@ const ownerItems = [
 export default function SidebarMenuContent({ currentUser, location, isViewerWithoutAdminAccess }) {
   const { isMobile, setOpenMobile } = useSidebar();
 
-  const { data: requests = [] } = useQuery({
+  const { data: leagueAccessRequests = [] } = useQuery({
     queryKey: ['leagueAccessRequests'],
     queryFn: () => base44.entities.LeagueAccessRequest.list(),
     enabled: currentUser?.user_type === 'app_admin',
   });
 
-  const pendingRequestsCount = requests.filter(r => r.status === 'pending').length;
+  const { data: leagueSetupRequests = [] } = useQuery({
+    queryKey: ['leagueSetupRequests'],
+    queryFn: () => base44.entities.LeagueSetupRequest.list(),
+    enabled: currentUser?.user_type === 'app_admin',
+  });
+
+  const pendingLeagueAccessCount = leagueAccessRequests.filter(r => r.status === 'pending').length;
+  const pendingLeagueSetupCount = leagueSetupRequests.filter(r => r.status === 'pending').length;
+  const pendingRequestsCount = pendingLeagueAccessCount + pendingLeagueSetupCount;
 
   const getVisibleNavigationItems = () => {
     if (!currentUser) return navigationItems;
