@@ -72,8 +72,20 @@ export default function Layout({ children }) {
     base44.auth.logout('/');
   };
 
+  // If we're on the LiveGame page, render without sidebar
+  if (isLiveGamePage) {
+    return (
+      <>
+        <ApplyPendingAssignments />
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
+          {children}
+        </div>
+      </>
+    );
+  }
+
   return (
-    <SidebarProvider defaultOpen={!isLiveGamePage}>
+    <SidebarProvider defaultOpen={true}>
       <ApplyPendingAssignments />
       <style>{`
         :root {
@@ -84,8 +96,7 @@ export default function Layout({ children }) {
         }
       `}</style>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-50 to-slate-100">
-        {!isLiveGamePage && (
-          <Sidebar className="border-r border-slate-200 bg-white/80 backdrop-blur-sm">
+        <Sidebar className="border-r border-slate-200 bg-white/80 backdrop-blur-sm">
           <SidebarHeader className="border-b border-slate-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
@@ -122,11 +133,9 @@ export default function Layout({ children }) {
             isViewerWithoutAdminAccess={isViewerWithoutAdminAccess}
           />
         </Sidebar>
-        )}
 
         <main className="flex-1 flex flex-col">
-          {!isLiveGamePage && (
-            <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden sticky top-0 z-10">
+          <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden sticky top-0 z-10">
             <div className="flex items-center gap-4">
               <SidebarTrigger asChild>
                 <button className="hover:bg-orange-100 p-2 h-12 w-12 rounded-xl transition-colors flex items-center justify-center">
@@ -138,12 +147,11 @@ export default function Layout({ children }) {
                   <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/e9055e629_Courtside_by_AI_upper_right_logo.png" alt="Courtside by AI" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-lg font-bold text-slate-900">Courtside by AI</h1>
-                </div>
-                </div>
-                </header>
-                )}
+              </div>
+            </div>
+          </header>
 
-                <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto">
             {children}
           </div>
         </main>
