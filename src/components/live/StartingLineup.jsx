@@ -59,8 +59,7 @@ export default function StartingLineup({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-900 flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold bg-green-600"
                   >
                     {homeTeam?.name?.[0]}
                   </div>
@@ -107,8 +106,7 @@ export default function StartingLineup({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-900 flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold bg-blue-600"
                   >
                     {awayTeam?.name?.[0]}
                   </div>
