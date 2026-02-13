@@ -56,7 +56,7 @@ export default function ApplicationAccess() {
             <p className="text-sm text-slate-600 mt-2">Pending user access requests</p>
           </div>
           <Badge className="bg-orange-100 text-orange-800 text-lg px-3 py-1">
-            {pendingRequests.length}
+            {pendingUsers.length}
           </Badge>
         </div>
       </CardHeader>
