@@ -64,7 +64,7 @@ const adminItems = [
 
 const ownerItems = [
   {
-    title: "Request Management",
+    title: "Requests",
     url: createPageUrl("RequestManagement"),
     icon: ClipboardList
   },
@@ -203,7 +203,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                         <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
-                          {item.title === "Request Management" && pendingRequestsCount > 0 && (
+                          {item.title === "Requests" && pendingRequestsCount > 0 && (
                             <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
                           )}
                         </Link>
