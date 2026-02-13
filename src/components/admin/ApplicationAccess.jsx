@@ -9,51 +9,43 @@ import { Clock, Check, X } from "lucide-react";
 export default function ApplicationAccess() {
   const queryClient = useQueryClient();
 
-  const { data: requests = [] } = useQuery({
-    queryKey: ['pendingUserAssignments'],
-    queryFn: () => base44.entities.PendingUserAssignment.list(),
-  });
-
-  const { data: leagues = [] } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+  const { data: pendingUsers = [] } = useQuery({
+    queryKey: ['users', 'pending'],
+    queryFn: async () => {
+      const response = await base44.users.listPendingUsers();
+      return response;
+    },
   });
 
   const approveMutation = useMutation({
-    mutationFn: (requestId) => base44.entities.PendingUserAssignment.update(requestId, { applied: true }),
+    mutationFn: async (email) => {
+      return await base44.users.approvePendingUser(email);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pendingUserAssignments'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
     },
   });
 
   const declineMutation = useMutation({
-    mutationFn: (requestId) => base44.entities.PendingUserAssignment.delete(requestId),
+    mutationFn: async (email) => {
+      return await base44.users.rejectPendingUser(email);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pendingUserAssignments'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
     },
   });
 
-  const handleApprove = async (requestId) => {
-    if (confirm('Approve this request?')) {
-      approveMutation.mutate(requestId);
+  const handleApprove = async (email) => {
+    if (confirm('Approve this user?')) {
+      approveMutation.mutate(email);
     }
   };
 
-  const handleDecline = async (requestId) => {
-    if (confirm('Decline and delete this request?')) {
-      declineMutation.mutate(requestId);
+  const handleDecline = async (email) => {
+    if (confirm('Reject this user?')) {
+      declineMutation.mutate(email);
     }
   };
-
-  const getLeagueNames = (leagueIds) => {
-    if (!leagueIds || leagueIds.length === 0) return 'No leagues assigned';
-    return leagueIds.map(id => {
-      const league = leagues.find(l => l.id === id);
-      return league?.name || 'Unknown';
-    }).join(', ');
-  };
-
-  const pendingRequests = requests.filter(r => !r.applied);
 
   return (
     <Card className="border-slate-200 shadow-lg">
@@ -69,27 +61,18 @@ export default function ApplicationAccess() {
         </div>
       </CardHeader>
       <CardContent className="pt-6">
-        {pendingRequests.length > 0 ? (
+        {pendingUsers.length > 0 ? (
           <div className="space-y-3">
-            {pendingRequests.map((request) => (
+            {pendingUsers.map((user) => (
               <div
-                key={request.id}
+                key={user.email}
                 className="p-4 bg-slate-50 border border-slate-200 rounded-lg"
               >
                 <div>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="font-medium text-slate-900">{request.email}</div>
-                      <div className="text-sm text-slate-700 mt-1">
-                        <span className="font-medium">Role:</span> {request.user_type?.replace('_', ' ').toUpperCase()}
-                      </div>
-                      <div className="text-sm text-slate-600 mt-1">
-                        <span className="font-medium">Leagues:</span> {getLeagueNames(request.assigned_league_ids)}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
-                        <Clock className="w-3 h-3" />
-                        {new Date(request.created_date).toLocaleString()}
-                      </div>
+                      <div className="font-medium text-slate-900">{user.full_name || 'N/A'}</div>
+                      <div className="text-sm text-slate-600">{user.email}</div>
                     </div>
                     <Badge variant="outline" className="bg-yellow-50 text-yellow-800 border-yellow-200">
                       Pending
@@ -97,7 +80,7 @@ export default function ApplicationAccess() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApprove(request.id)}
+                      onClick={() => handleApprove(user.email)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -105,13 +88,13 @@ export default function ApplicationAccess() {
                       Approve
                     </Button>
                     <Button
-                      onClick={() => handleDecline(request.id)}
+                      onClick={() => handleDecline(user.email)}
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:bg-red-50 border-red-300"
                     >
                       <X className="w-4 h-4 mr-1" />
-                      Decline
+                      Reject
                     </Button>
                   </div>
                 </div>
