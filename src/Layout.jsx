@@ -21,7 +21,7 @@ export default function Layout({ children }) {
   const [isLoading, setIsLoading] = useState(true);
 
   // Check if we're on the LiveGame page for full-screen mode
-  const isLiveGamePage = location.pathname.includes('LiveGame');
+  const isLiveGamePage = location.pathname.toLowerCase().includes('livegame');
 
   useEffect(() => {
     // Redirect from old domain to new domain
