@@ -1,6 +1,8 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye } from "lucide-react";
 import {
   SidebarContent,
@@ -12,6 +14,7 @@ import {
   SidebarMenuItem,
   useSidebar
 } from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
 
 const navigationItems = [
   {
@@ -84,6 +87,14 @@ const ownerItems = [
 
 export default function SidebarMenuContent({ currentUser, location, isViewerWithoutAdminAccess }) {
   const { isMobile, setOpenMobile } = useSidebar();
+
+  const { data: requests = [] } = useQuery({
+    queryKey: ['leagueAccessRequests'],
+    queryFn: () => base44.entities.LeagueAccessRequest.list(),
+    enabled: currentUser?.user_type === 'app_admin',
+  });
+
+  const pendingRequestsCount = requests.filter(r => r.status === 'pending').length;
 
   const getVisibleNavigationItems = () => {
     if (!currentUser) return navigationItems;
@@ -184,6 +195,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                         <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
+                          {item.title === "Request Management" && pendingRequestsCount > 0 && (
+                            <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
