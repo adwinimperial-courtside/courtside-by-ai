@@ -61,6 +61,10 @@ import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
+import RequestManagement from './pages/RequestManagement';
+import UserManagement from './pages/UserManagement';
+import LeagueOwners from './pages/LeagueOwners';
+import Viewers from './pages/Viewers';
 import __Layout from './Layout.jsx';
 
 
@@ -79,6 +83,10 @@ export const PAGES = {
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
+    "RequestManagement": RequestManagement,
+    "UserManagement": UserManagement,
+    "LeagueOwners": LeagueOwners,
+    "Viewers": Viewers,
 }
 
 export const pagesConfig = {

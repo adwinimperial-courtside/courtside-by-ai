@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -62,8 +62,23 @@ const adminItems = [
 const ownerItems = [
   {
     title: "Request Management",
-    url: createPageUrl("OwnerTools"),
-    icon: Settings
+    url: createPageUrl("RequestManagement"),
+    icon: ClipboardList
+  },
+  {
+    title: "User Management",
+    url: createPageUrl("UserManagement"),
+    icon: Users
+  },
+  {
+    title: "League Owners",
+    url: createPageUrl("LeagueOwners"),
+    icon: Shield
+  },
+  {
+    title: "Viewers",
+    url: createPageUrl("Viewers"),
+    icon: Eye
   }
 ];
 
