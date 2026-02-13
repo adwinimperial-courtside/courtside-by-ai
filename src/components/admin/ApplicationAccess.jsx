@@ -9,41 +9,36 @@ import { Clock, Check, X } from "lucide-react";
 export default function ApplicationAccess() {
   const queryClient = useQueryClient();
 
-  const { data: pendingUsers = [] } = useQuery({
-    queryKey: ['users', 'pending'],
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users', 'all'],
     queryFn: async () => {
-      const response = await base44.users.listPendingUsers();
+      const response = await base44.asServiceRole.entities.User.list();
       return response;
     },
   });
 
-  const approveMutation = useMutation({
-    mutationFn: async (email) => {
-      return await base44.users.approvePendingUser(email);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
-    },
-  });
+  // Filter for pending users (invited but not yet registered)
+  const pendingUsers = allUsers.filter(user => user.status === 'invited' || user.invited_at);
 
-  const declineMutation = useMutation({
-    mutationFn: async (email) => {
-      return await base44.users.rejectPendingUser(email);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users', 'pending'] });
-    },
-  });
-
-  const handleApprove = async (email) => {
+  const handleApprove = async (userId) => {
     if (confirm('Approve this user?')) {
-      approveMutation.mutate(email);
+      try {
+        await base44.asServiceRole.entities.User.update(userId, { status: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
+      } catch (error) {
+        alert('Failed to approve user: ' + error.message);
+      }
     }
   };
 
-  const handleDecline = async (email) => {
-    if (confirm('Reject this user?')) {
-      declineMutation.mutate(email);
+  const handleDecline = async (userId) => {
+    if (confirm('Reject this user? This will remove their invitation.')) {
+      try {
+        await base44.asServiceRole.entities.User.delete(userId);
+        queryClient.invalidateQueries({ queryKey: ['users', 'all'] });
+      } catch (error) {
+        alert('Failed to reject user: ' + error.message);
+      }
     }
   };
 
@@ -80,7 +75,7 @@ export default function ApplicationAccess() {
                   </div>
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApprove(user.email)}
+                      onClick={() => handleApprove(user.id)}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
                     >
@@ -88,7 +83,7 @@ export default function ApplicationAccess() {
                       Approve
                     </Button>
                     <Button
-                      onClick={() => handleDecline(user.email)}
+                      onClick={() => handleDecline(user.id)}
                       size="sm"
                       variant="outline"
                       className="text-red-600 hover:bg-red-50 border-red-300"
