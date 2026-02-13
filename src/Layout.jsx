@@ -77,7 +77,7 @@ export default function Layout({ children }) {
     return (
       <>
         <ApplyPendingAssignments />
-        <div className="h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
           {children}
         </div>
       </>
