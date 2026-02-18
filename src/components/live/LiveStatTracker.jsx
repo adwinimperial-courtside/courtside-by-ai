@@ -45,7 +45,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
   const [ejectedPlayer, setEjectedPlayer] = useState(null); // player ejected due to 2 techs or 5 fouls
   const [ejectionReason, setEjectionReason] = useState(''); // reason for ejection
+  const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
 
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
