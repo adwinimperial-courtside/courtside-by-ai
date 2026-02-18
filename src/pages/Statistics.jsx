@@ -19,8 +19,8 @@ import MobileGameStats from "../components/stats/mobile/MobileGameStats";
 export default function StatisticsPage() {
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("all");
-  const [selectedPlayer, setSelectedPlayer] = useState("all");
   const [playerSearch, setPlayerSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
   const [mobileTab, setMobileTab] = useState("teamstats");
   const [desktopTab, setDesktopTab] = useState("teamstats");
