@@ -320,9 +320,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           whileTap={{ scale: 0.92 }}
           onClick={() => setSelectedPlayer(player)}
           className={`w-full p-1.5 rounded-xl transition-all ${
-            isSelected ? 'ring-2 ring-offset-1 ring-offset-indigo-100' : 'hover:bg-slate-100'
-          } bg-white/70 border-2 ${isSelected ? 'border-indigo-400' : 'border-slate-200'}`}
-          style={isSelected ? { backgroundColor: `${teamColor}15` } : {}}
+                    isSelected ? 'ring-2 ring-offset-1 ring-offset-indigo-100' : 'hover:bg-slate-100'
+                  } border-2 ${isSelected ? 'border-indigo-400' : 'border-slate-200'}`}
+                  style={isSelected ? { backgroundColor: `${teamColor}15` } : (playerStats?.fouls >= 4 ? { backgroundColor: '#fff7ed' } : {})}
         >
           <div className="flex flex-col items-center gap-1">
             <div 
