@@ -212,7 +212,13 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
               <p className="text-slate-500 text-center py-8">No MVP candidates yet</p>
             ) : (
               <>
-                <div className="overflow-x-auto">
+                {/* Mobile: Stacked Cards */}
+                <div className="block md:hidden">
+                  <MobileAwardCards candidates={mvpCandidates} awardType="mvp" />
+                </div>
+
+                {/* Desktop: Table */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
