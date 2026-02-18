@@ -368,9 +368,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         >
           <div className="flex flex-col items-center gap-1">
             <div 
-              className="w-8 h-8 2xl:w-12 2xl:h-12 rounded-full flex items-center justify-center text-white font-bold text-xs 2xl:text-base shadow-md"
-              style={{ backgroundColor: teamColor || '#f97316' }}
-            >
+                className="w-8 h-8 2xl:w-12 2xl:h-12 rounded-full flex items-center justify-center text-white font-bold text-xs 2xl:text-base shadow-md bg-slate-600"
+              >
               {player.jersey_number}
             </div>
             <div className="text-center w-full">
