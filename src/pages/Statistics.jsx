@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { BarChart3, Filter } from "lucide-react";
+import { BarChart3, Filter, BarChart4 } from "lucide-react";
 
 import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
