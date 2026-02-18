@@ -75,12 +75,12 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
       transition={{ duration: 0.3 }}
     >
       <Card className="border-slate-200 hover:shadow-lg transition-all duration-200">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
                 {league && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs truncate max-w-[160px]">
                     {league.name}
                   </Badge>
                 )}
@@ -93,50 +93,48 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   </Badge>
                 )}
                 {liveGame.edited && (
-                  <Badge className={editedBadgeColor}>
-                    Edited
-                  </Badge>
+                  <Badge className={editedBadgeColor}>Edited</Badge>
                 )}
               </div>
 
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
                     <TeamLogo team={homeTeam} size="md" />
-                    <span className="font-semibold text-slate-900">{homeTeam?.name}</span>
+                    <span className="font-semibold text-slate-900 truncate">{homeTeam?.name}</span>
                   </div>
                   {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
-                    <span className="text-2xl font-bold text-slate-900">{liveGame.home_score}</span>
+                    <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{liveGame.home_score}</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
                     <TeamLogo team={awayTeam} size="md" />
-                    <span className="font-semibold text-slate-900">{awayTeam?.name}</span>
+                    <span className="font-semibold text-slate-900 truncate">{awayTeam?.name}</span>
                   </div>
                   {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
-                    <span className="text-2xl font-bold text-slate-900">{liveGame.away_score}</span>
+                    <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{liveGame.away_score}</span>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 text-sm text-slate-600">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
+                  <Calendar className="w-4 h-4 flex-shrink-0" />
                   <span>{format(new Date(liveGame.game_date), "MMM d, yyyy • h:mm a")}</span>
                 </div>
                 {liveGame.location && (
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{liveGame.location}</span>
+                    <MapPin className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">{liveGame.location}</span>
                   </div>
                 )}
               </div>
 
               {liveGame.status === 'completed' && liveGame.player_of_game && (
                 <div className="mt-3 pt-3 border-t border-slate-200">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Trophy className="w-4 h-4 text-amber-500" />
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
+                    <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <span className="text-slate-600">Player of the Game:</span>
                     <span className="font-semibold text-slate-900">
                       {players?.find(p => p.id === liveGame.player_of_game)?.name || 'Unknown'}
@@ -146,11 +144,11 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               )}
             </div>
 
-            <div>
+            <div className="flex">
               {liveGame.status === 'scheduled' && (
                 <Button
                   onClick={onStartGame}
-                  className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                  className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
                 >
                   <Play className="w-4 h-4 mr-2" />
                   Start Game
@@ -160,16 +158,16 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                 <Button
                   onClick={onStartGame}
                   variant="outline"
-                  className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                  className="w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
                 >
                   Continue
                 </Button>
               )}
               {liveGame.status === 'completed' && (
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="hover:bg-slate-50"
+                  className="w-full sm:w-auto hover:bg-slate-50"
                 >
                   {isExpanded ? (
                     <>
