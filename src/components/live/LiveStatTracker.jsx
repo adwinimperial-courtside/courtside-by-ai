@@ -290,6 +290,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && activePlayerIds.includes(p.id)
   ).slice(0, 5);
 
+  const isEligibleReplacement = (playerId) => {
+    const stats = existingStats.find(s => s.player_id === playerId);
+    if (!stats) return true; // no stats yet = eligible
+    return (stats.technical_fouls || 0) < 2 && (stats.fouls || 0) < 5;
+  };
+
   const homeBenchPlayers = players.filter(p => 
     p.team_id === game.home_team_id && !activePlayerIds.includes(p.id)
   );
