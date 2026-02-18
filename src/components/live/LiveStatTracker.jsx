@@ -488,7 +488,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <h2 className="text-sm font-bold text-slate-900 truncate">{awayTeam?.name}</h2>
                 <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">Active: {awayActivePlayers.length}/5</span>
               </div>
-              <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
+              <div className="grid grid-cols-5 gap-1">
                 {awayActivePlayers.map((player) => (
                   <PlayerButton 
                     key={player.id} 
