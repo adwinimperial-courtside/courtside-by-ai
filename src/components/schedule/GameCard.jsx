@@ -196,9 +196,6 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   <div className="flex items-center gap-2 mb-3">
                     <TeamLogo team={team} size="md" />
                     <h4 className="font-semibold text-slate-900 truncate">{team?.name}</h4>
-                    <span className="text-sm text-slate-500 ml-auto flex-shrink-0">
-                      {teamStats.rebounds} REB • {teamStats.assists} AST
-                    </span>
                   </div>
 
                   {/* Mobile: card per player */}
@@ -237,10 +234,29 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                         </div>
                       );
                     })}
-                    {/* Team totals row on mobile */}
-                    <div className="bg-slate-200 rounded-lg p-3 font-semibold text-sm flex justify-between">
-                      <span>TEAM TOTALS</span>
-                      <span>{score || 0} PTS</span>
+                    {/* Team totals card on mobile */}
+                    <div className="bg-slate-800 text-white rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm">TEAM TOTALS</span>
+                        <span className="font-bold text-lg">{score || 0} PTS</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1 text-xs text-center">
+                        {[
+                          ['3PT', playerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)],
+                          ['FT', playerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)],
+                          ['REB', teamStats.rebounds],
+                          ['AST', teamStats.assists],
+                          ['STL', playerStats.reduce((acc, s) => acc + (s.steals || 0), 0)],
+                          ['BLK', playerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)],
+                          ['TO', playerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)],
+                          ['F', playerStats.reduce((acc, s) => acc + (s.fouls || 0), 0)],
+                        ].map(([label, val]) => (
+                          <div key={label} className="bg-slate-700 rounded p-1">
+                            <div className="text-slate-400 text-[10px]">{label}</div>
+                            <div className="font-semibold">{val}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
