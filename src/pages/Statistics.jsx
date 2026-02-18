@@ -175,7 +175,7 @@ export default function StatisticsPage() {
               <label className="text-sm font-medium text-slate-700 mb-2 block">Team</label>
               <Select value={selectedTeam} onValueChange={(value) => {
                 setSelectedTeam(value);
-                setSelectedPlayer("all");
+                setPlayerSearch("");
               }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select team" />
