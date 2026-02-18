@@ -117,6 +117,12 @@ export default function StatisticsPage() {
     ? teams 
     : teams.filter(t => t.league_id === selectedLeague);
 
+  const searchedPlayers = playerSearch.trim()
+    ? filteredPlayers.filter(p => 
+        p.name.toLowerCase().includes(playerSearch.toLowerCase())
+      )
+    : filteredPlayers;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
