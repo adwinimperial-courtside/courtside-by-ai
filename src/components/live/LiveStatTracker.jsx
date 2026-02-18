@@ -453,7 +453,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                     <Button
                       onClick={() => handleStatClick(stat)}
                       disabled={!selectedPlayer}
-                      className={`w-full h-12 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
+                      className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
                     >
                       {stat.label}
                     </Button>
