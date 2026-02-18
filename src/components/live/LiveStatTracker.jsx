@@ -423,13 +423,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </div>
 
               {/* Stat Buttons */}
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3 sm:mb-4">
+              <div className="grid grid-cols-6 gap-2 mb-3">
                 {STAT_TYPES.map((stat) => (
                   <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
                     <Button
                       onClick={() => handleStatClick(stat)}
                       disabled={!selectedPlayer}
-                      className={`w-full h-14 sm:h-20 text-white font-bold text-sm sm:text-lg ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
+                      className={`w-full h-12 lg:h-16 text-white font-bold text-xs lg:text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
                     >
                       {stat.label}
                     </Button>
