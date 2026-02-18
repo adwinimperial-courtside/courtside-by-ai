@@ -192,27 +192,14 @@ export default function StatisticsPage() {
             </div>
             {(mobileTab === "players" || desktopTab === "players") && (
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">Player</label>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">Search Player</label>
                 <Input
                   type="text"
-                  placeholder="Search player..."
+                  placeholder="Filter by player name..."
                   value={playerSearch}
                   onChange={(e) => setPlayerSearch(e.target.value)}
-                  className="w-full mb-3"
+                  className="w-full"
                 />
-                <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select player" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Players</SelectItem>
-                    {searchedPlayers.map(player => (
-                      <SelectItem key={player.id} value={player.id}>
-                        {player.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
             )}
           </div>
