@@ -340,7 +340,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <div className="grid grid-cols-2 gap-x-1 mt-0.5">
                   <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
                   <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
-                  <span className="text-[9px] text-slate-500">{playerStats.fouls||0}F</span>
+                  <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
                   <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
                 </div>
               </div>
