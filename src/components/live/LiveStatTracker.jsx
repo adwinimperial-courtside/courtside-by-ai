@@ -705,13 +705,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <p className="text-sm text-slate-600 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
                       {benchPlayers.map(player => {
                         const isSelected = replacementPlayers.includes(player.id);
-                        const canSelect = !replacementPlayers.includes(player.id) || isSelected;
+                        const eligible = isEligibleReplacement(player.id);
+                        const canSelect = eligible && (!replacementPlayers.includes(player.id) || isSelected);
+                        const pStats = existingStats.find(s => s.player_id === player.id);
                         return (
                           <Button
                             key={player.id}
                             variant={isSelected ? "default" : "outline"}
                             disabled={!canSelect}
-                            className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`}
+                            className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : eligible ? 'border-slate-300 hover:bg-slate-100' : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'}`}
                             onClick={() => toggleReplacementPlayer(player.id)}
                           >
                             <div 
@@ -722,7 +724,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                             </div>
                             <div className="text-left flex-1">
                               <p className="font-semibold">{player.name}</p>
-                              <p className="text-sm text-slate-500">{player.position}</p>
+                              <p className="text-xs text-slate-500">
+                                {player.position}
+                                {pStats && ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T`}
+                              </p>
+                              {!eligible && <p className="text-xs text-red-500 font-semibold">Ineligible (foul out / 2 techs)</p>}
                             </div>
                             {isSelected && (
                               <div className="w-6 h-6 rounded-full bg-white text-green-600 flex items-center justify-center font-bold">
