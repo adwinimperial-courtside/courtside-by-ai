@@ -203,56 +203,79 @@ export default function StatisticsPage() {
             </p>
           </div>
         ) : (
-          <Tabs defaultValue="teamstats" className="space-y-6 w-full">
-            <TabsList className="bg-white border border-slate-200 p-1 h-auto flex-wrap w-full">
-              <TabsTrigger value="teamstats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-                Team Stats
-              </TabsTrigger>
-              <TabsTrigger value="players" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-                Player Stats
-              </TabsTrigger>
-              <TabsTrigger value="leaders" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-                League Leaders
-              </TabsTrigger>
-              <TabsTrigger value="games" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-                Game Stats
-              </TabsTrigger>
-              </TabsList>
+          <>
+            {/* Mobile tab selector - only shown on mobile */}
+            <div className="block md:hidden mb-4">
+              <Select value={mobileTab} onValueChange={setMobileTab}>
+                <SelectTrigger className="w-full bg-white border-slate-200">
+                  <SelectValue placeholder="Select View" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teamstats">Team Stats</SelectItem>
+                  <SelectItem value="players">Player Stats</SelectItem>
+                  <SelectItem value="leaders">League Leaders</SelectItem>
+                  <SelectItem value="games">Game Stats</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-            <TabsContent value="teamstats">
-              <TeamStats 
-                teams={filteredTeams}
-                games={filteredGames}
-                stats={filteredStats}
-                leagues={leagues}
-              />
-            </TabsContent>
+            {/* Mobile content */}
+            <div className="block md:hidden">
+              {mobileTab === "teamstats" && (
+                <MobileTeamStats teams={filteredTeams} games={filteredGames} stats={filteredStats} />
+              )}
+              {mobileTab === "players" && (
+                <MobilePlayerStats
+                  players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
+                  teams={teams}
+                  stats={filteredStats}
+                />
+              )}
+              {mobileTab === "leaders" && (
+                <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
+              )}
+              {mobileTab === "games" && (
+                <MobileGameStats games={filteredGames} teams={teams} players={players} stats={allStats} />
+              )}
+            </div>
 
-            <TabsContent value="players">
-               <PlayerStats
-                 players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
-                 teams={teams}
-                 stats={filteredStats}
-               />
-             </TabsContent>
+            {/* Desktop tabs - hidden on mobile */}
+            <div className="hidden md:block">
+              <Tabs defaultValue="teamstats" className="space-y-6 w-full">
+                <TabsList className="bg-white border border-slate-200 p-1 h-auto flex-wrap w-full">
+                  <TabsTrigger value="teamstats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+                    Team Stats
+                  </TabsTrigger>
+                  <TabsTrigger value="players" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+                    Player Stats
+                  </TabsTrigger>
+                  <TabsTrigger value="leaders" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+                    League Leaders
+                  </TabsTrigger>
+                  <TabsTrigger value="games" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
+                    Game Stats
+                  </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="leaders">
-              <LeagueLeaders
-                players={filteredPlayers}
-                teams={teams}
-                stats={filteredStats}
-              />
-            </TabsContent>
-
-            <TabsContent value="games">
-              <GameStats
-                games={filteredGames}
-                teams={teams}
-                players={players}
-                stats={allStats}
-              />
-            </TabsContent>
-          </Tabs>
+                <TabsContent value="teamstats">
+                  <TeamStats teams={filteredTeams} games={filteredGames} stats={filteredStats} leagues={leagues} />
+                </TabsContent>
+                <TabsContent value="players">
+                  <PlayerStats
+                    players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
+                    teams={teams}
+                    stats={filteredStats}
+                  />
+                </TabsContent>
+                <TabsContent value="leaders">
+                  <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
+                </TabsContent>
+                <TabsContent value="games">
+                  <GameStats games={filteredGames} teams={teams} players={players} stats={allStats} />
+                </TabsContent>
+              </Tabs>
+            </div>
+          </>
         )}
       </div>
     </div>
