@@ -490,7 +490,27 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
               {/* Stat Buttons */}
               <div className="grid grid-cols-6 gap-1.5 mb-2">
-                {STAT_TYPES.map((stat) => (
+                {/* FT split button spanning 1 col */}
+                <div className="flex rounded-lg overflow-hidden shadow-md col-span-1">
+                  <motion.button
+                    whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
+                    onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))}
+                    disabled={!selectedPlayer}
+                    className="flex-1 h-14 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+                  >
+                    FTM
+                  </motion.button>
+                  <div className="w-px bg-indigo-900/30" />
+                  <motion.button
+                    whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
+                    onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))}
+                    disabled={!selectedPlayer}
+                    className="flex-1 h-14 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
+                  >
+                    FTX
+                  </motion.button>
+                </div>
+                {STAT_TYPES.filter(s => s.key !== 'free_throws' && s.key !== 'free_throws_missed').map((stat) => (
                   <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
                     <Button
                       onClick={() => handleStatClick(stat)}
