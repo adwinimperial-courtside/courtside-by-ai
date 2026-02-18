@@ -300,29 +300,29 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={() => setSelectedPlayer(player)}
-          className={`w-full p-3 rounded-xl transition-all ${
+          className={`w-full p-1.5 sm:p-3 rounded-xl transition-all ${
             isSelected
-              ? 'ring-4 ring-offset-2 ring-offset-indigo-100'
+              ? 'ring-2 sm:ring-4 ring-offset-1 sm:ring-offset-2 ring-offset-indigo-100'
               : 'hover:bg-slate-100'
           } bg-white/70 border-2 ${isSelected ? 'border-indigo-400' : 'border-slate-200'}`}
           style={isSelected ? { ringColor: teamColor, backgroundColor: `${teamColor}15` } : {}}
         >
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
             <div 
-              className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-lg"
+              className="w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-xl shadow-lg"
               style={{ backgroundColor: teamColor || '#f97316' }}
             >
               {player.jersey_number}
             </div>
             <div className="text-center w-full">
-              <p className="font-semibold text-slate-900 text-sm truncate">{player.name}</p>
-              <p className="text-xs text-slate-500">{player.position}</p>
+              <p className="font-semibold text-slate-900 text-xs sm:text-sm truncate leading-tight">{player.name}</p>
+              <p className="text-xs text-slate-500 hidden sm:block">{player.position}</p>
             </div>
             {playerStats && (
-              <div className="text-center pt-2 border-t border-slate-200 w-full">
-                <p className="text-xl font-bold text-slate-900">{totalPoints}</p>
+              <div className="text-center pt-1 sm:pt-2 border-t border-slate-200 w-full">
+                <p className="text-base sm:text-xl font-bold text-slate-900">{totalPoints}</p>
                 <p className="text-xs text-slate-500">PTS</p>
-                <div className="flex justify-around text-xs text-slate-600 mt-1">
+                <div className="hidden sm:flex justify-around text-xs text-slate-600 mt-1">
                   <span>{(playerStats.offensive_rebounds || 0) + (playerStats.defensive_rebounds || 0)} R</span>
                   <span>{playerStats.assists || 0} A</span>
                   <span>{playerStats.fouls || 0} F</span>
@@ -334,13 +334,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <Button
           size="sm"
           variant="destructive"
-          className="absolute -top-2 -right-2 w-7 h-7 rounded-full p-0 shadow-lg"
+          className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 w-5 h-5 sm:w-7 sm:h-7 rounded-full p-0 shadow-lg"
           onClick={(e) => {
             e.stopPropagation();
             onSubClick(player);
           }}
         >
-          <X className="w-3 h-3" />
+          <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
         </Button>
       </div>
     );
