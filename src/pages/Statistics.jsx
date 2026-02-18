@@ -275,7 +275,7 @@ export default function StatisticsPage() {
                 </TabsContent>
                 <TabsContent value="players">
                   <PlayerStats
-                    players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
+                    players={searchedPlayers}
                     teams={teams}
                     stats={filteredStats}
                   />
