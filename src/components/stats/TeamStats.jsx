@@ -123,7 +123,6 @@ export default function TeamStats({ teams, games, stats, leagues }) {
                           <span className="font-medium truncate text-sm md:text-base">{team.name}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell text-slate-600 text-sm">{league?.name}</TableCell>
                       <TableCell className="text-center">{team.gamesPlayed}</TableCell>
                       <TableCell className="text-center font-semibold text-purple-600">{team.ppg}</TableCell>
                       <TableCell className="text-center">{team.rpg}</TableCell>
