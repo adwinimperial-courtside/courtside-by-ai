@@ -21,6 +21,7 @@ export default function StatisticsPage() {
   const [selectedPlayer, setSelectedPlayer] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const [mobileTab, setMobileTab] = useState("teamstats");
+  const [desktopTab, setDesktopTab] = useState("teamstats");
 
   React.useEffect(() => {
     const fetchUser = async () => {
