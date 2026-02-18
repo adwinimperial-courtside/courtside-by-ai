@@ -611,6 +611,40 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
       </div>
 
+      {/* Exit Confirmation Dialog */}
+      <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
+        <DialogContent className="bg-white border-slate-200 w-[95vw] max-w-md">
+          <DialogHeader>
+            <div className="flex justify-center mb-3">
+              <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+                <ArrowLeft className="w-9 h-9 text-amber-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-xl text-slate-800 text-center">Are you sure you want to exit?</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-center">
+            <p className="text-slate-600 text-sm leading-relaxed">
+              Please click the <span className="font-bold text-green-600">End Game</span> button if the game is finished. If not, you can exit and the game status will still be <span className="font-bold text-indigo-600">LIVE</span>.
+            </p>
+          </div>
+          <div className="flex gap-3 mt-2">
+            <Button
+              variant="outline"
+              className="flex-1 border-slate-300 hover:bg-slate-100"
+              onClick={() => setShowExitDialog(false)}
+            >
+              No, stay
+            </Button>
+            <Button
+              className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white"
+              onClick={() => { setShowExitDialog(false); onBack(); }}
+            >
+              Yes, exit
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Ejection Alert Dialog */}
       <Dialog open={!!ejectedPlayer} onOpenChange={(open) => { if (!open) setEjectedPlayer(null); }}>
         <DialogContent className="bg-white border-red-200 w-[95vw] max-w-md text-center">
