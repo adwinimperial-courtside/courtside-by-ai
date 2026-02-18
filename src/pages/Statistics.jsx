@@ -244,7 +244,7 @@ export default function StatisticsPage() {
 
             {/* Desktop tabs - hidden on mobile */}
             <div className="hidden md:block">
-              <Tabs defaultValue="teamstats" className="space-y-6 w-full">
+              <Tabs defaultValue="teamstats" value={desktopTab} onValueChange={setDesktopTab} className="space-y-6 w-full">
                 <TabsList className="bg-white border border-slate-200 p-1 h-auto flex-wrap w-full">
                   <TabsTrigger value="teamstats" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
                     Team Stats
