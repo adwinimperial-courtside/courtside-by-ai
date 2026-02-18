@@ -42,6 +42,14 @@ export default function StatisticsPage() {
     fetchUser();
   }, []);
 
+  // Debounce player search with 300ms delay
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(playerSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [playerSearch]);
+
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
