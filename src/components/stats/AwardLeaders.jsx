@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Shield } from "lucide-react";
+import MobileAwardCards from "./MobileAwardCards";
 
 export default function AwardLeaders({ league, teams, games, players, stats }) {
   const mvpCandidates = useMemo(() => {
