@@ -221,7 +221,17 @@ export default function StatisticsPage() {
             <div className="block md:hidden mb-4">
               <Select value={mobileTab} onValueChange={setMobileTab}>
                 <SelectTrigger className="w-full bg-white border-slate-200">
-                  <SelectValue placeholder="Select View" />
+                  <div className="flex items-center gap-2">
+                    <BarChart4 className="w-4 h-4 text-purple-600" />
+                    <span>
+                      View: {
+                        mobileTab === "teamstats" ? "Team Stats" :
+                        mobileTab === "players" ? "Player Stats" :
+                        mobileTab === "leaders" ? "League Leaders" :
+                        "Game Stats"
+                      }
+                    </span>
+                  </div>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="teamstats">Team Stats</SelectItem>
