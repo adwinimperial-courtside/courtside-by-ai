@@ -42,7 +42,7 @@ export default function TeamStandings({ teams, games, leagues }) {
   });
 
   return (
-    <Card className="border-slate-200">
+    <Card className="border-slate-200 w-full overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-purple-600" />
