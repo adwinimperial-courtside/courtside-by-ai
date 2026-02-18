@@ -63,18 +63,18 @@ export default function StandingsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-x-hidden">
-      <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-12">
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-1">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4 md:py-12">
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+              <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">Team Standings</h1>
+            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900">Team Standings</h1>
           </div>
-          <p className="text-slate-600 text-sm pl-1">Team rankings and records</p>
+          <p className="text-slate-600 text-xs sm:text-sm pl-1">Team rankings and records</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 sm:p-6 mb-4 sm:mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-3 sm:p-6 mb-3 sm:mb-6">
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-yellow-600" />
             <h2 className="text-base font-semibold text-slate-900">Filter by League</h2>
