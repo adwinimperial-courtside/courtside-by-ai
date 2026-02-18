@@ -375,7 +375,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           awayTeam={awayTeam}
         />
 
-        <div className="mt-3 sm:mt-4 grid grid-cols-1 xl:grid-cols-[1fr,340px] gap-3 sm:gap-4">
+        <div className="mt-3 sm:mt-4 grid grid-cols-1 md:grid-cols-[1fr,280px] lg:grid-cols-[1fr,340px] gap-3 sm:gap-4">
           {/* Main Content */}
           <div className="space-y-3 sm:space-y-4">
             {/* Home Team Active Players */}
