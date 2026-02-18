@@ -588,7 +588,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </p>
             )}
             <p className="text-slate-500 text-sm mt-2">
-              This player has received <span className="font-bold text-red-600">2 Technical Fouls</span> and must leave the game. A substitution is required.
+              This player has received <span className="font-bold text-red-600">{ejectionReason}</span> and must leave the game. A substitution is required.
             </p>
           </div>
           <Button
