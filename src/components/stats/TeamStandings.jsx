@@ -54,30 +54,37 @@ export default function TeamStandings({ teams, games, leagues }) {
           <p className="text-slate-500 text-center py-8">No teams yet</p>
         ) : (
           <>
-            {/* Mobile: compact row layout */}
-            <div className="block sm:hidden space-y-1">
-              {teamStandings.map((team, index) => {
-                const league = leagues.find(l => l.id === team.league_id);
-                return (
-                  <div key={team.id} className="flex items-center gap-2 bg-slate-50 rounded-lg px-2 py-2">
-                    <span className="text-xs font-bold text-slate-400 w-4 text-center flex-shrink-0">{index + 1}</span>
-                    <TeamLogo team={team} size="sm" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 truncate text-xs">{team.name}</p>
-                      {league && <p className="text-[10px] text-slate-400 truncate">{league.name}</p>}
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0 text-[11px] font-bold">
-                      <span className="text-green-600">{team.wins}W</span>
-                      <span className="text-slate-300">·</span>
-                      <span className="text-red-500">{team.losses}L</span>
-                      <span className="text-slate-300">·</span>
-                      <span className={team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-500' : 'text-slate-500'}>
+            {/* Mobile: table layout */}
+            <div className="block sm:hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="text-left pb-2 pl-1 font-semibold">#</th>
+                    <th className="text-left pb-2 font-semibold">Team</th>
+                    <th className="text-center pb-2 font-semibold">W</th>
+                    <th className="text-center pb-2 font-semibold">L</th>
+                    <th className="text-center pb-2 font-semibold">+/-</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teamStandings.map((team, index) => (
+                    <tr key={team.id} className="border-b border-slate-100 last:border-0">
+                      <td className="py-2 pl-1 text-slate-400 font-bold">{index + 1}</td>
+                      <td className="py-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <TeamLogo team={team} size="sm" />
+                          <span className="font-semibold text-slate-900 truncate max-w-[100px]">{team.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-2 text-center font-bold text-green-600">{team.wins}</td>
+                      <td className="py-2 text-center font-bold text-red-500">{team.losses}</td>
+                      <td className={`py-2 text-center font-bold ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-500' : 'text-slate-500'}`}>
                         {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
 
             {/* Desktop: table layout */}
