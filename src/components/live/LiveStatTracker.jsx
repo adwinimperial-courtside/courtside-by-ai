@@ -411,7 +411,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <Button
             variant="ghost"
-            onClick={onBack}
+            onClick={() => setShowExitDialog(true)}
             className="text-slate-600 hover:bg-slate-200/50 h-10 sm:h-12 px-3 sm:px-6 text-sm sm:text-base"
           >
             <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
