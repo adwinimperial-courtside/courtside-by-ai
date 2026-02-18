@@ -9,6 +9,10 @@ import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
 import GameStats from "../components/stats/GameStats";
+import MobileTeamStats from "../components/stats/mobile/MobileTeamStats";
+import MobilePlayerStats from "../components/stats/mobile/MobilePlayerStats";
+import MobileLeagueLeaders from "../components/stats/mobile/MobileLeagueLeaders";
+import MobileGameStats from "../components/stats/mobile/MobileGameStats";
 
 
 export default function StatisticsPage() {
