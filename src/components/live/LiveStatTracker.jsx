@@ -543,7 +543,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               <div className="flex items-center gap-2 mb-2">
                 <div 
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
-                  style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+                  style={{ backgroundColor: '#ef4444' }}
                 >
                   {awayTeam?.name?.[0]}
                 </div>
