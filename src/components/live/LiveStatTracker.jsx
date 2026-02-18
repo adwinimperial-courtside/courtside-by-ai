@@ -31,7 +31,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [playersToReplace, setPlayersToReplace] = useState([]);
   const [replacementPlayers, setReplacementPlayers] = useState([]);
   const [subStep, setSubStep] = useState('select_out'); // 'select_out' or 'select_in'
-  const [ejectedPlayer, setEjectedPlayer] = useState(null); // player ejected due to 2 techs
+  const [ejectedPlayer, setEjectedPlayer] = useState(null); // player ejected due to 2 techs or 5 fouls
+  const [ejectionReason, setEjectionReason] = useState(''); // reason for ejection
   const queryClient = useQueryClient();
 
   const { data: gameLogs = [] } = useQuery({
