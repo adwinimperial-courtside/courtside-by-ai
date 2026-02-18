@@ -13,7 +13,8 @@ import { findPlayerOfGame } from "../utils/pogCalculator";
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
   { key: 'points_3', label: '3PT', points: 3, color: 'bg-purple-600 hover:bg-purple-700' },
-  { key: 'free_throws', label: 'FT', points: 1, color: 'bg-indigo-600 hover:bg-indigo-700' },
+  { key: 'free_throws', label: 'FTM', points: 1, color: 'bg-indigo-600 hover:bg-indigo-700' },
+  { key: 'free_throws_missed', label: 'FTX', points: 0, color: 'bg-indigo-300 hover:bg-indigo-400' },
   { key: 'offensive_rebounds', label: 'OREB', points: 0, color: 'bg-emerald-500 hover:bg-emerald-600' },
   { key: 'defensive_rebounds', label: 'DREB', points: 0, color: 'bg-green-600 hover:bg-green-700' },
   { key: 'assists', label: 'AST', points: 0, color: 'bg-amber-500 hover:bg-amber-600' },
