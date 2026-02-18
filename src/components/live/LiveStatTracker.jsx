@@ -202,7 +202,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       old_value: currentValue,
       new_value: currentValue + 1,
       old_home_score: oldScores.home,
-      old_away_score: oldScores.away
+      old_away_score: oldScores.away,
+      logged_by: currentUser?.email || '',
+      device_name: getDeviceName()
     });
 
     // Check for ejection conditions
