@@ -156,7 +156,7 @@ export default function StatisticsPage() {
               <Select value={selectedLeague} onValueChange={(value) => {
                 setSelectedLeague(value);
                 setSelectedTeam("all");
-                setSelectedPlayer("all");
+                setPlayerSearch("");
               }}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select league" />
