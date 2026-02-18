@@ -591,9 +591,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   >
                     <div className="flex items-start gap-2 sm:gap-3">
                       <div 
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg flex-shrink-0"
-                        style={{ backgroundColor: log.teamColor }}
-                      >
+                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg flex-shrink-0 ${log.player?.team_id === game.home_team_id ? 'bg-blue-400' : 'bg-red-400'}`}
+                        >
                         {log.player.jersey_number}
                       </div>
                       <div className="flex-1 min-w-0">
