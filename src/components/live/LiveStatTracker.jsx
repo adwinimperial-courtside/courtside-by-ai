@@ -399,37 +399,37 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
 
             {/* Stat Control Center */}
-            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3 sm:p-5">
-              <div className="text-center mb-3 sm:mb-5">
+            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
+              <div className="flex items-center justify-center gap-3 mb-3">
                 {selectedPlayer ? (
-                  <div className="flex items-center justify-center gap-2 sm:gap-3">
+                  <>
                     <div 
-                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg flex-shrink-0"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
                       style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
                     >
                       {selectedPlayer.jersey_number}
                     </div>
-                    <div className="text-left min-w-0">
-                      <p className="text-lg sm:text-2xl font-bold text-slate-900 truncate">{selectedPlayer.name}</p>
-                      <p className="text-slate-500 text-sm sm:text-base">Recording stats for this player</p>
+                    <div className="min-w-0">
+                      <p className="text-base font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
+                      <p className="text-slate-500 text-xs">Recording stats</p>
                     </div>
-                  </div>
+                  </>
                 ) : (
-                  <div>
-                    <p className="text-xl sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2">Select a Player</p>
-                    <p className="text-slate-500 text-sm sm:text-base">Tap any active player to start tracking</p>
+                  <div className="text-center">
+                    <p className="text-base font-bold text-slate-900">Select a Player</p>
+                    <p className="text-slate-500 text-xs">Tap any active player to start tracking</p>
                   </div>
                 )}
               </div>
 
               {/* Stat Buttons */}
-              <div className="grid grid-cols-6 gap-2 mb-3">
+              <div className="grid grid-cols-6 gap-1.5 mb-2">
                 {STAT_TYPES.map((stat) => (
                   <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
                     <Button
                       onClick={() => handleStatClick(stat)}
                       disabled={!selectedPlayer}
-                      className={`w-full h-12 lg:h-16 text-white font-bold text-xs lg:text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
+                      className={`w-full h-10 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
                     >
                       {stat.label}
                     </Button>
@@ -445,9 +445,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   setSubStep('select_out');
                   setShowSubDialog(true);
                 }}
-                className="w-full h-12 sm:h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm sm:text-base shadow-lg"
+                className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg"
               >
-                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                <RefreshCw className="w-4 h-4 mr-2" />
                 Make Substitution
               </Button>
             </div>
