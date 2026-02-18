@@ -239,7 +239,7 @@ export default function StatisticsPage() {
               )}
               {mobileTab === "players" && (
                 <MobilePlayerStats
-                  players={selectedPlayer === "all" ? filteredPlayers : filteredPlayers.filter(p => p.id === selectedPlayer)}
+                  players={searchedPlayers}
                   teams={teams}
                   stats={filteredStats}
                 />
