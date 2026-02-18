@@ -165,6 +165,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       old_home_score: oldScores.home,
       old_away_score: oldScores.away
     });
+
+    // Check for 2 technical fouls ejection
+    if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
+      setEjectedPlayer(selectedPlayer);
+      setSelectedPlayer(null);
+    }
   };
 
   const handleConfirmSubstitution = async () => {
