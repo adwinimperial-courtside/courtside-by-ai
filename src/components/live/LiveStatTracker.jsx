@@ -564,6 +564,45 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
       </div>
 
+      {/* Ejection Alert Dialog */}
+      <Dialog open={!!ejectedPlayer} onOpenChange={(open) => { if (!open) setEjectedPlayer(null); }}>
+        <DialogContent className="bg-white border-red-200 w-[95vw] max-w-md text-center">
+          <DialogHeader>
+            <div className="flex justify-center mb-3">
+              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="w-9 h-9 text-red-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-xl text-red-700 text-center">Player Ejected</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            {ejectedPlayer && (
+              <p className="text-slate-700 text-base font-semibold">
+                #{ejectedPlayer.jersey_number} {ejectedPlayer.name}
+              </p>
+            )}
+            <p className="text-slate-500 text-sm mt-2">
+              This player has received <span className="font-bold text-red-600">2 Technical Fouls</span> and must leave the game. A substitution is required.
+            </p>
+          </div>
+          <Button
+            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white mt-2"
+            onClick={() => {
+              if (ejectedPlayer) {
+                setPlayersToReplace([ejectedPlayer]);
+                setReplacementPlayers([]);
+                setSubStep('select_in');
+                setShowSubDialog(true);
+              }
+              setEjectedPlayer(null);
+            }}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Proceed to Substitution
+          </Button>
+        </DialogContent>
+      </Dialog>
+
       {/* Substitution Dialog */}
       <Dialog open={showSubDialog} onOpenChange={setShowSubDialog}>
         <DialogContent className="bg-white/80 text-slate-900 border-slate-200 w-[95vw] max-w-2xl">
