@@ -388,17 +388,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             )}
           </div>
         </motion.button>
-        <Button
-          size="sm"
-          variant="destructive"
-          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full p-0 shadow-lg"
+        <button
+          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full p-0 shadow-lg flex items-center justify-center transition-colors"
+          style={{ backgroundColor: '#E5E7EB' }}
+          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#D1D5DB'}
+          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#E5E7EB'}
           onClick={(e) => {
             e.stopPropagation();
             onSubClick(player);
           }}
         >
-          <X className="w-2.5 h-2.5" />
-        </Button>
+          <RefreshCw className="w-2.5 h-2.5 text-slate-600" />
+        </button>
       </div>
     );
   };
