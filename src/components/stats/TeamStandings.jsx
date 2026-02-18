@@ -59,19 +59,19 @@ export default function TeamStandings({ teams, games, leagues }) {
               {teamStandings.map((team, index) => {
                 const league = leagues.find(l => l.id === team.league_id);
                 return (
-                  <div key={team.id} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
-                    <span className="text-lg font-bold text-slate-400 w-6 text-center flex-shrink-0">{index + 1}</span>
+                  <div key={team.id} className="flex items-center gap-2 bg-slate-50 rounded-xl p-3">
+                    <span className="text-base font-bold text-slate-400 w-5 text-center flex-shrink-0">{index + 1}</span>
                     <TeamLogo team={team} size="sm" />
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-slate-900 truncate text-sm">{team.name}</p>
                       {league && <p className="text-xs text-slate-400 truncate">{league.name}</p>}
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 text-sm">
-                      <span className="font-bold text-green-600">{team.wins}W</span>
+                    <div className="flex items-center gap-1 flex-shrink-0 text-xs font-bold">
+                      <span className="text-green-600">{team.wins}W</span>
                       <span className="text-slate-300">·</span>
-                      <span className="font-bold text-red-500">{team.losses}L</span>
+                      <span className="text-red-500">{team.losses}L</span>
                       <span className="text-slate-300">·</span>
-                      <span className={`font-bold ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                      <span className={team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-500' : 'text-slate-500'}>
                         {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
                       </span>
                     </div>
