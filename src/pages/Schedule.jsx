@@ -115,11 +115,11 @@ export default function SchedulePage() {
           )}
         </div>
 
-        <div className="flex gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-500" />
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
+          <div className="flex items-center gap-2 flex-1">
+            <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
             <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="All Leagues" />
               </SelectTrigger>
               <SelectContent>
@@ -131,10 +131,10 @@ export default function SchedulePage() {
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-500" />
+          <div className="flex items-center gap-2 flex-1">
+            <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="All Teams" />
               </SelectTrigger>
               <SelectContent>
