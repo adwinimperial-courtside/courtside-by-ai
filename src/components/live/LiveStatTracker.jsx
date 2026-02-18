@@ -25,6 +25,18 @@ const STAT_TYPES = [
   { key: 'unsportsmanlike_fouls', label: 'UNSP', points: 0, color: 'bg-rose-700 hover:bg-rose-800' },
 ];
 
+const getDeviceName = () => {
+  const ua = navigator.userAgent;
+  if (/iPhone/.test(ua)) return 'iPhone';
+  if (/iPad/.test(ua)) return 'iPad';
+  if (/Android/.test(ua) && /Mobile/.test(ua)) return 'Android Phone';
+  if (/Android/.test(ua)) return 'Android Tablet';
+  if (/Mac/.test(ua)) return 'Mac';
+  if (/Windows/.test(ua)) return 'Windows PC';
+  if (/Linux/.test(ua)) return 'Linux';
+  return 'Unknown Device';
+};
+
 export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats, onBack }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showSubDialog, setShowSubDialog] = useState(false);
