@@ -350,21 +350,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-[1400px] mx-auto px-4 py-4">
-        <div className="flex items-center justify-between mb-4">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-3 sm:py-4">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
           <Button
             variant="ghost"
             onClick={onBack}
-            className="text-slate-600 hover:bg-slate-200/50 h-12 px-6 text-base"
+            className="text-slate-600 hover:bg-slate-200/50 h-10 sm:h-12 px-3 sm:px-6 text-sm sm:text-base"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
             Exit
           </Button>
           <Button
             onClick={handleEndGame}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-12 px-6 text-base text-white"
+            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-10 sm:h-12 px-3 sm:px-6 text-sm sm:text-base text-white"
           >
-            <Trophy className="w-5 h-5 mr-2" />
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
             End Game
           </Button>
         </div>
@@ -375,22 +375,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           awayTeam={awayTeam}
         />
 
-        <div className="mt-4 grid lg:grid-cols-[1fr,380px] gap-4 items-stretch">
+        <div className="mt-3 sm:mt-4 grid grid-cols-1 xl:grid-cols-[1fr,340px] gap-3 sm:gap-4">
           {/* Main Content */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Home Team Active Players */}
-            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 sm:p-5">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg"
                   style={{ backgroundColor: homeTeam?.color || '#f97316' }}
                 >
                   {homeTeam?.name?.[0]}
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">{homeTeam?.name}</h2>
-                <span className="ml-auto text-slate-500 text-sm">Active: {homeActivePlayers.length}/5</span>
+                <h2 className="text-base sm:text-xl font-bold text-slate-900 truncate">{homeTeam?.name}</h2>
+                <span className="ml-auto text-slate-500 text-xs sm:text-sm whitespace-nowrap">Active: {homeActivePlayers.length}/5</span>
               </div>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
                 {homeActivePlayers.map((player) => (
                   <PlayerButton 
                     key={player.id} 
@@ -407,37 +407,37 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
 
             {/* Stat Control Center */}
-            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-5">
-              <div className="text-center mb-5">
+            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3 sm:p-5">
+              <div className="text-center mb-3 sm:mb-5">
                 {selectedPlayer ? (
-                  <div className="flex items-center justify-center gap-3">
+                  <div className="flex items-center justify-center gap-2 sm:gap-3">
                     <div 
-                      className="w-16 h-16 rounded-full flex items-center justify-center text-white font-bold text-2xl shadow-lg"
+                      className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white font-bold text-xl sm:text-2xl shadow-lg flex-shrink-0"
                       style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
                     >
                       {selectedPlayer.jersey_number}
                     </div>
-                    <div className="text-left">
-                      <p className="text-2xl font-bold text-slate-900">{selectedPlayer.name}</p>
-                      <p className="text-slate-500">Recording stats for this player</p>
+                    <div className="text-left min-w-0">
+                      <p className="text-lg sm:text-2xl font-bold text-slate-900 truncate">{selectedPlayer.name}</p>
+                      <p className="text-slate-500 text-sm sm:text-base">Recording stats for this player</p>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <p className="text-2xl font-bold text-slate-900 mb-2">Select a Player</p>
-                    <p className="text-slate-500">Tap any active player to start tracking</p>
+                    <p className="text-xl sm:text-2xl font-bold text-slate-900 mb-1 sm:mb-2">Select a Player</p>
+                    <p className="text-slate-500 text-sm sm:text-base">Tap any active player to start tracking</p>
                   </div>
                 )}
               </div>
 
-              {/* Stat Buttons - Optimized for tablet */}
-              <div className="grid grid-cols-6 gap-2 mb-4">
+              {/* Stat Buttons */}
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 mb-3 sm:mb-4">
                 {STAT_TYPES.map((stat) => (
                   <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
                     <Button
                       onClick={() => handleStatClick(stat)}
                       disabled={!selectedPlayer}
-                      className={`w-full h-20 text-white font-bold text-lg ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
+                      className={`w-full h-14 sm:h-20 text-white font-bold text-sm sm:text-lg ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-xl shadow-black/30 transition-all duration-150`}
                     >
                       {stat.label}
                     </Button>
@@ -453,26 +453,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   setSubStep('select_out');
                   setShowSubDialog(true);
                 }}
-                className="w-full h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow-lg"
+                className="w-full h-12 sm:h-14 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm sm:text-base shadow-lg"
               >
-                <RefreshCw className="w-5 h-5 mr-2" />
+                <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Make Substitution
               </Button>
             </div>
 
             {/* Away Team Active Players */}
-            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5">
-              <div className="flex items-center gap-3 mb-4">
+            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 sm:p-5">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
                 <div 
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg"
+                  className="w-9 h-9 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-lg"
                   style={{ backgroundColor: awayTeam?.color || '#f97316' }}
                 >
                   {awayTeam?.name?.[0]}
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">{awayTeam?.name}</h2>
-                <span className="ml-auto text-slate-500 text-sm">Active: {awayActivePlayers.length}/5</span>
+                <h2 className="text-base sm:text-xl font-bold text-slate-900 truncate">{awayTeam?.name}</h2>
+                <span className="ml-auto text-slate-500 text-xs sm:text-sm whitespace-nowrap">Active: {awayActivePlayers.length}/5</span>
               </div>
-              <div className="grid grid-cols-5 gap-3">
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-3">
                 {awayActivePlayers.map((player) => (
                   <PlayerButton 
                     key={player.id} 
@@ -490,17 +490,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           {/* Activity Log Sidebar */}
-          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-5 min-h-full flex flex-col">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-200">
-              <Activity className="w-5 h-5 text-indigo-500" />
-              <h3 className="text-lg font-bold text-slate-900">Game Activity</h3>
-              <span className="ml-auto text-sm text-slate-500">{gameLog.length} actions</span>
+          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 sm:p-5 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)', minHeight: '300px' }}>
+            <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200">
+              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">Game Activity</h3>
+              <span className="ml-auto text-xs sm:text-sm text-slate-500">{gameLog.length} actions</span>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-2 pr-2">
+            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
               {gameLog.length === 0 ? (
-                <div className="text-center py-12">
-                  <Activity className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                <div className="text-center py-8 sm:py-12">
+                  <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
                   <p className="text-slate-500 text-sm">No actions yet</p>
                   <p className="text-slate-400 text-xs mt-1">Stats will appear here</p>
                 </div>
@@ -510,17 +510,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                     key={log.id}
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className={`p-3 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
+                    className={`p-2 sm:p-3 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2 sm:gap-3">
                       <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg flex-shrink-0"
                         style={{ backgroundColor: log.teamColor }}
                       >
                         {log.player.jersey_number}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-slate-900 font-semibold text-sm truncate">{log.player.name}</p>
+                        <p className="text-slate-900 font-semibold text-xs sm:text-sm truncate">{log.player.name}</p>
                         <div className="flex items-center gap-2 mt-1">
                           <span 
                             className={`text-xs px-2 py-0.5 rounded text-white font-bold ${log.statType.color}`}
@@ -541,9 +541,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         size="sm"
                         variant="ghost"
                         onClick={() => handleUndo(log)}
-                        className="h-8 w-8 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0"
+                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0"
                       >
-                        <Undo2 className="w-4 h-4" />
+                        <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   </motion.div>
@@ -556,7 +556,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       {/* Substitution Dialog */}
       <Dialog open={showSubDialog} onOpenChange={setShowSubDialog}>
-        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 max-w-2xl">
+        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 w-[95vw] max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl text-slate-900">
               {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
