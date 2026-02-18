@@ -317,8 +317,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
             {playerStats && (
               <div className="text-center pt-1 border-t border-slate-200 w-full">
-                <p className="text-sm 2xl:text-base font-bold text-slate-900">{totalPoints}</p>
-                <p className="text-[9px] text-slate-500">PTS</p>
+                <p className="text-sm font-bold text-slate-900">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
+                <div className="grid grid-cols-2 gap-x-1 mt-0.5">
+                  <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
+                  <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
+                  <span className="text-[9px] text-slate-500">{playerStats.fouls||0}F</span>
+                  <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
+                </div>
               </div>
             )}
           </div>
