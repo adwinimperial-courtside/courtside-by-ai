@@ -83,7 +83,6 @@ export default function TeamStats({ teams, games, stats, leagues }) {
               <TableHeader>
                 <TableRow>
                   <TableHead>Team</TableHead>
-                  <TableHead className="hidden md:table-cell">League</TableHead>
                   <TableHead className="text-center cursor-pointer hover:bg-slate-100" onClick={() => handleSort("gamesPlayed")}>
                     <div className="flex items-center justify-center gap-1">GP <SortIcon field="gamesPlayed" /></div>
                   </TableHead>
