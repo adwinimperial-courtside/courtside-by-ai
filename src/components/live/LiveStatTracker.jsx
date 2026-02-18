@@ -40,6 +40,27 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
   });
 
+  // Real-time subscriptions for live multi-user updates
+  useEffect(() => {
+    const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
+      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+    });
+    const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
+      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+    });
+    const unsubscribeGame = base44.entities.Game.subscribe((event) => {
+      if (event.id === game.id) {
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+        queryClient.invalidateQueries({ queryKey: ['game', game.id] });
+      }
+    });
+    return () => {
+      unsubscribeStats();
+      unsubscribeLogs();
+      unsubscribeGame();
+    };
+  }, [game.id, queryClient]);
+
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
