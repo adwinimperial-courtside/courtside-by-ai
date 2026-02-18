@@ -53,44 +53,73 @@ export default function TeamStandings({ teams, games, leagues }) {
         {teamStandings.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No teams yet</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Team</TableHead>
-                  <TableHead className="hidden md:table-cell">League</TableHead>
-                  <TableHead className="text-center">W</TableHead>
-                  <TableHead className="text-center">L</TableHead>
-                  <TableHead className="text-center">Win %</TableHead>
-                  <TableHead className="text-center">+/-</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {teamStandings.map((team, index) => {
-                  const league = leagues.find(l => l.id === team.league_id);
-                  return (
-                    <TableRow key={team.id}>
-                      <TableCell className="font-semibold text-sm md:text-base">{index + 1}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <TeamLogo team={team} size="sm" />
-                          <span className="font-medium truncate text-sm md:text-base">{team.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-slate-600 text-sm">{league?.name}</TableCell>
-                      <TableCell className="text-center font-semibold text-green-600 text-sm md:text-base">{team.wins}</TableCell>
-                      <TableCell className="text-center font-semibold text-red-600 text-sm md:text-base">{team.losses}</TableCell>
-                      <TableCell className="text-center font-semibold text-sm md:text-base">{team.winPct}%</TableCell>
-                      <TableCell className={`text-center font-semibold text-sm md:text-base ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+          <>
+            {/* Mobile: card layout */}
+            <div className="block sm:hidden space-y-2">
+              {teamStandings.map((team, index) => {
+                const league = leagues.find(l => l.id === team.league_id);
+                return (
+                  <div key={team.id} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                    <span className="text-lg font-bold text-slate-400 w-6 text-center flex-shrink-0">{index + 1}</span>
+                    <TeamLogo team={team} size="sm" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-slate-900 truncate text-sm">{team.name}</p>
+                      {league && <p className="text-xs text-slate-400 truncate">{league.name}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0 text-sm">
+                      <span className="font-bold text-green-600">{team.wins}W</span>
+                      <span className="text-slate-300">·</span>
+                      <span className="font-bold text-red-500">{team.losses}L</span>
+                      <span className="text-slate-300">·</span>
+                      <span className={`font-bold ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-500' : 'text-slate-500'}`}>
                         {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: table layout */}
+            <div className="hidden sm:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Team</TableHead>
+                    <TableHead className="hidden md:table-cell">League</TableHead>
+                    <TableHead className="text-center">W</TableHead>
+                    <TableHead className="text-center">L</TableHead>
+                    <TableHead className="text-center">Win %</TableHead>
+                    <TableHead className="text-center">+/-</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {teamStandings.map((team, index) => {
+                    const league = leagues.find(l => l.id === team.league_id);
+                    return (
+                      <TableRow key={team.id}>
+                        <TableCell className="font-semibold">{index + 1}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <TeamLogo team={team} size="sm" />
+                            <span className="font-medium truncate">{team.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-slate-600 text-sm">{league?.name}</TableCell>
+                        <TableCell className="text-center font-semibold text-green-600">{team.wins}</TableCell>
+                        <TableCell className="text-center font-semibold text-red-600">{team.losses}</TableCell>
+                        <TableCell className="text-center font-semibold">{team.winPct}%</TableCell>
+                        <TableCell className={`text-center font-semibold ${team.pointsDiff > 0 ? 'text-green-600' : team.pointsDiff < 0 ? 'text-red-600' : 'text-slate-600'}`}>
+                          {team.pointsDiff > 0 ? '+' : ''}{team.pointsDiff}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
