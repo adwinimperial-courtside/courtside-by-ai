@@ -125,9 +125,9 @@ export default function StatisticsPage() {
     ? teams 
     : teams.filter(t => t.league_id === selectedLeague);
 
-  const searchedPlayers = playerSearch.trim()
+  const searchedPlayers = debouncedSearch.trim()
     ? filteredPlayers.filter(p => 
-        p.name.toLowerCase().includes(playerSearch.toLowerCase())
+        p.name.toLowerCase().includes(debouncedSearch.toLowerCase())
       )
     : filteredPlayers;
 
