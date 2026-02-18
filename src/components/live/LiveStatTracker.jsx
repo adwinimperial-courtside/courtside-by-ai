@@ -167,9 +167,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       old_away_score: oldScores.away
     });
 
-    // Check for 2 technical fouls ejection
+    // Check for ejection conditions
     if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
       setEjectedPlayer(selectedPlayer);
+      setEjectionReason('2 Technical Fouls');
+      setSelectedPlayer(null);
+    } else if (statType.key === 'fouls' && currentValue + 1 >= 5) {
+      setEjectedPlayer(selectedPlayer);
+      setEjectionReason('5 Fouls');
       setSelectedPlayer(null);
     }
   };
