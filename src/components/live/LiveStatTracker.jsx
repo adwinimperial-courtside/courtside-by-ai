@@ -437,7 +437,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           {/* Main Content */}
           <div className="space-y-3 sm:space-y-4">
             {/* Home Team Active Players */}
-            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2">
+            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2 border-l-4 border-l-blue-300">
               <div className="flex items-center gap-2 mb-2">
                 <div 
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
@@ -445,7 +445,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 >
                   {homeTeam?.name?.[0]}
                 </div>
-                <h2 className="text-sm font-bold text-slate-900 truncate">{homeTeam?.name}</h2>
+                <h2 className="text-sm font-bold text-blue-600 truncate">{homeTeam?.name}</h2>
                 <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">Active: {homeActivePlayers.length}/5</span>
               </div>
               <div className="grid grid-cols-5 gap-1">
