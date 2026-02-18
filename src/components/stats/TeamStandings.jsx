@@ -43,30 +43,30 @@ export default function TeamStandings({ teams, games, leagues }) {
 
   return (
     <Card className="border-slate-200 w-full overflow-hidden">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-purple-600" />
+      <CardHeader className="py-3 px-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Trophy className="w-4 h-4 text-purple-600" />
           Team Standings
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 pb-3 pt-0">
         {teamStandings.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No teams yet</p>
         ) : (
           <>
-            {/* Mobile: card layout */}
-            <div className="block sm:hidden space-y-2">
+            {/* Mobile: compact row layout */}
+            <div className="block sm:hidden space-y-1">
               {teamStandings.map((team, index) => {
                 const league = leagues.find(l => l.id === team.league_id);
                 return (
-                  <div key={team.id} className="flex items-center gap-2 bg-slate-50 rounded-xl p-3">
-                    <span className="text-base font-bold text-slate-400 w-5 text-center flex-shrink-0">{index + 1}</span>
+                  <div key={team.id} className="flex items-center gap-2 bg-slate-50 rounded-lg px-2 py-2">
+                    <span className="text-xs font-bold text-slate-400 w-4 text-center flex-shrink-0">{index + 1}</span>
                     <TeamLogo team={team} size="sm" />
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-slate-900 truncate text-sm">{team.name}</p>
-                      {league && <p className="text-xs text-slate-400 truncate">{league.name}</p>}
+                      <p className="font-semibold text-slate-900 truncate text-xs">{team.name}</p>
+                      {league && <p className="text-[10px] text-slate-400 truncate">{league.name}</p>}
                     </div>
-                    <div className="flex items-center gap-1 flex-shrink-0 text-xs font-bold">
+                    <div className="flex items-center gap-1 flex-shrink-0 text-[11px] font-bold">
                       <span className="text-green-600">{team.wins}W</span>
                       <span className="text-slate-300">·</span>
                       <span className="text-red-500">{team.losses}L</span>
