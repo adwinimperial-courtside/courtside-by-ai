@@ -482,7 +482,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           {/* Activity Log Sidebar */}
-          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 sm:p-5 flex flex-col" style={{ maxHeight: 'calc(100vh - 200px)', minHeight: '300px' }}>
+          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)', minHeight: '200px', overflowY: 'auto' }}>
             <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200">
               <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
               <h3 className="text-base sm:text-lg font-bold text-slate-900">Game Activity</h3>
