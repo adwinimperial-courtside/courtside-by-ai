@@ -161,6 +161,17 @@ export default function TeamsPage() {
       await base44.entities.Team.delete(teamId);
     },
     onSuccess: () => {
+      // Track team deletion (exclude app_admin)
+      if (currentUser && currentUser.user_type !== 'app_admin') {
+        base44.analytics.track({
+          eventName: 'team_deleted',
+          properties: {
+            user_email: currentUser.email,
+            team_id: teamToDelete.id,
+            user_type: currentUser.user_type
+          }
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
       queryClient.invalidateQueries({ queryKey: ['games'] });
