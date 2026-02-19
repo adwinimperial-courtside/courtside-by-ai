@@ -10,6 +10,7 @@ import EnhancedUserManagement from "../components/admin/EnhancedUserManagement";
 import LeagueOwnersView from "../components/admin/LeagueOwnersView";
 import ViewersView from "../components/admin/ViewersView";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
+import PendingBaseUsers from "../components/admin/PendingBaseUsers";
 
 export default function OwnerTools() {
   const [currentUser, setCurrentUser] = useState(null);
