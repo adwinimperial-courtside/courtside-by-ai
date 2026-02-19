@@ -91,9 +91,12 @@ export default function RegistrationGate({ user }) {
     e.preventDefault();
 
     if (selectedRole !== "league_admin") {
-      if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
-      if (selectedRole === "player" && !selectedTeam) { alert("Please select a team."); return; }
-    }
+        if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
+        if (selectedRole === "player") {
+          const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
+          if (missingTeam) { alert("Please select a team for each selected league."); return; }
+        }
+      }
 
     setIsSubmitting(true);
     try {
