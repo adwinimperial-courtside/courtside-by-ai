@@ -297,9 +297,9 @@ export default function RegistrationGate({ user }) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1 block">Select Team *</label>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam} disabled={!selectedLeague}>
+                  <Select value={selectedTeam} onValueChange={setSelectedTeam} disabled={selectedLeagues.length === 0}>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedLeague ? "Choose a team" : "Select a league first"} />
+                      <SelectValue placeholder={selectedLeagues.length > 0 ? "Choose a team" : "Select a league first"} />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
