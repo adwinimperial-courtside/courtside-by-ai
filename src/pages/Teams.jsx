@@ -59,9 +59,11 @@ export default function TeamsPage() {
     initialData: [],
   });
 
-  const assignedLeagues = currentUser?.assigned_league_ids 
-    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
-    : [];
+  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const assignedLeagueIds = currentUser?.assigned_league_ids || [];
+  const assignedLeagues = isLeagueAdmin
+    ? leagues.filter(league => assignedLeagueIds.includes(league.id))
+    : leagues;
 
   const { data: teams, isLoading } = useQuery({
     queryKey: ['teams'],
