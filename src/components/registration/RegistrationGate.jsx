@@ -83,6 +83,7 @@ export default function RegistrationGate({ user }) {
     setFormData({});
     setSelectedLeagues([]);
     setSelectedTeam("");
+    setLeagueTeamMap({});
     setStep("fill_form");
   };
 
