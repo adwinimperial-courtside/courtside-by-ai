@@ -26,7 +26,7 @@ export default function UserApplicationsReview() {
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['user_applications_pending'],
-    queryFn: () => base44.asServiceRole.entities.UserApplication.filter({ status: "Pending" }),
+    queryFn: () => base44.entities.UserApplication.filter({ status: "Pending" }),
   });
 
   const { data: leagues = [] } = useQuery({
