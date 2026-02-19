@@ -44,7 +44,11 @@ Deno.serve(async (req) => {
       }
 
       // Invite the user if not already registered
-      await base44.asServiceRole.users.inviteUser(application.user_email, application.requested_role);
+      try {
+        await base44.users.inviteUser(application.user_email, application.requested_role);
+      } catch (err) {
+        // User may already be invited, continue
+      }
 
       // Update the user with league assignments
       await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
