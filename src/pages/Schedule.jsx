@@ -118,7 +118,7 @@ export default function SchedulePage() {
             </div>
             <p className="text-slate-600 ml-15">Manage game schedules and matchups</p>
           </div>
-          {currentUser?.user_type !== "viewer" && (
+          {(isLeagueAdmin || isAppAdmin) && (
             <Button 
               onClick={() => setShowCreateDialog(true)}
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/30 h-12 px-6"
