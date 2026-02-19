@@ -118,6 +118,18 @@ export default function Layout({ children }) {
     !isLiveGamePage;
 
   const handleLogout = () => {
+    // Track session end before logging out
+    if (sessionStartTimeRef.current && currentUser) {
+      const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
+      base44.analytics.track({
+        eventName: 'user_session_end',
+        properties: {
+          user_email: currentUser.email,
+          session_duration_seconds: sessionDuration,
+          session_duration_minutes: Math.round(sessionDuration / 60)
+        }
+      });
+    }
     base44.auth.logout('/');
   };
 
