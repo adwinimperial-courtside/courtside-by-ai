@@ -141,9 +141,13 @@ export default function TeamsPage() {
     },
   });
 
+  const baseTeams = isLeagueAdmin
+    ? teams.filter(team => assignedLeagueIds.includes(team.league_id))
+    : teams;
+
   const filteredTeams = selectedLeague === "all" 
-    ? teams.filter(team => assignedLeagues.some(l => l.id === team.league_id))
-    : teams.filter(team => team.league_id === selectedLeague);
+    ? baseTeams
+    : baseTeams.filter(team => team.league_id === selectedLeague);
 
   if (selectedTeam) {
     return (
