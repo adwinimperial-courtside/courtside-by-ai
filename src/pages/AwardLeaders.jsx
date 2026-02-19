@@ -106,9 +106,9 @@ export default function AwardLeadersPage() {
         ) : (
           <AwardLeadersComponent
             league={leagues.find(l => l.id === selectedLeague)}
-            teams={teams}
-            games={games}
-            players={players}
+            teams={teams.filter(t => t.league_id === selectedLeague)}
+            games={games.filter(g => g.league_id === selectedLeague)}
+            players={players.filter(p => teams.find(t => t.id === p.team_id)?.league_id === selectedLeague)}
             stats={allStats}
           />
         )}
