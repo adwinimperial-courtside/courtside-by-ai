@@ -60,6 +60,7 @@ export default function LeaguesPage() {
     },
   });
 
+  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
   const filteredLeagues = currentUser?.assigned_league_ids 
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : [];
