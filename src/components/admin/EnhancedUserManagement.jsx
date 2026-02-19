@@ -104,6 +104,7 @@ export default function EnhancedUserManagement() {
       full_name: "",
       user_type: "viewer",
       assigned_league_ids: [],
+      default_league_id: "",
     });
   };
 
