@@ -144,7 +144,7 @@ export default function TeamsPage() {
     },
   });
 
-  const baseTeams = isLeagueAdmin
+  const baseTeams = (hasAssignedLeagues && !isAppAdmin)
     ? teams.filter(team => assignedLeagueIds.includes(team.league_id))
     : teams;
 
