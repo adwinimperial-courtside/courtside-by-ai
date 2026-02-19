@@ -92,7 +92,7 @@ export default function PendingBaseUsers() {
 
                   <div className="flex gap-2">
                     <Button
-                      onClick={() => handleApprove(user.id, user.email)}
+                      onClick={() => handleApprove(app.id, app.user_email)}
                       disabled={isProcessing}
                       size="sm"
                       className="bg-green-600 hover:bg-green-700"
@@ -101,7 +101,7 @@ export default function PendingBaseUsers() {
                       Approve
                     </Button>
                     <Button
-                      onClick={() => handleReject(user.id, user.email)}
+                      onClick={() => handleReject(app.id, app.user_email)}
                       disabled={isProcessing}
                       size="sm"
                       variant="outline"
