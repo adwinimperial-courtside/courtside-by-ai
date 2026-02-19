@@ -46,33 +46,12 @@ export default function UserApplicationsReview() {
 
     setProcessingId(application.id);
     try {
-      let assignedLeagueIds = [];
-
-      if (application.requested_role === "league_admin") {
-        // Create a new league from the application details
-        const newLeague = await base44.asServiceRole.entities.League.create({
-          name: application.league_name,
-          season: application.season_start_date || "TBD",
-        });
-        assignedLeagueIds = [newLeague.id];
-      } else if (application.league_id) {
-        assignedLeagueIds = [application.league_id];
-      }
-
-      // Update user: grant role and mark approved
-      await base44.asServiceRole.entities.User.update(application.user_id, {
-        user_type: application.requested_role,
-        application_status: "Approved",
-        assigned_league_ids: assignedLeagueIds,
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId: application.id,
+        action: 'approve',
       });
-
-      // Mark application as approved
-      await base44.asServiceRole.entities.UserApplication.update(application.id, {
-        status: "Approved",
-      });
-
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-      alert(`✅ Approved! ${application.requested_role === "league_admin" ? `League "${application.league_name}" has been created.` : ""}`);
+      alert(`✅ Approved!${application.requested_role === "league_admin" ? ` League "${application.league_name}" has been created.` : ""}`);
     } catch (error) {
       alert("Failed to approve application: " + error.message);
     } finally {
@@ -86,16 +65,10 @@ export default function UserApplicationsReview() {
 
     setProcessingId(application.id);
     try {
-      // Update user application_status only (keep user_type as "user")
-      await base44.asServiceRole.entities.User.update(application.user_id, {
-        application_status: "Rejected",
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId: application.id,
+        action: 'reject',
       });
-
-      // Mark application as rejected
-      await base44.asServiceRole.entities.UserApplication.update(application.id, {
-        status: "Rejected",
-      });
-
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
     } catch (error) {
       alert("Failed to reject application: " + error.message);
