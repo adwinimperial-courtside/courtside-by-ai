@@ -272,6 +272,7 @@ export default function EnhancedUserManagement() {
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
+                <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
