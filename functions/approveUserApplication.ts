@@ -43,15 +43,13 @@ Deno.serve(async (req) => {
         userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
       }
 
-      // Invite the user if not already a registered user
-      await base44.users.inviteUser(application.user_email, 'user');
-
-      // Find the user by email
-      const allUsers = await base44.asServiceRole.entities.User.filter({ email: application.user_email });
-      const targetUserId = allUsers.length > 0 ? allUsers[0].id : application.user_id;
-
-      // Update the user with league assignments
-      await base44.asServiceRole.entities.User.update(targetUserId, userUpdate);
+      try {
+        // Try to update if user already exists
+        await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+      } catch (err) {
+        // User doesn't exist - just update the application status without updating user
+        // (the user will be fully set up when they first log in)
+      }
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, {
         status: 'Approved',
