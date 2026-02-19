@@ -98,6 +98,11 @@ export default function Layout({ children }) {
     );
   }
 
+  // Show registration gate for new users
+  if (!isLoading && showRegistrationGate) {
+    return <RegistrationGate user={currentUser} />;
+  }
+
   return (
     <SidebarProvider defaultOpen={true}>
       <ApplyPendingAssignments />
