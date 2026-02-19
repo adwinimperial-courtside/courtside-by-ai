@@ -15,8 +15,9 @@ Deno.serve(async (req) => {
     
     // Filter for users who haven't been approved yet
     // These are users who signed up but haven't been approved by an app_admin
+    // Include users who are unverified OR have user_type === 'user' (default type = not approved)
     const pendingUsers = allUsers.filter(u => 
-      !u.user_type || u.user_type === 'user' || u.application_status !== 'Approved'
+      u.is_verified === false || u.user_type === 'user'
     );
     
     return Response.json({ users: pendingUsers });
