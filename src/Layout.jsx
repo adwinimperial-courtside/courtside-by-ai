@@ -119,7 +119,7 @@ export default function Layout({ children }) {
           <SidebarHeader className="border-b border-slate-200 p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/e9055e629_Courtside_by_AI_upper_right_logo.png" alt="Courtside by AI" className="w-full h-full object-cover" />
+                <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/ed79261c1_CourtSidebyAILOGO.png" alt="Courtside by AI" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 text-lg">Courtside by AI</h2>
@@ -163,7 +163,7 @@ export default function Layout({ children }) {
               </SidebarTrigger>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
-                  <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/e9055e629_Courtside_by_AI_upper_right_logo.png" alt="Courtside by AI" className="w-full h-full object-cover" />
+                  <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/ed79261c1_CourtSidebyAILOGO.png" alt="Courtside by AI" className="w-full h-full object-cover" />
                 </div>
                 <h1 className="text-lg font-bold text-slate-900">Courtside by AI</h1>
               </div>
