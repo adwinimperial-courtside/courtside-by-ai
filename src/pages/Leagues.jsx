@@ -61,9 +61,10 @@ export default function LeaguesPage() {
   });
 
   const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const isAppAdmin = currentUser?.user_type === 'app_admin';
   const filteredLeagues = currentUser?.assigned_league_ids 
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
-    : [];
+    : isAppAdmin ? leagues : [];
 
   React.useEffect(() => {
     if (currentUser && filteredLeagues.length === 1 && !currentUser.default_league_id) {
