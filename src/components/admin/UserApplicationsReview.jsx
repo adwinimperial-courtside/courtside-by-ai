@@ -130,7 +130,16 @@ export default function UserApplicationsReview() {
                       </>
                     )}
                     {(app.requested_role === "coach" || app.requested_role === "viewer") && (
-                      <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
+                      <>
+                        {app.league_ids && app.league_ids.length > 0 ? (
+                          app.league_ids.map((lid, i) => {
+                            const l = leagues.find(lg => lg.id === lid);
+                            return <div key={i}><span className="text-slate-500">League:</span> <span className="font-medium">{l?.name || lid}</span></div>;
+                          })
+                        ) : (
+                          <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
+                        )}
+                      </>
                     )}
                     {app.requested_role === "player" && (
                       <>
