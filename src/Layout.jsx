@@ -43,6 +43,7 @@ export default function Layout({ children }) {
           base44.analytics.track({
             eventName: 'user_login',
             properties: {
+              username: user.full_name,
               user_email: user.email,
               user_type: user.user_type || 'unknown'
             }
@@ -70,15 +71,16 @@ export default function Layout({ children }) {
   // Track page navigation (exclude app_admin)
   useEffect(() => {
     if (currentUser && currentUser.user_type !== 'app_admin') {
-      const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
-      base44.analytics.track({
-        eventName: 'page_navigation',
-        properties: {
-          user_email: currentUser.email,
-          page: pageName,
-          user_type: currentUser.user_type
-        }
-      });
+        const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
+        base44.analytics.track({
+          eventName: 'page_navigation',
+          properties: {
+            username: currentUser.full_name,
+            user_email: currentUser.email,
+            page: pageName,
+            user_type: currentUser.user_type
+          }
+        });
     }
   }, [location.pathname, currentUser]);
 
@@ -90,6 +92,7 @@ export default function Layout({ children }) {
         base44.analytics.track({
           eventName: 'user_session_end',
           properties: {
+            username: currentUser.full_name,
             user_email: currentUser.email,
             session_duration_seconds: sessionDuration,
             session_duration_minutes: Math.round(sessionDuration / 60)
@@ -139,6 +142,7 @@ export default function Layout({ children }) {
       base44.analytics.track({
         eventName: 'user_session_end',
         properties: {
+          username: currentUser.full_name,
           user_email: currentUser.email,
           session_duration_seconds: sessionDuration,
           session_duration_minutes: Math.round(sessionDuration / 60)
