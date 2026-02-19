@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      await base44.asServiceRole.entities.User.update(userId, { user_type: 'user' });
+      await base44.asServiceRole.entities.User.update(userId, { user_type: 'viewer' });
     } else if (action === 'reject') {
       await base44.asServiceRole.entities.User.update(userId, { user_type: 'rejected' });
     }
