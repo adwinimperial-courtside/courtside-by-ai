@@ -101,6 +101,17 @@ export default function TeamsPage() {
       return newTeam;
     },
     onSuccess: () => {
+      // Track team creation (exclude app_admin)
+      if (currentUser && currentUser.user_type !== 'app_admin') {
+        base44.analytics.track({
+          eventName: 'team_created',
+          properties: {
+            user_email: currentUser.email,
+            team_name: createTeamMutation.variables?.name,
+            user_type: currentUser.user_type
+          }
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowCreateDialog(false);
