@@ -122,16 +122,19 @@ export default function OwnerTools() {
         </div>
 
         <div className="grid gap-8">
-          {/* Request Management Section */}
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <ClipboardList className="w-6 h-6 text-orange-600" />
-              <h2 className="text-2xl font-bold text-slate-900">Request Management</h2>
-            </div>
-            <div className="grid gap-6">
-              <div>
-                <UserApplicationsReview />
-              </div>
+           {/* Request Management Section */}
+           <div>
+             <div className="flex items-center gap-3 mb-4">
+               <ClipboardList className="w-6 h-6 text-orange-600" />
+               <h2 className="text-2xl font-bold text-slate-900">Request Management</h2>
+             </div>
+             <div className="grid gap-6">
+               <div>
+                 <PendingBaseUsers />
+               </div>
+               <div>
+                 <UserApplicationsReview />
+               </div>
               <div>
                 <ApplicationAccess />
               </div>
