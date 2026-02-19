@@ -91,12 +91,9 @@ export default function StatisticsPage() {
     initialData: [],
   });
 
-  // For league admins, restrict all data to their assigned leagues
-  const baseTeams = isLeagueAdmin ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
-  const baseGames = isLeagueAdmin ? games.filter(g => {
-    const homeTeam = teams.find(t => t.id === g.home_team_id);
-    return assignedLeagueIds.includes(homeTeam?.league_id);
-  }) : games;
+  // Restrict data to assigned leagues for non-app-admins with assigned leagues
+  const baseTeams = (hasAssignedLeagues && !isAppAdmin) ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
+  const baseGames = (hasAssignedLeagues && !isAppAdmin) ? games.filter(g => assignedLeagueIds.includes(g.league_id)) : games;
 
   // Filter data based on selections
   const filteredTeams = selectedLeague === "all" 
