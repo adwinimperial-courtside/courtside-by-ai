@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
-import ApplicationAccess from "../components/admin/ApplicationAccess";
-import LeagueAccessRequests from "../components/admin/LeagueAccessRequests";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
 
 export default function RequestManagement() {
@@ -40,23 +38,12 @@ export default function RequestManagement() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <ClipboardList className="w-8 h-8 text-orange-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Request Management</h1>
+            <h1 className="text-3xl font-bold text-slate-900">New User Applications</h1>
           </div>
-          <p className="text-slate-600">Manage user access requests</p>
+          <p className="text-slate-600">Review and manage new user role applications</p>
         </div>
 
-        <div className="grid gap-6">
-          <div>
-            <UserApplicationsReview />
-          </div>
-          <div>
-            <ApplicationAccess />
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold text-slate-900 mb-3">League Access Requests</h3>
-            <LeagueAccessRequests />
-          </div>
-        </div>
+        <UserApplicationsReview />
       </div>
     </div>
   );
