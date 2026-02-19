@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
 import ApplicationAccess from "../components/admin/ApplicationAccess";
 import LeagueAccessRequests from "../components/admin/LeagueAccessRequests";
+import UserApplicationsReview from "../components/admin/UserApplicationsReview";
 
 export default function RequestManagement() {
   const [currentUser, setCurrentUser] = useState(null);
