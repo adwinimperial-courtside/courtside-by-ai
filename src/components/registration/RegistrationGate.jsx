@@ -241,13 +241,29 @@ export default function RegistrationGate({ user }) {
 
             {(selectedRole === "coach" || selectedRole === "viewer") && (
               <div>
-                <label className="text-sm font-medium text-slate-700 mb-1 block">Select League *</label>
-                <Select value={selectedLeague} onValueChange={setSelectedLeague}>
-                  <SelectTrigger><SelectValue placeholder="Choose a league" /></SelectTrigger>
-                  <SelectContent>
-                    {leagues.map(l => <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                  {leagues.map(l => (
+                    <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedLeagues.includes(l.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedLeagues([...selectedLeagues, l.id]);
+                          } else {
+                            setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
+                          }
+                        }}
+                        className="w-4 h-4 accent-orange-500"
+                      />
+                      <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
+                    </label>
+                  ))}
+                </div>
+                {selectedLeagues.length > 0 && (
+                  <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
+                )}
               </div>
             )}
 
