@@ -107,7 +107,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const getVisibleNavigationItems = () => {
     if (!currentUser) return navigationItems;
     if (currentUser.user_type === "viewer") {
-      return navigationItems.filter(item => !["Leagues", "Teams"].includes(item.title));
+      return navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights"].includes(item.title));
     }
     return navigationItems;
   };
