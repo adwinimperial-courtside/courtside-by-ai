@@ -115,6 +115,7 @@ export default function EnhancedUserManagement() {
       full_name: user.full_name,
       user_type: user.user_type || "viewer",
       assigned_league_ids: user.assigned_league_ids || [],
+      default_league_id: user.default_league_id || "",
     });
   };
 
