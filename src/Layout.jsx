@@ -11,6 +11,7 @@ import {
 "@/components/ui/sidebar";
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
+import RegistrationGate from "@/components/registration/RegistrationGate";
 import { createPageUrl } from "./utils";
 
 
