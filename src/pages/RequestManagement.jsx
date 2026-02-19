@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
-import PendingBaseUsers from "../components/admin/PendingBaseUsers";
 
 export default function RequestManagement() {
   const [currentUser, setCurrentUser] = useState(null);
