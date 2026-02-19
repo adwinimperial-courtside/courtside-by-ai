@@ -134,8 +134,24 @@ export default function UserApplicationsReview() {
                     )}
                     {app.requested_role === "player" && (
                       <>
-                        <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
-                        <div><span className="text-slate-500">Team:</span> <span className="font-medium">{team?.name || app.team_id || "N/A"}</span></div>
+                        {app.league_team_pairs && app.league_team_pairs.length > 0 ? (
+                          app.league_team_pairs.map((pair, i) => {
+                            const pLeague = leagues.find(l => l.id === pair.league_id);
+                            const pTeam = teams.find(t => t.id === pair.team_id);
+                            return (
+                              <div key={i}>
+                                <span className="text-slate-500">League:</span> <span className="font-medium">{pLeague?.name || pair.league_id || "N/A"}</span>
+                                {" · "}
+                                <span className="text-slate-500">Team:</span> <span className="font-medium">{pTeam?.name || pair.team_id || "N/A"}</span>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <>
+                            <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
+                            <div><span className="text-slate-500">Team:</span> <span className="font-medium">{teams.find(t => t.id === app.team_id)?.name || app.team_id || "N/A"}</span></div>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
