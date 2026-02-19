@@ -15,7 +15,10 @@ Deno.serve(async (req) => {
     // Get all users and filter for pending
     if (action === 'list') {
       const allUsers = await base44.asServiceRole.entities.User.list();
+      // Debug: log all users to see their structure
+      console.log('All users:', JSON.stringify(allUsers));
       const pendingUsers = allUsers.filter(u => !u.user_type || u.user_type === 'user');
+      console.log('Pending users:', JSON.stringify(pendingUsers));
       return Response.json({ users: pendingUsers });
     }
 
