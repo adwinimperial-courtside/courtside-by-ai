@@ -58,11 +58,14 @@ export default function StatisticsPage() {
     initialData: [],
   });
 
-  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const isAppAdmin = currentUser?.user_type === 'app_admin';
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
-  const visibleLeagues = isLeagueAdmin
-    ? leagues.filter(league => assignedLeagueIds.includes(league.id))
-    : leagues;
+  const hasAssignedLeagues = assignedLeagueIds.length > 0;
+  const visibleLeagues = isAppAdmin
+    ? leagues
+    : hasAssignedLeagues
+      ? leagues.filter(league => assignedLeagueIds.includes(league.id))
+      : leagues;
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
