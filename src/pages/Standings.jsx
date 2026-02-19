@@ -56,22 +56,16 @@ export default function StandingsPage() {
     initialData: [],
   });
 
-  const leagueAdminTeams = isLeagueAdmin ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
+  const baseTeams = (hasAssignedLeagues && !isAppAdmin) ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
+  const baseGames = (hasAssignedLeagues && !isAppAdmin) ? games.filter(g => assignedLeagueIds.includes(g.league_id)) : games;
 
   const filteredTeams = selectedLeague === "all" 
-    ? leagueAdminTeams 
-    : leagueAdminTeams.filter(t => t.league_id === selectedLeague);
+    ? baseTeams 
+    : baseTeams.filter(t => t.league_id === selectedLeague);
 
   const filteredGames = selectedLeague === "all"
-    ? (isLeagueAdmin ? games.filter(g => {
-        const homeTeam = teams.find(t => t.id === g.home_team_id);
-        return assignedLeagueIds.includes(homeTeam?.league_id);
-      }) : games)
-    : games.filter(g => {
-        const homeTeam = teams.find(t => t.id === g.home_team_id);
-        const awayTeam = teams.find(t => t.id === g.away_team_id);
-        return homeTeam?.league_id === selectedLeague || awayTeam?.league_id === selectedLeague;
-      });
+    ? baseGames
+    : baseGames.filter(g => g.league_id === selectedLeague);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-x-hidden">
