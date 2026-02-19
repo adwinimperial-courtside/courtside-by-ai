@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, ChevronRight, UserPlus, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
