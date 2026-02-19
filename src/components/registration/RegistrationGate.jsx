@@ -118,13 +118,16 @@ export default function RegistrationGate({ user }) {
           avg_players_per_team: parseInt(formData.avg_players_per_team),
         });
       } else {
-        // Store first league_id for backwards compat, plus all selected
-        applicationData.league_id = selectedLeagues[0];
-        applicationData.league_ids = selectedLeagues;
-        if (selectedRole === "player") {
-          applicationData.team_id = selectedTeam;
+          applicationData.league_id = selectedLeagues[0];
+          applicationData.league_ids = selectedLeagues;
+          if (selectedRole === "player") {
+            applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
+            applicationData.league_team_pairs = selectedLeagues.map(lid => ({
+              league_id: lid,
+              team_id: leagueTeamMap[lid] || "",
+            }));
+          }
         }
-      }
 
       await base44.entities.UserApplication.create(applicationData);
       await base44.auth.updateMe({ application_status: "Pending" });
