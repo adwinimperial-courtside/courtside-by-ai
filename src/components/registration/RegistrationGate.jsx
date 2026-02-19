@@ -275,46 +275,60 @@ export default function RegistrationGate({ user }) {
             )}
 
             {selectedRole === "player" && (
-              <>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
-                    {leagues.map(l => (
-                      <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
-                        <input
-                          type="checkbox"
-                          checked={selectedLeagues.includes(l.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedLeagues([...selectedLeagues, l.id]);
-                            } else {
-                              setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
-                              if (selectedLeagues.filter(id => id !== l.id).length === 0) setSelectedTeam("");
-                            }
-                          }}
-                          className="w-4 h-4 accent-orange-500"
-                        />
-                        <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
-                      </label>
-                    ))}
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                      {leagues.map(l => (
+                        <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedLeagues.includes(l.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedLeagues([...selectedLeagues, l.id]);
+                              } else {
+                                setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
+                                setLeagueTeamMap(prev => { const next = { ...prev }; delete next[l.id]; return next; });
+                              }
+                            }}
+                            className="w-4 h-4 accent-orange-500"
+                          />
+                          <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
+                        </label>
+                      ))}
+                    </div>
+                    {selectedLeagues.length > 0 && (
+                      <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
+                    )}
                   </div>
                   {selectedLeagues.length > 0 && (
-                    <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-slate-700 block">Select Team per League *</label>
+                      {selectedLeagues.map(lid => {
+                        const league = leagues.find(l => l.id === lid);
+                        const leagueTeams = teams.filter(t => t.league_id === lid);
+                        return (
+                          <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                            <p className="text-xs font-semibold text-slate-600 mb-2">{league?.name} <span className="text-slate-400">({league?.season})</span></p>
+                            <Select
+                              value={leagueTeamMap[lid] || ""}
+                              onValueChange={(val) => setLeagueTeamMap(prev => ({ ...prev, [lid]: val }))}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Choose a team" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {leagueTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Select Team *</label>
-                  <Select value={selectedTeam} onValueChange={setSelectedTeam} disabled={selectedLeagues.length === 0}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={selectedLeagues.length > 0 ? "Choose a team" : "Select a league first"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
             <Button type="submit" disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 mt-2">
               {isSubmitting ? "Submitting..." : "Submit Application"}
