@@ -54,6 +54,7 @@ export default function EnhancedUserManagement() {
       base44.entities.User.update(selectedUser.id, {
         user_type: data.user_type,
         assigned_league_ids: data.assigned_league_ids,
+        default_league_id: data.default_league_id || null,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
