@@ -221,6 +221,12 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                           {item.title === "League Owners" && leagueOwnersCount > 0 && (
                             <Badge className="ml-auto bg-blue-500 text-white">{leagueOwnersCount}</Badge>
                           )}
+                          {item.title === "Coaches" && coachesCount > 0 && (
+                            <Badge className="ml-auto bg-green-500 text-white">{coachesCount}</Badge>
+                          )}
+                          {item.title === "Players" && playersCount > 0 && (
+                            <Badge className="ml-auto bg-indigo-500 text-white">{playersCount}</Badge>
+                          )}
                           {item.title === "Viewers" && viewersCount > 0 && (
                             <Badge className="ml-auto bg-purple-500 text-white">{viewersCount}</Badge>
                           )}
