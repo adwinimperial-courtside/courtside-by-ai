@@ -47,6 +47,9 @@ export default function RequestManagement() {
 
         <div className="grid gap-6">
           <div>
+            <UserApplicationsReview />
+          </div>
+          <div>
             <ApplicationAccess />
           </div>
           <div>
