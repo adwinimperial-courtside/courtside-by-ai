@@ -119,7 +119,7 @@ export default function LeaguesPage() {
                   league={league} 
                   userType={currentUser?.user_type}
                   isDefault={currentUser?.default_league_id === league.id}
-                  onSetDefault={setDefaultLeagueMutation.mutate}
+                  onSetDefault={isLeagueAdmin || filteredLeagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
                   multipleLeagues={filteredLeagues.length > 1}
                 />
               ))}
