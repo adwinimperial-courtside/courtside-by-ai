@@ -43,11 +43,15 @@ Deno.serve(async (req) => {
         userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
       }
 
-      // Invite the user if not already registered
+      // Get or create the user record
+      let targetUser;
       try {
-        await base44.users.inviteUser(application.user_email, application.requested_role);
+        targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       } catch (err) {
-        // User may already be invited, continue
+        // User doesn't exist, need to invite them
+        const inviteResult = await base44.users.inviteUser(application.user_email, application.requested_role);
+        // After invite, try to get the user again
+        targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       }
 
       // Update the user with league assignments
