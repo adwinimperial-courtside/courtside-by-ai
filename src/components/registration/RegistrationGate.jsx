@@ -81,7 +81,7 @@ export default function RegistrationGate({ user }) {
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
     setFormData({});
-    setSelectedLeague("");
+    setSelectedLeagues([]);
     setSelectedTeam("");
     setStep("fill_form");
   };
