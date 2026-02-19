@@ -67,10 +67,25 @@ export default function Layout({ children }) {
     fetchUser();
   }, [navigate, location.pathname]);
 
+  // Track page navigation (exclude app_admin)
+  useEffect(() => {
+    if (currentUser && currentUser.user_type !== 'app_admin') {
+      const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
+      base44.analytics.track({
+        eventName: 'page_navigation',
+        properties: {
+          user_email: currentUser.email,
+          page: pageName,
+          user_type: currentUser.user_type
+        }
+      });
+    }
+  }, [location.pathname, currentUser]);
+
   // Track session duration on logout or page unload
   useEffect(() => {
     const handleLogout = () => {
-      if (sessionStartTimeRef.current && currentUser) {
+      if (sessionStartTimeRef.current && currentUser && currentUser.user_type !== 'app_admin') {
         const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
         base44.analytics.track({
           eventName: 'user_session_end',
