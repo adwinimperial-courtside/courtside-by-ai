@@ -124,6 +124,17 @@ export default function TeamsPage() {
       return true;
     },
     onSuccess: () => {
+      // Track team update (exclude app_admin)
+      if (currentUser && currentUser.user_type !== 'app_admin') {
+        base44.analytics.track({
+          eventName: 'team_updated',
+          properties: {
+            user_email: currentUser.email,
+            team_id: teamToEdit.id,
+            user_type: currentUser.user_type
+          }
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
       setShowEditDialog(false);
