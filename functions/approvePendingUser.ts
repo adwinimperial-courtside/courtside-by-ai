@@ -5,23 +5,29 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    // Only app_admin can approve users
+    // Only app_admin can access
     if (user?.role !== 'admin') {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const { userId, action } = await req.json();
+    const { action, userId } = await req.json();
 
+    // Get all users and filter for pending
+    if (action === 'list') {
+      const allUsers = await base44.asServiceRole.entities.User.list();
+      const pendingUsers = allUsers.filter(u => !u.user_type || u.user_type === 'user');
+      return Response.json({ users: pendingUsers });
+    }
+
+    // Approve or reject user
     if (!userId || !['approve', 'reject'].includes(action)) {
       return Response.json({ error: 'Missing userId or invalid action' }, { status: 400 });
     }
 
     if (action === 'approve') {
-      // Approve user by setting their role to 'user' (removes pending status)
-      await base44.asServiceRole.entities.User.update(userId, { role: 'user' });
+      await base44.asServiceRole.entities.User.update(userId, { user_type: 'user' });
     } else if (action === 'reject') {
-      // Reject by setting role to 'rejected'
-      await base44.asServiceRole.entities.User.update(userId, { role: 'rejected' });
+      await base44.asServiceRole.entities.User.update(userId, { user_type: 'rejected' });
     }
 
     return Response.json({ success: true, message: `User ${action}ed successfully` });
