@@ -329,73 +329,108 @@ export default function EnhancedUserManagement() {
     );
   }
 
+  const userTypeIcon = (type) => {
+    if (type === "app_admin") return <Shield className="w-3 h-3" />;
+    if (type === "league_admin") return <Trophy className="w-3 h-3" />;
+    if (type === "viewer") return <Eye className="w-3 h-3" />;
+    return null;
+  };
+
+  const userTypeBadgeColor = (type) => {
+    if (type === "app_admin") return "bg-purple-100 text-purple-800";
+    if (type === "league_admin") return "bg-orange-100 text-orange-800";
+    if (type === "player") return "bg-green-100 text-green-800";
+    if (type === "viewer") return "bg-slate-100 text-slate-700";
+    return "bg-slate-100 text-slate-700";
+  };
+
+  const filteredUsers = users.filter(u =>
+    !searchQuery ||
+    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   // User List
   return (
     <>
       <Card className="border-slate-200 shadow-lg">
-        <CardHeader className="border-b border-slate-200 bg-white flex flex-row items-center justify-between">
+        <CardHeader className="border-b border-slate-200 bg-white flex flex-row items-center justify-between flex-wrap gap-3">
           <div>
             <CardTitle className="text-xl">User Management</CardTitle>
-            <p className="text-sm text-slate-600 mt-2">
-              Add, edit, or delete users and manage their permissions
-            </p>
+            <p className="text-sm text-slate-600 mt-1">{users.length} user{users.length !== 1 ? "s" : ""} total</p>
           </div>
           <Button
             onClick={() => setShowAddForm(true)}
             className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
           >
             <UserPlus className="w-4 h-4 mr-2" />
-            Add User
+            Invite User
           </Button>
         </CardHeader>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4">
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
           <div className="space-y-2">
-            {users.map((user) => (
-              <div
-                key={user.id}
-                className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
-              >
-                <button
-                  onClick={() => handleUserSelect(user)}
-                  className="flex-1 text-left"
+            {filteredUsers.map((user) => {
+              const assignedLeagueNames = (user.assigned_league_ids || [])
+                .map(id => leagues.find(l => l.id === id)?.name)
+                .filter(Boolean);
+              const defaultLeague = leagues.find(l => l.id === user.default_league_id);
+              return (
+                <div
+                  key={user.id}
+                  className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors gap-3"
                 >
-                  <div className="font-medium text-slate-900">{user.full_name}</div>
-                  <div className="text-sm text-slate-600">{user.email}</div>
-                  <div className="flex gap-2 mt-2">
-                    <Badge variant="outline" className="text-xs">
-                      {user.role === "admin" ? "Admin" : "User"}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {user.user_type || "viewer"}
-                    </Badge>
-                    {user.assigned_league_ids?.length > 0 && (
-                      <Badge className="text-xs bg-blue-100 text-blue-800">
-                        {user.assigned_league_ids.length} league(s)
-                      </Badge>
-                    )}
+                  <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
+                    <div className="font-semibold text-slate-900 truncate">{user.full_name || "—"}</div>
+                    <div className="text-sm text-slate-500 truncate">{user.email}</div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
+                        {userTypeIcon(user.user_type)}
+                        {user.user_type || "viewer"}
+                      </span>
+                      {assignedLeagueNames.length > 0 && (
+                        <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                          {assignedLeagueNames.length === 1 ? assignedLeagueNames[0] : `${assignedLeagueNames.length} leagues`}
+                        </span>
+                      )}
+                      {defaultLeague && (
+                        <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
+                          Default: {defaultLeague.name}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleUserSelect(user)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(user)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                </button>
-                <div className="flex gap-2 ml-4">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleUserSelect(user)}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                  >
-                    <Pencil className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDeleteClick(user)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
                 </div>
-              </div>
-            ))}
-            {users.length === 0 && (
+              );
+            })}
+            {filteredUsers.length === 0 && (
               <p className="text-slate-500 text-center py-8">No users found</p>
             )}
           </div>
