@@ -79,6 +79,16 @@ const ownerItems = [
     icon: Shield
   },
   {
+    title: "Coaches",
+    url: createPageUrl("Coaches"),
+    icon: Users
+  },
+  {
+    title: "Players",
+    url: createPageUrl("Players"),
+    icon: Users
+  },
+  {
     title: "Viewers",
     url: createPageUrl("Viewers"),
     icon: Eye
