@@ -31,11 +31,13 @@ export default function EnhancedUserManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
     user_type: "viewer",
     assigned_league_ids: [],
+    default_league_id: "",
   });
   const queryClient = useQueryClient();
 
