@@ -60,6 +60,8 @@ export default function TeamsPage() {
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
+  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const canManageTeams = isAppAdmin || isLeagueAdmin;
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
   const hasAssignedLeagues = assignedLeagueIds.length > 0;
   const assignedLeagues = isAppAdmin
