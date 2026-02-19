@@ -63,6 +63,7 @@ export default function RegistrationGate({ user }) {
   const [formData, setFormData] = useState({});
   const [selectedLeagues, setSelectedLeagues] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState("");
+  const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
