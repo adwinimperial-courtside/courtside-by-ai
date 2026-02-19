@@ -44,12 +44,7 @@ export default function RequestManagement() {
         </div>
 
         <div className="grid gap-8">
-          <div>
-            <PendingBaseUsers />
-          </div>
-          <div>
-            <UserApplicationsReview />
-          </div>
+          <UserApplicationsReview />
         </div>
       </div>
     </div>
