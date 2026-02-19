@@ -109,9 +109,9 @@ export default function StatisticsPage() {
 
   const filteredGames = selectedLeague === "all"
     ? (selectedTeam === "all" 
-        ? games 
-        : games.filter(g => g.home_team_id === selectedTeam || g.away_team_id === selectedTeam))
-    : games.filter(g => {
+        ? baseGames 
+        : baseGames.filter(g => g.home_team_id === selectedTeam || g.away_team_id === selectedTeam))
+    : baseGames.filter(g => {
         const homeTeam = teams.find(t => t.id === g.home_team_id);
         const awayTeam = teams.find(t => t.id === g.away_team_id);
         if (selectedTeam === "all") {
