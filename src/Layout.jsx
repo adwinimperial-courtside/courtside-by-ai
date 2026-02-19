@@ -79,7 +79,7 @@ export default function Layout({ children }) {
 
   // More precisely: show gate if user_type is "user" (default) OR application_status is not Approved (and not app_admin)
   const showRegistrationGate = currentUser && 
-    currentUser.user_type === "user" && 
+    (!currentUser.user_type || currentUser.user_type === "user") && 
     !isLiveGamePage;
 
   const handleLogout = () => {
