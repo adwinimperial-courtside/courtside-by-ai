@@ -10,10 +10,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Get pending applications from UserApplication entity
-    const pendingApplications = await base44.asServiceRole.entities.UserApplication.filter({ status: 'Pending' }, '-applied_at', 1000);
+    // Get all users from the User entity (this includes users who signed up via Base44 auth)
+    const allUsers = await base44.asServiceRole.entities.User.list('-created_date', 1000);
     
-    return Response.json({ users: pendingApplications });
+    // Filter for users who haven't been approved yet
+    // These are users who signed up but haven't been approved by an app_admin
+    const pendingUsers = allUsers.filter(u => 
+      !u.user_type || u.user_type === 'user' || u.application_status !== 'Approved'
+    );
+    
+    return Response.json({ users: pendingUsers });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
