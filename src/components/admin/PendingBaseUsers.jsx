@@ -10,12 +10,13 @@ export default function PendingBaseUsers() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
 
-  const { data: { users: pendingUsers = [] } = {}, isLoading } = useQuery({
+  const { data: { users: pendingUsers = [] } = {}, isLoading, isError } = useQuery({
     queryKey: ['pending_base_users'],
     queryFn: async () => {
       const response = await base44.functions.invoke('approvePendingUser', { action: 'list' });
       return response.data;
     },
+    retry: false,
   });
 
   const handleApprove = async (userId, userEmail) => {
@@ -70,6 +71,8 @@ export default function PendingBaseUsers() {
       <CardContent className="pt-6">
         {isLoading ? (
           <p className="text-slate-500 text-center py-8">Loading users...</p>
+        ) : isError ? (
+          <p className="text-slate-500 text-center py-8">Unable to load pending users</p>
         ) : pendingUsers.length === 0 ? (
           <p className="text-slate-500 text-center py-8">No pending user approvals</p>
         ) : (
