@@ -10,11 +10,11 @@ export default function PendingBaseUsers() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
 
-  const { data: { users: pendingUsers = [] } = {}, isLoading, isError, refetch } = useQuery({
+  const { data: pendingUsers = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['pending_base_users'],
     queryFn: async () => {
-      const response = await base44.functions.invoke('approvePendingUser', { action: 'list' });
-      return response.data;
+      const response = await base44.functions.invoke('getPendingDashboardUsers', {});
+      return response.data.users || [];
     },
     retry: false,
   });
@@ -24,10 +24,7 @@ export default function PendingBaseUsers() {
 
     setProcessingId(userId);
     try {
-      await base44.functions.invoke('approvePendingUser', {
-        userId,
-        action: 'approve',
-      });
+      await base44.asServiceRole.entities.User.update(userId, { user_type: 'viewer' });
       await refetch();
       alert(`✅ Approved! ${userEmail} can now access the app.`);
     } catch (error) {
@@ -42,10 +39,7 @@ export default function PendingBaseUsers() {
 
     setProcessingId(userId);
     try {
-      await base44.functions.invoke('approvePendingUser', {
-        userId,
-        action: 'reject',
-      });
+      await base44.asServiceRole.entities.User.update(userId, { user_type: 'rejected' });
       await refetch();
       alert(`❌ Rejected ${userEmail}.`);
     } catch (error) {
