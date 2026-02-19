@@ -18,12 +18,15 @@ export default function PendingBaseUsers() {
     retry: false,
   });
 
-  const handleApprove = async (userId, userEmail) => {
+  const handleApprove = async (applicationId, userEmail) => {
     if (!confirm(`Approve access for ${userEmail}?`)) return;
 
-    setProcessingId(userId);
+    setProcessingId(applicationId);
     try {
-      await base44.asServiceRole.entities.User.update(userId, { user_type: 'viewer' });
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId,
+        action: 'approve',
+      });
       await refetch();
       alert(`✅ Approved! ${userEmail} can now access the app.`);
     } catch (error) {
@@ -33,12 +36,15 @@ export default function PendingBaseUsers() {
     }
   };
 
-  const handleReject = async (userId, userEmail) => {
+  const handleReject = async (applicationId, userEmail) => {
     if (!confirm(`Reject access for ${userEmail}?`)) return;
 
-    setProcessingId(userId);
+    setProcessingId(applicationId);
     try {
-      await base44.asServiceRole.entities.User.update(userId, { user_type: 'rejected' });
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId,
+        action: 'reject',
+      });
       await refetch();
       alert(`❌ Rejected ${userEmail}.`);
     } catch (error) {
