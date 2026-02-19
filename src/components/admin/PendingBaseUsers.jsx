@@ -76,14 +76,14 @@ export default function PendingBaseUsers() {
           <p className="text-slate-500 text-center py-8">No pending user approvals</p>
         ) : (
           <div className="space-y-4">
-            {pendingUsers.map((user) => {
-              const isProcessing = processingId === user.id;
+            {pendingUsers.map((app) => {
+              const isProcessing = processingId === app.id;
               return (
-                <div key={user.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                <div key={app.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <div className="font-semibold text-slate-900">{user.full_name || "N/A"}</div>
-                      <div className="text-sm text-slate-600">{user.email}</div>
+                      <div className="font-semibold text-slate-900">{app.user_name || "N/A"}</div>
+                      <div className="text-sm text-slate-600">{app.user_email}</div>
                     </div>
                     <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
                       Pending
