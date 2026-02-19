@@ -26,6 +26,8 @@ Deno.serve(async (req) => {
           season: application.season_start_date || 'TBD',
         });
         assignedLeagueIds = [newLeague.id];
+      } else if (application.league_ids && application.league_ids.length > 0) {
+        assignedLeagueIds = application.league_ids;
       } else if (application.league_id) {
         assignedLeagueIds = [application.league_id];
       }
