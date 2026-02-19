@@ -205,6 +205,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                           {item.title === "Requests" && pendingRequestsCount > 0 && (
                             <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
                           )}
+                          {item.title === "League Owners" && leagueOwnersCount > 0 && (
+                            <Badge className="ml-auto bg-blue-500 text-white">{leagueOwnersCount}</Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
