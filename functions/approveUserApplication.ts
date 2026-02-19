@@ -32,11 +32,17 @@ Deno.serve(async (req) => {
         assignedLeagueIds = [application.league_id];
       }
 
-      await base44.asServiceRole.entities.User.update(application.user_id, {
+      const userUpdate = {
         user_type: application.requested_role,
         application_status: 'Approved',
         assigned_league_ids: assignedLeagueIds,
-      });
+      };
+      if (application.requested_role === 'player' && application.league_team_pairs) {
+        userUpdate.league_team_pairs = application.league_team_pairs;
+      } else if (application.requested_role === 'player' && application.team_id) {
+        userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
+      }
+      await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, {
         status: 'Approved',
