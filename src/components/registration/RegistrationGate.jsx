@@ -90,7 +90,7 @@ export default function RegistrationGate({ user }) {
     e.preventDefault();
 
     if (selectedRole !== "league_admin") {
-      if (!selectedLeague) { alert("Please select a league."); return; }
+      if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
       if (selectedRole === "player" && !selectedTeam) { alert("Please select a team."); return; }
     }
 
