@@ -84,26 +84,44 @@ export default function Layout({ children }) {
     }
   }, [location.pathname, currentUser]);
 
-  // Track session duration on logout or page unload
-  useEffect(() => {
-    const handleLogout = () => {
-      if (sessionStartTimeRef.current && currentUser && currentUser.user_type !== 'app_admin') {
-        const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
+  // Track user activity periodically to show live visitors
+    useEffect(() => {
+      if (!currentUser || currentUser.user_type === 'app_admin') return;
+
+      const interval = setInterval(() => {
         base44.analytics.track({
-          eventName: 'user_session_end',
+          eventName: 'user_active',
           properties: {
             username: currentUser.full_name,
             user_email: currentUser.email,
-            session_duration_seconds: sessionDuration,
-            session_duration_minutes: Math.round(sessionDuration / 60)
+            user_type: currentUser.user_type
           }
         });
-      }
-    };
+      }, 30000); // Track every 30 seconds
 
-    window.addEventListener('beforeunload', handleLogout);
-    return () => window.removeEventListener('beforeunload', handleLogout);
-  }, [currentUser]);
+      return () => clearInterval(interval);
+    }, [currentUser]);
+
+    // Track session duration on logout or page unload
+    useEffect(() => {
+      const handleLogout = () => {
+        if (sessionStartTimeRef.current && currentUser && currentUser.user_type !== 'app_admin') {
+          const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
+          base44.analytics.track({
+            eventName: 'user_session_end',
+            properties: {
+              username: currentUser.full_name,
+              user_email: currentUser.email,
+              session_duration_seconds: sessionDuration,
+              session_duration_minutes: Math.round(sessionDuration / 60)
+            }
+          });
+        }
+      };
+
+      window.addEventListener('beforeunload', handleLogout);
+      return () => window.removeEventListener('beforeunload', handleLogout);
+    }, [currentUser]);
 
   const getUserTypeIcon = () => {
     if (!currentUser?.user_type) return null;
