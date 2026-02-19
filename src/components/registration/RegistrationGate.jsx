@@ -114,7 +114,9 @@ export default function RegistrationGate({ user }) {
           avg_players_per_team: parseInt(formData.avg_players_per_team),
         });
       } else {
-        applicationData.league_id = selectedLeague;
+        // Store first league_id for backwards compat, plus all selected
+        applicationData.league_id = selectedLeagues[0];
+        applicationData.league_ids = selectedLeagues;
         if (selectedRole === "player") {
           applicationData.team_id = selectedTeam;
         }
