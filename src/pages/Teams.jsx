@@ -37,10 +37,14 @@ export default function TeamsPage() {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
-        if (!leagueIdFromUrl && user?.default_league_id) {
-          setSelectedLeague(user.default_league_id);
-        } else if (!leagueIdFromUrl) {
-          setSelectedLeague("all");
+        if (!leagueIdFromUrl) {
+          if (user?.default_league_id) {
+            setSelectedLeague(user.default_league_id);
+          } else if (user?.user_type === 'league_admin' && user?.assigned_league_ids?.length === 1) {
+            setSelectedLeague(user.assigned_league_ids[0]);
+          } else {
+            setSelectedLeague("all");
+          }
         }
       } catch (error) {
         console.error("Failed to fetch user:", error);
