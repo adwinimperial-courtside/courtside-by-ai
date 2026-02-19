@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 
 export default function PendingBaseUsers() {
-  const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
 
   const { data: pendingUsers = [], isLoading, isError, refetch } = useQuery({
