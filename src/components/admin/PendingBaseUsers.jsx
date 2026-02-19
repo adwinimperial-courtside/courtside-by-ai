@@ -10,13 +10,13 @@ export default function PendingBaseUsers() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
 
-  const { data: allUsers = [], isLoading } = useQuery({
-    queryKey: ['all_base_users'],
-    queryFn: () => base44.asServiceRole.entities.User.list(),
+  const { data: { users: pendingUsers = [] } = {}, isLoading } = useQuery({
+    queryKey: ['pending_base_users'],
+    queryFn: async () => {
+      const response = await base44.functions.invoke('approvePendingUser', { action: 'list' });
+      return response.data;
+    },
   });
-
-  // Filter for users with no user_type (pending approval at Base44 level)
-  const pendingUsers = allUsers.filter(u => !u.user_type || u.user_type === 'user');
 
   const handleApprove = async (userId, userEmail) => {
     if (!confirm(`Approve access for ${userEmail}?`)) return;
