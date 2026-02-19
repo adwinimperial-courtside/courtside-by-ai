@@ -57,7 +57,6 @@ import LeagueOwners from './pages/LeagueOwners';
 import LeagueSelection from './pages/LeagueSelection';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
-import OwnerTools from './pages/OwnerTools';
 import RequestManagement from './pages/RequestManagement';
 import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
@@ -79,7 +78,6 @@ export const PAGES = {
     "LeagueSelection": LeagueSelection,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
-    "OwnerTools": OwnerTools,
     "RequestManagement": RequestManagement,
     "Schedule": Schedule,
     "Standings": Standings,

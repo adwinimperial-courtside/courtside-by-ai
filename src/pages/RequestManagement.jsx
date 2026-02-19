@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
+import PendingBaseUsers from "../components/admin/PendingBaseUsers";
 
 export default function RequestManagement() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -43,7 +44,14 @@ export default function RequestManagement() {
           <p className="text-slate-600">Review and manage new user role applications</p>
         </div>
 
-        <UserApplicationsReview />
+        <div className="grid gap-8">
+          <div>
+            <PendingBaseUsers />
+          </div>
+          <div>
+            <UserApplicationsReview />
+          </div>
+        </div>
       </div>
     </div>
   );
