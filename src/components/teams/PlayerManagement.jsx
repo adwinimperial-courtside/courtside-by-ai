@@ -192,7 +192,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
         <CardHeader className="border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl">Players</CardTitle>
-            {!isViewer && (
+            {canManage && (
               <Button
                 onClick={handleSaveAllPlayers}
                 disabled={isSaving || isLoading}
