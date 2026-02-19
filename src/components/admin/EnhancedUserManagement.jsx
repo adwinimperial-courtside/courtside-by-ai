@@ -241,6 +241,7 @@ export default function EnhancedUserManagement() {
 
   // Edit User Form
   if (selectedUser) {
+    const assignedLeagues = leagues.filter(l => formData.assigned_league_ids.includes(l.id));
     return (
       <Card className="border-slate-200 shadow-lg">
         <CardHeader className="border-b border-slate-200 bg-white flex flex-row items-center justify-between">
@@ -251,10 +252,7 @@ export default function EnhancedUserManagement() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              setSelectedUser(null);
-              resetForm();
-            }}
+            onClick={() => { setSelectedUser(null); resetForm(); }}
             className="text-slate-600"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -263,19 +261,7 @@ export default function EnhancedUserManagement() {
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           <div>
-            <Label className="text-sm font-semibold text-slate-700 mb-2 block">
-              Role (Read-only)
-            </Label>
-            <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-700">
-              {selectedUser.role === "admin" ? "Admin" : "User"}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Role can only be changed via platform settings</p>
-          </div>
-
-          <div>
-            <Label className="text-sm font-semibold text-slate-700 mb-2 block">
-              User Type
-            </Label>
+            <Label className="text-sm font-semibold text-slate-700 mb-2 block">User Type</Label>
             <Select value={formData.user_type} onValueChange={(val) => setFormData({ ...formData, user_type: val })}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select user type..." />
@@ -283,38 +269,53 @@ export default function EnhancedUserManagement() {
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
+                <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label className="text-sm font-semibold text-slate-700 mb-3 block">
-              Assigned Leagues
-            </Label>
-            <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <Label className="text-sm font-semibold text-slate-700 mb-3 block">Assigned Leagues</Label>
+            <div className="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+              {leagues.length === 0 && <p className="text-sm text-slate-500">No leagues available</p>}
               {leagues.map((league) => (
                 <div key={league.id} className="flex items-center gap-3">
                   <Checkbox
-                    id={league.id}
+                    id={`edit-${league.id}`}
                     checked={formData.assigned_league_ids.includes(league.id)}
                     onCheckedChange={() => toggleLeague(league.id)}
                   />
-                  <Label
-                    htmlFor={league.id}
-                    className="font-normal cursor-pointer flex-1"
-                  >
-                    <span className="font-medium text-slate-900">
-                      {league.name}
-                    </span>
-                    <span className="text-slate-500 text-sm ml-2">
-                      ({league.season})
-                    </span>
+                  <Label htmlFor={`edit-${league.id}`} className="font-normal cursor-pointer flex-1">
+                    <span className="font-medium text-slate-900">{league.name}</span>
+                    <span className="text-slate-500 text-sm ml-2">({league.season})</span>
                   </Label>
                 </div>
               ))}
             </div>
           </div>
+
+          {assignedLeagues.length > 0 && (
+            <div>
+              <Label className="text-sm font-semibold text-slate-700 mb-2 block">Default League</Label>
+              <Select
+                value={formData.default_league_id || "none"}
+                onValueChange={(val) => setFormData({ ...formData, default_league_id: val === "none" ? "" : val })}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select default league..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No default</SelectItem>
+                  {assignedLeagues.map((league) => (
+                    <SelectItem key={league.id} value={league.id}>
+                      {league.name} ({league.season})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <Button
             onClick={handleSave}
