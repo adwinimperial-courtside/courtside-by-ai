@@ -49,13 +49,17 @@ Deno.serve(async (req) => {
         targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       } catch (err) {
         // User doesn't exist, need to invite them (inviteUser only accepts 'user' or 'admin')
-        const inviteResult = await base44.users.inviteUser(application.user_email, 'user');
-        // After invite, try to get the user again
+        await base44.users.inviteUser(application.user_email, 'user');
+        // Wait a moment for the user to be created
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Try to get the user again
         targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       }
 
       // Update the user with league assignments
-      await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+      if (targetUser) {
+        await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+      }
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, {
         status: 'Approved',
