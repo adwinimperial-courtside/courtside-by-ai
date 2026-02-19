@@ -27,7 +27,7 @@ export default function PendingBaseUsers() {
         userId,
         action: 'approve',
       });
-      queryClient.invalidateQueries({ queryKey: ['all_base_users'] });
+      queryClient.invalidateQueries({ queryKey: ['pending_base_users'] });
       alert(`✅ Approved! ${userEmail} can now access the app.`);
     } catch (error) {
       alert("Failed to approve user: " + error.message);
@@ -45,7 +45,7 @@ export default function PendingBaseUsers() {
         userId,
         action: 'reject',
       });
-      queryClient.invalidateQueries({ queryKey: ['all_base_users'] });
+      queryClient.invalidateQueries({ queryKey: ['pending_base_users'] });
       alert(`❌ Rejected ${userEmail}.`);
     } catch (error) {
       alert("Failed to reject user: " + error.message);
