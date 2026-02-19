@@ -158,7 +158,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
         </SidebarGroupContent>
       </SidebarGroup>
 
-      {!isViewerWithoutAdminAccess && (
+      {getVisibleAdminItems().length > 0 && (
         <>
           <SidebarGroup>
             <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
