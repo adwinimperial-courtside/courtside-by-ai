@@ -89,7 +89,7 @@ export default function AwardLeadersPage() {
               </SelectTrigger>
               <SelectContent>
                  <SelectItem value="all">All Leagues</SelectItem>
-                 {assignedLeagues.map(league => (
+                 {visibleLeagues.map(league => (
                    <SelectItem key={league.id} value={league.id}>
                      {league.name} ({league.season})
                    </SelectItem>
