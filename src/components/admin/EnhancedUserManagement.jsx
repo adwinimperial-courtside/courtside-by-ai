@@ -345,11 +345,13 @@ export default function EnhancedUserManagement() {
     return "bg-slate-100 text-slate-700";
   };
 
-  const filteredUsers = users.filter(u =>
-    !searchQuery ||
-    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users
+    .filter(u =>
+      !searchQuery ||
+      u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   // User List
   return (
