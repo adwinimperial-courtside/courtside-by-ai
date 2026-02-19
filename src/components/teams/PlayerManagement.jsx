@@ -230,11 +230,11 @@ export default function PlayerManagement({ teamId, team, userType }) {
                           onChange={(e) => handleRowChange(index, 'name', e.target.value)}
                           placeholder="Player name"
                           className="border-0 p-1 h-8"
-                          disabled={isSaving || isViewer}
-                        />
-                      </TableCell>
-                      <TableCell>
-                         <Input
+                          disabled={isSaving || !canManage}
+                          />
+                          </TableCell>
+                          <TableCell>
+                          <Input
                            type="text"
                            inputMode="numeric"
                            value={row.jersey_number}
@@ -246,7 +246,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
                            }}
                            placeholder="#"
                            className="border-0 p-1 h-8"
-                           disabled={isSaving || isViewer}
+                           disabled={isSaving || !canManage}
                          />
                        </TableCell>
                       <TableCell>
