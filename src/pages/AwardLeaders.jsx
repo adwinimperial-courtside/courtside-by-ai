@@ -33,9 +33,11 @@ export default function AwardLeadersPage() {
     initialData: [],
   });
 
-  const assignedLeagues = currentUser?.assigned_league_ids 
-    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
-    : [];
+  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const assignedLeagueIds = currentUser?.assigned_league_ids || [];
+  const visibleLeagues = isLeagueAdmin
+    ? leagues.filter(league => assignedLeagueIds.includes(league.id))
+    : leagues;
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
