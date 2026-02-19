@@ -51,7 +51,7 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
               <span className="font-medium">Manage teams and schedule</span>
             </div>
           )}
-          {multipleLeagues && (
+          {onSetDefault && (
             <Button
               onClick={(e) => {
                 e.preventDefault();
