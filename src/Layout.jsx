@@ -20,6 +20,8 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const sessionStartTimeRef = useRef(null);
+  const hasLoggedLoginEventRef = useRef(false);
 
   // Check if we're on the LiveGame page for full-screen mode
   const isLiveGamePage = location.pathname.toLowerCase().includes('livegame');
@@ -36,6 +38,19 @@ export default function Layout({ children }) {
         const user = await base44.auth.me();
         setCurrentUser(user);
         
+        // Track login event (only once per session)
+        if (user && !hasLoggedLoginEventRef.current) {
+          base44.analytics.track({
+            eventName: 'user_login',
+            properties: {
+              user_email: user.email,
+              user_type: user.user_type || 'unknown'
+            }
+          });
+          hasLoggedLoginEventRef.current = true;
+          sessionStartTimeRef.current = Date.now();
+        }
+        
         // Check if user has no assigned leagues and redirect to LeagueSelection (only for approved non-new users)
             if (user && user.user_type !== "user" && user.application_status === "Approved" && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
                 const leagueSelectionPath = createPageUrl('LeagueSelection');
@@ -51,6 +66,26 @@ export default function Layout({ children }) {
     };
     fetchUser();
   }, [navigate, location.pathname]);
+
+  // Track session duration on logout or page unload
+  useEffect(() => {
+    const handleLogout = () => {
+      if (sessionStartTimeRef.current && currentUser) {
+        const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
+        base44.analytics.track({
+          eventName: 'user_session_end',
+          properties: {
+            user_email: currentUser.email,
+            session_duration_seconds: sessionDuration,
+            session_duration_minutes: Math.round(sessionDuration / 60)
+          }
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleLogout);
+    return () => window.removeEventListener('beforeunload', handleLogout);
+  }, [currentUser]);
 
   const getUserTypeIcon = () => {
     if (!currentUser?.user_type) return null;
