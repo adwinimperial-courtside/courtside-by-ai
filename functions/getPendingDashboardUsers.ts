@@ -10,13 +10,10 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Get pending requests from the User entity by role
-    const allUsers = await base44.asServiceRole.entities.User.list('', 1000);
+    // Get pending applications from UserApplication entity
+    const pendingApplications = await base44.asServiceRole.entities.UserApplication.filter({ status: 'Pending' }, '-applied_at', 1000);
     
-    // Filter for users with role 'user' (default) - these are pending sign-ups
-    const pendingUsers = allUsers.filter(u => u.role === 'user');
-    
-    return Response.json({ users: pendingUsers });
+    return Response.json({ users: pendingApplications });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
