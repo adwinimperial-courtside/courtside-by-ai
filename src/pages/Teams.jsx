@@ -176,7 +176,7 @@ export default function TeamsPage() {
             </div>
             <p className="text-slate-600 ml-15">View and manage your team rosters</p>
           </div>
-          {currentUser?.user_type !== "viewer" && (
+          {canManageTeams && (
             <Button 
               onClick={() => setShowCreateDialog(true)}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-lg shadow-blue-500/30 h-12 px-6"
