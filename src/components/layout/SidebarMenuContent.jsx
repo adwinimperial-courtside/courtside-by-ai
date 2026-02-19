@@ -94,7 +94,14 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     enabled: currentUser?.user_type === 'app_admin',
   });
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['allUsers'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: currentUser?.user_type === 'app_admin',
+  });
+
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
+  const leagueOwnersCount = allUsers.filter(u => u.user_type === 'league_admin').length;
 
   const getVisibleNavigationItems = () => {
     if (!currentUser) return navigationItems;
