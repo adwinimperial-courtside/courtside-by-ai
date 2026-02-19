@@ -48,8 +48,8 @@ Deno.serve(async (req) => {
       try {
         targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       } catch (err) {
-        // User doesn't exist, need to invite them
-        const inviteResult = await base44.users.inviteUser(application.user_email, application.requested_role);
+        // User doesn't exist, need to invite them (inviteUser only accepts 'user' or 'admin')
+        const inviteResult = await base44.users.inviteUser(application.user_email, 'user');
         // After invite, try to get the user again
         targetUser = await base44.asServiceRole.entities.User.get(application.user_id);
       }
