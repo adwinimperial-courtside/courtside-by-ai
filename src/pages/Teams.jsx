@@ -40,7 +40,7 @@ export default function TeamsPage() {
         if (!leagueIdFromUrl) {
           if (user?.default_league_id) {
             setSelectedLeague(user.default_league_id);
-          } else if (user?.user_type === 'league_admin' && user?.assigned_league_ids?.length === 1) {
+          } else if (user?.assigned_league_ids?.length === 1) {
             setSelectedLeague(user.assigned_league_ids[0]);
           } else {
             setSelectedLeague("all");
