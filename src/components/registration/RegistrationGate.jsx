@@ -183,7 +183,7 @@ export default function RegistrationGate({ user }) {
             Your previous application was not approved. You may submit a new application with updated information.
           </p>
           <Button
-            onClick={() => { setSelectedRole(null); setFormData({}); setSelectedLeagues([]); setSelectedTeam(""); setStep("select_role"); }}
+            onClick={() => { setSelectedRole(null); setFormData({}); setSelectedLeagues([]); setSelectedTeam(""); setLeagueTeamMap({}); setStep("select_role"); }}
             className="w-full bg-orange-500 hover:bg-orange-600 mb-3"
           >
             Apply Again
