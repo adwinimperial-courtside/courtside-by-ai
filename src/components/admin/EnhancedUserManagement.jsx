@@ -395,6 +395,7 @@ export default function EnhancedUserManagement() {
                   <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
                     <div className="font-semibold text-slate-900 truncate">{user.full_name || "—"}</div>
                     <div className="text-sm text-slate-500 truncate">{user.email}</div>
+                    <div className="text-xs text-slate-400 mt-1">Created {formatDistanceToNow(new Date(user.created_date), { addSuffix: true })}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
                         {userTypeIcon(user.user_type)}
