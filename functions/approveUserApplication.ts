@@ -42,7 +42,16 @@ Deno.serve(async (req) => {
       } else if (application.requested_role === 'player' && application.team_id) {
         userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
       }
-      await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+
+      try {
+        // Try to update existing user
+        await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+      } catch (err) {
+        // User doesn't exist yet, invite them instead
+        await base44.asServiceRole.users.inviteUser(application.user_email, application.requested_role);
+        // Update the invited user with league assignments
+        await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+      }
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, {
         status: 'Approved',
