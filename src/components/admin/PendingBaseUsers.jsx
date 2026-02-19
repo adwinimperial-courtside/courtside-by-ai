@@ -10,7 +10,7 @@ export default function PendingBaseUsers() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
 
-  const { data: { users: pendingUsers = [] } = {}, isLoading, isError } = useQuery({
+  const { data: { users: pendingUsers = [] } = {}, isLoading, isError, refetch } = useQuery({
     queryKey: ['pending_base_users'],
     queryFn: async () => {
       const response = await base44.functions.invoke('approvePendingUser', { action: 'list' });
@@ -28,7 +28,7 @@ export default function PendingBaseUsers() {
         userId,
         action: 'approve',
       });
-      queryClient.invalidateQueries({ queryKey: ['pending_base_users'] });
+      await refetch();
       alert(`✅ Approved! ${userEmail} can now access the app.`);
     } catch (error) {
       alert("Failed to approve user: " + error.message);
@@ -46,7 +46,7 @@ export default function PendingBaseUsers() {
         userId,
         action: 'reject',
       });
-      queryClient.invalidateQueries({ queryKey: ['pending_base_users'] });
+      await refetch();
       alert(`❌ Rejected ${userEmail}.`);
     } catch (error) {
       alert("Failed to reject user: " + error.message);
