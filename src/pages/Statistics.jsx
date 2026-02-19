@@ -131,8 +131,8 @@ export default function StatisticsPage() {
     : allStats.filter(s => s.team_id === selectedTeam);
 
   const availableTeams = selectedLeague === "all" 
-    ? teams 
-    : teams.filter(t => t.league_id === selectedLeague);
+    ? baseTeams 
+    : baseTeams.filter(t => t.league_id === selectedLeague);
 
   const searchedPlayers = debouncedSearch.trim()
     ? filteredPlayers.filter(p => 
