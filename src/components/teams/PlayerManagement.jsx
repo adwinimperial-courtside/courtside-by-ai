@@ -27,7 +27,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function PlayerManagement({ teamId, team, userType }) {
-  const isViewer = userType === "viewer";
+   const isViewer = userType === "viewer";
+   const canManage = userType === 'app_admin' || userType === 'league_admin';
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [playerToDelete, setPlayerToDelete] = useState(null);
   const [tableData, setTableData] = useState(
