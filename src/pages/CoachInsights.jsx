@@ -43,6 +43,18 @@ export default function CoachInsights() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  if (currentUser && currentUser.user_type === 'viewer') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+        <div className="text-center">
+          <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-700 mb-2">Access Restricted</h2>
+          <p className="text-slate-500">Coach Insights is not available for viewers.</p>
+        </div>
+      </div>
+    );
+  }
+
   const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
