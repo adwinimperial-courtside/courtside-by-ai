@@ -51,12 +51,17 @@ export default function StandingsPage() {
     initialData: [],
   });
 
+  const leagueAdminTeams = isLeagueAdmin ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
+
   const filteredTeams = selectedLeague === "all" 
-    ? teams 
-    : teams.filter(t => t.league_id === selectedLeague);
+    ? leagueAdminTeams 
+    : leagueAdminTeams.filter(t => t.league_id === selectedLeague);
 
   const filteredGames = selectedLeague === "all"
-    ? games
+    ? (isLeagueAdmin ? games.filter(g => {
+        const homeTeam = teams.find(t => t.id === g.home_team_id);
+        return assignedLeagueIds.includes(homeTeam?.league_id);
+      }) : games)
     : games.filter(g => {
         const homeTeam = teams.find(t => t.id === g.home_team_id);
         const awayTeam = teams.find(t => t.id === g.away_team_id);
