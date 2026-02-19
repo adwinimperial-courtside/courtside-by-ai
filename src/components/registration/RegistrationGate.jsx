@@ -75,7 +75,8 @@ export default function RegistrationGate({ user }) {
     enabled: selectedRole === "player",
   });
 
-  const filteredTeams = selectedLeague ? teams.filter(t => t.league_id === selectedLeague) : [];
+  const filteredTeams = selectedLeagues.length === 1 ? teams.filter(t => t.league_id === selectedLeagues[0]) : [];
+  const selectedLeague = selectedLeagues[0] || ""; // for player team selection (single league)
 
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
