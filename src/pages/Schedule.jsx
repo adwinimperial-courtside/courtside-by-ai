@@ -207,8 +207,8 @@ export default function SchedulePage() {
            onOpenChange={setShowCreateDialog}
            onSubmit={(data) => createGameMutation.mutate(data)}
            isLoading={createGameMutation.isPending}
-           leagues={assignedLeagues}
-           teams={teams}
+           leagues={visibleLeagues}
+           teams={visibleTeams}
          />
       </div>
     </div>
