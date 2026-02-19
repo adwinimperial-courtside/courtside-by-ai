@@ -57,18 +57,18 @@ export default function TeamDetailView({ team, onBack }) {
             <div className="flex items-center gap-4 mb-2">
               <div className="relative group">
                 <TeamLogo team={team} size="lg" />
-                {currentUser?.user_type !== "viewer" && (
-                  <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                    <Upload className="w-6 h-6 text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleLogoUpload}
-                      disabled={uploadingLogo}
-                    />
-                  </label>
-                )}
+                 {(currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin') && (
+                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                      <Upload className="w-6 h-6 text-white" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleLogoUpload}
+                        disabled={uploadingLogo}
+                      />
+                    </label>
+                  )}
                 {uploadingLogo && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
                     <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
