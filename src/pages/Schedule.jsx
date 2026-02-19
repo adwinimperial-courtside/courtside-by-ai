@@ -87,10 +87,16 @@ export default function SchedulePage() {
     navigate(`${baseUrl}?gameId=${game.id}`);
   };
 
+  // Filter teams/games to only show data from assigned leagues for league admins
+  const visibleTeams = isLeagueAdmin
+    ? teams.filter(t => assignedLeagueIds.includes(t.league_id))
+    : teams;
+
   const filteredGames = games.filter(game => {
     const leagueMatch = selectedLeague === "all" || game.league_id === selectedLeague;
     const teamMatch = selectedTeam === "all" || game.home_team_id === selectedTeam || game.away_team_id === selectedTeam;
-    return leagueMatch && teamMatch;
+    const leagueAdminFilter = !isLeagueAdmin || assignedLeagueIds.includes(game.league_id);
+    return leagueMatch && teamMatch && leagueAdminFilter;
   });
 
   return (
