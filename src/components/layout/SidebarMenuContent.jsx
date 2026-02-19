@@ -102,6 +102,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
   const leagueOwnersCount = allUsers.filter(u => u.user_type === 'league_admin').length;
+  const coachesCount = allUsers.filter(u => u.user_type === 'coach').length;
+  const playersCount = allUsers.filter(u => u.user_type === 'player').length;
+  const viewersCount = allUsers.filter(u => u.user_type === 'viewer').length;
 
   const getVisibleNavigationItems = () => {
     if (!currentUser) return navigationItems;
