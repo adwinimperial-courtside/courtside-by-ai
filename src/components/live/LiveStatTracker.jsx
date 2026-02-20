@@ -590,7 +590,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               className={`flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 last:border-0 ${index === 0 ? 'bg-amber-50/60' : 'hover:bg-slate-50/50'}`}
             >
               {/* Player name */}
-              <p className="font-semibold text-xs truncate w-[30%] flex-shrink-0" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : log.player?.team_id === game.away_team_id ? '#ef4444' : '#1e293b' }}>{log.player.name}</p>
+              <p className="font-semibold text-xs truncate w-[30%] flex-shrink-0" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : log.player?.team_id === game.away_team_id ? '#ef4444' : '#1e293b' }}>{log.player?.name ?? '—'}</p>
               {/* Stat badge + points */}
               <div className="flex items-center gap-1.5 flex-1 min-w-0">
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white font-bold flex-shrink-0 ${log.statType.color}`}>{log.statType.label}</span>
