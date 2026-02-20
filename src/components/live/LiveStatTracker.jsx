@@ -474,31 +474,46 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
 
     try {
-      console.log('Starting end game process...');
       const homeScore = game.home_score || 0;
       const awayScore = game.away_score || 0;
       const homeWins = homeScore > awayScore;
-      
-      console.log('Final score - Home:', homeScore, 'Away:', awayScore, 'Home wins:', homeWins);
 
-      // Update game status to completed
-      console.log('Updating game status to completed...');
-      const result = await base44.entities.Game.update(game.id, { 
+      // Finalize minutes for all players still on court (timed mode only)
+      if (game.game_mode === 'timed') {
+        activePlayers.forEach(stat => {
+          if (playerSubInTimeRef.current[stat.id]) {
+            const secondsPlayed = (Date.now() - playerSubInTimeRef.current[stat.id]) / 1000;
+            playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + secondsPlayed;
+          }
+        });
+      }
+
+      // Update player stats with final minutes played
+      const minuteUpdates = existingStats.map(stat => {
+        const totalSeconds = playerMinutesRef.current[stat.id] || 0;
+        const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+        return updateStatMutation.mutateAsync({
+          statId: stat.id,
+          updates: { minutes_played: totalMinutes }
+        });
+      });
+
+      await Promise.all(minuteUpdates);
+
+      // Update game status
+      await base44.entities.Game.update(game.id, { 
         status: 'completed',
         player_of_game: findPlayerOfGame(existingStats, game)
       });
-      console.log('Game updated:', result);
 
       // Update team records
-      console.log('Updating team records...');
-      const teams = await base44.entities.Team.filter({ id: game.home_team_id });
-      const homeTeamData = teams[0];
+      const homeTeams = await base44.entities.Team.filter({ id: game.home_team_id });
+      const homeTeamData = homeTeams[0];
       
       await base44.entities.Team.update(game.home_team_id, {
         wins: homeWins ? (homeTeamData.wins || 0) + 1 : homeTeamData.wins || 0,
         losses: !homeWins ? (homeTeamData.losses || 0) + 1 : homeTeamData.losses || 0
       });
-      console.log('Home team updated');
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
@@ -509,9 +524,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         wins: !homeWins ? (awayTeamData.wins || 0) + 1 : awayTeamData.wins || 0,
         losses: homeWins ? (awayTeamData.losses || 0) + 1 : awayTeamData.losses || 0
       });
-      console.log('Away team updated');
 
-      console.log('Game end complete, navigating back...');
       onBack();
     } catch (error) {
       console.error('Error ending game:', error);
