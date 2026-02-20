@@ -172,71 +172,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
-  // Track when each player entered the court
-  const playerCourtEntryRef = React.useRef({});
-
-  // Periodically sync minutes_played for all active players (only when clock is running)
+  // Track period start time to calculate minutes when period ends
   useEffect(() => {
-    if (!game.clock_running || !game.clock_started_at) return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const startTime = new Date(game.clock_started_at).getTime();
-      const gameElapsedSec = Math.floor((now - startTime) / 1000);
-
-      // Batch update minutes for each active player (sync every 30 seconds to avoid rate limit)
-              const updates = [];
-              activePlayers.forEach(stat => {
-                const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
-                if (playerStat) {
-                  // If player not yet tracked, mark their entry time
-                  if (!playerCourtEntryRef.current[playerStat.id]) {
-                    playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
-                  }
-
-                  const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
-                  const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
-                  const timeOnCourtMin = timeOnCourtSec / 60;
-                  const previousMinutes = (playerStat.minutes_played || 0);
-                  const newMinutes = previousMinutes + timeOnCourtMin;
-
-                  updates.push({
-                    statId: playerStat.id,
-                    newMinutes: Math.round(newMinutes * 100) / 100
-                  });
-
-                  // Reset entry time after update to avoid double-counting
-                  playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
-                }
-              });
-
-              // Execute all updates sequentially to avoid rate limit
-              updates.forEach(u => {
-                setTimeout(() => {
-                  updateStatMutation.mutate({
-                    statId: u.statId,
-                    updates: { minutes_played: u.newMinutes }
-                  });
-                }, 100); // 100ms delay between updates
-              });
-    }, 30000); // sync every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [game.clock_running, game.clock_started_at, activePlayers, existingStats, updateStatMutation]);
-
-  // Clear court entry tracking when a player is substituted out
-  useEffect(() => {
-    const currentPlayerIds = new Set(
-      existingStats.filter(s => s.is_starter).map(s => s.player_id)
-    );
-
-    // Remove tracking for players who are no longer on court
-    Object.keys(playerCourtEntryRef.current).forEach(id => {
-      if (!currentPlayerIds.has(id)) {
-        delete playerCourtEntryRef.current[id];
-      }
-    });
-  }, [existingStats]);
+    if (game.clock_running && game.clock_started_at) {
+      activePlayers.forEach(stat => {
+        if (!periodStartTimeRef.current[stat.id]) {
+          periodStartTimeRef.current[stat.id] = Date.now();
+        }
+      });
+    }
+  }, [game.clock_running, activePlayers]);
 
   // Detect period expiration for timed games
   useEffect(() => {
