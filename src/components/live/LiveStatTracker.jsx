@@ -349,9 +349,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
 
       // Track game clock state when this player subs in
-      const stored = game.clock_time_left ?? ((game.period_minutes || 10) * 60);
       playerGameClockStateRef.current[playerInId] = {
-        timeLeft: stored,
+        timeLeft: computeTimeLeft(game),
         period: game.clock_period
       };
       if (!playerMinutesRef.current[playerInId]) {
