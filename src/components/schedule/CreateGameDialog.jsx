@@ -132,6 +132,75 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
               className="mt-1.5"
             />
           </div>
+
+          {/* Game Mode Section */}
+          <div className="border-t border-slate-200 pt-4 space-y-4">
+            <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Game Mode</p>
+
+            <div>
+              <Label>Game Mode</Label>
+              <Select
+                value={formData.game_mode}
+                onValueChange={(value) => setFormData({ ...formData, game_mode: value })}
+              >
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="timed">Timed Game</SelectItem>
+                  <SelectItem value="untimed">Untimed Game</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isTimed && (
+              <>
+                <div>
+                  <Label>Period Format</Label>
+                  <Select
+                    value={formData.period_type}
+                    onValueChange={(value) => setFormData({ ...formData, period_type: value })}
+                  >
+                    <SelectTrigger className="mt-1.5">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="quarters">4 Quarters</SelectItem>
+                      <SelectItem value="halves">2 Halves</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="period_minutes">Minutes per Period</Label>
+                    <Input
+                      id="period_minutes"
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={formData.period_minutes}
+                      onChange={(e) => setFormData({ ...formData, period_minutes: Number(e.target.value) })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="overtime_minutes">Overtime Minutes</Label>
+                    <Input
+                      id="overtime_minutes"
+                      type="number"
+                      min={1}
+                      max={15}
+                      value={formData.overtime_minutes}
+                      onChange={(e) => setFormData({ ...formData, overtime_minutes: Number(e.target.value) })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
