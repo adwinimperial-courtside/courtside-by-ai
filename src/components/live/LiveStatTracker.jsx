@@ -452,46 +452,59 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       return;
     }
 
-    const homeScore = game.home_score || 0;
-    const awayScore = game.away_score || 0;
-    const homeWins = homeScore > awayScore;
+    try {
+      const homeScore = game.home_score || 0;
+      const awayScore = game.away_score || 0;
+      const homeWins = homeScore > awayScore;
 
-    // Calculate total minutes for each player who played
-    existingStats.forEach(playerStat => {
-      if (playerStat.is_starter && periodStartTimeRef.current[playerStat.id]) {
-        const secondsPlayed = (Date.now() - periodStartTimeRef.current[playerStat.id]) / 1000;
-        const minutesThisPeriod = Math.round((secondsPlayed / 60) * 100) / 100;
-        const totalMinutes = (playerStat.minutes_played || 0) + minutesThisPeriod;
+      // Calculate total minutes for each player who played
+      const minuteUpdates = [];
+      existingStats.forEach(playerStat => {
+        if (playerStat.is_starter && periodStartTimeRef.current[playerStat.id]) {
+          const secondsPlayed = (Date.now() - periodStartTimeRef.current[playerStat.id]) / 1000;
+          const minutesThisPeriod = Math.round((secondsPlayed / 60) * 100) / 100;
+          const totalMinutes = (playerStat.minutes_played || 0) + minutesThisPeriod;
 
-        updateStatMutation.mutate({
-          statId: playerStat.id,
-          updates: { minutes_played: totalMinutes }
-        });
+          minuteUpdates.push(
+            updateStatMutation.mutateAsync({
+              statId: playerStat.id,
+              updates: { minutes_played: totalMinutes }
+            })
+          );
+        }
+      });
+
+      // Wait for all minute updates to complete
+      if (minuteUpdates.length > 0) {
+        await Promise.all(minuteUpdates);
       }
-    });
 
-    // Calculate Player of the Game automatically from winning team
-    const playerOfGameId = findPlayerOfGame(existingStats, game);
+      // Calculate Player of the Game automatically from winning team
+      const playerOfGameId = findPlayerOfGame(existingStats, game);
 
-    await updateGameMutation.mutateAsync({
-      gameId: game.id,
-      data: { 
-        status: 'completed',
-        player_of_game: playerOfGameId
-      }
-    });
+      await updateGameMutation.mutateAsync({
+        gameId: game.id,
+        data: { 
+          status: 'completed',
+          player_of_game: playerOfGameId
+        }
+      });
 
-    await updateTeamRecordMutation.mutateAsync({
-      teamId: game.home_team_id,
-      isWin: homeWins
-    });
+      await updateTeamRecordMutation.mutateAsync({
+        teamId: game.home_team_id,
+        isWin: homeWins
+      });
 
-    await updateTeamRecordMutation.mutateAsync({
-      teamId: game.away_team_id,
-      isWin: !homeWins
-    });
+      await updateTeamRecordMutation.mutateAsync({
+        teamId: game.away_team_id,
+        isWin: !homeWins
+      });
 
-    onBack();
+      onBack();
+    } catch (error) {
+      console.error('Error ending game:', error);
+      alert('Failed to end game. Please try again.');
+    }
   };
 
   const homeActivePlayers = players.filter(p => 
