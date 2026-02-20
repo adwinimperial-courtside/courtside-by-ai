@@ -126,6 +126,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       if (currentUser.user_type === "viewer") {
         return navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title));
       }
+      if (currentUser.user_type === "app_admin") {
+        return navigationItems;
+      }
       return navigationItems;
     };
 
