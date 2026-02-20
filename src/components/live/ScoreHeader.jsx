@@ -94,7 +94,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam }) {
             <div className="flex flex-col items-center gap-0.5 w-full">
               {/* LIVE dot */}
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse flex-shrink-0" />
+                <div className={`w-2 h-2 bg-red-500 rounded-full flex-shrink-0 ${running ? 'animate-pulse' : ''}`} />
                 <span className="text-white/70 text-[10px] font-bold tracking-widest uppercase">LIVE</span>
               </div>
               {/* Period + Timer row */}
