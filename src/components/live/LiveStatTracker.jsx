@@ -168,8 +168,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
-  // Track elapsed time for minutes played calculation
-  const lastSyncTimeRef = React.useRef({});
+  // Track when each player entered the court
+  const playerCourtEntryRef = React.useRef({});
 
   // Periodically sync minutes_played for all active players (only when clock is running)
   useEffect(() => {
@@ -178,27 +178,31 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const interval = setInterval(() => {
       const now = Date.now();
       const startTime = new Date(game.clock_started_at).getTime();
-      const elapsedMs = now - startTime;
-      const elapsedSec = Math.floor(elapsedMs / 1000);
+      const gameElapsedSec = Math.floor((now - startTime) / 1000);
 
       // Batch update minutes for each active player (sync every 10 seconds to avoid rate limit)
       const updates = [];
       activePlayers.forEach(stat => {
         const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
         if (playerStat) {
-          const lastSync = lastSyncTimeRef.current[playerStat.id] || 0;
-          if (elapsedSec - lastSync >= 10) { // Only sync every 10 seconds
-            const additionalSeconds = elapsedSec - lastSync;
-            const additionalMinutes = additionalSeconds / 60;
-            const newMinutes = (playerStat.minutes_played || 0) + additionalMinutes;
-            
-            updates.push({
-              statId: playerStat.id,
-              newMinutes: Math.round(newMinutes * 100) / 100
-            });
-            
-            lastSyncTimeRef.current[playerStat.id] = elapsedSec;
+          // If player not yet tracked, mark their entry time
+          if (!playerCourtEntryRef.current[playerStat.id]) {
+            playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
           }
+
+          const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
+          const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
+          const timeOnCourtMin = timeOnCourtSec / 60;
+          const previousMinutes = (playerStat.minutes_played || 0);
+          const newMinutes = previousMinutes + timeOnCourtMin;
+
+          updates.push({
+            statId: playerStat.id,
+            newMinutes: Math.round(newMinutes * 100) / 100
+          });
+
+          // Reset entry time after update to avoid double-counting
+          playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
         }
       });
 
@@ -209,10 +213,28 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           updates: { minutes_played: u.newMinutes }
         });
       });
-    }, 1000); // check every second, but only sync every 10 seconds
+    }, 10000); // sync every 10 seconds
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.clock_started_at, activePlayers, existingStats, updateStatMutation]);
+
+  // Clear court entry tracking when a player is substituted out
+  useEffect(() => {
+    const previousPlayerIds = new Set(
+      existingStats.filter(s => s.is_starter).map(s => s.player_id)
+    );
+    
+    const currentPlayerIds = new Set(
+      existingStats.filter(s => s.is_starter).map(s => s.player_id)
+    );
+
+    // Remove tracking for players who are no longer on court
+    Object.keys(playerCourtEntryRef.current).forEach(id => {
+      if (!currentPlayerIds.has(id)) {
+        delete playerCourtEntryRef.current[id];
+      }
+    });
+  }, [existingStats]);
 
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
