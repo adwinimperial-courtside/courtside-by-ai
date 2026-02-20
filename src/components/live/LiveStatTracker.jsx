@@ -218,7 +218,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   });
                 }, 100); // 100ms delay between updates
               });
-    }, 10000); // sync every 10 seconds
+    }, 30000); // sync every 30 seconds
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.clock_started_at, activePlayers, existingStats, updateStatMutation]);
