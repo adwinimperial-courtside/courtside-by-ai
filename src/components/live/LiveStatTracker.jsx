@@ -479,21 +479,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         await Promise.all(minuteUpdates);
       }
 
-      // Calculate Player of the Game automatically from winning team
+      // Calculate Player of the Game
       const playerOfGameId = findPlayerOfGame(existingStats, game);
+      
+      const gameUpdateData = { status: 'completed' };
+      if (playerOfGameId) {
+        gameUpdateData.player_of_game = playerOfGameId;
+      }
 
       await updateGameMutation.mutateAsync({
         gameId: game.id,
-        data: { 
-          status: 'completed',
-          player_of_game: playerOfGameId
-        }
+        data: gameUpdateData
       });
 
+      // Update team records sequentially with slight delay to avoid rate limiting
       await updateTeamRecordMutation.mutateAsync({
         teamId: game.home_team_id,
         isWin: homeWins
       });
+
+      await new Promise(resolve => setTimeout(resolve, 200));
 
       await updateTeamRecordMutation.mutateAsync({
         teamId: game.away_team_id,
