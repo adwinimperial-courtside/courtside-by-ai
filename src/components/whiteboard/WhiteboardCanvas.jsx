@@ -64,25 +64,44 @@ const C = {
 function HalfCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2;
   const lw = C.lineW;
+  
+  // FIBA half-court proportions (normalized to court width)
+  // Free-throw line: 4.6m from basket
+  // 3-point line: 6.75m radius from basket center
+  // Court width (sideline): 15.24m
+  const ftDist = h * (4.6 / 14.0);  // free-throw line distance from baseline (4.6m normalized)
+  const ftRadius = w * (1.8 / 15.24); // free-throw circle radius (1.8m normalized to width)
+  const threeRadius = h * (6.75 / 14.0); // 3-point arc radius from basket (6.75m normalized)
+  const paintWidth = w * (3.6 / 15.24); // paint width (3.6m normalized to width)
+  const paintDepth = ftDist; // paint depth = free-throw line distance
+  
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
       <rect width={w} height={h} fill={C.courtBg} rx={6} />
       <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
       <line x1={0} y1={h*0.02} x2={w} y2={h*0.02} stroke={C.line} strokeWidth={lw} />
-      {/* Paint */}
-      <rect x={cx-w*0.19} y={h*0.02} width={w*0.38} height={h*0.52} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
-      {/* Free throw circle */}
-      <ellipse cx={cx} cy={h*0.54} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
-      {/* Restricted arc */}
-      <path d={`M ${cx-w*0.08} ${h*0.12} A ${w*0.08} ${w*0.08} 0 0 1 ${cx+w*0.08} ${h*0.12}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      
+      {/* Paint (key) – rectangular */}
+      <rect x={cx-paintWidth/2} y={h*0.02} width={paintWidth} height={paintDepth} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      
+      {/* Free throw circle (top of key) */}
+      <ellipse cx={cx} cy={h*0.02+ftDist} rx={ftRadius} ry={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
+      
+      {/* Restricted arc (basket side) */}
+      const restrictedRadius = w * (1.25 / 15.24);
+      <path d={`M ${cx-restrictedRadius} ${h*0.08} A ${restrictedRadius} ${restrictedRadius} 0 0 1 ${cx+restrictedRadius} ${h*0.08}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      
       {/* Backboard */}
       <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke={C.basket} strokeWidth={lw*2} />
+      
       {/* Basket */}
       <circle cx={cx} cy={h*0.06} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
-      {/* 3-point arc */}
-      <path d={`M ${cx-w*0.43} ${h*0.02} L ${cx-w*0.43} ${h*0.28} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.28} L ${cx+w*0.43} ${h*0.02}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      
+      {/* 3-point arc – curves from baseline, outside free-throw area */}
+      <path d={`M ${cx-w*0.5} ${h*0.02} L ${cx-w*0.5} ${threeRadius} A ${threeRadius} ${threeRadius} 0 0 0 ${cx+w*0.5} ${threeRadius} L ${cx+w*0.5} ${h*0.02}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      
       {/* Center circle dashed */}
-      <circle cx={cx} cy={h*0.02} r={w*0.1} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
+      <circle cx={cx} cy={h*0.02} r={w*0.12} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
     </svg>
   );
 }
