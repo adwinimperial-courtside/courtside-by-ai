@@ -145,7 +145,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
             </div>
 
             <div className="flex">
-              {liveGame.status === 'scheduled' && (
+              {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
                 <Button
                   onClick={onStartGame}
                   className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
@@ -154,7 +154,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   Start Game
                 </Button>
               )}
-              {liveGame.status === 'in_progress' && (
+              {liveGame.status === 'in_progress' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
                 <Button
                   onClick={onStartGame}
                   variant="outline"
