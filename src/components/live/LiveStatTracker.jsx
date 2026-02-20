@@ -452,6 +452,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {playerStats && (
               <div className="text-center pt-1 border-t border-slate-200 w-full">
                 <p className="text-sm font-bold text-slate-900">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
+                <p className="text-[9px] text-slate-400 mt-0.5">{(playerStats.minutes_played || 0).toFixed(1)}M</p>
                 <div className="grid grid-cols-2 gap-x-1 mt-0.5">
                   <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
                   <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
