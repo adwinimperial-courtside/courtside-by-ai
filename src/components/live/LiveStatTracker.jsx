@@ -314,7 +314,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + gameTimeElapsed;
         }
       }
-      playerGameClockStateRef.current[playerOut.id] = null; // Player is out, clear their clock state
+      playerGameClockStateRef.current[playerOut.id] = null; // Clear clock state for player going out
 
       // Mark player going out
       const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
