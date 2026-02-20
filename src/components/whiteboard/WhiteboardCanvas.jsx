@@ -5,8 +5,8 @@ import { RotateCcw, X } from "lucide-react";
 // ─── Court ratios ─────────────────────────────────────────────────────────────
 const HALF_COURT = "half";
 const FULL_COURT = "full";
-const HALF_COURT_RATIO = 564 / 470; // height / width
-const FULL_COURT_RATIO = 940 / 500;
+const HALF_COURT_RATIO = 564 / 470; // height / width  (portrait)
+const FULL_COURT_RATIO = 500 / 940; // height / width  (landscape)
 
 // ─── Default positions ────────────────────────────────────────────────────────
 // Half court: basket at TOP, offense attacks upward from bottom
