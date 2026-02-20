@@ -351,20 +351,36 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && !activePlayerIds.includes(p.id)
   );
 
-  const PlayerButton = ({ player, teamColor, onSubClick }) => {
+  const PlayerButton = ({ player, teamColor, onSubClick, isDesktop }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
 
+    const desktopStyle = isDesktop
+      ? isSelected
+        ? {
+            backgroundColor: `${teamColor}0E`,
+            borderColor: teamColor,
+            borderWidth: '3px',
+            boxShadow: `0 4px 12px ${teamColor}30, 0 0 0 1px ${teamColor}20`,
+            transition: 'all 0.15s ease',
+          }
+        : playerStats?.fouls >= 4
+          ? { backgroundColor: '#fff7ed', borderColor: '#d1d5db', borderWidth: '1px', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', transition: 'all 0.15s ease' }
+          : { borderColor: '#d1d5db', borderWidth: '1px', boxShadow: '0 2px 6px rgba(0,0,0,0.10)', transition: 'all 0.15s ease' }
+      : isSelected
+        ? { backgroundColor: `${teamColor}18`, borderColor: teamColor, boxShadow: `0 0 0 2px ${teamColor}30` }
+        : playerStats?.fouls >= 4
+          ? { backgroundColor: '#fff7ed', borderColor: '#e2e8f0' }
+          : { borderColor: '#e2e8f0' };
+
     return (
       <div className="relative">
         <motion.button
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
           onClick={() => setSelectedPlayer(player)}
-          className={`w-full p-1.5 rounded-xl transition-all ${isSelected ? 'ring-2 ring-offset-1' : 'hover:bg-slate-100'} border-2`}
-          style={isSelected
-            ? { backgroundColor: `${teamColor}18`, borderColor: teamColor, ringOffsetColor: `${teamColor}30`, boxShadow: `0 0 0 2px ${teamColor}30` }
-            : playerStats?.fouls >= 4 ? { backgroundColor: '#fff7ed', borderColor: '#e2e8f0' } : { borderColor: '#e2e8f0' }}
+          className={`w-full p-1.5 rounded-xl border-2 ${isDesktop ? 'hover:shadow-md' : isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100'}`}
+          style={desktopStyle}
         >
           <div className="flex flex-col items-center gap-1">
             <div 
