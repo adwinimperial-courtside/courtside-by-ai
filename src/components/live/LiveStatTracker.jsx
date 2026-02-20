@@ -661,23 +661,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           onMouseLeave={e => e.currentTarget.style.backgroundColor = '#E5E7EB'}
           onClick={(e) => {
             e.stopPropagation();
-            // Validate substitution is allowed
-            const teamId = player.team_id;
-            const teamActivePlayers = activePlayerIds.filter(id => {
-              const p = players.find(pl => pl.id === id);
-              return p && p.team_id === teamId;
-            }).length;
-
-            const playerStats = existingStats.find(s => s.player_id === player.id);
-            const isFouledOut = (playerStats?.fouls || 0) >= 5 || 
-                                (playerStats?.technical_fouls || 0) >= 2 ||
-                                (playerStats?.unsportsmanlike_fouls || 0) >= 2;
-
-            if (teamActivePlayers <= 5 && !isFouledOut) {
-              alert('Cannot substitute this player. Team must maintain at least 5 players unless player is fouled out.');
-              return;
-            }
-
             onSubClick(player);
           }}
         >
