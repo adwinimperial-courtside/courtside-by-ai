@@ -241,8 +241,9 @@ export default function WhiteboardCanvas() {
       const cy    = touch ? touch.clientY : e.clientY;
       let nx = (cx - rect.left - draggingMarker.offsetX) / courtSize.width;
       let ny = (cy - rect.top  - draggingMarker.offsetY) / courtSize.height;
-      nx = clamp(nx, mr / courtSize.width,  1 - mr / courtSize.width);
-      ny = clamp(ny, mr / courtSize.height, 1 - mr / courtSize.height);
+      const ext = 0.10; // 10% extension beyond court edges
+      nx = clamp(nx, -ext + mr / courtSize.width,  1 + ext - mr / courtSize.width);
+      ny = clamp(ny, -ext + mr / courtSize.height, 1 + ext - mr / courtSize.height);
       const upd = (list) => list.map(mk => mk.id === draggingMarker.id ? { ...mk, x: nx, y: ny } : mk);
       if (draggingMarker.type === "offense") setOffensive(upd);
       else setDefensive(upd);
