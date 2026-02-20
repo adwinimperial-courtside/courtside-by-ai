@@ -25,20 +25,22 @@ const DEFAULT_DEFENSIVE_HALF = [
   { id: "d5", label: "5", x: 0.90, y: 0.92 },
 ];
 
-// Full court is landscape: x = along the long axis, y = along the short axis
+// Full court landscape: x=horizontal(long axis), y=vertical(short axis)
+// Offense: left half, vertical stack near left sideline, order top→bottom: 2,4,1,5,3
 const DEFAULT_OFFENSIVE_FULL = [
-  { id: "o1", label: "1", x: 0.22, y: 0.50 }, // 1 – backcourt center
-  { id: "o2", label: "2", x: 0.28, y: 0.22 }, // 2 – right wing
-  { id: "o3", label: "3", x: 0.28, y: 0.78 }, // 3 – left wing
-  { id: "o4", label: "4", x: 0.38, y: 0.30 }, // 4 – right slot
-  { id: "o5", label: "5", x: 0.38, y: 0.70 }, // 5 – left slot
+  { id: "o2", label: "2", x: 0.10, y: 0.10 },
+  { id: "o4", label: "4", x: 0.10, y: 0.30 },
+  { id: "o1", label: "1", x: 0.10, y: 0.50 },
+  { id: "o5", label: "5", x: 0.10, y: 0.70 },
+  { id: "o3", label: "3", x: 0.10, y: 0.90 },
 ];
+// Defense: right half, vertical stack near right sideline, order top→bottom: 4,2,1,3,5
 const DEFAULT_DEFENSIVE_FULL = [
-  { id: "d1", label: "1", x: 0.55, y: 0.50 }, // 1 – midcourt top center
-  { id: "d2", label: "2", x: 0.65, y: 0.32 }, // 2 – right lane
-  { id: "d3", label: "3", x: 0.65, y: 0.68 }, // 3 – left lane
-  { id: "d4", label: "4", x: 0.76, y: 0.20 }, // 4 – right wing upper
-  { id: "d5", label: "5", x: 0.76, y: 0.80 }, // 5 – left wing upper
+  { id: "d4", label: "4", x: 0.90, y: 0.10 },
+  { id: "d2", label: "2", x: 0.90, y: 0.30 },
+  { id: "d1", label: "1", x: 0.90, y: 0.50 },
+  { id: "d3", label: "3", x: 0.90, y: 0.70 },
+  { id: "d5", label: "5", x: 0.90, y: 0.90 },
 ];
 
 function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
