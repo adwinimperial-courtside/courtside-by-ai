@@ -87,6 +87,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
+  // Initialize minutes tracking on component mount
+  useEffect(() => {
+    activePlayers.forEach(stat => {
+      if (!playerMinutesRef.current[stat.id]) {
+        playerMinutesRef.current[stat.id] = stat.minutes_played ? stat.minutes_played * 60 : 0;
+      }
+      if (!playerSubInTimeRef.current[stat.id]) {
+        playerSubInTimeRef.current[stat.id] = Date.now();
+      }
+    });
+  }, [activePlayers]);
+
   const gameLog = gameLogs.map(log => {
     const player = players.find(p => p.id === log.player_id);
     const teamColor = log.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
