@@ -426,6 +426,71 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
+  const handleStartNextPeriod = async () => {
+    const nextPeriod = game.clock_period + 1;
+    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    const nextIsOT = nextPeriod > totalPeriods;
+    const nextMins = nextIsOT ? (game.overtime_minutes || 5) : (game.period_minutes || 10);
+
+    await updateGameMutation.mutateAsync({
+      gameId: game.id,
+      data: {
+        clock_period: nextPeriod,
+        clock_time_left: nextMins * 60,
+        clock_running: false,
+        clock_started_at: null,
+        period_status: 'active'
+      }
+    });
+
+    // Clear period end handler
+    periodEndHandledRef.current = false;
+    setShowPeriodEndModal(false);
+  };
+
+  const handleStartOvertime = async () => {
+    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    const otPeriod = totalPeriods + 1;
+    const otMins = game.overtime_minutes || 5;
+
+    await updateGameMutation.mutateAsync({
+      gameId: game.id,
+      data: {
+        clock_period: otPeriod,
+        clock_time_left: otMins * 60,
+        clock_running: false,
+        clock_started_at: null,
+        period_status: 'active'
+      }
+    });
+
+    periodEndHandledRef.current = false;
+    setShowPeriodEndModal(false);
+  };
+
+  const handleEndGameFromModal = async () => {
+    const homeScore = game.home_score || 0;
+    const awayScore = game.away_score || 0;
+    const homeWins = homeScore > awayScore;
+
+    await updateGameMutation.mutateAsync({
+      gameId: game.id,
+      data: { status: 'completed' }
+    });
+
+    await updateTeamRecordMutation.mutateAsync({
+      teamId: game.home_team_id,
+      isWin: homeWins
+    });
+
+    await updateTeamRecordMutation.mutateAsync({
+      teamId: game.away_team_id,
+      isWin: !homeWins
+    });
+
+    onBack();
+  };
+
   const handleUndo = async (logEntry) => {
     // Revert the stat
     const updates = { [logEntry.statType.key]: logEntry.oldValue };
