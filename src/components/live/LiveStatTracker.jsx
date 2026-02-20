@@ -186,11 +186,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
 
 
-  // Detect period expiration for timed games - just stop the clock
+  // Detect period expiration for timed games - stop clock and add time to active players
   useEffect(() => {
     if (game.game_mode !== 'timed' || !game.clock_running) return;
 
-    // Compute actual time left (accounting for elapsed time since clock_started_at)
     const stored = game.clock_time_left ?? 0;
     const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
     const timeLeft = Math.max(0, stored - elapsed);
@@ -198,7 +197,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (timeLeft <= 0 && !periodEndHandledRef.current) {
       periodEndHandledRef.current = true;
 
-      // Stop clock (user will press play button to advance)
+      // Add elapsed time to on-court players before stopping
+      activePlayers.forEach(stat => {
+        if (playerSubInTimeRef.current[stat.id]) {
+          const secondsPlayed = (Date.now() - playerSubInTimeRef.current[stat.id]) / 1000;
+          playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + secondsPlayed;
+          playerSubInTimeRef.current[stat.id] = Date.now(); // Reset for next period
+        }
+      });
+
+      // Stop clock
       updateGameMutation.mutate({
         gameId: game.id,
         data: {
@@ -208,11 +216,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
-    // Reset handler when clock is manually stopped/started
     if (!game.clock_running) {
       periodEndHandledRef.current = false;
     }
-  }, [game.clock_running, game.clock_time_left, game.game_mode, updateGameMutation]);
+  }, [game.clock_running, game.clock_time_left, game.game_mode, updateGameMutation, activePlayers]);
 
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
