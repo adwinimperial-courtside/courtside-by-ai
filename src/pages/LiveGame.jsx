@@ -223,6 +223,7 @@ export default function LiveGamePage() {
       players={players}
       existingStats={existingStats}
       onBack={() => navigate(createPageUrl("Schedule"))}
+      onGameUpdate={(updates) => setGameOverride(prev => ({ ...prev, ...updates }))}
     />
   );
 }
