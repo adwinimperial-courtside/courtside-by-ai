@@ -454,6 +454,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             key={player.id}
             player={player}
             teamColor={team?.color}
+            isDesktop={side !== undefined}
             onSubClick={(p) => {
               setPlayersToReplace([p]);
               setSubStep('select_in');
