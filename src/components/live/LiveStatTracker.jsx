@@ -609,67 +609,71 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </Button>
         </div>
         <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
-        <div className="mt-3 space-y-3">
-          <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
-          {/* Stat buttons – mobile */}
-          <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
+        {/* Mobile: teams side by side + stat buttons in between */}
+        <div className="mt-3 space-y-2">
+          {/* Teams row */}
+          <div className="grid grid-cols-2 gap-2">
+            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
+            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+          </div>
+          {/* Stat buttons – mobile compact */}
+          <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-2">
             {/* Selected player indicator */}
-            <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="flex items-center justify-center gap-2 mb-2">
               {selectedPlayer ? (
                 <>
                   <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg flex-shrink-0"
                     style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
                   >
                     {selectedPlayer.jersey_number}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-base font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
-                    <p className="text-slate-500 text-xs">Recording stats</p>
+                    <p className="text-sm font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
+                    <p className="text-slate-500 text-[10px]">Recording stats</p>
                   </div>
                 </>
               ) : (
                 <div className="text-center">
-                  <p className="text-base font-bold text-slate-900">Select a Player</p>
-                  <p className="text-slate-500 text-xs">Tap any active player to start tracking</p>
+                  <p className="text-sm font-bold text-slate-900">Select a Player</p>
+                  <p className="text-slate-500 text-[10px]">Tap any active player to start tracking</p>
                 </div>
               )}
             </div>
             {/* Row 1 */}
-            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
-              <div className="flex rounded-lg overflow-hidden shadow-md">
-                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTM</motion.button>
+            <div className="grid grid-cols-3 gap-1 mb-1">
+              <div className="flex rounded-md overflow-hidden shadow-sm">
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className="flex-1 h-10 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTM</motion.button>
                 <div className="w-px bg-indigo-900/30" />
-                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTX</motion.button>
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className="flex-1 h-10 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTX</motion.button>
               </div>
               {['points_2', 'points_3'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-sm`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
             {/* Row 2 */}
-            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+            <div className="grid grid-cols-3 gap-1 mb-1">
               {['offensive_rebounds', 'defensive_rebounds', 'assists'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-sm`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
             {/* Row 3 */}
-            <div className="grid grid-cols-6 gap-1.5 mb-1.5">
+            <div className="grid grid-cols-6 gap-1 mb-1">
               {['steals', 'blocks', 'turnovers', 'fouls', 'technical_fouls', 'unsportsmanlike_fouls'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-[10px] ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-sm px-0`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
             {/* Substitution */}
-            <Button onClick={() => { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setShowSubDialog(true); }} className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg">
-              <RefreshCw className="w-4 h-4 mr-2" />Make Substitution
+            <Button onClick={() => { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setShowSubDialog(true); }} className="w-full h-9 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-xs shadow-lg">
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Make Substitution
             </Button>
           </div>
-          <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
           {/* Activity log */}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             <ActivityLog compact={false} />
