@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
+import { Play, Pause } from "lucide-react";
 
 function getPeriodLabel(period, periodType) {
   const totalRegulation = periodType === "halves" ? 2 : 4;
