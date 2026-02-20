@@ -86,10 +86,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const gameLog = gameLogs.map(log => {
     const player = players.find(p => p.id === log.player_id);
     const teamColor = log.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
+    // For substitutions, stat_label holds the player-in's name
+    const playerIn = log.stat_type === 'substitution' ? { name: log.stat_label } : null;
     return {
       id: log.id,
       timestamp: new Date(log.created_date),
       player: player,
+      playerIn: playerIn,
+      isSubstitution: log.stat_type === 'substitution',
       statType: {
         key: log.stat_type,
         label: log.stat_label,
