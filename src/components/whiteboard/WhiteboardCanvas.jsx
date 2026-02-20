@@ -477,7 +477,7 @@ export default function WhiteboardCanvas() {
       <div style={{ flexShrink: 0, padding: "10px 12px 16px", display: "flex", justifyContent: "center" }}>
         <div style={{
           display: "flex", alignItems: "center", gap: 4, padding: "8px 10px",
-          background: "white", borderRadius: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.5)",
+          background: "white", borderRadius: 20, boxShadow: "0 2px 16px rgba(100,116,139,0.18)", border: "1px solid #e2e8f0",
           overflowX: "auto", maxWidth: "100%",
         }}>
           {TOOLS.map(tool => {
