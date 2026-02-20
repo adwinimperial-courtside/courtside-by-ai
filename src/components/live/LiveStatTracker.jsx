@@ -665,10 +665,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <div className="mt-3 flex-shrink-0" style={{ height: '18vh' }}>
           <ActivityLog />
         </div>
-      </div>
-    </div>
-
-      {/* Exit Confirmation Dialog */}
+        {/* Exit Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <DialogContent className="bg-white border-slate-200 w-[95vw] max-w-md">
           <DialogHeader>
