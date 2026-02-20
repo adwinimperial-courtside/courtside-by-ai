@@ -98,7 +98,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam }) {
                 <span className="text-white/70 text-[10px] font-bold tracking-widest uppercase">LIVE</span>
               </div>
               {/* Period + Timer row */}
-              <div className="flex items-center justify-center gap-2 w-full">
+              <div className="flex items-center justify-center gap-1.5 w-full">
                 {/* Prev period */}
                 <button
                   onClick={handlePrevPeriod}
@@ -108,19 +108,27 @@ export default function ScoreHeader({ game, homeTeam, awayTeam }) {
                 {/* Period label */}
                 <button
                   onClick={handleNextPeriod}
-                  className="text-white font-bold text-sm leading-none hover:text-white/80 transition-colors flex-shrink-0"
+                  className="text-white font-bold text-[11px] leading-none hover:text-white/80 transition-colors flex-shrink-0"
                   title="Next period"
                 >
                   {periodLabel}
                 </button>
-                <span className="text-white/30 text-xs">|</span>
+                <span className="text-white/30 text-[10px]">|</span>
                 {/* Timer */}
+                <span className={`font-mono font-bold text-sm leading-none flex-shrink-0 ${running ? 'text-green-300' : timeLeft === 0 ? 'text-red-300' : 'text-white'}`}>
+                  {formatTime(timeLeft)}
+                </span>
+                {/* Play/Pause button */}
                 <button
                   onClick={handleTimerClick}
-                  className={`font-mono font-bold text-sm leading-none flex-shrink-0 transition-colors ${running ? 'text-green-300 hover:text-green-200' : timeLeft === 0 ? 'text-red-300' : 'text-white hover:text-white/80'}`}
+                  disabled={timeLeft === 0}
+                  className="flex-shrink-0 text-white/70 hover:text-white disabled:opacity-30 transition-colors"
                   title={running ? "Pause" : "Start"}
                 >
-                  {formatTime(timeLeft)}
+                  {running
+                    ? <Pause className="w-3.5 h-3.5" />
+                    : <Play className="w-3.5 h-3.5" />
+                  }
                 </button>
               </div>
             </div>
