@@ -94,7 +94,7 @@ function HalfCourtSVG({ width, height }) {
   const restrictedR = courtW * 0.04;
   
   // 3-Point Arc: 6.75m from rim center (realistic distance)
-  const threeRadius = courtW * 0.45;
+  const threeRadius = courtH * 0.65;
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
@@ -129,31 +129,13 @@ function HalfCourtSVG({ width, height }) {
         fill="none" stroke={C.line} strokeWidth={lw} 
       />
       
-      {/* 3-Point Arc: true circle centered at rim, symmetrical */}
-      {/* Arc goes from left corner baseline, curves around, to right corner baseline */}
-      {/* Compute arc endpoints where 3-point line meets baseline */}
-      {(() => {
-        // Circle: (x - rimX)^2 + (y - rimY)^2 = threeRadius^2
-        // At y = y1 (baseline): (x - rimX)^2 + (y1 - rimY)^2 = threeRadius^2
-        // Solve: x = rimX ± sqrt(threeRadius^2 - (y1 - rimY)^2)
-        const dy = y1 - rimY;
-        const dx = Math.sqrt(Math.max(0, threeRadius * threeRadius - dy * dy));
-        const leftCorner = rimX - dx;
-        const rightCorner = rimX + dx;
-        
-        // Arc from left baseline corner, around basket, to right baseline corner
-        // Large arc flag = 1 since arc > 180°
-        const largeArc = threeRadius < dy ? 0 : 1;
-        
-        return (
-          <path
-            d={`M ${leftCorner} ${y1} A ${threeRadius} ${threeRadius} 0 ${largeArc} 1 ${rightCorner} ${y1}`}
-            fill="none"
-            stroke={C.line}
-            strokeWidth={lw}
-          />
-        );
-      })()}
+      {/* 3-Point Arc: centered at rim with constant radius */}
+      <path
+        d={`M ${rimX - threeRadius} ${rimY} A ${threeRadius} ${threeRadius} 0 0 1 ${rimX + threeRadius} ${rimY}`}
+        fill="none"
+        stroke={C.line}
+        strokeWidth={lw}
+      />
       
       {/* Sidelines connecting 3-point corners to court boundary */}
       <line x1={x0} y1={y0} x2={x0} y2={y1} stroke={C.line} strokeWidth={lw} />
