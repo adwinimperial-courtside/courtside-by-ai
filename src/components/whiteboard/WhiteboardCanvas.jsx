@@ -65,15 +65,14 @@ function HalfCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2;
   const lw = C.lineW;
   
-  // Scale from full court (landscape) to half court (portrait)
-  // Full court uses h for vertical scaling – apply same ratios to portrait half-court
-  const paintDepth = w * 0.19;           // paint depth (scaled proportional to full court)
-  const paintHalfW = h * 0.38 / 2;       // half the key width
-  const ftRadius = h * 0.19;             // free-throw circle radius
-  const threeR = h * 0.46;               // 3-point arc radius
+  // Portrait half-court: use h as primary scale (like w in full court)
+  const paintDepth = h * 0.19;           // paint depth scaled to height
+  const paintHalfW = w * 0.38 / 2;       // half the key width (0.38 is ratio)
+  const ftRadius = h * 0.19;             // FT circle radius
+  const threeR = h * 0.46;               // 3-point arc radius (same as full court)
   const restrictedRadius = h * 0.055;    // restricted arc radius
   const basketR = h * 0.033;
-  const bboardOff = w * 0.025;
+  const bboardOff = h * 0.025;
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
