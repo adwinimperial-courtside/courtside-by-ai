@@ -38,7 +38,7 @@ const getDeviceName = () => {
   return 'Unknown Device';
 };
 
-export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats, onBack }) {
+export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats, onBack, onGameUpdate }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showSubDialog, setShowSubDialog] = useState(false);
   const [playersToReplace, setPlayersToReplace] = useState([]);
