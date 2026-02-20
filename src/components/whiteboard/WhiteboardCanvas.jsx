@@ -451,9 +451,7 @@ export default function WhiteboardCanvas() {
               style={{ position: "absolute", left: m.x * courtSize.width - mr, top: m.y * courtSize.height - mr, width: mr*2, height: mr*2, zIndex: 10, cursor: activeTool === "select" ? "grab" : "default", touchAction: "none" }}
             >
               <svg width={mr*2} height={mr*2}>
-                <circle cx={mr} cy={mr} r={mr-2} fill="rgba(220,38,38,0.92)" stroke="white" strokeWidth={2} />
-                <line x1={mr-mr*0.4} y1={mr-mr*0.4} x2={mr+mr*0.4} y2={mr+mr*0.4} stroke="white" strokeWidth={2.5} strokeLinecap="round"/>
-                <line x1={mr+mr*0.4} y1={mr-mr*0.4} x2={mr-mr*0.4} y2={mr+mr*0.4} stroke="white" strokeWidth={2.5} strokeLinecap="round"/>
+                <circle cx={mr} cy={mr} r={mr-2} fill="#ef4444" stroke="white" strokeWidth={2} />
               </svg>
             </div>
           ))}
