@@ -721,7 +721,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         {/* Scoreboard – full width, ~100px */}
         <div className="flex-shrink-0 mb-2" style={{ height: '90px' }}>
-          <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
+          <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
         </div>
 
         {/* Main 3-column row – fills all remaining space, no scroll */}
