@@ -9,7 +9,7 @@ import { format } from "date-fns";
 import { motion } from "framer-motion";
 import TeamLogo from "../teams/TeamLogo";
 
-export default function GameCard({ game, teams, leagues, players, stats, onStartGame }) {
+export default function GameCard({ game, teams, leagues, players, stats, onStartGame, currentUser }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
 
