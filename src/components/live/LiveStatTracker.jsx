@@ -48,7 +48,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [ejectedPlayer, setEjectedPlayer] = useState(null); // player ejected due to 2 techs or 5 fouls
   const [ejectionReason, setEjectionReason] = useState(''); // reason for ejection
   const [showExitDialog, setShowExitDialog] = useState(false);
-  const [showPeriodEndModal, setShowPeriodEndModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const periodEndHandledRef = React.useRef(false);
   const periodStartTimeRef = React.useRef({}); // Track when each player entered for this period
