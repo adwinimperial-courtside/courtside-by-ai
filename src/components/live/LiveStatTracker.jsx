@@ -407,8 +407,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
 
   // ── Shared sub-component for team panel (vertical player list) ──
-  const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor }) => (
-    <div className={`bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2 border-l-4 ${borderColor} flex flex-col h-full`}>
+  const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
+    const isHome = side === 'home';
+    const accentColor = isHome ? (homeTeam?.color || '#3b82f6') : (awayTeam?.color || '#ef4444');
+    const borderStyle = isHome
+      ? { borderLeft: `3px solid ${accentColor}`, backgroundColor: `${accentColor}0D` }
+      : { borderRight: `3px solid ${accentColor}`, backgroundColor: `${accentColor}0D` };
+    return (
+    <div className={`backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full`} style={borderStyle}>
       <div className="flex items-center gap-2 mb-2">
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
