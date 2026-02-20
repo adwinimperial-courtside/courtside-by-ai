@@ -95,9 +95,9 @@ function HalfCourtSVG({ width, height }) {
       {/* Basket */}
       <circle cx={cx} cy={lw+bboardOff+h*0.055} r={basketR} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
       
-      {/* 3-point arc – extends from sidelines */}
+      {/* 3-point arc – curves from corners around basket */}
       <path
-        d={`M ${lw} ${lw} L ${lw} ${lw+h*0.14} A ${threeR} ${threeR} 0 0 1 ${w-lw} ${lw+h*0.14} L ${w-lw} ${lw}`}
+        d={`M ${lw} ${lw+paintDepth} L ${lw} ${lw+h*0.22} A ${threeR} ${threeR} 0 0 1 ${w-lw} ${lw+h*0.22} L ${w-lw} ${lw+paintDepth}`}
         fill="none" stroke={C.line} strokeWidth={lw}
       />
       
