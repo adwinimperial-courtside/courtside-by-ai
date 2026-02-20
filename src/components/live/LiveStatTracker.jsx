@@ -182,7 +182,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
   }, [game.clock_running, activePlayers]);
 
-  // Detect period expiration for timed games
+  // Detect period expiration for timed games - just stop the clock
   useEffect(() => {
     if (game.game_mode !== 'timed' || !game.clock_running) return;
 
@@ -193,8 +193,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     if (timeLeft <= 0 && !periodEndHandledRef.current) {
       periodEndHandledRef.current = true;
-      
-      // Stop clock and show modal (don't change period_status or period yet)
+
+      // Stop clock (user will press play button to advance)
       updateGameMutation.mutate({
         gameId: game.id,
         data: {
@@ -202,8 +202,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           clock_time_left: 0
         }
       });
-
-      setShowPeriodEndModal(true);
     }
 
     // Reset handler when clock is manually stopped/started
