@@ -300,12 +300,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const playerInId = replacementPlayers[i];
       const playerIn = players.find(p => p.id === playerInId);
 
-      // Calculate time played by player going out (timed mode only)
-      if (game.game_mode === 'timed' && playerSubInTimeRef.current[playerOut.id]) {
-        const secondsPlayed = (Date.now() - playerSubInTimeRef.current[playerOut.id]) / 1000;
-        playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + secondsPlayed;
+      // Calculate time played by player going out (timed mode only, and only if clock is running)
+      if (game.game_mode === 'timed' && game.clock_running) {
+        const clockState = playerGameClockStateRef.current[playerOut.id];
+        if (clockState) {
+          const stored = game.clock_time_left ?? 0;
+          const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
+          const currentTimeLeft = Math.max(0, stored - elapsed);
+          const gameTimeElapsed = clockState.timeLeft - currentTimeLeft;
+          playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + gameTimeElapsed;
+        }
       }
-      playerSubInTimeRef.current[playerOut.id] = null;
+      playerGameClockStateRef.current[playerOut.id] = null;
 
       // Mark player going out
       const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
