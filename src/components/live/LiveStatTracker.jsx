@@ -410,9 +410,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
     const accentColor = isHome ? (homeTeam?.color || '#3b82f6') : (awayTeam?.color || '#ef4444');
-    const borderStyle = isHome
-      ? { borderLeft: `3px solid ${accentColor}`, backgroundColor: `${accentColor}0D` }
-      : { borderRight: `3px solid ${accentColor}`, backgroundColor: `${accentColor}0D` };
+    const isSelectedTeam = selectedPlayer && selectedPlayer.team_id === (isHome ? game.home_team_id : game.away_team_id);
+    const borderWidth = isSelectedTeam ? '4px' : '3px';
+    const borderStyle = side === undefined
+      ? {}
+      : isHome
+        ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: `${accentColor}0D` }
+        : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: `${accentColor}0D` };
     return (
     <div className={`backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full`} style={borderStyle}>
       <div className="flex items-center gap-2 mb-2">
