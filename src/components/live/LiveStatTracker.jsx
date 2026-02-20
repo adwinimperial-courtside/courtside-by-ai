@@ -295,23 +295,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
 
       const existingNewPlayerStat = existingStats.find(s => s.player_id === playerInId);
-      if (existingNewPlayerStat) {
-        await updateStatMutation.mutateAsync({
-          statId: existingNewPlayerStat.id,
-          updates: { is_starter: true }
-        });
-      } else {
-        await createStatMutation.mutateAsync({
-          game_id: game.id,
-          player_id: playerInId,
-          team_id: playerOut.team_id,
-          is_starter: true,
-          minutes_played: 0
-        });
-      }
+          if (existingNewPlayerStat) {
+            await updateStatMutation.mutateAsync({
+              statId: existingNewPlayerStat.id,
+              updates: { is_starter: true }
+            });
+          } else {
+            await createStatMutation.mutateAsync({
+              game_id: game.id,
+              player_id: playerInId,
+              team_id: playerOut.team_id,
+              is_starter: true,
+              minutes_played: 0
+            });
+          }
 
-      // Track when this player enters the court for minutes calculation
-      periodStartTimeRef.current[playerInId] = Date.now();
+          // Track when this player subs in for minutes calculation
+          playerSubInTimeRef.current[playerInId] = Date.now();
+          if (!playerMinutesRef.current[playerInId]) {
+            playerMinutesRef.current[playerInId] = 0;
+          }
 
       // Log the substitution to game log
       await createLogMutation.mutateAsync({
