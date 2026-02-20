@@ -207,7 +207,7 @@ export default function WhiteboardCanvas() {
 
   function drawShape(ctx, d) {
     if (!d?.points || d.points.length < 2) return;
-    ctx.strokeStyle = "white";
+    ctx.strokeStyle = C.drawStroke;
     ctx.lineWidth   = strokeW();
     ctx.lineCap     = "round";
     ctx.lineJoin    = "round";
