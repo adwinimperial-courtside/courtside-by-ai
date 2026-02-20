@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 
 import ScoreHeader from "./ScoreHeader";
+import EndOfPeriodModal from "./EndOfPeriodModal";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 
 const STAT_TYPES = [
@@ -47,7 +48,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [ejectedPlayer, setEjectedPlayer] = useState(null); // player ejected due to 2 techs or 5 fouls
   const [ejectionReason, setEjectionReason] = useState(''); // reason for ejection
   const [showExitDialog, setShowExitDialog] = useState(false);
+  const [showPeriodEndModal, setShowPeriodEndModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const periodEndHandledRef = React.useRef(false);
   const queryClient = useQueryClient();
 
   useEffect(() => {
