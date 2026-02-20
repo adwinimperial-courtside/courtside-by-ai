@@ -82,27 +82,55 @@ function HalfCourtSVG({ width, height }) {
   );
 }
 
+// Landscape full court: baskets on left & right ends
 function FullCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2, cy = h / 2;
   const lw = C.lineW;
+  // paint depth along x-axis proportional to court length
+  const paintDepth = w * 0.19;
+  const paintHalfW = h * 0.38 / 2; // half the key width along y
+  const threeR = h * 0.46;          // 3-point arc radius (scales with height)
+  const ftR    = h * 0.19;          // free-throw circle radius
+  const basketR = h * 0.033;
+  const bboardOff = w * 0.025;      // backboard offset from edge
+
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
       <rect width={w} height={h} fill={C.courtBg} rx={6} />
       <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
-      <line x1={lw} y1={cy} x2={w-lw} y2={cy} stroke={C.line} strokeWidth={lw} />
-      <circle cx={cx} cy={cy} r={w*0.12} fill="none" stroke={C.line} strokeWidth={lw} />
-      {/* Top paint */}
-      <rect x={cx-w*0.19} y={lw} width={w*0.38} height={h*0.26} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
-      <ellipse cx={cx} cy={h*0.26} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
-      <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke={C.basket} strokeWidth={lw*2} />
-      <circle cx={cx} cy={h*0.055} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
-      <path d={`M ${cx-w*0.43} ${lw} L ${cx-w*0.43} ${h*0.14} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.14} L ${cx+w*0.43} ${lw}`} fill="none" stroke={C.line} strokeWidth={lw} />
-      {/* Bottom paint */}
-      <rect x={cx-w*0.19} y={h*0.74} width={w*0.38} height={h*0.26} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
-      <ellipse cx={cx} cy={h*0.74} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
-      <line x1={cx-w*0.09} y1={h*0.975} x2={cx+w*0.09} y2={h*0.975} stroke={C.basket} strokeWidth={lw*2} />
-      <circle cx={cx} cy={h*0.945} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
-      <path d={`M ${cx-w*0.43} ${h-lw} L ${cx-w*0.43} ${h*0.86} A ${w*0.46} ${w*0.46} 0 0 1 ${cx+w*0.43} ${h*0.86} L ${cx+w*0.43} ${h-lw}`} fill="none" stroke={C.line} strokeWidth={lw} />
+
+      {/* Midcourt line (vertical) */}
+      <line x1={cx} y1={lw} x2={cx} y2={h-lw} stroke={C.line} strokeWidth={lw} />
+      {/* Center circle */}
+      <circle cx={cx} cy={cy} r={h*0.12} fill="none" stroke={C.line} strokeWidth={lw} />
+
+      {/* LEFT paint */}
+      <rect x={lw} y={cy-paintHalfW} width={paintDepth} height={paintHalfW*2} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      {/* Left free-throw circle */}
+      <ellipse cx={lw+paintDepth} cy={cy} rx={ftR} ry={ftR} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Left backboard */}
+      <line x1={lw+bboardOff} y1={cy-h*0.09} x2={lw+bboardOff} y2={cy+h*0.09} stroke={C.basket} strokeWidth={lw*2} />
+      {/* Left basket */}
+      <circle cx={lw+bboardOff+h*0.055} cy={cy} r={basketR} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      {/* Left 3-point arc */}
+      <path
+        d={`M ${lw} ${cy-h*0.43} L ${lw+w*0.14} ${cy-h*0.43} A ${threeR} ${threeR} 0 0 1 ${lw+w*0.14} ${cy+h*0.43} L ${lw} ${cy+h*0.43}`}
+        fill="none" stroke={C.line} strokeWidth={lw}
+      />
+
+      {/* RIGHT paint */}
+      <rect x={w-lw-paintDepth} y={cy-paintHalfW} width={paintDepth} height={paintHalfW*2} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      {/* Right free-throw circle */}
+      <ellipse cx={w-lw-paintDepth} cy={cy} rx={ftR} ry={ftR} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Right backboard */}
+      <line x1={w-lw-bboardOff} y1={cy-h*0.09} x2={w-lw-bboardOff} y2={cy+h*0.09} stroke={C.basket} strokeWidth={lw*2} />
+      {/* Right basket */}
+      <circle cx={w-lw-bboardOff-h*0.055} cy={cy} r={basketR} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      {/* Right 3-point arc */}
+      <path
+        d={`M ${w-lw} ${cy-h*0.43} L ${w-lw-w*0.14} ${cy-h*0.43} A ${threeR} ${threeR} 0 0 0 ${w-lw-w*0.14} ${cy+h*0.43} L ${w-lw} ${cy+h*0.43}`}
+        fill="none" stroke={C.line} strokeWidth={lw}
+      />
     </svg>
   );
 }
