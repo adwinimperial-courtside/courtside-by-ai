@@ -168,6 +168,44 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
+  // Track elapsed time for minutes played calculation
+  const elapsedSecondsRef = React.useRef({});
+
+  // Periodically sync minutes_played for all active players (only when clock is running)
+  useEffect(() => {
+    if (!game.clock_running || !game.clock_started_at) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const startTime = new Date(game.clock_started_at).getTime();
+      const elapsedMs = now - startTime;
+      const elapsedSec = Math.floor(elapsedMs / 1000);
+
+      // Update minutes for each active player
+      activePlayers.forEach(stat => {
+        const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
+        if (playerStat) {
+          // Only update if elapsed time changed significantly (at least 1 second)
+          const prevElapsed = elapsedSecondsRef.current[playerStat.id] || 0;
+          if (Math.abs(elapsedSec - prevElapsed) >= 1) {
+            const additionalSeconds = elapsedSec - prevElapsed;
+            const additionalMinutes = additionalSeconds / 60;
+            const newMinutes = (playerStat.minutes_played || 0) + additionalMinutes;
+            
+            updateStatMutation.mutate({
+              statId: playerStat.id,
+              updates: { minutes_played: Math.round(newMinutes * 100) / 100 } // round to 2 decimals
+            });
+            
+            elapsedSecondsRef.current[playerStat.id] = elapsedSec;
+          }
+        }
+      });
+    }, 1000); // update every second
+
+    return () => clearInterval(interval);
+  }, [game.clock_running, game.clock_started_at, activePlayers, existingStats, updateStatMutation]);
+
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
 
