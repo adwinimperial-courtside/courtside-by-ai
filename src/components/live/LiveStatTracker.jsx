@@ -201,12 +201,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (timeLeft <= 0 && !periodEndHandledRef.current) {
       periodEndHandledRef.current = true;
 
-      // Add elapsed time to on-court players before stopping
+      // Add elapsed game clock time to on-court players before stopping
       activePlayers.forEach(stat => {
-        if (playerSubInTimeRef.current[stat.id]) {
-          const secondsPlayed = (Date.now() - playerSubInTimeRef.current[stat.id]) / 1000;
-          playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + secondsPlayed;
-          playerSubInTimeRef.current[stat.id] = Date.now(); // Reset for next period
+        const clockState = playerGameClockStateRef.current[stat.id];
+        if (clockState) {
+          // Game time elapsed = stored time at sub-in - time left at period end
+          const gameTimeElapsed = clockState.timeLeft - 0; // Period ended, so 0 time left
+          playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
+          // Reset for next period with current clock state
+          playerGameClockStateRef.current[stat.id] = {
+            timeLeft: (game.period_minutes || 10) * 60,
+            period: game.clock_period + 1
+          };
         }
       });
 
