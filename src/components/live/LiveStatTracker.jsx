@@ -453,62 +453,48 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
 
     try {
+      console.log('Starting end game process...');
       const homeScore = game.home_score || 0;
       const awayScore = game.away_score || 0;
       const homeWins = homeScore > awayScore;
-
-      // Calculate total minutes for each player who played
-      const minuteUpdates = [];
-      existingStats.forEach(playerStat => {
-        if (playerStat.is_starter && periodStartTimeRef.current[playerStat.id]) {
-          const secondsPlayed = (Date.now() - periodStartTimeRef.current[playerStat.id]) / 1000;
-          const minutesThisPeriod = Math.round((secondsPlayed / 60) * 100) / 100;
-          const totalMinutes = (playerStat.minutes_played || 0) + minutesThisPeriod;
-
-          minuteUpdates.push(
-            updateStatMutation.mutateAsync({
-              statId: playerStat.id,
-              updates: { minutes_played: totalMinutes }
-            })
-          );
-        }
-      });
-
-      // Wait for all minute updates to complete
-      if (minuteUpdates.length > 0) {
-        await Promise.all(minuteUpdates);
-      }
-
-      // Calculate Player of the Game
-      const playerOfGameId = findPlayerOfGame(existingStats, game);
       
-      const gameUpdateData = { status: 'completed' };
-      if (playerOfGameId) {
-        gameUpdateData.player_of_game = playerOfGameId;
-      }
+      console.log('Final score - Home:', homeScore, 'Away:', awayScore, 'Home wins:', homeWins);
 
-      await updateGameMutation.mutateAsync({
-        gameId: game.id,
-        data: gameUpdateData
+      // Update game status to completed
+      console.log('Updating game status to completed...');
+      const result = await base44.entities.Game.update(game.id, { 
+        status: 'completed',
+        player_of_game: findPlayerOfGame(existingStats, game)
       });
+      console.log('Game updated:', result);
 
-      // Update team records sequentially with slight delay to avoid rate limiting
-      await updateTeamRecordMutation.mutateAsync({
-        teamId: game.home_team_id,
-        isWin: homeWins
+      // Update team records
+      console.log('Updating team records...');
+      const teams = await base44.entities.Team.filter({ id: game.home_team_id });
+      const homeTeamData = teams[0];
+      
+      await base44.entities.Team.update(game.home_team_id, {
+        wins: homeWins ? (homeTeamData.wins || 0) + 1 : homeTeamData.wins || 0,
+        losses: !homeWins ? (homeTeamData.losses || 0) + 1 : homeTeamData.losses || 0
       });
+      console.log('Home team updated');
 
       await new Promise(resolve => setTimeout(resolve, 200));
 
-      await updateTeamRecordMutation.mutateAsync({
-        teamId: game.away_team_id,
-        isWin: !homeWins
+      const awayTeams = await base44.entities.Team.filter({ id: game.away_team_id });
+      const awayTeamData = awayTeams[0];
+      
+      await base44.entities.Team.update(game.away_team_id, {
+        wins: !homeWins ? (awayTeamData.wins || 0) + 1 : awayTeamData.wins || 0,
+        losses: homeWins ? (awayTeamData.losses || 0) + 1 : awayTeamData.losses || 0
       });
+      console.log('Away team updated');
 
+      console.log('Game end complete, navigating back...');
       onBack();
     } catch (error) {
       console.error('Error ending game:', error);
-      alert('Failed to end game. Please try again.');
+      alert('Failed to end game: ' + error.message);
     }
   };
 
