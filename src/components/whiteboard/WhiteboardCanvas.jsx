@@ -41,43 +41,69 @@ function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
 // Marker radius scales with court width
 function markerR(courtW) { return Math.max(14, Math.round(courtW * 0.042)); }
 
+// ─── Brand palette ────────────────────────────────────────────────────────────
+const C = {
+  courtBg:   "#f1f5f9",   // slate-100 – matches app card bg
+  paintFill: "#e2e8f0",   // slate-200 – slightly darker key area
+  line:      "#94a3b8",   // slate-400 – matches app UI dividers
+  lineW:     1.5,
+  basket:    "#64748b",   // slate-500
+  drawStroke: "#7c3aed",  // violet-700 – brand purple
+};
+
 // ─── Court SVGs ───────────────────────────────────────────────────────────────
 function HalfCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2;
+  const lw = C.lineW;
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
-      <rect width={w} height={h} fill="#c8912a" rx={4} />
-      <rect x={2} y={2} width={w-4} height={h-4} fill="none" stroke="white" strokeWidth={2.5} />
-      <line x1={0} y1={h*0.02} x2={w} y2={h*0.02} stroke="white" strokeWidth={2} />
-      <rect x={cx-w*0.19} y={h*0.02} width={w*0.38} height={h*0.52} fill="rgba(180,120,30,0.5)" stroke="white" strokeWidth={2} />
-      <ellipse cx={cx} cy={h*0.54} rx={w*0.19} ry={w*0.19} fill="none" stroke="white" strokeWidth={2} />
-      <path d={`M ${cx-w*0.08} ${h*0.12} A ${w*0.08} ${w*0.08} 0 0 1 ${cx+w*0.08} ${h*0.12}`} fill="none" stroke="white" strokeWidth={2} />
-      <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke="white" strokeWidth={3} />
-      <circle cx={cx} cy={h*0.06} r={w*0.033} fill="none" stroke="white" strokeWidth={2} />
-      <path d={`M ${cx-w*0.43} ${h*0.02} L ${cx-w*0.43} ${h*0.28} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.28} L ${cx+w*0.43} ${h*0.02}`} fill="none" stroke="white" strokeWidth={2} />
-      <circle cx={cx} cy={h*0.02} r={w*0.1} fill="none" stroke="white" strokeWidth={2} strokeDasharray="4 4" />
+      {/* Background */}
+      <rect width={w} height={h} fill={C.courtBg} rx={6} />
+      {/* Outer boundary */}
+      <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
+      {/* Half-court line (top edge) */}
+      <line x1={0} y1={h*0.02} x2={w} y2={h*0.02} stroke={C.line} strokeWidth={lw} />
+      {/* Paint / key */}
+      <rect x={cx-w*0.19} y={h*0.02} width={w*0.38} height={h*0.52} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      {/* Free throw circle */}
+      <ellipse cx={cx} cy={h*0.54} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Restricted arc */}
+      <path d={`M ${cx-w*0.08} ${h*0.12} A ${w*0.08} ${w*0.08} 0 0 1 ${cx+w*0.08} ${h*0.12}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Backboard */}
+      <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke={C.basket} strokeWidth={lw*2} />
+      {/* Basket */}
+      <circle cx={cx} cy={h*0.06} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      {/* 3-point arc */}
+      <path d={`M ${cx-w*0.43} ${h*0.02} L ${cx-w*0.43} ${h*0.28} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.28} L ${cx+w*0.43} ${h*0.02}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Center circle (dashed) */}
+      <circle cx={cx} cy={h*0.02} r={w*0.1} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
     </svg>
   );
 }
 
 function FullCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2, cy = h / 2;
+  const lw = C.lineW;
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
-      <rect width={w} height={h} fill="#c8912a" rx={4} />
-      <rect x={2} y={2} width={w-4} height={h-4} fill="none" stroke="white" strokeWidth={2.5} />
-      <line x1={2} y1={cy} x2={w-2} y2={cy} stroke="white" strokeWidth={2} />
-      <circle cx={cx} cy={cy} r={w*0.12} fill="none" stroke="white" strokeWidth={2} />
-      <rect x={cx-w*0.19} y={2} width={w*0.38} height={h*0.26} fill="rgba(180,120,30,0.5)" stroke="white" strokeWidth={2} />
-      <ellipse cx={cx} cy={h*0.26} rx={w*0.19} ry={w*0.19} fill="none" stroke="white" strokeWidth={2} />
-      <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke="white" strokeWidth={3} />
-      <circle cx={cx} cy={h*0.055} r={w*0.033} fill="none" stroke="white" strokeWidth={2} />
-      <path d={`M ${cx-w*0.43} ${2} L ${cx-w*0.43} ${h*0.14} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.14} L ${cx+w*0.43} ${2}`} fill="none" stroke="white" strokeWidth={2} />
-      <rect x={cx-w*0.19} y={h*0.74} width={w*0.38} height={h*0.26} fill="rgba(180,120,30,0.5)" stroke="white" strokeWidth={2} />
-      <ellipse cx={cx} cy={h*0.74} rx={w*0.19} ry={w*0.19} fill="none" stroke="white" strokeWidth={2} />
-      <line x1={cx-w*0.09} y1={h*0.975} x2={cx+w*0.09} y2={h*0.975} stroke="white" strokeWidth={3} />
-      <circle cx={cx} cy={h*0.945} r={w*0.033} fill="none" stroke="white" strokeWidth={2} />
-      <path d={`M ${cx-w*0.43} ${h-2} L ${cx-w*0.43} ${h*0.86} A ${w*0.46} ${w*0.46} 0 0 1 ${cx+w*0.43} ${h*0.86} L ${cx+w*0.43} ${h-2}`} fill="none" stroke="white" strokeWidth={2} />
+      <rect width={w} height={h} fill={C.courtBg} rx={6} />
+      <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
+      {/* Half-court line */}
+      <line x1={lw} y1={cy} x2={w-lw} y2={cy} stroke={C.line} strokeWidth={lw} />
+      {/* Center circle */}
+      <circle cx={cx} cy={cy} r={w*0.12} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Top paint */}
+      <rect x={cx-w*0.19} y={lw} width={w*0.38} height={h*0.26} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      <ellipse cx={cx} cy={h*0.26} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
+      <line x1={cx-w*0.09} y1={h*0.025} x2={cx+w*0.09} y2={h*0.025} stroke={C.basket} strokeWidth={lw*2} />
+      <circle cx={cx} cy={h*0.055} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      <path d={`M ${cx-w*0.43} ${lw} L ${cx-w*0.43} ${h*0.14} A ${w*0.46} ${w*0.46} 0 0 0 ${cx+w*0.43} ${h*0.14} L ${cx+w*0.43} ${lw}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Bottom paint */}
+      <rect x={cx-w*0.19} y={h*0.74} width={w*0.38} height={h*0.26} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      <ellipse cx={cx} cy={h*0.74} rx={w*0.19} ry={w*0.19} fill="none" stroke={C.line} strokeWidth={lw} />
+      <line x1={cx-w*0.09} y1={h*0.975} x2={cx+w*0.09} y2={h*0.975} stroke={C.basket} strokeWidth={lw*2} />
+      <circle cx={cx} cy={h*0.945} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      <path d={`M ${cx-w*0.43} ${h-lw} L ${cx-w*0.43} ${h*0.86} A ${w*0.46} ${w*0.46} 0 0 1 ${cx+w*0.43} ${h*0.86} L ${cx+w*0.43} ${h-lw}`} fill="none" stroke={C.line} strokeWidth={lw} />
     </svg>
   );
 }
