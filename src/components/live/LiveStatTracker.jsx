@@ -409,14 +409,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   // ── Shared sub-component for team panel (vertical player list) ──
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
-    const accentColor = isHome ? (homeTeam?.color || '#3b82f6') : (awayTeam?.color || '#ef4444');
+    // Fixed accent colors: home=blue, away=red (regardless of team color)
+    const accentColor = isHome ? '#3b82f6' : '#ef4444';
+    const bgTint = isHome ? '#3b82f610' : '#ef444410';
     const isSelectedTeam = selectedPlayer && selectedPlayer.team_id === (isHome ? game.home_team_id : game.away_team_id);
     const borderWidth = isSelectedTeam ? '4px' : '3px';
     const borderStyle = side === undefined
       ? {}
       : isHome
-        ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: `${accentColor}0D` }
-        : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: `${accentColor}0D` };
+        ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
+        : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
     return (
     <div className={`backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full`} style={borderStyle}>
       <div className="flex items-center gap-2 mb-2">
