@@ -666,6 +666,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <ActivityLog />
         </div>
       </div>
+    </div>
 
       {/* Exit Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
