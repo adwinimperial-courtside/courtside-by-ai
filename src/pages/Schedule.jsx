@@ -203,6 +203,7 @@ export default function SchedulePage() {
                 players={players}
                 stats={allStats}
                 onStartGame={() => startGame(game)}
+                currentUser={currentUser}
               />
             ))}
           </div>
