@@ -183,39 +183,41 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const startTime = new Date(game.clock_started_at).getTime();
       const gameElapsedSec = Math.floor((now - startTime) / 1000);
 
-      // Batch update minutes for each active player (sync every 10 seconds to avoid rate limit)
-      const updates = [];
-      activePlayers.forEach(stat => {
-        const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
-        if (playerStat) {
-          // If player not yet tracked, mark their entry time
-          if (!playerCourtEntryRef.current[playerStat.id]) {
-            playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
-          }
+      // Batch update minutes for each active player (sync every 30 seconds to avoid rate limit)
+              const updates = [];
+              activePlayers.forEach(stat => {
+                const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
+                if (playerStat) {
+                  // If player not yet tracked, mark their entry time
+                  if (!playerCourtEntryRef.current[playerStat.id]) {
+                    playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
+                  }
 
-          const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
-          const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
-          const timeOnCourtMin = timeOnCourtSec / 60;
-          const previousMinutes = (playerStat.minutes_played || 0);
-          const newMinutes = previousMinutes + timeOnCourtMin;
+                  const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
+                  const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
+                  const timeOnCourtMin = timeOnCourtSec / 60;
+                  const previousMinutes = (playerStat.minutes_played || 0);
+                  const newMinutes = previousMinutes + timeOnCourtMin;
 
-          updates.push({
-            statId: playerStat.id,
-            newMinutes: Math.round(newMinutes * 100) / 100
-          });
+                  updates.push({
+                    statId: playerStat.id,
+                    newMinutes: Math.round(newMinutes * 100) / 100
+                  });
 
-          // Reset entry time after update to avoid double-counting
-          playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
-        }
-      });
+                  // Reset entry time after update to avoid double-counting
+                  playerCourtEntryRef.current[playerStat.id] = gameElapsedSec;
+                }
+              });
 
-      // Execute all updates
-      updates.forEach(u => {
-        updateStatMutation.mutate({
-          statId: u.statId,
-          updates: { minutes_played: u.newMinutes }
-        });
-      });
+              // Execute all updates sequentially to avoid rate limit
+              updates.forEach(u => {
+                setTimeout(() => {
+                  updateStatMutation.mutate({
+                    statId: u.statId,
+                    updates: { minutes_played: u.newMinutes }
+                  });
+                }, 100); // 100ms delay between updates
+              });
     }, 10000); // sync every 10 seconds
 
     return () => clearInterval(interval);
