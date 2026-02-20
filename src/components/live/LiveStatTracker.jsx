@@ -466,7 +466,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     // Update player stats with final minutes played
     const minuteUpdates = existingStats.map(stat => {
-      const totalSeconds = playerMinutesRef.current[stat.id] || 0;
+      const totalSeconds = playerMinutesRef.current[stat.player_id] || 0;
       const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
       return updateStatMutation.mutateAsync({
         statId: stat.id,
@@ -538,7 +538,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       // Update player stats with final minutes played
       const minuteUpdates = existingStats.map(stat => {
-        const totalSeconds = playerMinutesRef.current[stat.id] || 0;
+        const totalSeconds = playerMinutesRef.current[stat.player_id] || 0;
         const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
         return updateStatMutation.mutateAsync({
           statId: stat.id,
