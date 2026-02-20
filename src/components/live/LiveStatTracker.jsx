@@ -239,7 +239,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (game.game_mode !== 'timed' || !game.clock_running) return;
 
-    const timeLeft = game.clock_time_left ?? 0;
+    // Compute actual time left (accounting for elapsed time since clock_started_at)
+    const stored = game.clock_time_left ?? 0;
+    const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
+    const timeLeft = Math.max(0, stored - elapsed);
+
     if (timeLeft <= 0 && !periodEndHandledRef.current) {
       periodEndHandledRef.current = true;
       
