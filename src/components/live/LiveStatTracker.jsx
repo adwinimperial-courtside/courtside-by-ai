@@ -98,13 +98,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   // Initialize minutes tracking for active players when game or active players change
   useEffect(() => {
     activePlayers.forEach(stat => {
-      if (!playerMinutesRef.current[stat.id]) {
-        playerMinutesRef.current[stat.id] = stat.minutes_played ? stat.minutes_played * 60 : 0;
+      if (!playerMinutesRef.current[stat.player_id]) {
+        playerMinutesRef.current[stat.player_id] = stat.minutes_played ? stat.minutes_played * 60 : 0;
       }
       // Only set playerGameClockStateRef if not already set for the current period,
       // or if the period changed, indicating a new segment of play.
-      if (!playerGameClockStateRef.current[stat.id] || playerGameClockStateRef.current[stat.id].period !== game.clock_period) {
-        playerGameClockStateRef.current[stat.id] = {
+      if (!playerGameClockStateRef.current[stat.player_id] || playerGameClockStateRef.current[stat.player_id].period !== game.clock_period) {
+        playerGameClockStateRef.current[stat.player_id] = {
           timeLeft: computeTimeLeft(game),
           period: game.clock_period
         };
