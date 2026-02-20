@@ -184,16 +184,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
-  // Track period start time to calculate minutes when period ends
-  useEffect(() => {
-    if (game.clock_running && game.clock_started_at) {
-      activePlayers.forEach(stat => {
-        if (!periodStartTimeRef.current[stat.id]) {
-          periodStartTimeRef.current[stat.id] = Date.now();
-        }
-      });
-    }
-  }, [game.clock_running, activePlayers]);
+
 
   // Detect period expiration for timed games - just stop the clock
   useEffect(() => {
