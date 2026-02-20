@@ -93,11 +93,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (!playerMinutesRef.current[stat.id]) {
         playerMinutesRef.current[stat.id] = stat.minutes_played ? stat.minutes_played * 60 : 0;
       }
-      if (!playerSubInTimeRef.current[stat.id]) {
-        playerSubInTimeRef.current[stat.id] = Date.now();
+      if (!playerGameClockStateRef.current[stat.id]) {
+        const stored = game.clock_time_left ?? ((game.period_minutes || 10) * 60);
+        playerGameClockStateRef.current[stat.id] = {
+          timeLeft: stored,
+          period: game.clock_period
+        };
       }
     });
-  }, [activePlayers]);
+  }, [activePlayers, game.clock_time_left, game.clock_period]);
 
   const gameLog = gameLogs.map(log => {
     const player = players.find(p => p.id === log.player_id);
