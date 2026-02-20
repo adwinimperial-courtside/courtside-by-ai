@@ -355,25 +355,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const nextIsOT = nextPeriod > totalPeriods;
     const nextMins = nextIsOT ? (game.overtime_minutes || 5) : (game.period_minutes || 10);
 
-    // Finalize minutes for all players on court before advancing
-    const activePeriodPlayers = existingStats.filter(s => s.is_starter);
-    activePeriodPlayers.forEach(playerStat => {
-      if (playerCourtEntryRef.current[playerStat.id] !== undefined) {
-        const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
-        const now = Date.now();
-        const startTime = new Date(game.clock_started_at).getTime();
-        const gameElapsedSec = Math.floor((now - startTime) / 1000);
-        const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
-        const timeOnCourtMin = timeOnCourtSec / 60;
-        const newMinutes = (playerStat.minutes_played || 0) + timeOnCourtMin;
-
-        updateStatMutation.mutate({
-          statId: playerStat.id,
-          updates: { minutes_played: Math.round(newMinutes * 100) / 100 }
-        });
-      }
-    });
-
     await updateGameMutation.mutateAsync({
       gameId: game.id,
       data: {
@@ -385,9 +366,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
     });
 
-    // Clear period end handler and tracking
+    // Clear period end handler and period tracking
     periodEndHandledRef.current = false;
-    playerCourtEntryRef.current = {};
+    periodStartTimeRef.current = {};
     setShowPeriodEndModal(false);
   };
 
