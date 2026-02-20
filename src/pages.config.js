@@ -64,6 +64,8 @@ import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
 import UserManagement from './pages/UserManagement';
 import Viewers from './pages/Viewers';
+import Coaches from './pages/Coaches';
+import Players from './pages/Players';
 import __Layout from './Layout.jsx';
 
 
@@ -85,6 +87,8 @@ export const PAGES = {
     "Teams": Teams,
     "UserManagement": UserManagement,
     "Viewers": Viewers,
+    "Coaches": Coaches,
+    "Players": Players,
 }
 
 export const pagesConfig = {
