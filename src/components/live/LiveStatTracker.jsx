@@ -963,20 +963,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </DialogContent>
       </Dialog>
 
-      {/* End of Period Modal */}
-      <EndOfPeriodModal
-        open={showPeriodEndModal}
-        game={game}
-        periodType={game.period_type || 'quarters'}
-        totalPeriods={game.period_count || (game.period_type === 'halves' ? 2 : 4)}
-        onStartNextPeriod={handleStartNextPeriod}
-        onStartOvertime={handleStartOvertime}
-        onEndGame={handleEndGameFromModal}
-        onCancel={() => {
-          periodEndHandledRef.current = false;
-          setShowPeriodEndModal(false);
-        }}
-      />
+
 
       {/* Ejection Alert Dialog */}
       <Dialog open={!!ejectedPlayer} onOpenChange={(open) => { if (!open) setEjectedPlayer(null); }}>
