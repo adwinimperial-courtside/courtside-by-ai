@@ -281,67 +281,86 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const handleConfirmSubstitution = async () => {
     if (playersToReplace.length !== replacementPlayers.length) return;
 
+    // Batch all stat updates together to avoid temporary 4/5 state
+    const statUpdates = [];
+    const logCreations = [];
+
     for (let i = 0; i < playersToReplace.length; i++) {
       const playerOut = playersToReplace[i];
       const playerInId = replacementPlayers[i];
       const playerIn = players.find(p => p.id === playerInId);
-
-      const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
-      if (oldPlayerStat) {
-        await updateStatMutation.mutateAsync({
-          statId: oldPlayerStat.id,
-          updates: { is_starter: false }
-        });
-      }
-
-      const existingNewPlayerStat = existingStats.find(s => s.player_id === playerInId);
-          if (existingNewPlayerStat) {
-            await updateStatMutation.mutateAsync({
-              statId: existingNewPlayerStat.id,
-              updates: { is_starter: true }
-            });
-          } else {
-            await createStatMutation.mutateAsync({
-              game_id: game.id,
-              player_id: playerInId,
-              team_id: playerOut.team_id,
-              is_starter: true,
-              minutes_played: 0
-            });
-          }
-
-          // Track when this player subs in for minutes calculation
-          playerSubInTimeRef.current[playerInId] = Date.now();
-          if (!playerMinutesRef.current[playerInId]) {
-            playerMinutesRef.current[playerInId] = 0;
-          }
 
       // Calculate time played by player going out (timed mode only)
       if (game.game_mode === 'timed' && playerSubInTimeRef.current[playerOut.id]) {
         const secondsPlayed = (Date.now() - playerSubInTimeRef.current[playerOut.id]) / 1000;
         playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + secondsPlayed;
       }
-      playerSubInTimeRef.current[playerOut.id] = null; // Clear sub-in time
+      playerSubInTimeRef.current[playerOut.id] = null;
 
-      // Log the substitution to game log
-      await createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: playerOut.id,
-        team_id: playerOut.team_id,
-        stat_type: 'substitution',
-        stat_label: playerIn?.name || 'Unknown',
-        stat_points: 0,
-        stat_color: 'bg-cyan-600 hover:bg-cyan-700',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      });
+      // Mark player going out
+      const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
+      if (oldPlayerStat) {
+        statUpdates.push(
+          updateStatMutation.mutateAsync({
+            statId: oldPlayerStat.id,
+            updates: { is_starter: false }
+          })
+        );
+      }
+
+      // Mark player coming in or create new stat
+      const existingNewPlayerStat = existingStats.find(s => s.player_id === playerInId);
+      if (existingNewPlayerStat) {
+        statUpdates.push(
+          updateStatMutation.mutateAsync({
+            statId: existingNewPlayerStat.id,
+            updates: { is_starter: true }
+          })
+        );
+      } else {
+        statUpdates.push(
+          createStatMutation.mutateAsync({
+            game_id: game.id,
+            player_id: playerInId,
+            team_id: playerOut.team_id,
+            is_starter: true,
+            minutes_played: 0
+          })
+        );
+      }
+
+      // Track when this player subs in
+      playerSubInTimeRef.current[playerInId] = Date.now();
+      if (!playerMinutesRef.current[playerInId]) {
+        playerMinutesRef.current[playerInId] = 0;
+      }
+
+      // Create log entry
+      logCreations.push(
+        createLogMutation.mutateAsync({
+          game_id: game.id,
+          player_id: playerOut.id,
+          team_id: playerOut.team_id,
+          stat_type: 'substitution',
+          stat_label: playerIn?.name || 'Unknown',
+          stat_points: 0,
+          stat_color: 'bg-cyan-600 hover:bg-cyan-700',
+          old_home_score: game.home_score || 0,
+          old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '',
+          device_name: getDeviceName()
+        })
+      );
 
       if (selectedPlayer?.id === playerOut.id) {
         setSelectedPlayer(null);
       }
     }
+
+    // Execute all stat updates in parallel
+    await Promise.all(statUpdates);
+    // Then execute all log creations in parallel
+    await Promise.all(logCreations);
 
     setShowSubDialog(false);
     setPlayersToReplace([]);
