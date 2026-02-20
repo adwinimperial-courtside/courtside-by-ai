@@ -169,7 +169,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   });
 
   // Track elapsed time for minutes played calculation
-  const elapsedSecondsRef = React.useRef({});
+  const lastSyncTimeRef = React.useRef({});
 
   // Periodically sync minutes_played for all active players (only when clock is running)
   useEffect(() => {
@@ -181,27 +181,35 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const elapsedMs = now - startTime;
       const elapsedSec = Math.floor(elapsedMs / 1000);
 
-      // Update minutes for each active player
+      // Batch update minutes for each active player (sync every 10 seconds to avoid rate limit)
+      const updates = [];
       activePlayers.forEach(stat => {
         const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
         if (playerStat) {
-          // Only update if elapsed time changed significantly (at least 1 second)
-          const prevElapsed = elapsedSecondsRef.current[playerStat.id] || 0;
-          if (Math.abs(elapsedSec - prevElapsed) >= 1) {
-            const additionalSeconds = elapsedSec - prevElapsed;
+          const lastSync = lastSyncTimeRef.current[playerStat.id] || 0;
+          if (elapsedSec - lastSync >= 10) { // Only sync every 10 seconds
+            const additionalSeconds = elapsedSec - lastSync;
             const additionalMinutes = additionalSeconds / 60;
             const newMinutes = (playerStat.minutes_played || 0) + additionalMinutes;
             
-            updateStatMutation.mutate({
+            updates.push({
               statId: playerStat.id,
-              updates: { minutes_played: Math.round(newMinutes * 100) / 100 } // round to 2 decimals
+              newMinutes: Math.round(newMinutes * 100) / 100
             });
             
-            elapsedSecondsRef.current[playerStat.id] = elapsedSec;
+            lastSyncTimeRef.current[playerStat.id] = elapsedSec;
           }
         }
       });
-    }, 1000); // update every second
+
+      // Execute all updates
+      updates.forEach(u => {
+        updateStatMutation.mutate({
+          statId: u.statId,
+          updates: { minutes_played: u.newMinutes }
+        });
+      });
+    }, 1000); // check every second, but only sync every 10 seconds
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.clock_started_at, activePlayers, existingStats, updateStatMutation]);
