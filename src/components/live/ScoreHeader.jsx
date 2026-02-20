@@ -24,7 +24,7 @@ function formatTime(seconds) {
  */
 function computeTimeLeft(game) {
   const stored = game.clock_time_left ?? ((game.period_minutes || 10) * 60);
-  if (!game.clock_running || !game.clock_started_at) return stored;
+  if (!game.clock_running || !game.clock_started_at) return Math.max(0, stored);
   const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
   return Math.max(0, stored - elapsed);
 }
