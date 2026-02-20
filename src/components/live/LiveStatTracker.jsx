@@ -51,6 +51,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [showPeriodEndModal, setShowPeriodEndModal] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const periodEndHandledRef = React.useRef(false);
+  const periodStartTimeRef = React.useRef({}); // Track when each player entered for this period
   const queryClient = useQueryClient();
 
   useEffect(() => {
