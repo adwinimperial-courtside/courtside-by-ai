@@ -65,44 +65,81 @@ function HalfCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2;
   const lw = C.lineW;
   
-  // Portrait half-court: scale based on width (portrait is width-constrained, like landscape is height-constrained)
-  const paintDepth = h * 0.19;           // paint depth from baseline to FT line
-  const paintHalfW = w * 0.19;           // half the key width
-  const ftRadius = w * 0.38 / 2;         // FT circle radius (~38% of width)
-  const threeR = w * 0.46;               // 3-point arc radius (46% of width - curves from corners)
-  const restrictedRadius = w * 0.055;    // restricted arc radius
-  const basketR = w * 0.033;
-  const bboardOff = h * 0.025;
+  // FIBA half-court proportions (portrait orientation)
+  // Baseline at bottom, basket at top-center
+  const marginX = w * 0.04;
+  const marginY = h * 0.04;
+  const courtW = w - marginX * 2;
+  const courtH = h - marginY * 2;
+  
+  // Paint/key dimensions
+  const paintW = courtW * 0.4;
+  const paintH = courtH * 0.15;
+  const paintX = marginX + (courtW - paintW) / 2;
+  const paintY = marginY;
+  
+  // Free-throw circle
+  const ftRadius = paintW / 2;
+  const ftCx = marginX + courtW / 2;
+  const ftCy = paintY + paintH;
+  
+  // Restricted area arc
+  const restrictedR = courtW * 0.06;
+  const basketY = paintY + paintH * 0.5;
+  
+  // 3-point arc: starts from baseline corners, extends down along sidelines
+  const threeArcRadius = courtW * 0.24;
+  const threeArcCy = basketY;
+  
+  // Baseline and sideline positions
+  const baselineY = marginY + courtH;
+  const sideline = marginX;
+  const rightSideline = marginX + courtW;
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
+      {/* Court background */}
       <rect width={w} height={h} fill={C.courtBg} rx={6} />
-      <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
-      <line x1={0} y1={h*0.02} x2={w} y2={h*0.02} stroke={C.line} strokeWidth={lw} />
       
-      {/* Paint (key) – rectangular */}
-      <rect x={cx-paintHalfW} y={lw} width={paintHalfW*2} height={paintDepth} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      {/* Court border */}
+      <rect x={marginX} y={marginY} width={courtW} height={courtH} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
       
-      {/* Free throw circle (centered on paint top) */}
-      <ellipse cx={cx} cy={lw+paintDepth} rx={ftRadius} ry={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Sideline on left */}
+      <line x1={sideline} y1={marginY} x2={sideline} y2={baselineY} stroke={C.line} strokeWidth={lw} />
       
-      {/* Restricted arc (basket side) */}
-      <path d={`M ${cx-restrictedRadius} ${lw+bboardOff+h*0.055} A ${restrictedRadius} ${restrictedRadius} 0 0 1 ${cx+restrictedRadius} ${lw+bboardOff+h*0.055}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Paint/key rectangle */}
+      <rect x={paintX} y={paintY} width={paintW} height={paintH} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      
+      {/* Free-throw circle (full) */}
+      <circle cx={ftCx} cy={ftCy} r={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
+      
+      {/* Free-throw circle top (dashed) - the restricted line */}
+      <ellipse cx={ftCx} cy={paintY} rx={paintW / 2} ry={0} fill="none" stroke={C.line} strokeWidth={lw} />
+      <line x1={paintX} y1={paintY} x2={paintX + paintW} y2={paintY} stroke={C.line} strokeWidth={lw} />
+      
+      {/* Restricted area arc */}
+      <path 
+        d={`M ${ftCx - restrictedR} ${basketY} A ${restrictedR} ${restrictedR} 0 0 1 ${ftCx + restrictedR} ${basketY}`} 
+        fill="none" stroke={C.line} strokeWidth={lw} 
+      />
       
       {/* Backboard */}
-      <line x1={cx-w*0.09} y1={lw+bboardOff} x2={cx+w*0.09} y2={lw+bboardOff} stroke={C.basket} strokeWidth={lw*2} />
+      <line x1={ftCx - w * 0.08} y1={paintY - h * 0.02} x2={ftCx + w * 0.08} y2={paintY - h * 0.02} stroke={C.basket} strokeWidth={lw * 2} />
       
       {/* Basket */}
-      <circle cx={cx} cy={lw+bboardOff+h*0.055} r={basketR} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
+      <circle cx={ftCx} cy={basketY} r={w * 0.03} fill="none" stroke={C.basket} strokeWidth={lw * 1.5} />
       
-      {/* 3-point arc – curves from corners around basket */}
+      {/* 3-point arc: from corner to corner curving around basket */}
       <path
-        d={`M ${lw} ${lw+paintDepth} L ${lw} ${lw+h*0.22} A ${threeR} ${threeR} 0 0 1 ${w-lw} ${lw+h*0.22} L ${w-lw} ${lw+paintDepth}`}
+        d={`M ${sideline} ${baselineY - courtH * 0.05} Q ${sideline} ${basketY + threeArcRadius * 0.8}, ${ftCx - threeArcRadius} ${basketY} Q ${ftCx} ${basketY + threeArcRadius * 1.2}, ${ftCx + threeArcRadius} ${basketY} Q ${rightSideline} ${basketY + threeArcRadius * 0.8}, ${rightSideline} ${baselineY - courtH * 0.05}`}
         fill="none" stroke={C.line} strokeWidth={lw}
       />
       
-      {/* Center circle dashed */}
-      <circle cx={cx} cy={lw} r={h*0.12} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
+      {/* Center circle at baseline */}
+      <circle cx={ftCx} cy={baselineY} r={courtW * 0.08} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
+      
+      {/* Small indicator circle on left side (common in technical diagrams) */}
+      <circle cx={sideline + courtW * 0.08} cy={marginY + courtH * 0.35} r={w * 0.025} fill="none" stroke={C.line} strokeWidth={lw} />
     </svg>
   );
 }
