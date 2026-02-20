@@ -316,6 +316,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             playerMinutesRef.current[playerInId] = 0;
           }
 
+      // Calculate time played by player going out (timed mode only)
+      if (game.game_mode === 'timed' && playerSubInTimeRef.current[playerOut.id]) {
+        const secondsPlayed = (Date.now() - playerSubInTimeRef.current[playerOut.id]) / 1000;
+        playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + secondsPlayed;
+      }
+      playerSubInTimeRef.current[playerOut.id] = null; // Clear sub-in time
+
       // Log the substitution to game log
       await createLogMutation.mutateAsync({
         game_id: game.id,
