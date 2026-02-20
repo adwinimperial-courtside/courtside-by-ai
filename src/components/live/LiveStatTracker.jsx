@@ -626,18 +626,35 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               key={log.id}
               className={`flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 last:border-0 ${index === 0 ? 'bg-amber-50/60' : 'hover:bg-slate-50/50'}`}
             >
-              {/* Player name */}
-              <p className="font-semibold text-xs truncate w-[30%] flex-shrink-0" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : log.player?.team_id === game.away_team_id ? '#ef4444' : '#1e293b' }}>{log.player?.name ?? '—'}</p>
-              {/* Stat badge + points */}
-              <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white font-bold flex-shrink-0 ${log.statType.color}`}>{log.statType.label}</span>
-                {log.statType.points > 0 && <span className="text-[10px] text-green-600 font-bold flex-shrink-0">+{log.statType.points}pts</span>}
-              </div>
-              {/* Timestamp + undo */}
+              {log.isSubstitution ? (
+                /* Substitution row */
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <RefreshCw className="w-3 h-3 text-cyan-500 flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-cyan-600 flex-shrink-0">SUB</span>
+                  <span className="text-[10px] text-slate-500 truncate">
+                    <span className="font-semibold" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : '#ef4444' }}>{log.player?.name}</span>
+                    <span className="text-slate-400"> → </span>
+                    <span className="font-semibold text-green-600">{log.playerIn?.name}</span>
+                  </span>
+                </div>
+              ) : (
+                <>
+                  {/* Player name */}
+                  <p className="font-semibold text-xs truncate w-[30%] flex-shrink-0" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : log.player?.team_id === game.away_team_id ? '#ef4444' : '#1e293b' }}>{log.player?.name ?? '—'}</p>
+                  {/* Stat badge + points */}
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white font-bold flex-shrink-0 ${log.statType.color}`}>{log.statType.label}</span>
+                    {log.statType.points > 0 && <span className="text-[10px] text-green-600 font-bold flex-shrink-0">+{log.statType.points}pts</span>}
+                  </div>
+                </>
+              )}
+              {/* Timestamp + undo (no undo for substitutions) */}
               <span className="text-[10px] text-slate-400 flex-shrink-0">{format(log.timestamp, 'HH:mm:ss')}</span>
-              <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
-                <Undo2 className="w-2.5 h-2.5" />
-              </Button>
+              {!log.isSubstitution && (
+                <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
+                  <Undo2 className="w-2.5 h-2.5" />
+                </Button>
+              )}
             </div>
           ))
         )}
