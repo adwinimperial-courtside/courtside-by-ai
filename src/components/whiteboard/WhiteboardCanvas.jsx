@@ -153,11 +153,22 @@ export default function WhiteboardCanvas() {
       const availH = vh - TOP_H - PAD;
       const availW = vw - PAD;
       const ratio = courtMode === HALF_COURT ? HALF_COURT_RATIO : FULL_COURT_RATIO;
-      let w = availW, h = w * ratio;
-      if (h > availH) { h = availH; w = h / ratio; }
-      const maxW = courtMode === FULL_COURT ? 460 : 540;
-      if (w > maxW) { w = maxW; h = w * ratio; }
-      setCourtSize({ width: Math.floor(w), height: Math.floor(h) });
+
+      if (courtMode === FULL_COURT) {
+        // landscape: maximise width, constrain height
+        let w = availW, h = w * ratio;
+        if (h > availH) { h = availH; w = h / ratio; }
+        const maxW = 860;
+        if (w > maxW) { w = maxW; h = w * ratio; }
+        setCourtSize({ width: Math.floor(w), height: Math.floor(h) });
+      } else {
+        // portrait half court
+        let w = availW, h = w * ratio;
+        if (h > availH) { h = availH; w = h / ratio; }
+        const maxW = 540;
+        if (w > maxW) { w = maxW; h = w * ratio; }
+        setCourtSize({ width: Math.floor(w), height: Math.floor(h) });
+      }
     };
     resize();
     window.addEventListener("resize", resize);
