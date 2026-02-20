@@ -423,9 +423,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
     });
 
-    // Clear period end handler and period tracking
+    // Clear period end handler
     periodEndHandledRef.current = false;
-    periodStartTimeRef.current = {};
+    // No need to clear playerGameClockStateRef here, it will be re-initialized by useEffect for active players
     };
 
   const handleStartOvertime = async () => {
