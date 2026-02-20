@@ -18,11 +18,11 @@ const DEFAULT_OFFENSIVE_HALF = [
   { id: "o5", label: "5", x: 0.72, y: 0.45 }, // center, right elbow
 ];
 const DEFAULT_DEFENSIVE_HALF = [
-  { id: "d1", x: 0.50, y: 0.32 }, // middle
-  { id: "d2", x: 0.25, y: 0.25 }, // left
-  { id: "d3", x: 0.75, y: 0.25 }, // right
-  { id: "d4", x: 0.38, y: 0.16 }, // left corner
-  { id: "d5", x: 0.62, y: 0.16 }, // right corner
+  { id: "d1", label: "1", x: 0.10, y: 0.92 },
+  { id: "d2", label: "2", x: 0.28, y: 0.92 },
+  { id: "d3", label: "3", x: 0.50, y: 0.92 },
+  { id: "d4", label: "4", x: 0.72, y: 0.92 },
+  { id: "d5", label: "5", x: 0.90, y: 0.92 },
 ];
 
 const DEFAULT_OFFENSIVE_FULL = [
