@@ -583,10 +583,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const homeActivePlayers = players.filter(p => 
     p.team_id === game.home_team_id && activePlayerIds.includes(p.id)
-  ).slice(0, 5);
+  );
   const awayActivePlayers = players.filter(p => 
     p.team_id === game.away_team_id && activePlayerIds.includes(p.id)
-  ).slice(0, 5);
+  );
 
   const isEligibleReplacement = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
