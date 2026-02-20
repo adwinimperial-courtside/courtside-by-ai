@@ -451,8 +451,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
     });
 
+    // Reset clock state for all active players to track the new overtime period
+    activePlayers.forEach(stat => {
+      playerGameClockStateRef.current[stat.id] = {
+        timeLeft: otMins * 60,
+        period: otPeriod
+      };
+    });
+
     periodEndHandledRef.current = false;
-    // No need to clear playerGameClockStateRef here, it will be re-initialized by useEffect for active players
     };
 
   const handleEndGameFromModal = async () => {
