@@ -463,6 +463,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const awayScore = game.away_score || 0;
     const homeWins = homeScore > awayScore;
 
+    // Calculate total minutes for each player who played
+    existingStats.forEach(playerStat => {
+      if (playerStat.is_starter && periodStartTimeRef.current[playerStat.id]) {
+        const secondsPlayed = (Date.now() - periodStartTimeRef.current[playerStat.id]) / 1000;
+        const minutesThisPeriod = Math.round((secondsPlayed / 60) * 100) / 100;
+        const totalMinutes = (playerStat.minutes_played || 0) + minutesThisPeriod;
+
+        updateStatMutation.mutate({
+          statId: playerStat.id,
+          updates: { minutes_played: totalMinutes }
+        });
+      }
+    });
+
     // Calculate Player of the Game automatically from winning team
     const playerOfGameId = findPlayerOfGame(existingStats, game);
 
