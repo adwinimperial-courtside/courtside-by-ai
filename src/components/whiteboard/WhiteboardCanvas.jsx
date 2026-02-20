@@ -382,21 +382,21 @@ export default function WhiteboardCanvas() {
         {/* Reset */}
         <button
           onClick={handleReset}
-          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "rgba(255,255,255,0.12)", color: "white", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", backdropFilter: "blur(8px)" }}
+          style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", background: "white", color: "#334155", border: "1px solid #e2e8f0", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
         >
           <RotateCcw size={14} /> Reset
         </button>
 
         {/* Court toggle */}
-        <div style={{ display: "flex", background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: 3, backdropFilter: "blur(8px)" }}>
+        <div style={{ display: "flex", background: "#e2e8f0", borderRadius: 10, padding: 3 }}>
           {[HALF_COURT, FULL_COURT].map(mode => (
             <button
               key={mode}
               onClick={() => switchCourt(mode)}
               style={{
                 padding: "6px 16px", border: "none", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "all 0.15s",
-                background: courtMode === mode ? "#f97316" : "transparent",
-                color: courtMode === mode ? "white" : "rgba(255,255,255,0.6)",
+                background: courtMode === mode ? "#7c3aed" : "transparent",
+                color: courtMode === mode ? "white" : "#64748b",
               }}
             >
               {mode === HALF_COURT ? "Half" : "Full"}
@@ -407,7 +407,7 @@ export default function WhiteboardCanvas() {
         {/* Exit */}
         <button
           onClick={() => navigate(-1)}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "rgba(255,255,255,0.12)", color: "white", border: "none", borderRadius: "50%", cursor: "pointer", backdropFilter: "blur(8px)" }}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, background: "white", color: "#334155", border: "1px solid #e2e8f0", borderRadius: "50%", cursor: "pointer", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}
         >
           <X size={18} />
         </button>
