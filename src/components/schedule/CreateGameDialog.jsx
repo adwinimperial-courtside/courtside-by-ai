@@ -17,13 +17,28 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     home_team_id: "",
     away_team_id: "",
     game_date: "",
-    location: ""
+    location: "",
+    game_mode: "timed",
+    period_type: "quarters",
+    period_minutes: 10,
+    overtime_minutes: 5,
   });
+
+  const isTimed = formData.game_mode === "timed";
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "" });
+    const payload = { ...formData };
+    if (isTimed) {
+      payload.period_count = formData.period_type === "quarters" ? 4 : 2;
+    } else {
+      payload.period_type = null;
+      payload.period_count = null;
+      payload.period_minutes = null;
+      payload.overtime_minutes = null;
+    }
+    onSubmit(payload);
+    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", period_type: "quarters", period_minutes: 10, overtime_minutes: 5 });
   };
 
   const leagueTeams = formData.league_id 
