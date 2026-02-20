@@ -453,27 +453,33 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const awayScore = game.away_score || 0;
     const homeWins = homeScore > awayScore;
 
-    // Calculate total minutes for each player who played
-    const periodMinutes = game.period_minutes || 10;
-    const overtimeMinutes = game.overtime_minutes || 5;
-    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    // Finalize minutes for all players still on court (timed mode only, only if clock was running)
+    if (game.game_mode === 'timed' && game.clock_running) {
+      activePlayers.forEach(stat => {
+        const clockState = playerGameClockStateRef.current[stat.id];
+        if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
+          const currentComputedTimeLeft = computeTimeLeft(game);
+          const gameTimeElapsed = clockState.timeLeft - currentComputedTimeLeft;
+          playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
+        }
+      });
+    }
 
-    existingStats.forEach(playerStat => {
-      if (playerStat.is_starter && periodStartTimeRef.current[playerStat.id]) {
-        const secondsPlayed = (Date.now() - periodStartTimeRef.current[playerStat.id]) / 1000;
-        const minutesThisPeriod = Math.round((secondsPlayed / 60) * 100) / 100;
-        const totalMinutes = (playerStat.minutes_played || 0) + minutesThisPeriod;
-
-        updateStatMutation.mutate({
-          statId: playerStat.id,
-          updates: { minutes_played: totalMinutes }
-        });
-      }
+    // Update player stats with final minutes played
+    const minuteUpdates = existingStats.map(stat => {
+      const totalSeconds = playerMinutesRef.current[stat.id] || 0;
+      const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+      return updateStatMutation.mutateAsync({
+        statId: stat.id,
+        updates: { minutes_played: totalMinutes }
+      });
     });
+
+    await Promise.all(minuteUpdates);
 
     await updateGameMutation.mutateAsync({
       gameId: game.id,
-      data: { status: 'completed' }
+      data: { status: 'completed', player_of_game: findPlayerOfGame(existingStats, game) }
     });
 
     await updateTeamRecordMutation.mutateAsync({
