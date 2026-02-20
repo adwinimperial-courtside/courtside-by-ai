@@ -599,7 +599,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-[900px]:h-screen min-[900px]:overflow-hidden">
 
       {/* ── MOBILE LAYOUT (< 900px) ── */}
-      <div className="min-[900px]:hidden max-w-[1400px] mx-auto px-3 py-3">
+      <div className="min-[900px]:hidden max-w-[1400px] mx-auto px-3 py-3 pb-10">
         <div className="flex items-center justify-between mb-3">
           <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-10 px-3 text-sm">
             <ArrowLeft className="w-4 h-4 mr-1" />Exit
@@ -609,13 +609,69 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </Button>
         </div>
         <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-3">
-          <div className="space-y-3">
-            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
-            <StatPanel large={false} />
-            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+        <div className="mt-3 space-y-3">
+          <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
+          {/* Stat buttons – mobile */}
+          <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
+            {/* Selected player indicator */}
+            <div className="flex items-center justify-center gap-3 mb-3">
+              {selectedPlayer ? (
+                <>
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
+                    style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
+                  >
+                    {selectedPlayer.jersey_number}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
+                    <p className="text-slate-500 text-xs">Recording stats</p>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <p className="text-base font-bold text-slate-900">Select a Player</p>
+                  <p className="text-slate-500 text-xs">Tap any active player to start tracking</p>
+                </div>
+              )}
+            </div>
+            {/* Row 1 */}
+            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+              <div className="flex rounded-lg overflow-hidden shadow-md">
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTM</motion.button>
+                <div className="w-px bg-indigo-900/30" />
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTX</motion.button>
+              </div>
+              {['points_2', 'points_3'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
+                <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                </motion.div>
+              ); })}
+            </div>
+            {/* Row 2 */}
+            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+              {['offensive_rebounds', 'defensive_rebounds', 'assists'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
+                <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                </motion.div>
+              ); })}
+            </div>
+            {/* Row 3 */}
+            <div className="grid grid-cols-6 gap-1.5 mb-1.5">
+              {['steals', 'blocks', 'turnovers', 'fouls', 'technical_fouls', 'unsportsmanlike_fouls'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
+                <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                </motion.div>
+              ); })}
+            </div>
+            {/* Substitution */}
+            <Button onClick={() => { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setShowSubDialog(true); }} className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg">
+              <RefreshCw className="w-4 h-4 mr-2" />Make Substitution
+            </Button>
           </div>
-          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)', minHeight: '200px', overflowY: 'auto' }}>
+          <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+          {/* Activity log */}
+          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             <ActivityLog compact={false} />
           </div>
         </div>
