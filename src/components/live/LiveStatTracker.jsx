@@ -441,7 +441,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         ))}
       </div>
     </div>
-  );
+    );
   };
 
   // ── Stat control panel (shared between mobile & desktop, button heights differ) ──
