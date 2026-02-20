@@ -720,7 +720,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
           {/* Away team – 25% */}
           <div className="w-[25%] flex-shrink-0 min-h-0">
-            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" side="away" />
           </div>
         </div>
       </div>
