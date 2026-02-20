@@ -638,32 +638,32 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </Button>
         </div>
 
-        {/* Scoreboard – full width, fixed height ~10-12vh */}
-        <div className="flex-shrink-0 mb-2" style={{ minHeight: '10vh', maxHeight: '12vh' }}>
+        {/* Scoreboard – full width, ~100px */}
+        <div className="flex-shrink-0 mb-2" style={{ height: '90px' }}>
           <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
         </div>
 
-        {/* Main 3-column row – no wrapping, fills remaining space minus activity section */}
-        <div className="flex gap-3 flex-shrink-0" style={{ height: 'calc(100vh - 12vh - 20vh - 100px)' }}>
+        {/* Main 3-column row – fills all remaining space, no scroll */}
+        <div className="flex gap-3 flex-1 min-h-0">
           {/* Home team – 25% */}
-          <div className="w-[25%] flex-shrink-0">
+          <div className="w-[25%] flex-shrink-0 min-h-0">
             <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
           </div>
 
-          {/* Stat buttons – 50% */}
-          <div className="w-[50%] flex-shrink-0">
-            <StatPanel large={true} />
+          {/* Center: Stat buttons (70%) + Activity (30%) stacked vertically – 50% */}
+          <div className="w-[50%] flex-shrink-0 flex flex-col gap-3 min-h-0">
+            <div className="flex-[7] min-h-0">
+              <StatPanel large={true} />
+            </div>
+            <div className="flex-[3] min-h-0">
+              <ActivityLog />
+            </div>
           </div>
 
           {/* Away team – 25% */}
-          <div className="w-[25%] flex-shrink-0">
+          <div className="w-[25%] flex-shrink-0 min-h-0">
             <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
           </div>
-        </div>
-
-        {/* Activity section – full width, scrollable, 15-20vh */}
-        <div className="mt-3 flex-shrink-0" style={{ height: '18vh' }}>
-          <ActivityLog />
         </div>
       </div>
 
