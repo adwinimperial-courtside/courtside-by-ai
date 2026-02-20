@@ -375,7 +375,7 @@ export default function WhiteboardCanvas() {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#030712", display: "flex", flexDirection: "column", overflow: "hidden", touchAction: "none" }}
+      style={{ position: "fixed", inset: 0, zIndex: 9999, background: "#f8fafc", display: "flex", flexDirection: "column", overflow: "hidden", touchAction: "none" }}
     >
       {/* ── Top floating controls ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 16px", flexShrink: 0 }}>
