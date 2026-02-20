@@ -301,11 +301,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           minutes_played: 0
         });
       }
-      
-      // Reset tracking for the player so they only accumulate from this point
-      lastSyncTimeRef.current[playerInId] = Math.floor(
-        (Date.now() - new Date(game.clock_started_at).getTime()) / 1000
-      );
+
+      // Track when this player enters the court for minutes calculation
+      periodStartTimeRef.current[playerInId] = Date.now();
 
       // Log the substitution to game log
       await createLogMutation.mutateAsync({
