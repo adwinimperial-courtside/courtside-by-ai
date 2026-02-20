@@ -420,7 +420,7 @@ export default function WhiteboardCanvas() {
       >
         <div
           className="select-none"
-          style={{ position: "relative", width: courtSize.width, height: courtSize.height, touchAction: "none", borderRadius: 8, boxShadow: "0 8px 48px rgba(0,0,0,0.7)" }}
+          style={{ position: "relative", width: courtSize.width, height: courtSize.height, touchAction: "none", borderRadius: 8, boxShadow: "0 4px 24px rgba(100,116,139,0.18)", border: "1px solid #e2e8f0" }}
         >
           {/* Court SVG */}
           <div style={{ position: "absolute", inset: 0, borderRadius: 8, overflow: "hidden" }}>
