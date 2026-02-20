@@ -21,7 +21,7 @@ export default function Whiteboard() {
     );
   }
 
-  const allowedTypes = ['coach', 'league_admin', 'player'];
+  const allowedTypes = ['coach', 'league_admin', 'player', 'app_admin'];
   if (!currentUser || !allowedTypes.includes(currentUser.user_type)) {
     return (
       <div className="min-h-screen bg-gray-950 flex items-center justify-center text-white">
