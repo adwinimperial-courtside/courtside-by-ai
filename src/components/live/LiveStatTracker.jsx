@@ -445,7 +445,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     });
 
     periodEndHandledRef.current = false;
-    periodStartTimeRef.current = {};
+    // No need to clear playerGameClockStateRef here, it will be re-initialized by useEffect for active players
     };
 
   const handleEndGameFromModal = async () => {
