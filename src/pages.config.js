@@ -50,6 +50,7 @@
 import AdminTools from './pages/AdminTools';
 import AwardLeaders from './pages/AwardLeaders';
 import CoachInsights from './pages/CoachInsights';
+import Coaches from './pages/Coaches';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import LeagueIDs from './pages/LeagueIDs';
@@ -57,6 +58,7 @@ import LeagueOwners from './pages/LeagueOwners';
 import LeagueSelection from './pages/LeagueSelection';
 import Leagues from './pages/Leagues';
 import LiveGame from './pages/LiveGame';
+import Players from './pages/Players';
 import RequestManagement from './pages/RequestManagement';
 import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
@@ -64,8 +66,6 @@ import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
 import UserManagement from './pages/UserManagement';
 import Viewers from './pages/Viewers';
-import Coaches from './pages/Coaches';
-import Players from './pages/Players';
 import Whiteboard from './pages/Whiteboard';
 import __Layout from './Layout.jsx';
 
@@ -74,6 +74,7 @@ export const PAGES = {
     "AdminTools": AdminTools,
     "AwardLeaders": AwardLeaders,
     "CoachInsights": CoachInsights,
+    "Coaches": Coaches,
     "Home": Home,
     "Landing": Landing,
     "LeagueIDs": LeagueIDs,
@@ -81,6 +82,7 @@ export const PAGES = {
     "LeagueSelection": LeagueSelection,
     "Leagues": Leagues,
     "LiveGame": LiveGame,
+    "Players": Players,
     "RequestManagement": RequestManagement,
     "Schedule": Schedule,
     "Standings": Standings,
@@ -88,8 +90,6 @@ export const PAGES = {
     "Teams": Teams,
     "UserManagement": UserManagement,
     "Viewers": Viewers,
-    "Coaches": Coaches,
-    "Players": Players,
     "Whiteboard": Whiteboard,
 }
 

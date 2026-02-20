@@ -574,7 +574,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   );
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 h-screen overflow-hidden lg:block">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+
+      {/* ── LARGE SCREEN LAYOUT (>900px) ── */}
+      <div className="hidden" style={{}} id="large-screen-guard" />
+      <div className="@container w-full h-screen flex-col overflow-hidden" style={{ display: 'none' }} />
 
       {/* Large screen: fixed full-height, no page scroll */}
       <div className="hidden lg:flex flex-col h-screen overflow-hidden">
