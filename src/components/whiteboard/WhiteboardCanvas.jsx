@@ -226,7 +226,7 @@ export default function WhiteboardCanvas() {
       ctx.moveTo(p2.x, p2.y);
       ctx.lineTo(p2.x - al * Math.cos(angle - aw), p2.y - al * Math.sin(angle - aw));
       ctx.lineTo(p2.x - al * Math.cos(angle + aw), p2.y - al * Math.sin(angle + aw));
-      ctx.closePath(); ctx.fillStyle = "white"; ctx.fill();
+      ctx.closePath(); ctx.fillStyle = C.drawStroke; ctx.fill();
     } else if (d.type === "curve") {
       ctx.beginPath(); ctx.moveTo(d.points[0].x, d.points[0].y);
       for (let i = 1; i < d.points.length; i++) ctx.lineTo(d.points[i].x, d.points[i].y);
