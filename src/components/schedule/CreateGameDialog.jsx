@@ -47,7 +47,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Schedule New Game</DialogTitle>
         </DialogHeader>
