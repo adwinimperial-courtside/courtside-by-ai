@@ -705,7 +705,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <div className="flex gap-3 flex-1 min-h-0">
           {/* Home team – 25% */}
           <div className="w-[25%] flex-shrink-0 min-h-0">
-            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
+            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" side="home" />
           </div>
 
           {/* Center: Stat buttons (70%) + Activity (30%) stacked vertically – 50% */}
