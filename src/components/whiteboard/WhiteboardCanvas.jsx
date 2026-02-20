@@ -231,7 +231,7 @@ export default function WhiteboardCanvas() {
 
   useEffect(() => {
     if (!draggingMarker) return;
-    const mr = markerR(courtSize.width);
+    const mr = markerR(courtSize.width, courtMode === FULL_COURT);
     const onMove = (e) => {
       const canvas = containerRef.current?.querySelector('.court-area');
       if (!canvas) return;
@@ -286,7 +286,7 @@ export default function WhiteboardCanvas() {
     setLastMove(null);
   }
 
-  const mr = markerR(courtSize.width);
+  const mr = markerR(courtSize.width, courtMode === FULL_COURT);
 
   return (
     <div style={{
