@@ -384,8 +384,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     periodEndHandledRef.current = false;
     periodStartTimeRef.current = {};
-    setShowPeriodEndModal(false);
-  };
+    };
 
   const handleEndGameFromModal = async () => {
     const homeScore = game.home_score || 0;
