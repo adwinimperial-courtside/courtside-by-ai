@@ -517,12 +517,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const awayScore = game.away_score || 0;
       const homeWins = homeScore > awayScore;
 
-      // Finalize minutes for all players still on court (timed mode only)
-      if (game.game_mode === 'timed') {
+      // Finalize minutes for all players still on court (timed mode only, only if clock was running)
+      if (game.game_mode === 'timed' && game.clock_running) {
         activePlayers.forEach(stat => {
-          if (playerSubInTimeRef.current[stat.id]) {
-            const secondsPlayed = (Date.now() - playerSubInTimeRef.current[stat.id]) / 1000;
-            playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + secondsPlayed;
+          const clockState = playerGameClockStateRef.current[stat.id];
+          if (clockState) {
+            const stored = game.clock_time_left ?? 0;
+            const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
+            const currentTimeLeft = Math.max(0, stored - elapsed);
+            const gameTimeElapsed = clockState.timeLeft - currentTimeLeft;
+            playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
           }
         });
       }
