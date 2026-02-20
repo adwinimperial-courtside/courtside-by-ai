@@ -122,12 +122,12 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const viewersCount = allUsers.filter(u => u.user_type === 'viewer').length;
 
   const getVisibleNavigationItems = () => {
-    if (!currentUser) return navigationItems;
-    if (currentUser.user_type === "viewer") {
-      return navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights"].includes(item.title));
-    }
-    return navigationItems;
-  };
+      if (!currentUser) return navigationItems;
+      if (currentUser.user_type === "viewer") {
+        return navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title));
+      }
+      return navigationItems;
+    };
 
   const getVisibleAdminItems = () => {
     if (!currentUser) return [];
