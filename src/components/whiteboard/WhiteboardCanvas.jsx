@@ -465,7 +465,7 @@ export default function WhiteboardCanvas() {
               style={{ position: "absolute", left: m.x * courtSize.width - mr, top: m.y * courtSize.height - mr, width: mr*2, height: mr*2, zIndex: 11, cursor: activeTool === "select" ? "grab" : "default", touchAction: "none" }}
             >
               <svg width={mr*2} height={mr*2}>
-                <circle cx={mr} cy={mr} r={mr-2} fill="rgba(109,40,217,0.92)" stroke="white" strokeWidth={2} />
+                <circle cx={mr} cy={mr} r={mr-2} fill="#7c3aed" stroke="white" strokeWidth={2} />
                 <text x={mr} y={mr + mr*0.36} textAnchor="middle" fill="white" fontSize={Math.round(mr*0.9)} fontWeight="bold">{m.label}</text>
               </svg>
             </div>
