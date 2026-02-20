@@ -942,6 +942,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           )}
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
