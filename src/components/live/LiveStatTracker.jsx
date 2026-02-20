@@ -406,228 +406,264 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
 
 
+  // ── Shared sub-component for team panel (vertical player list) ──
+  const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor }) => (
+    <div className={`bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2 border-l-4 ${borderColor} flex flex-col h-full`}>
+      <div className="flex items-center gap-2 mb-2">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
+          style={{ backgroundColor: team?.color || '#64748b' }}
+        >
+          {team?.name?.[0]}
+        </div>
+        <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
+        <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
+      </div>
+      {/* Mobile: 5-col grid / Desktop: vertical stack */}
+      <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-1.5 min-[900px]:flex-1">
+        {teamPlayers.map((player) => (
+          <PlayerButton
+            key={player.id}
+            player={player}
+            teamColor={team?.color}
+            onSubClick={(p) => {
+              setPlayersToReplace([p]);
+              setSubStep('select_in');
+              setShowSubDialog(true);
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
+  // ── Stat control panel (shared between mobile & desktop, button heights differ) ──
+  const StatPanel = ({ large }) => {
+    const btnH = large ? 'h-[4.5rem]' : 'h-14';
+    return (
+      <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3 flex flex-col h-full">
+        {/* Selected player indicator */}
+        <div className="flex items-center justify-center gap-3 mb-3">
+          {selectedPlayer ? (
+            <>
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
+                style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
+              >
+                {selectedPlayer.jersey_number}
+              </div>
+              <div className="min-w-0">
+                <p className="text-base font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
+                <p className="text-slate-500 text-xs">Recording stats</p>
+              </div>
+            </>
+          ) : (
+            <div className="text-center">
+              <p className="text-base font-bold text-slate-900">Select a Player</p>
+              <p className="text-slate-500 text-xs">Tap any active player to start tracking</p>
+            </div>
+          )}
+        </div>
+
+        {/* Row 1: FT split + 2PT + 3PT */}
+        <div className={`grid grid-cols-3 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+          {/* FTM/FTX split */}
+          <div className="flex rounded-lg overflow-hidden shadow-md">
+            <motion.button
+              whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
+              onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))}
+              disabled={!selectedPlayer}
+              className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}
+            >
+              FTM
+            </motion.button>
+            <div className="w-px bg-indigo-900/30" />
+            <motion.button
+              whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
+              onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))}
+              disabled={!selectedPlayer}
+              className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}
+            >
+              FTX
+            </motion.button>
+          </div>
+          {['points_2', 'points_3'].map(key => {
+            const stat = STAT_TYPES.find(s => s.key === key);
+            return (
+              <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                <Button
+                  onClick={() => handleStatClick(stat)}
+                  disabled={!selectedPlayer}
+                  className={`w-full ${btnH} text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
+                >
+                  {stat.label}
+                </Button>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Row 2: OREB DREB AST */}
+        <div className={`grid grid-cols-3 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+          {['offensive_rebounds', 'defensive_rebounds', 'assists'].map(key => {
+            const stat = STAT_TYPES.find(s => s.key === key);
+            return (
+              <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                <Button
+                  onClick={() => handleStatClick(stat)}
+                  disabled={!selectedPlayer}
+                  className={`w-full ${btnH} text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
+                >
+                  {stat.label}
+                </Button>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Row 3: STL BLK TO FOUL TECH UNSP */}
+        <div className={`grid grid-cols-6 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+          {['steals', 'blocks', 'turnovers', 'fouls', 'technical_fouls', 'unsportsmanlike_fouls'].map(key => {
+            const stat = STAT_TYPES.find(s => s.key === key);
+            return (
+              <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
+                <Button
+                  onClick={() => handleStatClick(stat)}
+                  disabled={!selectedPlayer}
+                  className={`w-full ${btnH} text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
+                >
+                  {stat.label}
+                </Button>
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Row 4: Substitution */}
+        <Button
+          onClick={() => {
+            setPlayersToReplace([]);
+            setReplacementPlayers([]);
+            setSubStep('select_out');
+            setShowSubDialog(true);
+          }}
+          className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
+        >
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Make Substitution
+        </Button>
+      </div>
+    );
+  };
+
+  const ActivityLog = () => (
+    <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col overflow-hidden">
+      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200 flex-shrink-0">
+        <Activity className="w-4 h-4 text-indigo-500" />
+        <h3 className="text-base font-bold text-slate-900">Game Activity</h3>
+        <span className="ml-auto text-xs text-slate-500">{gameLog.length} actions</span>
+      </div>
+      <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
+        {gameLog.length === 0 ? (
+          <div className="text-center py-6">
+            <Activity className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="text-slate-500 text-sm">No actions yet</p>
+          </div>
+        ) : (
+          gameLog.slice(0, 20).map((log, index) => (
+            <motion.div
+              key={log.id}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className={`p-2 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
+            >
+              <div className="flex items-start gap-2">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg flex-shrink-0 ${log.player?.team_id === game.home_team_id ? 'bg-blue-400' : 'bg-red-400'}`}>
+                  {log.player.jersey_number}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-900 font-semibold text-xs truncate">{log.player.name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className={`text-xs px-1.5 py-0.5 rounded text-white font-bold ${log.statType.color}`}>{log.statType.label}</span>
+                    {log.statType.points > 0 && <span className="text-xs text-green-600 font-bold">+{log.statType.points}pts</span>}
+                    <span className="text-xs text-slate-400 ml-auto">{format(log.timestamp, 'HH:mm:ss')}</span>
+                  </div>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-7 w-7 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0">
+                  <Undo2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </motion.div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <div className="max-w-[1400px] mx-auto px-3 sm:px-4 py-3 sm:py-4">
-        <div className="flex items-center justify-between mb-3 sm:mb-4">
-          <Button
-            variant="ghost"
-            onClick={() => setShowExitDialog(true)}
-            className="text-slate-600 hover:bg-slate-200/50 h-10 sm:h-12 px-3 sm:px-6 text-sm sm:text-base"
-          >
-            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-            Exit
+
+      {/* ── MOBILE LAYOUT (< 900px) ── */}
+      <div className="min-[900px]:hidden max-w-[1400px] mx-auto px-3 py-3">
+        <div className="flex items-center justify-between mb-3">
+          <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-10 px-3 text-sm">
+            <ArrowLeft className="w-4 h-4 mr-1" />Exit
           </Button>
-          <Button
-            onClick={handleEndGame}
-            className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-10 sm:h-12 px-3 sm:px-6 text-sm sm:text-base text-white"
-          >
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-            End Game
+          <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-10 px-3 text-sm text-white">
+            <Trophy className="w-4 h-4 mr-1" />End Game
+          </Button>
+        </div>
+        <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
+        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-3">
+          <div className="space-y-3">
+            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
+            <StatPanel large={false} />
+            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+          </div>
+          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)', minHeight: '200px', overflowY: 'auto' }}>
+            <ActivityLog />
+          </div>
+        </div>
+      </div>
+
+      {/* ── LARGE SCREEN LAYOUT (≥ 900px) ── */}
+      <div className="hidden min-[900px]:flex flex-col h-screen overflow-hidden px-4 py-3">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-2 flex-shrink-0">
+          <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-11 px-5">
+            <ArrowLeft className="w-5 h-5 mr-2" />Exit
+          </Button>
+          <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-11 px-5 text-white">
+            <Trophy className="w-5 h-5 mr-2" />End Game
           </Button>
         </div>
 
-        <ScoreHeader
-          game={game}
-          homeTeam={homeTeam}
-          awayTeam={awayTeam}
-        />
+        {/* Scoreboard – full width, fixed height ~10-12vh */}
+        <div className="flex-shrink-0 mb-2" style={{ minHeight: '10vh', maxHeight: '12vh' }}>
+          <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
+        </div>
 
-        <div className="mt-3 grid grid-cols-1 lg:grid-cols-[1fr,300px] gap-3">
-          {/* Main Content */}
-          <div className="space-y-3 sm:space-y-4">
-            {/* Home Team Active Players */}
-            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2 border-l-4 border-l-blue-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
-                  style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-                >
-                  {homeTeam?.name?.[0]}
-                </div>
-                <h2 className="text-sm font-bold text-blue-600 truncate">{homeTeam?.name}</h2>
-                <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">Active: {homeActivePlayers.length}/5</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1">
-                {homeActivePlayers.map((player) => (
-                  <PlayerButton 
-                    key={player.id} 
-                    player={player} 
-                    teamColor={homeTeam?.color}
-                    onSubClick={(p) => {
-                      setPlayersToReplace([p]);
-                      setSubStep('select_in');
-                      setShowSubDialog(true);
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Stat Control Center */}
-            <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
-              <div className="flex items-center justify-center gap-3 mb-3">
-                {selectedPlayer ? (
-                  <>
-                    <div 
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg flex-shrink-0"
-                      style={{ backgroundColor: selectedPlayer.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}
-                    >
-                      {selectedPlayer.jersey_number}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base font-bold text-slate-900 truncate leading-tight">{selectedPlayer.name}</p>
-                      <p className="text-slate-500 text-xs">Recording stats</p>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center">
-                    <p className="text-base font-bold text-slate-900">Select a Player</p>
-                    <p className="text-slate-500 text-xs">Tap any active player to start tracking</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Stat Buttons */}
-              <div className="grid grid-cols-6 gap-1.5 mb-2">
-                {/* FT split button spanning 1 col */}
-                <div className="flex rounded-lg overflow-hidden shadow-md col-span-1">
-                  <motion.button
-                    whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
-                    onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))}
-                    disabled={!selectedPlayer}
-                    className="flex-1 h-14 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
-                  >
-                    FTM
-                  </motion.button>
-                  <div className="w-px bg-indigo-900/30" />
-                  <motion.button
-                    whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}
-                    onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))}
-                    disabled={!selectedPlayer}
-                    className="flex-1 h-14 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150"
-                  >
-                    FTX
-                  </motion.button>
-                </div>
-                {STAT_TYPES.filter(s => s.key !== 'free_throws' && s.key !== 'free_throws_missed').map((stat) => (
-                  <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                    <Button
-                      onClick={() => handleStatClick(stat)}
-                      disabled={!selectedPlayer}
-                      className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md transition-all duration-150`}
-                    >
-                      {stat.label}
-                    </Button>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Action Buttons */}
-              <Button
-                onClick={() => {
-                  setPlayersToReplace([]);
-                  setReplacementPlayers([]);
-                  setSubStep('select_out');
-                  setShowSubDialog(true);
-                }}
-                className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Make Substitution
-              </Button>
-            </div>
-
-            {/* Away Team Active Players */}
-            <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-2 border-l-4 border-l-red-300">
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
-                  style={{ backgroundColor: '#ef4444' }}
-                >
-                  {awayTeam?.name?.[0]}
-                </div>
-                <h2 className="text-sm font-bold text-red-600 truncate">{awayTeam?.name}</h2>
-                <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">Active: {awayActivePlayers.length}/5</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1">
-                {awayActivePlayers.map((player) => (
-                  <PlayerButton 
-                    key={player.id} 
-                    player={player} 
-                    teamColor={awayTeam?.color}
-                    onSubClick={(p) => {
-                      setPlayersToReplace([p]);
-                      setSubStep('select_in');
-                      setShowSubDialog(true);
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
+        {/* Main 3-column row – no wrapping, fills remaining space minus activity section */}
+        <div className="flex gap-3 flex-shrink-0" style={{ height: 'calc(100vh - 12vh - 20vh - 100px)' }}>
+          {/* Home team – 25% */}
+          <div className="w-[25%] flex-shrink-0">
+            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
           </div>
 
-          {/* Activity Log Sidebar */}
-          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)', minHeight: '200px', overflowY: 'auto' }}>
-            <div className="flex items-center gap-2 mb-3 sm:mb-4 pb-3 border-b border-slate-200">
-              <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">Game Activity</h3>
-              <span className="ml-auto text-xs sm:text-sm text-slate-500">{gameLog.length} actions</span>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {gameLog.length === 0 ? (
-                <div className="text-center py-8 sm:py-12">
-                  <Activity className="w-10 h-10 sm:w-12 sm:h-12 text-slate-300 mx-auto mb-3" />
-                  <p className="text-slate-500 text-sm">No actions yet</p>
-                  <p className="text-slate-400 text-xs mt-1">Stats will appear here</p>
-                </div>
-              ) : (
-                gameLog.slice(0, 10).map((log, index) => (
-                  <motion.div
-                    key={log.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`p-2 sm:p-3 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
-                  >
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <div 
-                          className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg flex-shrink-0 ${log.player?.team_id === game.home_team_id ? 'bg-blue-400' : 'bg-red-400'}`}
-                        >
-                        {log.player.jersey_number}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-slate-900 font-semibold text-xs sm:text-sm truncate">{log.player.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span 
-                            className={`text-xs px-2 py-0.5 rounded text-white font-bold ${log.statType.color}`}
-                          >
-                            {log.statType.label}
-                          </span>
-                          {log.statType.points > 0 && (
-                            <span className="text-xs text-green-600 font-bold">
-                              +{log.statType.points} pts
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {format(log.timestamp, 'HH:mm:ss')}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleUndo(log)}
-                        className="h-7 w-7 sm:h-8 sm:w-8 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0"
-                      >
-                        <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                ))
-              )}
-            </div>
+          {/* Stat buttons – 50% */}
+          <div className="w-[50%] flex-shrink-0">
+            <StatPanel large={true} />
           </div>
+
+          {/* Away team – 25% */}
+          <div className="w-[25%] flex-shrink-0">
+            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+          </div>
+        </div>
+
+        {/* Activity section – full width, scrollable, 15-20vh */}
+        <div className="mt-3 flex-shrink-0" style={{ height: '18vh' }}>
+          <ActivityLog />
         </div>
       </div>
 
