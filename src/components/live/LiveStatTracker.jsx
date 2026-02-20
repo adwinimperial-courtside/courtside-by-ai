@@ -1087,7 +1087,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       {/* Substitution Dialog */}
       <Dialog open={showSubDialog} onOpenChange={setShowSubDialog}>
-        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 w-[95vw] max-w-2xl">
+        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl text-slate-900">
               {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
