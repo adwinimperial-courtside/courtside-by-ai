@@ -89,7 +89,6 @@ function HalfCourtSVG({ width, height }) {
       <ellipse cx={cx} cy={h*0.02+ftDist} rx={ftRadius} ry={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
       
       {/* Restricted arc (basket side) */}
-      const restrictedRadius = w * (1.25 / 15.24);
       <path d={`M ${cx-restrictedRadius} ${h*0.08} A ${restrictedRadius} ${restrictedRadius} 0 0 1 ${cx+restrictedRadius} ${h*0.08}`} fill="none" stroke={C.line} strokeWidth={lw} />
       
       {/* Backboard */}
