@@ -291,7 +291,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (existingNewPlayerStat) {
         await updateStatMutation.mutateAsync({
           statId: existingNewPlayerStat.id,
-          updates: { is_starter: true }
+          updates: { is_starter: true, minutes_played: 0 }
         });
       } else {
         await createStatMutation.mutateAsync({
@@ -299,8 +299,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           player_id: playerInId,
           team_id: playerOut.team_id,
           is_starter: true,
+          minutes_played: 0
         });
       }
+      
+      // Reset tracking for the new player so they only accumulate from this point
+      lastSyncTimeRef.current[playerInId] = Math.floor(
+        (Date.now() - new Date(game.clock_started_at).getTime()) / 1000
+      );
 
       // Log the substitution to game log
       await createLogMutation.mutateAsync({
