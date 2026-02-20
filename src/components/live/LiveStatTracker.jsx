@@ -54,6 +54,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const playerGameClockStateRef = React.useRef({}); // Track game clock state when player subs in {playerId: {timeLeft, period}}
   const queryClient = useQueryClient();
 
+  // Helper to compute current time left based on game object's clock state
+  const computeTimeLeft = (currentGame) => {
+    const stored = currentGame.clock_time_left ?? ((currentGame.period_minutes || 10) * 60);
+    if (!currentGame.clock_running || !currentGame.clock_started_at) return Math.max(0, stored);
+    const elapsed = (Date.now() - new Date(currentGame.clock_started_at).getTime()) / 1000;
+    return Math.max(0, stored - elapsed);
+  };
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
