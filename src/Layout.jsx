@@ -37,7 +37,7 @@ export default function Layout({ children }) {
       try {
         const user = await base44.auth.me();
         setCurrentUser(user);
-        
+
         // Track login event (only once per session)
         if (user && !hasLoggedLoginEventRef.current) {
           base44.analytics.track({
@@ -51,14 +51,14 @@ export default function Layout({ children }) {
           hasLoggedLoginEventRef.current = true;
           sessionStartTimeRef.current = Date.now();
         }
-        
+
         // Check if user has no assigned leagues and redirect to LeagueSelection (only for approved non-new users)
-            if (user && user.user_type !== "user" && user.application_status === "Approved" && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
-                const leagueSelectionPath = createPageUrl('LeagueSelection');
-                if (!location.pathname.includes('LeagueSelection')) {
-                  navigate(leagueSelectionPath, { replace: true });
-                }
-              }
+        if (user && user.user_type !== "user" && user.application_status === "Approved" && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
+          const leagueSelectionPath = createPageUrl('LeagueSelection');
+          if (!location.pathname.includes('LeagueSelection')) {
+            navigate(leagueSelectionPath, { replace: true });
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       } finally {
@@ -71,57 +71,57 @@ export default function Layout({ children }) {
   // Track page navigation (exclude app_admin)
   useEffect(() => {
     if (currentUser && currentUser.user_type !== 'app_admin') {
-        const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
-        base44.analytics.track({
-          eventName: 'page_navigation',
-          properties: {
-            username: currentUser.full_name,
-            user_email: currentUser.email,
-            page: pageName,
-            user_type: currentUser.user_type
-          }
-        });
+      const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
+      base44.analytics.track({
+        eventName: 'page_navigation',
+        properties: {
+          username: currentUser.full_name,
+          user_email: currentUser.email,
+          page: pageName,
+          user_type: currentUser.user_type
+        }
+      });
     }
   }, [location.pathname, currentUser]);
 
   // Track user activity periodically to show live visitors
-    useEffect(() => {
-      if (!currentUser || currentUser.user_type === 'app_admin') return;
+  useEffect(() => {
+    if (!currentUser || currentUser.user_type === 'app_admin') return;
 
-      const interval = setInterval(() => {
+    const interval = setInterval(() => {
+      base44.analytics.track({
+        eventName: 'user_active',
+        properties: {
+          username: currentUser.full_name,
+          user_email: currentUser.email,
+          user_type: currentUser.user_type
+        }
+      });
+    }, 30000); // Track every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  // Track session duration on logout or page unload
+  useEffect(() => {
+    const handleLogout = () => {
+      if (sessionStartTimeRef.current && currentUser && currentUser.user_type !== 'app_admin') {
+        const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
         base44.analytics.track({
-          eventName: 'user_active',
+          eventName: 'user_session_end',
           properties: {
             username: currentUser.full_name,
             user_email: currentUser.email,
-            user_type: currentUser.user_type
+            session_duration_seconds: sessionDuration,
+            session_duration_minutes: Math.round(sessionDuration / 60)
           }
         });
-      }, 30000); // Track every 30 seconds
+      }
+    };
 
-      return () => clearInterval(interval);
-    }, [currentUser]);
-
-    // Track session duration on logout or page unload
-    useEffect(() => {
-      const handleLogout = () => {
-        if (sessionStartTimeRef.current && currentUser && currentUser.user_type !== 'app_admin') {
-          const sessionDuration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000); // in seconds
-          base44.analytics.track({
-            eventName: 'user_session_end',
-            properties: {
-              username: currentUser.full_name,
-              user_email: currentUser.email,
-              session_duration_seconds: sessionDuration,
-              session_duration_minutes: Math.round(sessionDuration / 60)
-            }
-          });
-        }
-      };
-
-      window.addEventListener('beforeunload', handleLogout);
-      return () => window.removeEventListener('beforeunload', handleLogout);
-    }, [currentUser]);
+    window.addEventListener('beforeunload', handleLogout);
+    return () => window.removeEventListener('beforeunload', handleLogout);
+  }, [currentUser]);
 
   const getUserTypeIcon = () => {
     if (!currentUser?.user_type) return null;
@@ -142,16 +142,16 @@ export default function Layout({ children }) {
 
   // Show RegistrationGate for new users who haven't applied yet, or whose application is pending/rejected
   const needsRegistration = currentUser && (
-    currentUser.user_type === "user" ||
-    (currentUser.user_type !== "app_admin" && 
-     currentUser.application_status !== "Approved" &&
-     currentUser.application_status !== undefined)
-  );
+  currentUser.user_type === "user" ||
+  currentUser.user_type !== "app_admin" &&
+  currentUser.application_status !== "Approved" &&
+  currentUser.application_status !== undefined);
+
 
   // More precisely: show gate if user_type is "user" (default) OR application_status is not Approved (and not app_admin)
-  const showRegistrationGate = currentUser && 
-    (!currentUser.user_type || currentUser.user_type === "user") && 
-    !isLiveGamePage;
+  const showRegistrationGate = currentUser && (
+  !currentUser.user_type || currentUser.user_type === "user") &&
+  !isLiveGamePage;
 
   const handleLogout = () => {
     // Track session end before logging out
@@ -178,8 +178,8 @@ export default function Layout({ children }) {
         <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100">
           {children}
         </div>
-      </>
-    );
+      </>);
+
   }
 
   // Show registration gate for new users
@@ -207,34 +207,34 @@ export default function Layout({ children }) {
               </div>
               <div>
                 <h2 className="font-bold text-slate-900 text-lg">Courtside by AI</h2>
-                <p className="text-xs text-slate-500">Pro League Manager</p>
+                <p className="text-xs text-slate-500">Numbers Don’t Lie</p>
               </div>
             </div>
 
-            {!isLoading && currentUser && (
-              <div className="space-y-3">
+            {!isLoading && currentUser &&
+            <div className="space-y-3">
                 <div className="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-2">
                   {getUserTypeIcon()}
                   <span className="text-xs font-semibold text-slate-700">{getUserTypeLabel()}</span>
                 </div>
                 <Button
-                  onClick={handleLogout}
-                  variant="outline"
-                  className="w-full text-slate-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
-                  size="sm"
-                >
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full text-slate-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+                size="sm">
+
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
               </div>
-            )}
+            }
           </SidebarHeader>
 
-          <SidebarMenuContent 
-            currentUser={currentUser} 
-            location={location} 
-            isViewerWithoutAdminAccess={isViewerWithoutAdminAccess}
-          />
+          <SidebarMenuContent
+            currentUser={currentUser}
+            location={location}
+            isViewerWithoutAdminAccess={isViewerWithoutAdminAccess} />
+
         </Sidebar>
 
         <main className="flex-1 flex flex-col">
