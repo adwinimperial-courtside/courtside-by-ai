@@ -223,10 +223,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   // Clear court entry tracking when a player is substituted out
   useEffect(() => {
-    const previousPlayerIds = new Set(
-      existingStats.filter(s => s.is_starter).map(s => s.player_id)
-    );
-    
     const currentPlayerIds = new Set(
       existingStats.filter(s => s.is_starter).map(s => s.player_id)
     );
@@ -238,6 +234,61 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
     });
   }, [existingStats]);
+
+  // Detect period expiration for timed games
+  useEffect(() => {
+    if (game.game_mode !== 'timed' || !game.clock_running) return;
+
+    const timeLeft = game.clock_time_left ?? 0;
+    if (timeLeft <= 0 && !periodEndHandledRef.current) {
+      periodEndHandledRef.current = true;
+      
+      // Finalize minutes for all players on court at expiration
+      const finalizationUpdates = [];
+      activePlayers.forEach(stat => {
+        const playerStat = existingStats.find(s => s.player_id === stat.player_id && s.is_starter);
+        if (playerStat && playerCourtEntryRef.current[playerStat.id] !== undefined) {
+          const entryElapsedSec = playerCourtEntryRef.current[playerStat.id];
+          const now = Date.now();
+          const startTime = new Date(game.clock_started_at).getTime();
+          const gameElapsedSec = Math.floor((now - startTime) / 1000);
+          const timeOnCourtSec = gameElapsedSec - entryElapsedSec;
+          const timeOnCourtMin = timeOnCourtSec / 60;
+          const newMinutes = (playerStat.minutes_played || 0) + timeOnCourtMin;
+
+          finalizationUpdates.push({
+            statId: playerStat.id,
+            newMinutes: Math.round(newMinutes * 100) / 100
+          });
+        }
+      });
+
+      // Execute finalization updates
+      finalizationUpdates.forEach(u => {
+        updateStatMutation.mutate({
+          statId: u.statId,
+          updates: { minutes_played: u.newMinutes }
+        });
+      });
+
+      // Stop clock and mark period as completed
+      updateGameMutation.mutate({
+        gameId: game.id,
+        data: {
+          clock_running: false,
+          clock_time_left: 0,
+          period_status: 'completed'
+        }
+      });
+
+      setShowPeriodEndModal(true);
+    }
+
+    // Reset handler when game state changes or clock stops
+    if (!game.clock_running) {
+      periodEndHandledRef.current = false;
+    }
+  }, [game.clock_running, game.clock_time_left, game.game_mode, activePlayers, existingStats]);
 
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
