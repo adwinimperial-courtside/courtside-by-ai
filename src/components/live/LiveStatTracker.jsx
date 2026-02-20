@@ -50,7 +50,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const periodEndHandledRef = React.useRef(false);
-  const periodStartTimeRef = React.useRef({}); // Track when each player entered for this period
+  const playerMinutesRef = React.useRef({}); // Track accumulated minutes per player {playerId: totalSeconds}
+  const playerSubInTimeRef = React.useRef({}); // Track when each player subbed in {playerId: timestamp}
   const queryClient = useQueryClient();
 
   useEffect(() => {
