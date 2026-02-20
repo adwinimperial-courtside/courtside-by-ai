@@ -203,26 +203,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (game.game_mode !== 'timed' || !game.clock_running) return;
 
-    const stored = game.clock_time_left ?? 0;
-    const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
-    const timeLeft = Math.max(0, stored - elapsed);
+    const currentComputedTimeLeft = computeTimeLeft(game);
 
-    if (timeLeft <= 0 && !periodEndHandledRef.current) {
+    if (currentComputedTimeLeft <= 0 && !periodEndHandledRef.current) {
       periodEndHandledRef.current = true;
 
       // Add elapsed game clock time to on-court players before stopping
       activePlayers.forEach(stat => {
         const clockState = playerGameClockStateRef.current[stat.id];
-        if (clockState) {
-          // Game time elapsed = stored time at sub-in - time left at period end
+        if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
           const gameTimeElapsed = clockState.timeLeft - 0; // Period ended, so 0 time left
           playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
-          // Reset for next period with current clock state
-          playerGameClockStateRef.current[stat.id] = {
-            timeLeft: (game.period_minutes || 10) * 60,
-            period: game.clock_period + 1
-          };
         }
+        // Reset or nullify state for next period. It will be re-initialized if they start next period
+        playerGameClockStateRef.current[stat.id] = null; 
       });
 
       // Stop clock
@@ -230,7 +224,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         gameId: game.id,
         data: {
           clock_running: false,
-          clock_time_left: 0
+          clock_time_left: 0,
+          clock_started_at: null,
+          period_status: 'completed'
         }
       });
     }
@@ -238,7 +234,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (!game.clock_running) {
       periodEndHandledRef.current = false;
     }
-  }, [game.clock_running, game.clock_time_left, game.game_mode, updateGameMutation, activePlayers]);
+  }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers]);
 
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
