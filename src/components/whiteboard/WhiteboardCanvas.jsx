@@ -65,15 +65,15 @@ function HalfCourtSVG({ width, height }) {
   const w = width, h = height, cx = w / 2;
   const lw = C.lineW;
   
-  // FIBA half-court proportions, properly scaled
-  // Court width: 15.24m, half-court depth: 14m
-  const ftLineDist = h * (4.6 / 14.0);   // Free-throw line: 4.6m from baseline
-  const ftRadius = w * (1.8 / 15.24);    // FT circle radius: 1.8m
-  const threeLineDist = h * (6.75 / 14.0); // 3-point line reaches 6.75m from basket at top
-  const threeCornerDist = h * (6.6 / 14.0); // 3-point line at corners (slightly closer)
-  const paintWidth = w * (4.9 / 15.24);  // Paint width: 4.9m (wider key)
-  const paintDepth = ftLineDist;         // Paint extends to FT line
-  const restrictedRadius = w * (1.25 / 15.24);
+  // Scale from full court (landscape) to half court (portrait)
+  // Full court uses h for vertical scaling – apply same ratios to portrait half-court
+  const paintDepth = w * 0.19;           // paint depth (scaled proportional to full court)
+  const paintHalfW = h * 0.38 / 2;       // half the key width
+  const ftRadius = h * 0.19;             // free-throw circle radius
+  const threeR = h * 0.46;               // 3-point arc radius
+  const restrictedRadius = h * 0.055;    // restricted arc radius
+  const basketR = h * 0.033;
+  const bboardOff = w * 0.025;
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
