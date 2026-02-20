@@ -51,8 +51,13 @@ const navigationItems = [
     title: "Coach Insights",
     url: createPageUrl("CoachInsights"),
     icon: Target
+  },
+  {
+    title: "Whiteboard",
+    url: createPageUrl("Whiteboard"),
+    icon: Layout
   }
-];
+  ];
 
 const adminItems = [
   {
