@@ -638,7 +638,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <Trophy className="w-4 h-4 mr-1" />End Game
           </Button>
         </div>
-        <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} />
+        <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
         <div className="mt-3 space-y-3">
           <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
           {/* Stat buttons – mobile */}
