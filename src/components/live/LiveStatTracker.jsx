@@ -638,13 +638,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {/* Row 1 */}
             <div className="grid grid-cols-3 gap-1.5 mb-1.5">
               <div className="flex rounded-lg overflow-hidden shadow-md">
-                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTM</motion.button>
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className="flex-1 h-10 text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTM</motion.button>
                 <div className="w-px bg-indigo-900/30" />
-                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className="flex-1 h-14 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTX</motion.button>
+                <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className="flex-1 h-10 text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150">FTX</motion.button>
               </div>
               {['points_2', 'points_3'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
@@ -652,7 +652,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <div className="grid grid-cols-3 gap-1.5 mb-1.5">
               {['offensive_rebounds', 'defensive_rebounds', 'assists'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-sm ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
@@ -660,7 +660,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <div className="grid grid-cols-6 gap-1.5 mb-1.5">
               {['steals', 'blocks', 'turnovers', 'fouls', 'technical_fouls', 'unsportsmanlike_fouls'].map(key => { const stat = STAT_TYPES.find(s => s.key === key); return (
                 <motion.div key={stat.key} whileTap={{ scale: selectedPlayer ? 0.92 : 1 }}>
-                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-14 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
+                  <Button onClick={() => handleStatClick(stat)} disabled={!selectedPlayer} className={`w-full h-10 text-white font-bold text-xs ${stat.color} disabled:opacity-30 disabled:cursor-not-allowed shadow-md`}>{stat.label}</Button>
                 </motion.div>
               ); })}
             </div>
