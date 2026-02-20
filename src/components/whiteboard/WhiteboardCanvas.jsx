@@ -44,7 +44,10 @@ const DEFAULT_DEFENSIVE_FULL = [
 ];
 
 function clamp(v, lo, hi) { return Math.min(Math.max(v, lo), hi); }
-function markerR(courtW) { return Math.max(16, Math.round(courtW * 0.046)); }
+function markerR(courtW, isFullCourt = false) {
+  if (isFullCourt) return Math.max(10, Math.round(courtW * 0.028));
+  return Math.max(16, Math.round(courtW * 0.046));
+}
 
 // ─── Brand palette ─────────────────────────────────────────────────────────────
 const C = {
