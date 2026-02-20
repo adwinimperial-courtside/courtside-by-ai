@@ -81,11 +81,11 @@ function HalfCourtSVG({ width, height }) {
       <rect x={lw} y={lw} width={w-lw*2} height={h-lw*2} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
       <line x1={0} y1={h*0.02} x2={w} y2={h*0.02} stroke={C.line} strokeWidth={lw} />
       
-      {/* Paint (key) – rectangular */}
+      {/* Paint (key) – rectangular, wider and proper depth */}
       <rect x={cx-paintWidth/2} y={h*0.02} width={paintWidth} height={paintDepth} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
       
-      {/* Free throw circle (top of key) */}
-      <ellipse cx={cx} cy={h*0.02+ftDist} rx={ftRadius} ry={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* Free throw circle (top of key) – sits close to 3-point arc */}
+      <ellipse cx={cx} cy={h*0.02+ftLineDist} rx={ftRadius} ry={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
       
       {/* Restricted arc (basket side) */}
       <path d={`M ${cx-restrictedRadius} ${h*0.08} A ${restrictedRadius} ${restrictedRadius} 0 0 1 ${cx+restrictedRadius} ${h*0.08}`} fill="none" stroke={C.line} strokeWidth={lw} />
@@ -96,8 +96,8 @@ function HalfCourtSVG({ width, height }) {
       {/* Basket */}
       <circle cx={cx} cy={h*0.06} r={w*0.033} fill="none" stroke={C.basket} strokeWidth={lw*1.5} />
       
-      {/* 3-point arc – curves from baseline, outside free-throw area */}
-      <path d={`M ${cx-w*0.5} ${h*0.02} L ${cx-w*0.5} ${threeRadius} A ${threeRadius} ${threeRadius} 0 0 0 ${cx+w*0.5} ${threeRadius} L ${cx+w*0.5} ${h*0.02}`} fill="none" stroke={C.line} strokeWidth={lw} />
+      {/* 3-point arc – connects corners to top of key */}
+      <path d={`M ${cx-w*0.5} ${h*0.02} L ${cx-w*0.5} ${threeCornerDist} A ${threeLineDist} ${threeLineDist} 0 0 0 ${cx+w*0.5} ${threeCornerDist} L ${cx+w*0.5} ${h*0.02}`} fill="none" stroke={C.line} strokeWidth={lw} />
       
       {/* Center circle dashed */}
       <circle cx={cx} cy={h*0.02} r={w*0.12} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="3 3" />
