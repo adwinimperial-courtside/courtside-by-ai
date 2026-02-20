@@ -18,6 +18,7 @@ export default function LiveGamePage() {
   const [homeStarters, setHomeStarters] = useState([]);
   const [awayStarters, setAwayStarters] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [gameOverride, setGameOverride] = useState(null); // optimistic local clock state
 
   React.useEffect(() => {
     const fetchUser = async () => {
