@@ -209,15 +209,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       periodEndHandledRef.current = true;
 
       // Add elapsed game clock time to on-court players before stopping
-      activePlayers.forEach(stat => {
-        const clockState = playerGameClockStateRef.current[stat.id];
-        if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
-          const gameTimeElapsed = clockState.timeLeft - 0; // Period ended, so 0 time left
-          playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
-        }
-        // Reset or nullify state for next period. It will be re-initialized if they start next period
-        playerGameClockStateRef.current[stat.id] = null; 
-      });
+            activePlayers.forEach(stat => {
+              const clockState = playerGameClockStateRef.current[stat.player_id];
+              if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
+                const gameTimeElapsed = clockState.timeLeft - 0; // Period ended, so 0 time left
+                playerMinutesRef.current[stat.player_id] = (playerMinutesRef.current[stat.player_id] || 0) + gameTimeElapsed;
+              }
+              // Reset or nullify state for next period. It will be re-initialized if they start next period
+              playerGameClockStateRef.current[stat.player_id] = null; 
+            });
 
       // Stop clock
       updateGameMutation.mutate({
