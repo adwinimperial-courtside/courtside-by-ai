@@ -527,11 +527,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       // Finalize minutes for all players still on court (timed mode only, only if clock was running)
       if (game.game_mode === 'timed' && game.clock_running) {
         activePlayers.forEach(stat => {
-          const clockState = playerGameClockStateRef.current[stat.id];
+          const clockState = playerGameClockStateRef.current[stat.player_id];
           if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
             const currentComputedTimeLeft = computeTimeLeft(game);
             const gameTimeElapsed = clockState.timeLeft - currentComputedTimeLeft;
-            playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
+            playerMinutesRef.current[stat.player_id] = (playerMinutesRef.current[stat.player_id] || 0) + gameTimeElapsed;
           }
         });
       }
