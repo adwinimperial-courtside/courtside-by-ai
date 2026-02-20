@@ -208,12 +208,12 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                 {/* Play/Pause button */}
                 <button
                   onClick={handlePlayPause}
-                  className="flex-shrink-0 text-white/70 hover:text-white disabled:opacity-30 transition-colors cursor-pointer"
+                  className="flex-shrink-0 p-1.5 text-white/70 hover:text-white disabled:opacity-30 transition-colors cursor-pointer hover:bg-white/10 rounded-lg"
                   title={running ? "Pause" : timeExpired ? "Advance to next period" : "Start"}
                 >
                   {running
-                    ? <Pause className="w-3.5 h-3.5" />
-                    : <Play className="w-3.5 h-3.5" />
+                    ? <Pause className="w-5 h-5" />
+                    : <Play className="w-5 h-5" />
                   }
                 </button>
               </div>
