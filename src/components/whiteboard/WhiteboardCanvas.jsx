@@ -357,6 +357,16 @@ export default function WhiteboardCanvas() {
             >
               <svg width={mr*2} height={mr*2}>
                 <circle cx={mr} cy={mr} r={mr-2} fill={C.defense} stroke="white" strokeWidth={2.5} />
+                {m.label && (
+                  <text
+                    x={mr} y={mr + mr * 0.38}
+                    textAnchor="middle" fill="white"
+                    fontSize={Math.round(mr * 0.9)} fontWeight="bold"
+                    style={{ userSelect: "none", pointerEvents: "none" }}
+                  >
+                    {m.label}
+                  </text>
+                )}
               </svg>
             </div>
           ))}
