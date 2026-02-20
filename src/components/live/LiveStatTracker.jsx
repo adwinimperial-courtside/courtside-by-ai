@@ -1264,7 +1264,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 })}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 sticky bottom-0 bg-white/80 pt-2 mt-4">
                 <Button
                   variant="outline"
                   className="flex-1 border-slate-300 hover:bg-slate-100"
