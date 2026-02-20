@@ -364,8 +364,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     // Clear period end handler and period tracking
     periodEndHandledRef.current = false;
     periodStartTimeRef.current = {};
-    setShowPeriodEndModal(false);
-  };
+    };
 
   const handleStartOvertime = async () => {
     const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
