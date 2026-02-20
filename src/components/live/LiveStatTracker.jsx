@@ -556,44 +556,39 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  const ActivityLog = () => (
-    <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col overflow-hidden">
-      <div className="flex items-center gap-2 mb-3 pb-3 border-b border-slate-200 flex-shrink-0">
-        <Activity className="w-4 h-4 text-indigo-500" />
-        <h3 className="text-base font-bold text-slate-900">Game Activity</h3>
-        <span className="ml-auto text-xs text-slate-500">{gameLog.length} actions</span>
+  const ActivityLog = ({ compact = false }) => (
+    <div className={`flex flex-col overflow-hidden h-full ${compact ? '' : 'bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3'}`}>
+      {/* Header */}
+      <div className={`flex items-center gap-2 flex-shrink-0 ${compact ? 'px-2 py-1 border-b border-slate-200 mb-1' : 'mb-3 pb-3 border-b border-slate-200'}`}>
+        <Activity className="w-3.5 h-3.5 text-indigo-500" />
+        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Game Activity</h3>
+        <span className="ml-auto text-xs text-slate-400">{gameLog.length} actions</span>
       </div>
-      <div className="flex-1 overflow-y-auto space-y-2 pr-1 min-h-0">
+      {/* Feed */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         {gameLog.length === 0 ? (
-          <div className="text-center py-6">
-            <Activity className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-slate-500 text-sm">No actions yet</p>
+          <div className="flex items-center justify-center h-full">
+            <p className="text-slate-400 text-xs">No actions yet</p>
           </div>
         ) : (
-          gameLog.slice(0, 20).map((log, index) => (
-            <motion.div
+          gameLog.slice(0, 30).map((log, index) => (
+            <div
               key={log.id}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className={`p-2 rounded-lg bg-white/80 border border-slate-200 ${index === 0 ? 'ring-2 ring-amber-300/50' : ''}`}
+              className={`flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 last:border-0 ${index === 0 ? 'bg-amber-50/60' : 'hover:bg-slate-50/50'}`}
             >
-              <div className="flex items-start gap-2">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-lg flex-shrink-0 ${log.player?.team_id === game.home_team_id ? 'bg-blue-400' : 'bg-red-400'}`}>
-                  {log.player.jersey_number}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-slate-900 font-semibold text-xs truncate">{log.player.name}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className={`text-xs px-1.5 py-0.5 rounded text-white font-bold ${log.statType.color}`}>{log.statType.label}</span>
-                    {log.statType.points > 0 && <span className="text-xs text-green-600 font-bold">+{log.statType.points}pts</span>}
-                    <span className="text-xs text-slate-400 ml-auto">{format(log.timestamp, 'HH:mm:ss')}</span>
-                  </div>
-                </div>
-                <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-7 w-7 p-0 hover:bg-red-100 text-slate-400 hover:text-red-600 flex-shrink-0">
-                  <Undo2 className="w-3 h-3" />
-                </Button>
+              {/* Player name */}
+              <p className="font-semibold text-slate-800 text-xs truncate w-[30%] flex-shrink-0">{log.player.name}</p>
+              {/* Stat badge + points */}
+              <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white font-bold flex-shrink-0 ${log.statType.color}`}>{log.statType.label}</span>
+                {log.statType.points > 0 && <span className="text-[10px] text-green-600 font-bold flex-shrink-0">+{log.statType.points}pts</span>}
               </div>
-            </motion.div>
+              {/* Timestamp + undo */}
+              <span className="text-[10px] text-slate-400 flex-shrink-0">{format(log.timestamp, 'HH:mm:ss')}</span>
+              <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
+                <Undo2 className="w-2.5 h-2.5" />
+              </Button>
+            </div>
           ))
         )}
       </div>
