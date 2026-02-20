@@ -60,34 +60,48 @@ export default function EndOfPeriodModal({
 
         <div className="flex flex-col gap-3">
           {!isFinalRegulation && (
-            <Button
-              onClick={onStartNextPeriod}
-              className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold h-11"
-            >
-              Start Next Period
-            </Button>
+            <>
+              <Button
+                onClick={onStartNextPeriod}
+                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold h-11"
+              >
+                Start Next Period
+              </Button>
+              <Button
+                onClick={onCancel}
+                className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white font-semibold h-11"
+              >
+                Cancel
+              </Button>
+            </>
           )}
 
           {isFinalRegulation && isTied && (
-            <Button
-              onClick={onStartOvertime}
-              className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold h-11"
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Start Overtime
-            </Button>
+            <>
+              <Button
+                onClick={onStartOvertime}
+                className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold h-11"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Start Overtime
+              </Button>
+              <Button
+                onClick={onCancel}
+                className="w-full bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white font-semibold h-11"
+              >
+                Cancel
+              </Button>
+            </>
           )}
 
-          <Button
-            onClick={onEndGame}
-            className={`w-full ${
-              isFinalRegulation && !isTied
-                ? "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                : "bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700"
-            } text-white font-semibold h-11`}
-          >
-            {isFinalRegulation && !isTied ? "Confirm End Game" : "Cancel"}
-          </Button>
+          {isFinalRegulation && !isTied && (
+            <Button
+              onClick={onEndGame}
+              className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold h-11"
+            >
+              Confirm End Game
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
