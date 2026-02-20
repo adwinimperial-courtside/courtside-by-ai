@@ -66,7 +66,29 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
   const handlePlayPause = async () => {
     if (!isTimed || isSaving.current) return;
     const currentTimeLeft = computeTimeLeft(game);
-    if (currentTimeLeft <= 0 && !running) return;
+
+    // If time is 0 and not running, advance to next period instead
+    if (currentTimeLeft <= 0 && !running) {
+      isSaving.current = true;
+      try {
+        const nextPeriod = period + 1;
+        const nextIsOT = nextPeriod > totalPeriods;
+        const nextMins = nextIsOT ? overtimeMinutes : periodMinutes;
+        
+        const updates = {
+          clock_period: nextPeriod,
+          clock_time_left: nextMins * 60,
+          clock_running: false,
+          clock_started_at: null,
+          period_status: 'active'
+        };
+        await base44.entities.Game.update(game.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      } finally {
+        isSaving.current = false;
+      }
+      return;
+    }
 
     isSaving.current = true;
     try {
