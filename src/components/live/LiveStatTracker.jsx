@@ -423,15 +423,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       }
     });
 
-    // Reset clock state for all active players to track the new period
-    activePlayers.forEach(stat => {
-      playerGameClockStateRef.current[stat.id] = {
-        timeLeft: nextMins * 60,
-        period: nextPeriod
-      };
-    });
-
-    // Clear period end handler
+    // Clear period end handler - useEffect will handle playerGameClockStateRef initialization
     periodEndHandledRef.current = false;
     };
 
