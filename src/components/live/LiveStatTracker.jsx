@@ -1193,8 +1193,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="bg-slate-100 rounded-lg p-4 space-y-2">
+            <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-300px)]">
+              <div className="bg-slate-100 rounded-lg p-4 space-y-2 sticky top-0 z-10">
                 <p className="text-sm text-slate-500 font-semibold">COMING OUT:</p>
                 {playersToReplace.map(player => (
                   <div key={player.id} className="flex items-center gap-3">
@@ -1212,11 +1212,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 ))}
               </div>
 
-              <p className="text-center text-slate-600 font-semibold">
+              <p className="text-center text-slate-600 font-semibold sticky top-24 bg-white/80 py-2">
                 SELECT {playersToReplace.length} REPLACEMENT{playersToReplace.length > 1 ? 'S' : ''} ({replacementPlayers.length}/{playersToReplace.length})
               </p>
 
-              <div className="grid grid-cols-1 gap-2 max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 gap-2">
                 {playersToReplace.map(playerOut => {
                   const benchPlayers = playerOut.team_id === game.home_team_id ? homeBenchPlayers : awayBenchPlayers;
                   const teamColor = playerOut.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
