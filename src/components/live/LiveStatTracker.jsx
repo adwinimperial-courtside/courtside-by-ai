@@ -646,12 +646,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           {/* Center: Stat buttons (70%) + Activity (30%) stacked vertically – 50% */}
-          <div className="w-[50%] flex-shrink-0 flex flex-col gap-3 min-h-0">
+          <div className="w-[50%] flex-shrink-0 flex flex-col gap-2 min-h-0">
             <div className="flex-[7] min-h-0">
               <StatPanel large={true} />
             </div>
-            <div className="flex-[3] min-h-0">
-              <ActivityLog />
+            <div className="flex-[3] min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
+              <ActivityLog compact={true} />
             </div>
           </div>
 
