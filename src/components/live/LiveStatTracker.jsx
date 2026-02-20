@@ -601,7 +601,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-[900px]:h-screen min-[900px]:overflow-hidden">
 
       {/* ── MOBILE LAYOUT (< 900px) ── */}
       <div className="min-[900px]:hidden max-w-[1400px] mx-auto px-3 py-3">
