@@ -616,7 +616,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
           </div>
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3 flex flex-col" style={{ maxHeight: 'calc(100vh - 180px)', minHeight: '200px', overflowY: 'auto' }}>
-            <ActivityLog />
+            <ActivityLog compact={false} />
           </div>
         </div>
       </div>
