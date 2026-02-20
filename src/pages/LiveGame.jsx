@@ -73,7 +73,19 @@ export default function LiveGamePage() {
     },
   });
 
-  const game = games.find(g => g.id === gameId);
+  const rawGame = games.find(g => g.id === gameId);
+  // Merge optimistic clock overrides (cleared when real-time sync arrives)
+  const game = rawGame && gameOverride ? { ...rawGame, ...gameOverride } : rawGame;
+
+  // When server syncs new clock state, clear the override
+  useEffect(() => {
+    if (gameOverride && rawGame) {
+      const keysMatch = ['clock_running', 'clock_time_left', 'clock_started_at', 'clock_period'].every(
+        k => rawGame[k] === gameOverride[k] || gameOverride[k] === undefined
+      );
+      if (keysMatch) setGameOverride(null);
+    }
+  }, [rawGame]);
 
   useEffect(() => {
     if (game && existingStats && existingStats.length > 0) {
