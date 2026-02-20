@@ -227,6 +227,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     for (let i = 0; i < playersToReplace.length; i++) {
       const playerOut = playersToReplace[i];
       const playerInId = replacementPlayers[i];
+      const playerIn = players.find(p => p.id === playerInId);
 
       const oldPlayerStat = existingStats.find(s => s.player_id === playerOut.id);
       if (oldPlayerStat) {
@@ -250,6 +251,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           is_starter: true,
         });
       }
+
+      // Log the substitution to game log
+      await createLogMutation.mutateAsync({
+        game_id: game.id,
+        player_id: playerOut.id,
+        team_id: playerOut.team_id,
+        stat_type: 'substitution',
+        stat_label: playerIn?.name || 'Unknown',
+        stat_points: 0,
+        stat_color: 'bg-cyan-600 hover:bg-cyan-700',
+        old_home_score: game.home_score || 0,
+        old_away_score: game.away_score || 0,
+        logged_by: currentUser?.email || '',
+        device_name: getDeviceName()
+      });
 
       if (selectedPlayer?.id === playerOut.id) {
         setSelectedPlayer(null);
