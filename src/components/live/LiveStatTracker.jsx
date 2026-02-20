@@ -529,11 +529,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (game.game_mode === 'timed' && game.clock_running) {
         activePlayers.forEach(stat => {
           const clockState = playerGameClockStateRef.current[stat.id];
-          if (clockState) {
-            const stored = game.clock_time_left ?? 0;
-            const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
-            const currentTimeLeft = Math.max(0, stored - elapsed);
-            const gameTimeElapsed = clockState.timeLeft - currentTimeLeft;
+          if (clockState && clockState.period === game.clock_period) { // Only count if subbed in this period
+            const currentComputedTimeLeft = computeTimeLeft(game);
+            const gameTimeElapsed = clockState.timeLeft - currentComputedTimeLeft;
             playerMinutesRef.current[stat.id] = (playerMinutesRef.current[stat.id] || 0) + gameTimeElapsed;
           }
         });
