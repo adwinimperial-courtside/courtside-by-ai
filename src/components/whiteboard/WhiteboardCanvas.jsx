@@ -74,6 +74,7 @@ function HalfCourtSVG({ width, height }) {
   const threeRadius = h * (6.75 / 14.0); // 3-point arc radius from basket (6.75m normalized)
   const paintWidth = w * (3.6 / 15.24); // paint width (3.6m normalized to width)
   const paintDepth = ftDist; // paint depth = free-throw line distance
+  const restrictedRadius = w * (1.25 / 15.24); // restricted arc radius (1.25m normalized)
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
