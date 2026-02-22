@@ -199,8 +199,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
           {liveGame.status === 'completed' && isExpanded && (
             <div className="mt-6 pt-6 border-t border-slate-200 space-y-6">
               {[
-                { team: awayTeam, playerStats: awayPlayerStats, teamStats: awayTeamStats, score: liveGame.away_score },
-                { team: homeTeam, playerStats: homePlayerStats, teamStats: homeTeamStats, score: liveGame.home_score },
+                { team: awayTeam, playerStats: awayPlayerStats, teamStats: awayTeamStats, score: displayAwayScore },
+                { team: homeTeam, playerStats: homePlayerStats, teamStats: homeTeamStats, score: displayHomeScore },
               ].map(({ team, playerStats, teamStats, score }) => (
                 <div key={team?.id}>
                   <div className="flex items-center gap-2 mb-3">
