@@ -248,7 +248,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                     <div className="bg-slate-800 text-white rounded-lg p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-sm">TEAM TOTALS</span>
-                        <span className="font-bold text-lg">{score || 0} PTS</span>
+                        <span className="font-bold text-lg">{score ?? 0} PTS</span>
                       </div>
                       <div className="grid grid-cols-4 gap-1 text-xs text-center">
                         {[
