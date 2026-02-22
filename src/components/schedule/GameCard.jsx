@@ -58,6 +58,16 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
   const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && hasPlayerStats(s));
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
 
+  // Compute scores from actual player stats (source of truth for completed games)
+  const computedHomeScore = gamePlayerStats
+    .filter(s => s.team_id === liveGame.home_team_id)
+    .reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+  const computedAwayScore = gamePlayerStats
+    .filter(s => s.team_id === liveGame.away_team_id)
+    .reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+  const displayHomeScore = liveGame.status === 'completed' ? computedHomeScore : liveGame.home_score;
+  const displayAwayScore = liveGame.status === 'completed' ? computedAwayScore : liveGame.away_score;
+
   const homeTeamStats = {
     rebounds: homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
     assists: homePlayerStats.reduce((acc, s) => acc + (s.assists || 0), 0),
