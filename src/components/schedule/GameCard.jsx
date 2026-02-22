@@ -114,17 +114,17 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                     <span className="font-semibold text-slate-900 truncate">{homeTeam?.name}</span>
                   </div>
                   {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
-                    <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{liveGame.home_score}</span>
-                  )}
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <TeamLogo team={awayTeam} size="md" />
-                    <span className="font-semibold text-slate-900 truncate">{awayTeam?.name}</span>
+                      <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{displayHomeScore}</span>
+                    )}
                   </div>
-                  {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
-                    <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{liveGame.away_score}</span>
-                  )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <TeamLogo team={awayTeam} size="md" />
+                      <span className="font-semibold text-slate-900 truncate">{awayTeam?.name}</span>
+                    </div>
+                    {(liveGame.status === 'in_progress' || liveGame.status === 'completed') && (
+                      <span className="text-2xl font-bold text-slate-900 ml-2 flex-shrink-0">{displayAwayScore}</span>
+                    )}
                 </div>
               </div>
 
