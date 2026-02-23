@@ -214,7 +214,7 @@ export default function GameLogPage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-slate-100">
-              {gameLogs.map((log, index) => {
+              {gameLogs.filter(log => !filterPoints || POINTS_STAT_TYPES.includes(log.stat_type)).map((log, index) => {
                 const player = players.find(p => p.id === log.player_id);
                 const team = teams.find(t => t.id === log.team_id);
                 return (
