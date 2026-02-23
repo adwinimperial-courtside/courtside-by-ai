@@ -82,19 +82,8 @@ export default function GameLogPage() {
   };
 
   const getScoreAtTime = (log) => {
-    let homeScore = log.old_home_score ?? 0;
-    let awayScore = log.old_away_score ?? 0;
-    const points = log.stat_points ?? 0;
-    const added = (log.new_value ?? 0) > (log.old_value ?? 0);
-
-    if (points > 0) {
-      if (log.team_id === selectedGame?.home_team_id) {
-        homeScore = added ? homeScore + points : homeScore - points;
-      } else if (log.team_id === selectedGame?.away_team_id) {
-        awayScore = added ? awayScore + points : awayScore - points;
-      }
-    }
-
+    const homeScore = log.old_home_score ?? 0;
+    const awayScore = log.old_away_score ?? 0;
     return `${homeTeam?.name || "Home"} ${homeScore} – ${awayScore} ${awayTeam?.name || "Away"}`;
   };
 
