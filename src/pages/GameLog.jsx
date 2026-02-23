@@ -82,8 +82,14 @@ export default function GameLogPage() {
   };
 
   const getScoreAtTime = (log) => {
-    const homeScore = log.old_home_score ?? 0;
-    const awayScore = log.old_away_score ?? 0;
+    let homeScore = log.old_home_score ?? 0;
+    let awayScore = log.old_away_score ?? 0;
+    const pointsChange = (log.stat_points ?? 0) * (log.new_value > log.old_value ? 1 : -1);
+    if (log.team_id === selectedGame?.home_team_id) {
+      homeScore += pointsChange;
+    } else {
+      awayScore += pointsChange;
+    }
     return `${homeTeam?.name || "Home"} ${homeScore} – ${awayScore} ${awayTeam?.name || "Away"}`;
   };
 
