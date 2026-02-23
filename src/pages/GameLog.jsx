@@ -10,6 +10,19 @@ import { FileText, User, Clock } from "lucide-react";
 export default function GameLogPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [selectedGameId, setSelectedGameId] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    base44.auth.me().then(setCurrentUser).catch(() => {});
+  }, []);
+
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-slate-500">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
 
   const { data: leagues = [] } = useQuery({
     queryKey: ["leagues"],
