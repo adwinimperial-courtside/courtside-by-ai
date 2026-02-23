@@ -51,6 +51,7 @@ import AdminTools from './pages/AdminTools';
 import AwardLeaders from './pages/AwardLeaders';
 import CoachInsights from './pages/CoachInsights';
 import Coaches from './pages/Coaches';
+import GameLog from './pages/GameLog';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
 import LeagueIDs from './pages/LeagueIDs';
@@ -67,7 +68,6 @@ import Teams from './pages/Teams';
 import UserManagement from './pages/UserManagement';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
-import GameLog from './pages/GameLog';
 import __Layout from './Layout.jsx';
 
 
@@ -76,6 +76,7 @@ export const PAGES = {
     "AwardLeaders": AwardLeaders,
     "CoachInsights": CoachInsights,
     "Coaches": Coaches,
+    "GameLog": GameLog,
     "Home": Home,
     "Landing": Landing,
     "LeagueIDs": LeagueIDs,
@@ -92,7 +93,6 @@ export const PAGES = {
     "UserManagement": UserManagement,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
-    "GameLog": GameLog,
 }
 
 export const pagesConfig = {
