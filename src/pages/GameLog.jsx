@@ -53,6 +53,8 @@ export default function GameLogPage() {
     enabled: !!selectedGameId,
   });
 
+  const POINTS_STAT_TYPES = ["points_2", "points_3", "free_throws"];
+
   const selectedGame = games.find(g => g.id === selectedGameId);
   const homeTeam = teams.find(t => t.id === selectedGame?.home_team_id);
   const awayTeam = teams.find(t => t.id === selectedGame?.away_team_id);
