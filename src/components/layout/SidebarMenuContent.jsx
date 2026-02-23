@@ -64,7 +64,10 @@ const adminItems = [
     title: "Admin Tools",
     url: createPageUrl("AdminTools"),
     icon: Settings
-  },
+  }
+];
+
+const leagueAdminItems = [
   {
     title: "Game Log",
     url: createPageUrl("GameLog"),
