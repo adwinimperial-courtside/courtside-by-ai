@@ -67,6 +67,7 @@ import Teams from './pages/Teams';
 import UserManagement from './pages/UserManagement';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
+import GameLog from './pages/GameLog';
 import __Layout from './Layout.jsx';
 
 
@@ -91,6 +92,7 @@ export const PAGES = {
     "UserManagement": UserManagement,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
+    "GameLog": GameLog,
 }
 
 export const pagesConfig = {
