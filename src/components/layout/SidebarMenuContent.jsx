@@ -64,6 +64,11 @@ const adminItems = [
     title: "Admin Tools",
     url: createPageUrl("AdminTools"),
     icon: Settings
+  },
+  {
+    title: "Game Log",
+    url: createPageUrl("GameLog"),
+    icon: ScrollText
   }
 ];
 
