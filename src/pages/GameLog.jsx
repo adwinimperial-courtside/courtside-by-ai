@@ -45,6 +45,8 @@ export default function GameLogPage() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  const [filterPoints, setFilterPoints] = useState(false);
+
   const { data: gameLogs = [], isLoading: logsLoading } = useQuery({
     queryKey: ["gameLogs", selectedGameId],
     queryFn: () => base44.entities.GameLog.filter({ game_id: selectedGameId }, "created_date"),
