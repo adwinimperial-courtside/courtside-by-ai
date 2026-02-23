@@ -142,8 +142,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const getVisibleAdminItems = () => {
     if (!currentUser) return [];
-    if (currentUser.user_type === "app_admin") return adminItems;
-    if (currentUser.user_type === "league_admin") return adminItems;
+    if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems];
+    if (currentUser.user_type === "league_admin") return leagueAdminItems;
     return [];
   };
 
