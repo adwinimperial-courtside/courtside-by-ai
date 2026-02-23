@@ -55,7 +55,7 @@ export default function CoachInsights() {
     );
   }
 
-  const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
+  const filteredLeagues = currentUser?.user_type !== 'app_admin' && currentUser?.assigned_league_ids?.length
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
