@@ -175,6 +175,24 @@ export default function GameLogPage() {
         </Card>
       )}
 
+      {/* Filter */}
+      {selectedGameId && !logsLoading && gameLogs.length > 0 && (
+        <div className="flex items-center gap-2 mb-4">
+          <button
+            onClick={() => setFilterPoints(false)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${!filterPoints ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          >
+            All Actions
+          </button>
+          <button
+            onClick={() => setFilterPoints(true)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${filterPoints ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+          >
+            Points Only (2PT / 3PT / FT)
+          </button>
+        </div>
+      )}
+
       {/* Log Entries */}
       {!selectedLeagueId && (
         <div className="text-center py-16 text-slate-400">Select a league to get started</div>
