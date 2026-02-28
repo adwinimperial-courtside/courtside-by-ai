@@ -685,10 +685,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
         : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
     return (
-    <div className={`backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full`} style={borderStyle}>
-      <div className="flex items-center gap-2 mb-2">
+    <div className={`backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden`} style={borderStyle}>
+      <div className="flex items-center gap-2 mb-2 flex-shrink-0">
         <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0"
           style={{ backgroundColor: team?.color || '#64748b' }}
         >
           {team?.name?.[0]}
@@ -696,8 +696,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
         <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
       </div>
-      {/* Mobile: 5-col grid / Desktop: vertical stack */}
-      <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-1.5 min-[900px]:flex-1">
+      {/* Mobile: 5-col grid / Desktop: vertical scrollable stack */}
+      <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-1.5 min-[900px]:flex-1 min-[900px]:overflow-y-auto min-[900px]:min-h-0">
         {teamPlayers.map((player) => (
           <PlayerButton
             key={player.id}
