@@ -48,6 +48,16 @@ export default function Layout({ children }) {
               user_type: user.user_type || 'unknown'
             }
           });
+          // Record login event in LoginEvent entity for analytics
+          if (user.user_type !== 'app_admin') {
+            base44.entities.LoginEvent.create({
+              user_id: user.id,
+              user_email: user.email,
+              full_name: user.full_name,
+              user_type: user.user_type || 'unknown',
+              logged_at: new Date().toISOString(),
+            }).catch(() => {});
+          }
           hasLoggedLoginEventRef.current = true;
           sessionStartTimeRef.current = Date.now();
         }
