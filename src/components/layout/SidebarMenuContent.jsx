@@ -87,24 +87,9 @@ const ownerItems = [
     icon: Users
   },
   {
-    title: "League Owners",
-    url: createPageUrl("LeagueOwners"),
-    icon: Shield
-  },
-  {
-    title: "Coaches",
-    url: createPageUrl("Coaches"),
-    icon: Users
-  },
-  {
-    title: "Players",
-    url: createPageUrl("Players"),
-    icon: Users
-  },
-  {
-    title: "Viewers",
-    url: createPageUrl("Viewers"),
-    icon: Eye
+    title: "User Roles",
+    url: createPageUrl("UserRoles"),
+    icon: UserCog
   }
 ];
 
