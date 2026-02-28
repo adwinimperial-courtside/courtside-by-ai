@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Users, Eye, Key, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Key, Users, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 
 const TABS = ["overview", "league_owners", "coaches", "players", "viewers"];
 const TAB_LABELS = {
@@ -22,7 +23,6 @@ const TAB_USER_TYPE = {
   viewers: "viewer",
 };
 
-// Mobile compact card row for role tabs
 function MobileUserCard({ user, leagues }) {
   const getLeagueNames = (leagueIds) => {
     if (!leagueIds || leagueIds.length === 0) return null;
@@ -51,7 +51,6 @@ function MobileUserCard({ user, leagues }) {
   );
 }
 
-// Desktop table for role tabs
 function UserTable({ users, leagues, emptyMessage }) {
   const [sortConfig, setSortConfig] = useState({ key: "created_date", direction: "desc" });
 
@@ -124,7 +123,6 @@ function UserTable({ users, leagues, emptyMessage }) {
   );
 }
 
-// Expandable league row for mobile
 function MobileLeagueRow({ row }) {
   const [expanded, setExpanded] = useState(false);
   return (
@@ -252,42 +250,66 @@ export default function UserRoles() {
     viewers: "bg-blue-500",
   };
 
+  const getMobileSelectLabel = (tab) => {
+    if (tab === "overview") return "Overview";
+    const count = counts[tab];
+    return `${TAB_LABELS[tab]}${count > 0 ? ` (${count})` : ""}`;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6 overflow-x-hidden">
+      <div className="max-w-7xl mx-auto w-full">
+
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
             <Users className="w-6 h-6 text-white" />
           </div>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-2xl md:text-3xl font-bold text-slate-900">User Roles</h1>
             <p className="text-slate-600 text-sm">Manage and view users by role</p>
           </div>
         </div>
 
-        {/* Tabs — horizontally scrollable on mobile */}
-        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex overflow-x-auto scrollbar-none p-1 gap-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); setSearch(""); }}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
-                  activeTab === tab
-                    ? "bg-slate-900 text-white shadow"
-                    : "text-slate-600 hover:bg-slate-100"
-                }`}
-              >
-                {TAB_LABELS[tab]}
-                {tab !== "overview" && counts[tab] > 0 && (
-                  <span className={`${activeTab === tab ? "bg-white/20" : tabBadgeColor[tab]} text-white text-xs px-1.5 py-0.5 rounded-full font-semibold`}>
-                    {counts[tab]}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
+        {/* MOBILE: Dropdown selector */}
+        <div className="md:hidden mb-6 w-full">
+          <Select
+            value={activeTab}
+            onValueChange={(val) => { setActiveTab(val); setSearch(""); }}
+          >
+            <SelectTrigger className="w-full bg-white border-slate-200 shadow-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TABS.map((tab) => (
+                <SelectItem key={tab} value={tab}>
+                  {getMobileSelectLabel(tab)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* DESKTOP: Tab strip */}
+        <div className="hidden md:flex mb-6 bg-white rounded-xl border border-slate-200 shadow-sm p-1 gap-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => { setActiveTab(tab); setSearch(""); }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+                activeTab === tab
+                  ? "bg-slate-900 text-white shadow"
+                  : "text-slate-600 hover:bg-slate-100"
+              }`}
+            >
+              {TAB_LABELS[tab]}
+              {tab !== "overview" && counts[tab] > 0 && (
+                <span className={`${activeTab === tab ? "bg-white/20" : tabBadgeColor[tab]} text-white text-xs px-1.5 py-0.5 rounded-full font-semibold`}>
+                  {counts[tab]}
+                </span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Search (role tabs only) */}
@@ -307,8 +329,7 @@ export default function UserRoles() {
         {activeTab === "overview" && (
           <div className="space-y-6">
 
-            {/* KPI — mobile: compact rows / desktop: grid tiles */}
-            {/* Mobile compact rows */}
+            {/* Mobile compact KPI rows */}
             <div className="md:hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               {kpiCards.map((kpi, i) => (
                 <button
@@ -326,7 +347,7 @@ export default function UserRoles() {
               </div>
             </div>
 
-            {/* Desktop grid tiles */}
+            {/* Desktop KPI grid */}
             <div className="hidden md:grid md:grid-cols-5 gap-4">
               {kpiCards.map((kpi) => (
                 <button
