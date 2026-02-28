@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Shield, Users, Eye, Key, Search, ArrowUpDown, BarChart3 } from "lucide-react";
+import { Shield, Users, Eye, Key, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
 
 const TABS = ["overview", "league_owners", "coaches", "players", "viewers"];
 const TAB_LABELS = {
@@ -22,6 +22,36 @@ const TAB_USER_TYPE = {
   viewers: "viewer",
 };
 
+// Mobile compact card row for role tabs
+function MobileUserCard({ user, leagues }) {
+  const getLeagueNames = (leagueIds) => {
+    if (!leagueIds || leagueIds.length === 0) return null;
+    return leagueIds.map((id) => leagues.find((l) => l.id === id)?.name || "Unknown").join(", ");
+  };
+  const leagueNames = getLeagueNames(user.assigned_league_ids);
+
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 border-b border-slate-100 last:border-b-0">
+      <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span className="text-sm font-semibold text-slate-600">
+          {(user.full_name || "?")[0].toUpperCase()}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="font-medium text-slate-900 text-sm truncate">{user.full_name || "—"}</div>
+        <div className="text-xs text-slate-500 truncate">{user.email}</div>
+        {leagueNames && (
+          <div className="text-xs text-slate-400 mt-0.5 truncate">{leagueNames}</div>
+        )}
+      </div>
+      <div className="text-xs text-slate-400 flex-shrink-0 mt-1">
+        {new Date(user.created_date).toLocaleDateString()}
+      </div>
+    </div>
+  );
+}
+
+// Desktop table for role tabs
 function UserTable({ users, leagues, emptyMessage }) {
   const [sortConfig, setSortConfig] = useState({ key: "created_date", direction: "desc" });
 
@@ -52,9 +82,7 @@ function UserTable({ users, leagues, emptyMessage }) {
 
   const getLeagueNames = (leagueIds) => {
     if (!leagueIds || leagueIds.length === 0) return "None";
-    return leagueIds
-      .map((id) => leagues.find((l) => l.id === id)?.name || "Unknown")
-      .join(", ");
+    return leagueIds.map((id) => leagues.find((l) => l.id === id)?.name || "Unknown").join(", ");
   };
 
   const SortBtn = ({ col }) => (
@@ -92,6 +120,45 @@ function UserTable({ users, leagues, emptyMessage }) {
           )}
         </TableBody>
       </Table>
+    </div>
+  );
+}
+
+// Expandable league row for mobile
+function MobileLeagueRow({ row }) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="border-b border-slate-100 last:border-b-0">
+      <button
+        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <span className="font-medium text-slate-900 text-sm max-w-[65%] leading-snug">{row.name}</span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <Badge className="bg-slate-800 text-white text-xs">{row.total}</Badge>
+          {expanded ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
+        </div>
+      </button>
+      {expanded && (
+        <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+          <div className="bg-purple-50 rounded-lg p-2 text-center">
+            <div className="text-sm font-bold text-purple-700">{row.owners}</div>
+            <div className="text-xs text-slate-500">Owners</div>
+          </div>
+          <div className="bg-green-50 rounded-lg p-2 text-center">
+            <div className="text-sm font-bold text-green-700">{row.coaches}</div>
+            <div className="text-xs text-slate-500">Coaches</div>
+          </div>
+          <div className="bg-indigo-50 rounded-lg p-2 text-center">
+            <div className="text-sm font-bold text-indigo-700">{row.players}</div>
+            <div className="text-xs text-slate-500">Players</div>
+          </div>
+          <div className="bg-blue-50 rounded-lg p-2 text-center">
+            <div className="text-sm font-bold text-blue-700">{row.viewers}</div>
+            <div className="text-xs text-slate-500">Viewers</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -137,7 +204,6 @@ export default function UserRoles() {
   };
   const totalUsers = counts.league_owners + counts.coaches + counts.players + counts.viewers;
 
-  // Users per league
   const usersPerLeague = useMemo(() => {
     return leagues
       .map((league) => {
@@ -159,7 +225,6 @@ export default function UserRoles() {
       .sort((a, b) => b.total - a.total);
   }, [leagues, users]);
 
-  // Filtered users for role tabs
   const roleUsers = useMemo(() => {
     if (activeTab === "overview") return [];
     const userType = TAB_USER_TYPE[activeTab];
@@ -201,26 +266,28 @@ export default function UserRoles() {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-1 mb-6 bg-white rounded-xl border border-slate-200 p-1 shadow-sm">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => { setActiveTab(tab); setSearch(""); }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                activeTab === tab
-                  ? "bg-slate-900 text-white shadow"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              {TAB_LABELS[tab]}
-              {tab !== "overview" && counts[tab] > 0 && (
-                <span className={`${activeTab === tab ? "bg-white/20" : tabBadgeColor[tab]} text-white text-xs px-1.5 py-0.5 rounded-full font-semibold`}>
-                  {counts[tab]}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* Tabs — horizontally scrollable on mobile */}
+        <div className="mb-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex overflow-x-auto scrollbar-none p-1 gap-1">
+            {TABS.map((tab) => (
+              <button
+                key={tab}
+                onClick={() => { setActiveTab(tab); setSearch(""); }}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0 whitespace-nowrap ${
+                  activeTab === tab
+                    ? "bg-slate-900 text-white shadow"
+                    : "text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                {TAB_LABELS[tab]}
+                {tab !== "overview" && counts[tab] > 0 && (
+                  <span className={`${activeTab === tab ? "bg-white/20" : tabBadgeColor[tab]} text-white text-xs px-1.5 py-0.5 rounded-full font-semibold`}>
+                    {counts[tab]}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Search (role tabs only) */}
@@ -239,8 +306,28 @@ export default function UserRoles() {
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <div className="space-y-6">
-            {/* KPI Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+
+            {/* KPI — mobile: compact rows / desktop: grid tiles */}
+            {/* Mobile compact rows */}
+            <div className="md:hidden bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {kpiCards.map((kpi, i) => (
+                <button
+                  key={kpi.tab}
+                  onClick={() => setActiveTab(kpi.tab)}
+                  className={`w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors ${i < kpiCards.length - 1 ? "border-b border-slate-100" : ""}`}
+                >
+                  <span className="text-sm font-medium text-slate-700">{kpi.label}</span>
+                  <span className={`text-lg font-bold ${kpi.textColor}`}>{kpi.count}</span>
+                </button>
+              ))}
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-t border-slate-200">
+                <span className="text-sm font-semibold text-slate-700">Total Users</span>
+                <span className="text-lg font-bold text-slate-900">{totalUsers}</span>
+              </div>
+            </div>
+
+            {/* Desktop grid tiles */}
+            <div className="hidden md:grid md:grid-cols-5 gap-4">
               {kpiCards.map((kpi) => (
                 <button
                   key={kpi.tab}
@@ -265,7 +352,18 @@ export default function UserRoles() {
                   Users per League
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-4 p-0">
+
+              {/* Mobile: expandable rows */}
+              <div className="md:hidden">
+                {usersPerLeague.length > 0 ? (
+                  usersPerLeague.map((row) => <MobileLeagueRow key={row.id} row={row} />)
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">No leagues found</div>
+                )}
+              </div>
+
+              {/* Desktop: full table */}
+              <CardContent className="hidden md:block pt-4 p-0">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -315,12 +413,27 @@ export default function UserRoles() {
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
-              <UserTable
-                users={roleUsers}
-                leagues={leagues}
-                emptyMessage={search ? `No ${TAB_LABELS[activeTab].toLowerCase()} match your search` : `No ${TAB_LABELS[activeTab].toLowerCase()} found`}
-              />
+            <CardContent className="pt-6 md:pt-6 p-0 md:p-6">
+              {/* Mobile: compact cards */}
+              <div className="md:hidden">
+                {roleUsers.length > 0 ? (
+                  roleUsers.map((user) => (
+                    <MobileUserCard key={user.id} user={user} leagues={leagues} />
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    {search ? `No ${TAB_LABELS[activeTab].toLowerCase()} match your search` : `No ${TAB_LABELS[activeTab].toLowerCase()} found`}
+                  </div>
+                )}
+              </div>
+              {/* Desktop: table */}
+              <div className="hidden md:block">
+                <UserTable
+                  users={roleUsers}
+                  leagues={leagues}
+                  emptyMessage={search ? `No ${TAB_LABELS[activeTab].toLowerCase()} match your search` : `No ${TAB_LABELS[activeTab].toLowerCase()} found`}
+                />
+              </div>
             </CardContent>
           </Card>
         )}
