@@ -214,20 +214,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
                           {item.title === "Requests" && pendingRequestsCount > 0 && (
-                            <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
-                          )}
-                          {item.title === "League Owners" && leagueOwnersCount > 0 && (
-                            <Badge className="ml-auto bg-blue-500 text-white">{leagueOwnersCount}</Badge>
-                          )}
-                          {item.title === "Coaches" && coachesCount > 0 && (
-                            <Badge className="ml-auto bg-green-500 text-white">{coachesCount}</Badge>
-                          )}
-                          {item.title === "Players" && playersCount > 0 && (
-                            <Badge className="ml-auto bg-indigo-500 text-white">{playersCount}</Badge>
-                          )}
-                          {item.title === "Viewers" && viewersCount > 0 && (
-                            <Badge className="ml-auto bg-purple-500 text-white">{viewersCount}</Badge>
-                          )}
+                             <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                           )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
