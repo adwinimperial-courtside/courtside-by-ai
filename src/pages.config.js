@@ -69,6 +69,7 @@ import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
+import Analytics from './pages/Analytics';
 import __Layout from './Layout.jsx';
 
 
@@ -95,6 +96,7 @@ export const PAGES = {
     "UserRoles": UserRoles,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
+    "Analytics": Analytics,
 }
 
 export const pagesConfig = {
