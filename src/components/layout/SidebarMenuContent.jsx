@@ -90,6 +90,11 @@ const ownerItems = [
     title: "User Roles",
     url: createPageUrl("UserRoles"),
     icon: UserCog
+  },
+  {
+    title: "Analytics",
+    url: createPageUrl("Analytics"),
+    icon: LineChart
   }
 ];
 
