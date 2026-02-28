@@ -164,7 +164,7 @@ Keep output:
 
       await base44.entities.TacticalBriefing.create(briefingData);
 
-      // Update or create usage counter
+      // Update or create usage counter (per user per month)
       if (usageCounter) {
         await base44.entities.AIUsageCounter.update(usageCounter.id, {
           briefings_generated: briefingsUsed + 1
@@ -174,7 +174,7 @@ Keep output:
           league_id: selectedLeague,
           month_year: currentMonthYear,
           briefings_generated: 1,
-          monthly_limit: 5
+          monthly_limit: 10
         });
       }
 
