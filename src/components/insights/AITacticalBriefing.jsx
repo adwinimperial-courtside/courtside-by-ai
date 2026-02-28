@@ -35,20 +35,20 @@ export default function AITacticalBriefing({
     enabled: !!selectedTeam && !!selectedOpponent,
   });
 
-  // Fetch usage counter
+  // Fetch usage counter (per user per month)
   const currentMonthYear = format(new Date(), 'yyyy-MM');
   const { data: usageCounters = [] } = useQuery({
-    queryKey: ['aiUsageCounter', selectedLeague, currentMonthYear],
+    queryKey: ['aiUsageCounter', userEmail, currentMonthYear],
     queryFn: () => base44.entities.AIUsageCounter.filter({
-      league_id: selectedLeague,
+      created_by: userEmail,
       month_year: currentMonthYear
     }),
-    enabled: !!selectedLeague,
+    enabled: !!userEmail,
   });
 
   const usageCounter = usageCounters[0];
   const briefingsUsed = usageCounter?.briefings_generated || 0;
-  const monthlyLimit = usageCounter?.monthly_limit || 5;
+  const monthlyLimit = 10;
   const briefingsRemaining = monthlyLimit - briefingsUsed;
   const hasReachedLimit = briefingsUsed >= monthlyLimit;
 
