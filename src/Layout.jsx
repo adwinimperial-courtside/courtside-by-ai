@@ -48,15 +48,9 @@ export default function Layout({ children }) {
               user_type: user.user_type || 'unknown'
             }
           });
-          // Record login event in LoginEvent entity for analytics
+          // Record login event via backend function (uses service role to bypass permissions)
           if (user.user_type !== 'app_admin') {
-            base44.entities.LoginEvent.create({
-              user_id: user.id,
-              user_email: user.email,
-              full_name: user.full_name,
-              user_type: user.user_type || 'unknown',
-              logged_at: new Date().toISOString(),
-            }).catch(() => {});
+            base44.functions.invoke('recordLoginEvent', {}).catch(() => {});
           }
           hasLoggedLoginEventRef.current = true;
           sessionStartTimeRef.current = Date.now();
