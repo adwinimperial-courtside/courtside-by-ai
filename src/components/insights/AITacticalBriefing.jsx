@@ -16,12 +16,14 @@ export default function AITacticalBriefing({
   selectedOpponentName,
   winLossComparison,
   opponentSnapshot,
-  last3GamesTrend
+  last3GamesTrend,
+  currentUser
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const queryClient = useQueryClient();
+  const userEmail = currentUser?.email;
 
   // Fetch existing briefing
   const { data: existingBriefings = [] } = useQuery({
