@@ -86,19 +86,21 @@ export default function AITacticalBriefing({
         avgAssistsLosses: winLossComparison?.losses.stats.assists || 0,
         reboundMarginWins: winLossComparison?.wins.stats.reboundMargin || 0,
         reboundMarginLosses: winLossComparison?.losses.stats.reboundMargin || 0,
-        avgTurnoversWins: winLossComparison?.wins.stats.turnovers || 0,
-        avgTurnoversLosses: winLossComparison?.losses.stats.turnovers || 0,
+        ...(excludeTurnovers ? {} : {
+          avgTurnoversWins: winLossComparison?.wins.stats.turnovers || 0,
+          avgTurnoversLosses: winLossComparison?.losses.stats.turnovers || 0,
+        }),
         last3Points: last3GamesTrend?.points || 0,
         last3Assists: last3GamesTrend?.assists || 0,
         last3ReboundMargin: last3GamesTrend?.reboundMargin || 0,
-        last3Turnovers: last3GamesTrend?.turnovers || 0,
+        ...(excludeTurnovers ? {} : { last3Turnovers: last3GamesTrend?.turnovers || 0 }),
       };
 
       const opponentData = {
         opponentName: selectedOpponentName,
         avgPoints: opponentSnapshot?.avgPoints || 0,
         avgRebounds: opponentSnapshot?.avgRebounds || 0,
-        avgTurnovers: opponentSnapshot?.avgTurnovers || 0,
+        ...(excludeTurnovers ? {} : { avgTurnovers: opponentSnapshot?.avgTurnovers || 0 }),
         topScorerName: opponentSnapshot?.topScorer?.name || 'N/A',
         topScorerPPG: opponentSnapshot?.topScorer?.ppg || 0,
         topDefenderName: opponentSnapshot?.topDefender?.name || 'N/A',
@@ -110,18 +112,17 @@ export default function AITacticalBriefing({
 
 TEAM DATA (${teamData.teamName}):
 - Record: ${teamData.winsCount}W - ${teamData.lossesCount}L
-- In Wins: ${teamData.avgPointsWins} PPG, ${teamData.avgAssistsWins} APG, ${teamData.reboundMarginWins} REB Margin, ${teamData.avgTurnoversWins} TO
-- In Losses: ${teamData.avgPointsLosses} PPG, ${teamData.avgAssistsLosses} APG, ${teamData.reboundMarginLosses} REB Margin, ${teamData.avgTurnoversLosses} TO
-- Last 3 Games: ${teamData.last3Points} PPG, ${teamData.last3Assists} APG, ${teamData.last3ReboundMargin} REB Margin, ${teamData.last3Turnovers} TO
+- In Wins: ${teamData.avgPointsWins} PPG, ${teamData.avgAssistsWins} APG, ${teamData.reboundMarginWins} REB Margin${excludeTurnovers ? '' : `, ${teamData.avgTurnoversWins} TO`}
+- In Losses: ${teamData.avgPointsLosses} PPG, ${teamData.avgAssistsLosses} APG, ${teamData.reboundMarginLosses} REB Margin${excludeTurnovers ? '' : `, ${teamData.avgTurnoversLosses} TO`}
+- Last 3 Games: ${teamData.last3Points} PPG, ${teamData.last3Assists} APG, ${teamData.last3ReboundMargin} REB Margin${excludeTurnovers ? '' : `, ${teamData.last3Turnovers} TO`}
 
 OPPONENT DATA (${opponentData.opponentName}):
 - Avg Points: ${opponentData.avgPoints}
-- Avg Rebounds: ${opponentData.avgRebounds}
-- Avg Turnovers: ${opponentData.avgTurnovers}
+- Avg Rebounds: ${opponentData.avgRebounds}${excludeTurnovers ? '' : `\n- Avg Turnovers: ${opponentData.avgTurnovers}`}
 - Top Scorer: ${opponentData.topScorerName} (${opponentData.topScorerPPG} PPG)
 - Top Defender: ${opponentData.topDefenderName} (${opponentData.topDefenderDefense} STL+BLK)
 
-Generate a tactical briefing in this EXACT format:
+${excludeTurnovers ? 'NOTE: Turnovers are NOT tracked in this league. Do NOT reference turnovers or ball security/turnover control in your analysis.\n\n' : ''}Generate a tactical briefing in this EXACT format:
 
 🎯 Key Strategic Priorities
 
@@ -139,8 +140,7 @@ Generate a tactical briefing in this EXACT format:
 When you win, you average:
 • ${teamData.avgPointsWins} points
 • ${teamData.reboundMarginWins} rebound margin
-• ${teamData.avgAssistsWins} assists
-• ${teamData.avgTurnoversWins} turnovers
+• ${teamData.avgAssistsWins} assists${excludeTurnovers ? '' : `\n• ${teamData.avgTurnoversWins} turnovers`}
 
 Keep output:
 - Tactical and professional
