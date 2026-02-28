@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Key, Users, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight } from "lucide-react";
+import { Key, Users, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight, ArrowDown } from "lucide-react";
 
 const TABS = ["overview", "league_owners", "coaches", "players", "viewers"];
 const TAB_LABELS = {
@@ -84,12 +84,23 @@ function UserTable({ users, leagues, emptyMessage }) {
     return leagueIds.map((id) => leagues.find((l) => l.id === id)?.name || "Unknown").join(", ");
   };
 
-  const SortBtn = ({ col }) => (
-    <button onClick={() => handleSort(col)} className="flex items-center gap-1 font-semibold hover:text-slate-900">
-      {col === "full_name" ? "Name" : col === "email" ? "Email" : "Created On"}
-      <ArrowUpDown className="w-3 h-3" />
-    </button>
-  );
+  const SortBtn = ({ col }) => {
+    const isActive = sortConfig.key === col;
+    const label = col === "full_name" ? "Name" : col === "email" ? "Email" : "Created On";
+    return (
+      <button onClick={() => handleSort(col)} className="flex items-center gap-1 font-semibold hover:text-slate-900">
+        {label}
+        {isActive ? (
+          <ArrowDown className={`w-3 h-3 transition-transform ${sortConfig.direction === "asc" ? "rotate-180" : ""}`} />
+        ) : (
+          <ArrowUpDown className="w-3 h-3 text-slate-400" />
+        )}
+        {col === "created_date" && isActive && sortConfig.direction === "desc" && (
+          <span className="text-xs font-normal text-slate-400 ml-1">(newest)</span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="rounded-lg border border-slate-200 overflow-hidden">
@@ -223,16 +234,21 @@ export default function UserRoles() {
       .sort((a, b) => b.total - a.total);
   }, [leagues, users]);
 
+  // Sort by created_date DESC (newest first) by default
   const roleUsers = useMemo(() => {
     if (activeTab === "overview") return [];
     const userType = TAB_USER_TYPE[activeTab];
-    const filtered = users.filter((u) => u.user_type === userType);
-    if (!search.trim()) return filtered;
-    const q = search.toLowerCase();
-    return filtered.filter(
-      (u) =>
-        u.full_name?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q)
+    let filtered = users.filter((u) => u.user_type === userType);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      filtered = filtered.filter(
+        (u) =>
+          u.full_name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q)
+      );
+    }
+    return [...filtered].sort(
+      (a, b) => new Date(b.created_date).getTime() - new Date(a.created_date).getTime()
     );
   }, [users, activeTab, search]);
 
