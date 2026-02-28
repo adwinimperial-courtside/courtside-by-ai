@@ -558,7 +558,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && !activePlayerIds.includes(p.id)
   );
 
-  // ── Player Card for desktop team panel ──
+  // ── Player Card ──
+  // isDesktop=true → show R & A; isDesktop=false (mobile) → show only F & T
   const PlayerButton = ({ player, teamColor, onSubClick, isDesktop }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
@@ -598,10 +599,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {playerStats && (
               <div className="w-full pt-0.5 border-t border-slate-200">
                 <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
-                {/* All stats in ONE row: R A F T */}
                 <div className="flex justify-around mt-0.5">
-                  <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
-                  <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
+                  {/* R and A only shown on desktop/tablet */}
+                  {isDesktop && (
+                    <>
+                      <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
+                      <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
+                    </>
+                  )}
                   <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
                   <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
                 </div>
@@ -625,7 +630,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  // ── Team panel (vertical player list) ──
+  // ── Team panel ──
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
     const accentColor = isHome ? '#3b82f6' : '#ef4444';
@@ -650,7 +655,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
-        {/* Mobile: 5-col grid / Desktop: vertical stack that fills height evenly */}
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-1 min-[900px]:content-stretch">
           {teamPlayers.map((player) => (
             <PlayerButton
@@ -808,6 +812,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
         <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
         <div className="mt-3 space-y-3">
+          {/* Mobile uses side=undefined so isDesktop=false → no R/A */}
           <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -882,6 +887,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         <div className="flex gap-3 flex-1 min-h-0">
           <div className="w-[25%] flex-shrink-0 min-h-0">
+            {/* side="home" → isDesktop=true → shows R & A */}
             <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" side="home" />
           </div>
 
@@ -895,6 +901,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           <div className="w-[25%] flex-shrink-0 min-h-0">
+            {/* side="away" → isDesktop=true → shows R & A */}
             <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" side="away" />
           </div>
         </div>
