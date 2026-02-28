@@ -17,7 +17,8 @@ export default function AITacticalBriefing({
   winLossComparison,
   opponentSnapshot,
   last3GamesTrend,
-  currentUser
+  currentUser,
+  excludeTurnovers = false
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
