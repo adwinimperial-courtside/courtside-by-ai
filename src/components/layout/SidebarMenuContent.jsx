@@ -109,7 +109,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   });
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
-
+  const totalUsersCount = allUsers.filter(u => u.user_type !== 'app_admin').length;
 
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
@@ -214,8 +214,11 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                           <item.icon className="w-5 h-5" />
                           <span>{item.title}</span>
                           {item.title === "Requests" && pendingRequestsCount > 0 && (
-                             <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
-                           )}
+                            <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                          )}
+                          {item.title === "User Roles" && totalUsersCount > 0 && (
+                            <Badge className="ml-auto bg-slate-500 text-white">{totalUsersCount}</Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
