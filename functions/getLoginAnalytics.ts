@@ -9,21 +9,6 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    // Fetch all users for joining
-    const users = await base44.asServiceRole.entities.User.list();
-
-    // Build user lookup map
-    const userMap = {};
-    for (const u of users) {
-      userMap[u.email] = {
-        id: u.id,
-        full_name: u.full_name,
-        email: u.email,
-        user_type: u.data?.user_type || u.user_type || 'unknown',
-      };
-    }
-
-    // Parse requested action from body
     const body = await req.json().catch(() => ({}));
     const { action, email: targetEmail } = body;
 
@@ -31,39 +16,36 @@ Deno.serve(async (req) => {
     const now = new Date();
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    // 14 days ago
     const fourteenDaysAgo = new Date(todayStart.getTime() - 13 * 24 * 60 * 60 * 1000);
 
     if (action === 'today') {
-      // Logins today: filter users by updated_date today as a proxy
-      // Use user_login analytics events stored in the analytics system
-      // Since we track user_login in layout.js, we use the User entity's updated_date
-      // as a signal for recent activity, but the real data is in analytics.
-      // We'll use the users list and filter by those who have logged in today
-      // based on created_date or updated_date as a fallback.
-      // The proper signal: user's updated_date when their login event fires
-      // Actually - we track user_login with user_email in analytics.
-      // Let's use a smarter approach: filter users updated today as session proxy.
-      const todayLogins = users
-        .filter(u => {
-          const updated = new Date(u.updated_date);
-          return updated >= todayStart && updated < todayEnd && u.data?.user_type && u.data.user_type !== 'app_admin';
-        })
-        .map(u => ({
-          time: u.updated_date,
-          full_name: u.full_name,
-          email: u.email,
-          user_type: u.data?.user_type || 'unknown',
+      // Get all login events from today
+      const events = await base44.asServiceRole.entities.LoginEvent.filter(
+        { logged_at: { '$gte': todayStart.toISOString(), '$lt': todayEnd.toISOString() } },
+        '-logged_at',
+        200
+      );
+
+      const logins = events
+        .map(e => ({
+          time: e.logged_at,
+          full_name: e.full_name,
+          email: e.user_email,
+          user_type: e.user_type,
         }))
         .sort((a, b) => new Date(b.time) - new Date(a.time));
 
-      return Response.json({ logins: todayLogins });
+      return Response.json({ logins });
     }
 
     if (action === 'daily_active') {
-      // Group users by their last_seen (updated_date) over last 14 days
-      // This is a proxy - real analytics would use the analytics event store
+      // Get all events from last 14 days
+      const events = await base44.asServiceRole.entities.LoginEvent.filter(
+        { logged_at: { '$gte': fourteenDaysAgo.toISOString() } },
+        '-logged_at',
+        2000
+      );
+
       // Build daily buckets
       const dailyMap = {};
       for (let d = 0; d < 14; d++) {
@@ -72,13 +54,10 @@ Deno.serve(async (req) => {
         dailyMap[key] = { date: key, unique_users: new Set(), total_logins: 0 };
       }
 
-      for (const u of users) {
-        if (!u.data?.user_type || u.data.user_type === 'app_admin') continue;
-        const updated = new Date(u.updated_date);
-        if (updated < fourteenDaysAgo || updated >= todayEnd) continue;
-        const key = updated.toISOString().slice(0, 10);
+      for (const e of events) {
+        const key = new Date(e.logged_at).toISOString().slice(0, 10);
         if (dailyMap[key]) {
-          dailyMap[key].unique_users.add(u.id);
+          dailyMap[key].unique_users.add(e.user_id);
           dailyMap[key].total_logins += 1;
         }
       }
@@ -95,24 +74,43 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'user_history') {
-      // Show last 30 logins for a specific user by email
       if (!targetEmail) return Response.json({ events: [] });
-      const targetUser = userMap[targetEmail];
-      if (!targetUser) return Response.json({ events: [] });
 
-      // Since we don't have a direct event store accessible via SDK here,
-      // we return the user's own record with limited history note.
-      // The real login events are tracked via analytics.track but not queryable from backend SDK.
-      // Return user info + updated_date as last known activity signal.
+      const events = await base44.asServiceRole.entities.LoginEvent.filter(
+        { user_email: targetEmail },
+        '-logged_at',
+        30
+      );
+
       return Response.json({
-        events: [{
-          time: targetUser.updated_date || null,
-          email: targetUser.email,
-          full_name: targetUser.full_name,
-          user_type: targetUser.user_type,
-        }],
-        note: 'limited_history'
+        events: events.map(e => ({
+          time: e.logged_at,
+          full_name: e.full_name,
+          email: e.user_email,
+          user_type: e.user_type,
+        }))
       });
+    }
+
+    if (action === 'search_users') {
+      const { query } = body;
+      const users = await base44.asServiceRole.entities.User.list('-created_date', 500);
+      const q = (query || '').toLowerCase();
+      const filtered = users
+        .filter(u => u.data?.user_type && u.data.user_type !== 'app_admin')
+        .filter(u =>
+          !q ||
+          (u.full_name || '').toLowerCase().includes(q) ||
+          (u.email || '').toLowerCase().includes(q)
+        )
+        .slice(0, 20)
+        .map(u => ({
+          id: u.id,
+          full_name: u.full_name,
+          email: u.email,
+          user_type: u.data?.user_type || 'unknown',
+        }));
+      return Response.json({ users: filtered });
     }
 
     return Response.json({ error: 'Unknown action' }, { status: 400 });
