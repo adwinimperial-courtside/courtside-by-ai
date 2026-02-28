@@ -753,6 +753,7 @@ export default function CoachInsights() {
               winLossComparison={winLossComparison}
               opponentSnapshot={opponentSnapshot}
               last3GamesTrend={last3GamesTrend}
+              currentUser={currentUser}
             />
 
             {/* 4. Player Impact Rankings */}
