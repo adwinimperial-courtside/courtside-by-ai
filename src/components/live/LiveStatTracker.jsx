@@ -1061,7 +1061,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         const canSelect = eligible && (!replacementPlayers.includes(player.id) || isSelected);
                         const pStats = existingStats.find(s => s.player_id === player.id);
                         return (
-                          <Button key={player.id} variant={isSelected ? "default" : "outline"} disabled={!canSelect} className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : eligible ? 'border-slate-300 hover:bg-slate-100' : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'}`} onClick={() => toggleReplacementPlayer(player.id)}>
+                          <Button key={player.id} variant={isSelected ? "default" : "outline"} disabled={!canSelect} className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : eligible ? 'border-slate-300 hover:bg-slate-100' : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'}`} onClick={() => toggleReplacementPlayer(player.id, playerOut.id)}>
                             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3" style={{ backgroundColor: teamColor }}>{player.jersey_number}</div>
                             <div className="text-left flex-1">
                               <p className="font-semibold">{player.name}</p>
