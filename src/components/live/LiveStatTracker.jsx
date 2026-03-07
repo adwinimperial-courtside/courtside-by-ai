@@ -376,12 +376,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  const toggleReplacementPlayer = (playerId) => {
-    setReplacementPlayers(prev => 
-      prev.includes(playerId)
-        ? prev.filter(id => id !== playerId)
-        : [...prev, playerId]
-    );
+  const toggleReplacementPlayer = (playerId, playerOutId) => {
+    setReplacementPlayers(prev => {
+      if (prev.includes(playerId)) {
+        // Deselect
+        return prev.filter(id => id !== playerId);
+      }
+      // For single sub (most common case via sub button), replace any existing selection for this slot
+      const outIndex = playersToReplace.findIndex(p => p.id === playerOutId);
+      const newSelections = [...prev];
+      // Remove any player already assigned to this slot index
+      if (newSelections[outIndex] !== undefined) {
+        newSelections.splice(outIndex, 1, playerId);
+      } else {
+        // Only allow selecting up to playersToReplace.length replacements total
+        if (newSelections.length < playersToReplace.length) {
+          newSelections.push(playerId);
+        }
+      }
+      return newSelections;
+    });
   };
 
   const handleStartNextPeriod = async () => {
