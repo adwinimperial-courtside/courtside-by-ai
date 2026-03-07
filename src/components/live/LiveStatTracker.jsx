@@ -378,23 +378,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const toggleReplacementPlayer = (playerId, playerOutId) => {
     setReplacementPlayers(prev => {
-      if (prev.includes(playerId)) {
-        // Deselect
-        return prev.filter(id => id !== playerId);
-      }
-      // For single sub (most common case via sub button), replace any existing selection for this slot
       const outIndex = playersToReplace.findIndex(p => p.id === playerOutId);
       const newSelections = [...prev];
-      // Remove any player already assigned to this slot index
-      if (newSelections[outIndex] !== undefined) {
-        newSelections.splice(outIndex, 1, playerId);
-      } else {
-        // Only allow selecting up to playersToReplace.length replacements total
-        if (newSelections.length < playersToReplace.length) {
-          newSelections.push(playerId);
-        }
+      // If this player is already selected for this slot, deselect
+      if (newSelections[outIndex] === playerId) {
+        newSelections[outIndex] = undefined;
+        return newSelections.filter(id => id !== undefined);
       }
-      return newSelections;
+      // If this player is selected for another slot, ignore
+      if (newSelections.includes(playerId)) return prev;
+      // Assign this player to this slot (replace any previous choice for this slot)
+      newSelections[outIndex] = playerId;
+      // Return only defined slots in order
+      return playersToReplace.map((_, i) => newSelections[i]).filter(id => id !== undefined);
     });
   };
 
