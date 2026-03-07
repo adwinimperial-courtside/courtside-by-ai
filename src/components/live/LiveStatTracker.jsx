@@ -1040,7 +1040,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       {benchPlayers.map(player => {
                         const outIndex = playersToReplace.findIndex(p => p.id === playerOut.id);
                         const isSelected = replacementPlayers[outIndex] === player.id;
-                        const isUsedElsewhere = replacementPlayers.includes(player.id) && !isSelected;
+                        const isUsedElsewhere = replacementPlayers.some((id, idx) => id === player.id && idx !== outIndex);
                         const eligible = isEligibleReplacement(player.id);
                         const canSelect = eligible && !isUsedElsewhere;
                         const pStats = existingStats.find(s => s.player_id === player.id);
