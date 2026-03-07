@@ -1056,9 +1056,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                     <div key={playerOut.id}>
                       <p className="text-sm text-slate-600 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
                       {benchPlayers.map(player => {
-                        const isSelected = replacementPlayers.includes(player.id);
+                        const outIndex = playersToReplace.findIndex(p => p.id === playerOut.id);
+                        const isSelected = replacementPlayers[outIndex] === player.id;
+                        const isUsedElsewhere = replacementPlayers.includes(player.id) && !isSelected;
                         const eligible = isEligibleReplacement(player.id);
-                        const canSelect = eligible && (!replacementPlayers.includes(player.id) || isSelected);
+                        const canSelect = eligible && !isUsedElsewhere;
                         const pStats = existingStats.find(s => s.player_id === player.id);
                         return (
                           <Button key={player.id} variant={isSelected ? "default" : "outline"} disabled={!canSelect} className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : eligible ? 'border-slate-300 hover:bg-slate-100' : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'}`} onClick={() => toggleReplacementPlayer(player.id, playerOut.id)}>
