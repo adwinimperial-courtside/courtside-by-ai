@@ -372,7 +372,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                   </button>
                   <button
                     onClick={handlePlayPause}
-                    disabled={!running}
+                    disabled={!running || timeExpired}
                     className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-red-500 hover:bg-red-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
                     style={{ minWidth: '140px', minHeight: '56px' }}
                   >
