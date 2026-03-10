@@ -611,6 +611,23 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     await deleteLogMutation.mutateAsync(logEntry.id);
   };
 
+  const getTimeoutSegmentKey = (period) => {
+    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    if (period > totalPeriods) return 'OVERTIME';
+    if (game.period_type === 'halves') return period === 1 ? 'FIRST_HALF' : 'SECOND_HALF';
+    return period <= 2 ? 'FIRST_HALF' : 'SECOND_HALF';
+  };
+
+  const handleUndoTimeout = async (logEntry) => {
+    const isHome = logEntry.teamId === game.home_team_id;
+    const timeoutsKey = isHome ? 'home_timeouts' : 'away_timeouts';
+    const segmentKey = getTimeoutSegmentKey(game.clock_period ?? 1);
+    const currentMap = { ...(game[timeoutsKey] || {}) };
+    currentMap[segmentKey] = Math.max(0, (currentMap[segmentKey] || 0) - 1);
+    await updateGameMutation.mutateAsync({ gameId: game.id, data: { [timeoutsKey]: currentMap } });
+    await deleteLogMutation.mutateAsync(logEntry.id);
+  };
+
   const handleUndoSubstitution = async (logEntry) => {
     if (!logEntry.subData) return;
     const { out_ids, in_ids } = logEntry.subData;
