@@ -355,6 +355,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleConfirmSubstitution = async () => {
+    if (isSubmittingSubRef.current) return;
+    isSubmittingSubRef.current = true;
+
+    // Capture selections and close dialog immediately to prevent double-tap
+    const capturedHomeOut = [...homePlayersOut];
+    const capturedHomeIn = [...homePlayersIn];
+    const capturedAwayOut = [...awayPlayersOut];
+    const capturedAwayIn = [...awayPlayersIn];
+    setShowSubDialog(false);
+    resetSubDialog();
+
     const currentComputedTimeLeft = computeTimeLeft(game);
     // Always fetch fresh stats to avoid stale cache causing > 5 players bug
     const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
