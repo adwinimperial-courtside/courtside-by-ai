@@ -128,7 +128,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       timestamp: new Date(log.created_date),
       player: player,
       playerIn: playerIn,
-      isSubstitution: log.stat_type === 'substitution',
+      isSubstitution: log.stat_type === 'substitution' || log.stat_type === 'ejection',
       statType: {
         key: log.stat_type,
         label: log.stat_label,
