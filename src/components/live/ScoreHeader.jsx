@@ -100,6 +100,15 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const isOvertime = period > totalPeriods;
   const periodLabel = getPeriodLabel(period, periodType);
 
+  // Final review mode: clock at 00:00 at end of last regulation period or any overtime period
+  const isInFinalReview = displayTime <= 0 && !running && (period === totalPeriods || isOvertime);
+
+  const getReviewLabel = () => {
+    if (isOvertime) return `END OF OT${period - totalPeriods}`;
+    if (periodType === 'halves') return `END OF H${period}`;
+    return `END OF Q${period}`;
+  };
+
   // Derived foul values for the current foul-reset period
   const foulResetKey = getFoulResetPeriodKey(period, periodType, totalPeriods);
   const homeFoulsNow = homeTeamFouls[foulResetKey] || 0;
