@@ -57,7 +57,9 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
 
   const editedBadgeColor = "bg-amber-100 text-amber-800";
 
-  const gamePlayerStats = stats?.filter(s => s.game_id === liveGame.id) || [];
+  const gamePlayerStats = liveGame.status === 'in_progress'
+    ? liveStats
+    : (stats?.filter(s => s.game_id === liveGame.id) || []);
   
   const hasPlayerStats = (stat) => {
     const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
