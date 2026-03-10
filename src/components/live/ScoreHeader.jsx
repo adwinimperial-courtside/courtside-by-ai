@@ -440,6 +440,9 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
               {homeInBonus && (
                 <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
               )}
+              {!homeInBonus && homeNearBonus && (
+                <span className="px-2 py-0.5 rounded-md bg-orange-500 text-white text-[10px] font-black uppercase tracking-wide">⚠ WARNING</span>
+              )}
             </div>
           </div>
 
