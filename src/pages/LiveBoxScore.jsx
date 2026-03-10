@@ -36,17 +36,18 @@ export default function LiveBoxScorePage() {
           return;
         }
 
-        const [homeTeamResult, awayTeamResult, homePlayersResult, awayPlayersResult] = await Promise.all([
+        const playerIds = statsResult?.map(s => s.player_id) || [];
+
+        const [homeTeamResult, awayTeamResult, playersResult] = await Promise.all([
           base44.entities.Team.filter({ id: game.home_team_id }),
           base44.entities.Team.filter({ id: game.away_team_id }),
-          base44.entities.Player.filter({ team_id: game.home_team_id }),
-          base44.entities.Player.filter({ team_id: game.away_team_id })
+          playerIds.length > 0 ? base44.entities.Player.filter({ id: { $in: playerIds } }) : Promise.resolve([])
         ]);
 
         setPageData({
           game,
           teams: [...(homeTeamResult || []), ...(awayTeamResult || [])],
-          players: [...(homePlayersResult || []), ...(awayPlayersResult || [])],
+          players: playersResult || [],
           stats: statsResult || []
         });
       } catch (error) {
