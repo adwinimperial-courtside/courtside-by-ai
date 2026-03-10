@@ -79,7 +79,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
     initialData: initialStats,
-    staleTime: 0,
+    staleTime: 5000, // Keep data fresh for 5 seconds, reduce refetch spam
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const existingStats = liveStats;
@@ -87,42 +89,41 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
+    staleTime: 5000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   useEffect(() => {
-    let timeoutStats, timeoutLogs, timeoutGame;
+    let timeoutStats, timeoutLogs;
     
+    // Only invalidate PlayerStats when other sources change (external updates)
     const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      clearTimeout(timeoutStats);
-      timeoutStats = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 200);
+      // Only refetch if it's NOT from this current user's actions
+      // Since mutations already update cache, only refetch on external changes
+      if (event.type !== 'create' && event.type !== 'update') {
+        clearTimeout(timeoutStats);
+        timeoutStats = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+        }, 500); // Longer debounce to batch updates
+      }
     });
     
+    // Only invalidate GameLogs when others modify (rare during live game)
     const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
-      clearTimeout(timeoutLogs);
-      timeoutLogs = setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 200);
-    });
-    
-    const unsubscribeGame = base44.entities.Game.subscribe((event) => {
-      clearTimeout(timeoutGame);
-      if (event.id === game.id) {
-        timeoutGame = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['games'] });
-          queryClient.invalidateQueries({ queryKey: ['game', game.id] });
-        }, 200);
+      if (event.type === 'delete') {
+        clearTimeout(timeoutLogs);
+        timeoutLogs = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+        }, 500);
       }
     });
     
     return () => {
       clearTimeout(timeoutStats);
       clearTimeout(timeoutLogs);
-      clearTimeout(timeoutGame);
       unsubscribeStats();
       unsubscribeLogs();
-      unsubscribeGame();
     };
   }, [game.id, queryClient]);
 
