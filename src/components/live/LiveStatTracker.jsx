@@ -934,7 +934,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
         <div className="mt-3 space-y-3">
           {/* Mobile uses side=undefined so isDesktop=false → no R/A */}
-          <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" />
+          {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
@@ -984,9 +984,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               <RefreshCw className="w-4 h-4 mr-2" />Make Substitution
             </Button>
           </div>
-          <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" />
+          {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
-            <ActivityLog compact={false} />
+            {ActivityLog({ compact: false })}
           </div>
         </div>
       </div>
@@ -1008,22 +1008,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         <div className="flex gap-3 flex-1 min-h-0">
           <div className="w-[25%] flex-shrink-0 min-h-0">
-            {/* side="home" → isDesktop=true → shows R & A */}
-            <TeamPanel team={homeTeam} activePlayers={homeActivePlayers} borderColor="border-l-blue-300" labelColor="text-blue-600" side="home" />
+            {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600", side: "home" })}
           </div>
 
           <div className="w-[50%] flex-shrink-0 flex flex-col gap-2 min-h-0">
             <div className="flex-[7] min-h-0">
-              <StatPanel large={true} />
+              {StatPanel({ large: true })}
             </div>
             <div className="flex-[3] min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
-              <ActivityLog compact={true} />
+              {ActivityLog({ compact: true })}
             </div>
           </div>
 
           <div className="w-[25%] flex-shrink-0 min-h-0">
-            {/* side="away" → isDesktop=true → shows R & A */}
-            <TeamPanel team={awayTeam} activePlayers={awayActivePlayers} borderColor="border-l-red-300" labelColor="text-red-600" side="away" />
+            {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600", side: "away" })}
           </div>
         </div>
       </div>
