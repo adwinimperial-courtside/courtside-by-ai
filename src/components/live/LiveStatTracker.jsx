@@ -496,6 +496,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         device_name: getDeviceName()
       });
     }
+    } finally {
+      isProcessingStatRef.current = false;
+    }
   };
 
   const resetSubDialog = () => {
