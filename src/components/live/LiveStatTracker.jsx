@@ -239,6 +239,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       return await base44.entities.Game.update(gameId, data);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['game', game.id] });
       onGameUpdate?.();
     },
   });
