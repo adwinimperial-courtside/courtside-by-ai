@@ -204,14 +204,24 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
     const nextPeriod = period + 1;
     const nextIsOT = nextPeriod > totalPeriods;
     const nextMins = nextIsOT ? overtimeMinutes : periodMinutes;
+    // New period = new foul-reset period, keep history but new key starts at 0
+    const newHomeFouls = { ...homeTeamFouls };
+    const newAwayFouls = { ...awayTeamFouls };
+    const nextKey = getFoulResetPeriodKey(nextPeriod, periodType, totalPeriods);
+    if (!newHomeFouls[nextKey]) newHomeFouls[nextKey] = 0;
+    if (!newAwayFouls[nextKey]) newAwayFouls[nextKey] = 0;
     try {
       const updates = {
         clock_period: nextPeriod,
         clock_time_left: nextMins * 60,
         clock_running: false,
         clock_started_at: null,
+        home_team_fouls: newHomeFouls,
+        away_team_fouls: newAwayFouls,
       };
       await base44.entities.Game.update(game.id, updates);
+      setHomeTeamFouls(newHomeFouls);
+      setAwayTeamFouls(newAwayFouls);
       if (onGameUpdate) onGameUpdate({ ...game, ...updates });
     } finally {
       isSaving.current = false;
