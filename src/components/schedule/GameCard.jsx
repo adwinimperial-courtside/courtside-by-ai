@@ -23,22 +23,21 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     setLiveGame(game);
   }, [game]);
 
+  // Debounce PlayerStats subscription refreshes for viewer context (800ms)
+  // Schedule page is a viewer surface, so updates don't need to be instant
+  const { trigger: debouncedFetch, cleanup: cleanupDebounce } = usePlayerStatsDebounce(
+    () => base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats),
+    800
+  );
+
   useEffect(() => {
     if (game.status === 'in_progress') {
-      const fetchStats = () => {
-        // Debounce: wait 800ms after last event before fetching to avoid rate limits
-        clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => {
-          base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
-        }, 800);
-      };
-
       const unsubscribeGame = base44.entities.Game.subscribe((event) => {
         if (event.id === game.id && event.type === 'update') {
           setLiveGame(event.data);
         }
       });
-      const unsubscribeStats = base44.entities.PlayerStats.subscribe(fetchStats);
+      const unsubscribeStats = base44.entities.PlayerStats.subscribe(debouncedFetch);
 
       // Initial fetch of live stats (no debounce needed on mount)
       base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
@@ -46,10 +45,10 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
       return () => {
         unsubscribeGame();
         unsubscribeStats();
-        clearTimeout(debounceRef.current);
+        cleanupDebounce();
       };
     }
-  }, [game.id, game.status]);
+  }, [game.id, game.status, debouncedFetch, cleanupDebounce]);
 
   const homeTeam = teams.find(t => t.id === liveGame.home_team_id);
   const awayTeam = teams.find(t => t.id === liveGame.away_team_id);
