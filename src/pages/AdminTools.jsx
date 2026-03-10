@@ -29,6 +29,7 @@ export default function AdminTools() {
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
   const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
@@ -39,12 +40,14 @@ export default function AdminTools() {
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
   const recalculateGameScores = async () => {

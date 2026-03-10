@@ -53,7 +53,7 @@ export default function TeamsPage() {
     fetchUser();
   }, [leagueIdFromUrl]);
 
-  const { data: leagues } = useQuery({
+  const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     staleTime: 5 * 60000, // 5 minutes
