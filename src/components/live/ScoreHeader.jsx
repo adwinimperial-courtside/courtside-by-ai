@@ -149,7 +149,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const autoStopFiredRef = useRef(false);
 
   const handlePlayPause = async () => {
-    if (!isTimed || isSaving.current) return;
+    if (!isTimed || isSaving.current || lineupBlocked) return;
     const currentTimeLeft = computeTimeLeft(game);
 
     // If time is 0 and not running, advance to next period AND immediately start the clock
