@@ -100,6 +100,14 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
   const isOvertime = period > totalPeriods;
   const periodLabel = getPeriodLabel(period, periodType);
 
+  // Derived foul values for the current foul-reset period
+  const foulResetKey = getFoulResetPeriodKey(period, periodType, totalPeriods);
+  const homeFoulsNow = homeTeamFouls[foulResetKey] || 0;
+  const awayFoulsNow = awayTeamFouls[foulResetKey] || 0;
+  const threshold = gameRules.teamFoulBonusThreshold;
+  const homeInBonus = homeFoulsNow >= threshold;
+  const awayInBonus = awayFoulsNow >= threshold;
+
   // Recompute display time whenever game clock state changes
   useEffect(() => {
     setDisplayTime(computeTimeLeft(game));
