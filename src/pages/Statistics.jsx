@@ -298,8 +298,8 @@ export default function StatisticsPage() {
                   <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
                 </TabsContent>
                 <TabsContent value="games">
-                  <GameStats games={filteredGames} teams={teams} players={players} stats={allStats} />
-                </TabsContent>
+                   <GameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
+                 </TabsContent>
               </Tabs>
             </div>
           </>
