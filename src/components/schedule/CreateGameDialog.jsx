@@ -23,6 +23,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     period_minutes: 10,
     overtime_minutes: 5,
   });
+  const dateInputTimeoutRef = React.useRef(null);
 
   const isTimed = formData.game_mode === "timed";
 
