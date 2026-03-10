@@ -123,16 +123,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const gameLog = gameLogs.map(log => {
     const player = players.find(p => p.id === log.player_id);
     const teamColor = log.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
-    const playerIn = log.stat_type === 'substitution' ? { name: log.stat_label } : null;
+    let subData = null;
+    let displayLabel = log.stat_label;
+    if (log.stat_type === 'substitution') {
+      try {
+        const parsed = JSON.parse(log.stat_label);
+        displayLabel = parsed.display || log.stat_label;
+        subData = parsed;
+      } catch (e) {
+        displayLabel = log.stat_label;
+      }
+    }
     return {
       id: log.id,
       timestamp: new Date(log.created_date),
       player: player,
-      playerIn: playerIn,
       isSubstitution: log.stat_type === 'substitution',
+      subData,
       statType: {
         key: log.stat_type,
-        label: log.stat_label,
+        label: displayLabel,
         points: log.stat_points,
         color: log.stat_color
       },
@@ -345,6 +355,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const handleConfirmSubstitution = async () => {
     const currentComputedTimeLeft = computeTimeLeft(game);
+    // Always fetch fresh stats to avoid stale cache causing > 5 players bug
+    const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
 
     const processTeamSub = async (playersOut, playersIn, teamId) => {
       if (playersOut.length === 0) return;
@@ -359,13 +371,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           }
         }
         playerGameClockStateRef.current[playerOut.id] = null;
-        const outStat = existingStats.find(s => s.player_id === playerOut.id);
+        const outStat = freshStats.find(s => s.player_id === playerOut.id);
         if (outStat) await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false } });
         if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
       }
 
       for (const playerInId of playersIn) {
-        const inStat = existingStats.find(s => s.player_id === playerInId);
+        const inStat = freshStats.find(s => s.player_id === playerInId);
         if (inStat) {
           await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true } });
         } else {
@@ -378,12 +390,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const outNames = playersOut.map(p => p.name).join(', ');
       const inNames = playersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
       const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
+      // Store player IDs in log so substitution can be undone
+      const logData = JSON.stringify({
+        display: logLabel,
+        out_ids: playersOut.map(p => p.id),
+        in_ids: playersIn,
+        team_id: teamId
+      });
       await createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: playersOut[0].id,
         team_id: teamId,
         stat_type: 'substitution',
-        stat_label: logLabel,
+        stat_label: logData,
         stat_points: 0,
         stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
         old_home_score: game.home_score || 0,
@@ -528,6 +547,23 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
+    await deleteLogMutation.mutateAsync(logEntry.id);
+  };
+
+  const handleUndoSubstitution = async (logEntry) => {
+    if (!logEntry.subData) return;
+    const { out_ids, in_ids } = logEntry.subData;
+    const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+    // Reverse: players who went OUT come back as starters
+    for (const playerId of (out_ids || [])) {
+      const stat = freshStats.find(s => s.player_id === playerId);
+      if (stat) await updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true } });
+    }
+    // Reverse: players who came IN go back to bench
+    for (const playerId of (in_ids || [])) {
+      const stat = freshStats.find(s => s.player_id === playerId);
+      if (stat) await updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false } });
+    }
     await deleteLogMutation.mutateAsync(logEntry.id);
   };
 
@@ -855,11 +891,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 </>
               )}
               <span className="text-[10px] text-slate-400 flex-shrink-0">{format(log.timestamp, 'HH:mm:ss')}</span>
-              {!log.isSubstitution && (
+              {log.isSubstitution && log.subData ? (
+                <Button size="sm" variant="ghost" onClick={() => handleUndoSubstitution(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
+                  <Undo2 className="w-2.5 h-2.5" />
+                </Button>
+              ) : !log.isSubstitution ? (
                 <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
                   <Undo2 className="w-2.5 h-2.5" />
                 </Button>
-              )}
+              ) : null}
             </div>
           ))
         )}
