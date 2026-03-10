@@ -950,11 +950,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
                 </div>
               ) : log.statType.key === 'timeout' ? (
-                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <Clock className="w-3 h-3 text-amber-500 flex-shrink-0" />
-                  <span className="text-[10px] font-bold text-amber-600 flex-shrink-0">T/O</span>
-                  <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
-                </div>
+                <>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <Clock className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                    <span className="text-[10px] font-bold text-amber-600 flex-shrink-0">T/O</span>
+                    <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 flex-shrink-0">{format(log.timestamp, 'HH:mm:ss')}</span>
+                  <Button size="sm" variant="ghost" onClick={() => handleUndoTimeout(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
+                    <Undo2 className="w-2.5 h-2.5" />
+                  </Button>
+                </>
               ) : log.statType.key === 'ejection' ? (
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
