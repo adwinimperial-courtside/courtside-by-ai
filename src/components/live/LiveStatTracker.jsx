@@ -402,7 +402,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const outNames = playersOut.map(p => p.name).join(', ');
       const inNames = playersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
       const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
-      // Store player IDs in log so substitution can be undone
       const logData = JSON.stringify({
         display: logLabel,
         out_ids: playersOut.map(p => p.id),
@@ -424,11 +423,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     };
 
-    await processTeamSub(homePlayersOut, homePlayersIn, game.home_team_id);
-    await processTeamSub(awayPlayersOut, awayPlayersIn, game.away_team_id);
+    await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
+    await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
-    setShowSubDialog(false);
-    resetSubDialog();
+    isSubmittingSubRef.current = false;
   };
 
   const togglePlayerOut = (player, teamId) => {
