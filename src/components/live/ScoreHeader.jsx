@@ -73,6 +73,16 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
     await base44.entities.Game.update(game.id, { possession: next });
     if (onGameUpdate) onGameUpdate({ ...game, possession: next });
   };
+  // ── Team Fouls state ─────────────────────────────────────────────
+  const gameRules = { ...DEFAULT_GAME_RULES, ...(game.game_rules || {}) };
+  const [homeTeamFouls, setHomeTeamFouls] = useState(() => game.home_team_fouls || {});
+  const [awayTeamFouls, setAwayTeamFouls] = useState(() => game.away_team_fouls || {});
+
+  useEffect(() => {
+    if (game.home_team_fouls) setHomeTeamFouls(game.home_team_fouls);
+    if (game.away_team_fouls) setAwayTeamFouls(game.away_team_fouls);
+  }, [game.home_team_fouls, game.away_team_fouls]);
+
   const isTimed = game?.game_mode === "timed" || (!game?.game_mode && game?.period_minutes);
   const periodType = game?.period_type || "quarters";
   const totalPeriods = game?.period_count || (periodType === "halves" ? 2 : 4);
