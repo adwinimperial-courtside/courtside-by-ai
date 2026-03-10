@@ -27,6 +27,8 @@ const STAT_TYPES = [
   { key: 'unsportsmanlike_fouls', label: 'UNSP', points: 0, color: 'bg-rose-700 hover:bg-rose-800' },
 ];
 
+const MAX_FOUL_LIMIT = 5; // Configurable: change this to support different league foul limits
+
 const getDeviceName = () => {
   const ua = navigator.userAgent;
   if (/iPhone/.test(ua)) return 'iPhone';
