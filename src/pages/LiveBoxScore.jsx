@@ -207,6 +207,7 @@ export default function LiveBoxScorePage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Player</TableHead>
+                {game.game_mode === 'timed' && <TableHead className="text-center">MIN</TableHead>}
                 <TableHead className="text-center">PTS</TableHead>
                 <TableHead className="text-center">3PT</TableHead>
                 <TableHead className="text-center">FT</TableHead>
