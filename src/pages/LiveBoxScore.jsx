@@ -260,7 +260,7 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={homeTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{homeTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{computedHomeScore}</p>
+                  <p className="text-4xl font-bold text-slate-900">{game.home_score || 0}</p>
                 </div>
               </div>
 
@@ -280,7 +280,7 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={awayTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{awayTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{computedAwayScore}</p>
+                  <p className="text-4xl font-bold text-slate-900">{game.away_score || 0}</p>
                 </div>
               </div>
             </div>
