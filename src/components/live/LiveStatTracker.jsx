@@ -724,7 +724,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               teamColor={team?.color}
               isDesktop={side !== undefined}
               onSubClick={(p) => {
-                setPlayersToReplace([p]);
+                resetSubDialog();
+                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                else setAwayPlayersOut([p]);
                 setSubStep('select_in');
                 setShowSubDialog(true);
               }}
