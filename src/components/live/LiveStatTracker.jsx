@@ -1013,117 +1013,149 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       </Dialog>
 
       {/* Substitution Dialog */}
-      <Dialog open={showSubDialog} onOpenChange={setShowSubDialog}>
-        <DialogContent className="bg-white/80 text-slate-900 border-slate-200 w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-slate-900">
+      <Dialog open={showSubDialog} onOpenChange={(open) => {
+        if (!open) { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setSubTeamFilter(null); }
+        setShowSubDialog(open);
+      }}>
+        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-xl text-slate-900">
               {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
             </DialogTitle>
-            <p className="text-slate-500 text-sm mt-2">
-              {subStep === 'select_out' 
-                ? 'Click on players you want to substitute (can select multiple)'
-                : `Select ${playersToReplace.length} replacement player${playersToReplace.length > 1 ? 's' : ''}`
+            <p className="text-slate-500 text-sm mt-1">
+              {subStep === 'select_out'
+                ? playersToReplace.length === 0
+                  ? 'Tap on-court players you want to substitute'
+                  : `${playersToReplace.length} player${playersToReplace.length > 1 ? 's' : ''} selected to go out`
+                : `Select ${playersToReplace.length} player${playersToReplace.length > 1 ? 's' : ''} to come in (${replacementPlayers.length}/${playersToReplace.length})`
               }
             </p>
-          </DialogHeader>
-          
-          {subStep === 'select_out' ? (
-            <div className="space-y-4">
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white" style={{ backgroundColor: homeTeam?.color }}>{homeTeam?.name?.[0]}</div>
-                  {homeTeam?.name}
-                </h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {homeActivePlayers.map(player => {
-                    const isSelected = playersToReplace.some(p => p.id === player.id);
-                    return (
-                      <Button key={player.id} variant={isSelected ? "default" : "outline"} className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`} onClick={() => togglePlayerToReplace(player)}>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3" style={{ backgroundColor: homeTeam?.color }}>{player.jersey_number}</div>
-                        <div className="text-left flex-1"><p className="font-semibold">{player.name}</p><p className="text-sm text-slate-500">{player.position}</p></div>
-                        {isSelected && <div className="w-6 h-6 rounded-full bg-white text-cyan-500 flex items-center justify-center font-bold">✓</div>}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-white" style={{ backgroundColor: awayTeam?.color }}>{awayTeam?.name?.[0]}</div>
-                  {awayTeam?.name}
-                </h3>
-                <div className="grid grid-cols-1 gap-2">
-                  {awayActivePlayers.map(player => {
-                    const isSelected = playersToReplace.some(p => p.id === player.id);
-                    return (
-                      <Button key={player.id} variant={isSelected ? "default" : "outline"} className={`justify-start h-auto p-3 ${isSelected ? 'bg-cyan-500 hover:bg-cyan-600 text-white' : 'border-slate-300 hover:bg-slate-100'}`} onClick={() => togglePlayerToReplace(player)}>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3" style={{ backgroundColor: awayTeam?.color }}>{player.jersey_number}</div>
-                        <div className="text-left flex-1"><p className="font-semibold">{player.name}</p><p className="text-sm text-slate-500">{player.position}</p></div>
-                        {isSelected && <div className="w-6 h-6 rounded-full bg-white text-cyan-500 flex items-center justify-center font-bold">✓</div>}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
+          </div>
 
-              <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white" disabled={playersToReplace.length === 0} onClick={() => setSubStep('select_in')}>
-                Next: Select Replacements ({playersToReplace.length} selected)
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4 overflow-y-auto max-h-[calc(90vh-300px)]">
-              <div className="bg-slate-100 rounded-lg p-4 space-y-2 sticky top-0 z-10">
-                <p className="text-sm text-slate-500 font-semibold">COMING OUT:</p>
-                {playersToReplace.map(player => (
-                  <div key={player.id} className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold" style={{ backgroundColor: player.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}>{player.jersey_number}</div>
-                    <div><p className="font-semibold text-slate-900">{player.name}</p><p className="text-sm text-slate-500">{player.position}</p></div>
-                  </div>
-                ))}
-              </div>
-
-              <p className="text-center text-slate-600 font-semibold sticky top-24 bg-white/80 py-2">
-                SELECT {playersToReplace.length} REPLACEMENT{playersToReplace.length > 1 ? 'S' : ''} ({replacementPlayers.length}/{playersToReplace.length})
-              </p>
-
-              <div className="grid grid-cols-1 gap-2">
-                {playersToReplace.map(playerOut => {
-                  const benchPlayers = playerOut.team_id === game.home_team_id ? homeBenchPlayers : awayBenchPlayers;
-                  const teamColor = playerOut.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color;
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {subStep === 'select_out' ? (
+              <>
+                {[
+                  { team: homeTeam, activePl: homeActivePlayers, teamId: game.home_team_id },
+                  { team: awayTeam, activePl: awayActivePlayers, teamId: game.away_team_id }
+                ].map(({ team, activePl, teamId }) => {
+                  const isLocked = subTeamFilter !== null && subTeamFilter !== teamId;
                   return (
-                    <div key={playerOut.id}>
-                      <p className="text-sm text-slate-600 mb-2">Replacement for #{playerOut.jersey_number} {playerOut.name}:</p>
+                    <div key={teamId}>
+                      <div className="flex items-center gap-2 mb-2 px-1">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs text-white font-bold" style={{ backgroundColor: team?.color }}>{team?.name?.[0]}</div>
+                        <span className="font-semibold text-slate-700">{team?.name}</span>
+                        {isLocked && <span className="text-xs text-slate-400 ml-1">(select same team)</span>}
+                      </div>
+                      <div className="space-y-1.5">
+                        {activePl.map(player => {
+                          const isSelected = playersToReplace.some(p => p.id === player.id);
+                          const disabled = isLocked;
+                          return (
+                            <button key={player.id} disabled={disabled}
+                              onClick={() => togglePlayerToReplace(player)}
+                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
+                                ${disabled ? 'opacity-30 cursor-not-allowed border-slate-200 bg-slate-50' :
+                                  isSelected ? 'border-cyan-500 bg-cyan-50' : 'border-slate-200 bg-white hover:border-cyan-300 hover:bg-cyan-50/40'}`}
+                            >
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: team?.color }}>{player.jersey_number}</div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-slate-900">{player.name}</p>
+                                <p className="text-xs text-slate-500">{player.position}</p>
+                              </div>
+                              {isSelected && <div className="w-6 h-6 rounded-full bg-cyan-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <>
+                {/* Summary of players going out */}
+                <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Coming Out</p>
+                  <div className="flex flex-wrap gap-2">
+                    {playersToReplace.map(player => (
+                      <div key={player.id} className="flex items-center gap-1.5 bg-white rounded-lg px-2 py-1 border border-slate-200">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
+                          style={{ backgroundColor: player.team_id === game.home_team_id ? homeTeam?.color : awayTeam?.color }}>
+                          {player.jersey_number}
+                        </div>
+                        <span className="text-sm font-semibold text-slate-800">{player.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bench players for the locked team */}
+                {(() => {
+                  const subTeamId = playersToReplace[0]?.team_id;
+                  const benchPlayers = subTeamId === game.home_team_id ? homeBenchPlayers : awayBenchPlayers;
+                  const teamColor = subTeamId === game.home_team_id ? homeTeam?.color : awayTeam?.color;
+                  const eligibleBench = benchPlayers.filter(p => isEligibleReplacement(p.id));
+
+                  if (eligibleBench.length === 0) {
+                    return <p className="text-center text-red-500 py-4 text-sm font-semibold">No eligible bench players available.</p>;
+                  }
+
+                  return (
+                    <div className="space-y-1.5">
                       {benchPlayers.map(player => {
-                        const outIndex = playersToReplace.findIndex(p => p.id === playerOut.id);
-                        const isSelected = replacementPlayers[outIndex] === player.id;
-                        const isUsedElsewhere = replacementPlayers.some((id, idx) => id === player.id && idx !== outIndex);
                         const eligible = isEligibleReplacement(player.id);
-                        const canSelect = eligible && !isUsedElsewhere;
+                        if (!eligible) return null; // hide disqualified players
+                        const isSelected = replacementPlayers.includes(player.id);
                         const pStats = existingStats.find(s => s.player_id === player.id);
+                        const limitReached = !isSelected && replacementPlayers.length >= playersToReplace.length;
                         return (
-                          <Button key={player.id} variant={isSelected ? "default" : "outline"} disabled={!canSelect} className={`w-full justify-start h-auto p-3 mb-2 ${isSelected ? 'bg-green-500 hover:bg-green-600 text-white' : eligible ? 'border-slate-300 hover:bg-slate-100' : 'border-red-200 bg-red-50 opacity-60 cursor-not-allowed'}`} onClick={() => toggleReplacementPlayer(player.id, playerOut.id)}>
-                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3" style={{ backgroundColor: teamColor }}>{player.jersey_number}</div>
-                            <div className="text-left flex-1">
-                              <p className="font-semibold">{player.name}</p>
-                              <p className="text-xs text-slate-500">{player.position}{pStats && ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T`}</p>
-                              {!eligible && <p className="text-xs text-red-500 font-semibold">Ineligible (foul out / 2 techs)</p>}
+                          <button key={player.id}
+                            disabled={limitReached}
+                            onClick={() => toggleReplacementPlayer(player.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
+                              ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
+                                isSelected ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-green-300 hover:bg-green-50/40'}`}
+                          >
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: teamColor }}>{player.jersey_number}</div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900">{player.name}</p>
+                              <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
                             </div>
-                            {isSelected && <div className="w-6 h-6 rounded-full bg-white text-green-600 flex items-center justify-center font-bold">✓</div>}
-                          </Button>
+                            {isSelected && <div className="w-6 h-6 rounded-full bg-green-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
+                          </button>
                         );
                       })}
                     </div>
                   );
-                })}
-              </div>
+                })()}
+              </>
+            )}
+          </div>
 
-              <div className="flex gap-2 sticky bottom-0 bg-white/80 pt-2 mt-4">
-                <Button variant="outline" className="flex-1 border-slate-300 hover:bg-slate-100" onClick={() => { setSubStep('select_out'); setReplacementPlayers([]); }}>Back</Button>
-                <Button className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white" disabled={replacementPlayers.length !== playersToReplace.length} onClick={handleConfirmSubstitution}>Confirm Substitution</Button>
+          {/* Sticky footer buttons */}
+          <div className="px-4 pb-4 pt-2 border-t border-slate-100 flex-shrink-0">
+            {subStep === 'select_out' ? (
+              <Button
+                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow"
+                disabled={playersToReplace.length === 0}
+                onClick={() => setSubStep('select_in')}
+              >
+                Next: Select Replacements ({playersToReplace.length} selected)
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 h-12 border-slate-300" onClick={() => { setSubStep('select_out'); setReplacementPlayers([]); }}>Back</Button>
+                <Button
+                  className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
+                  disabled={replacementPlayers.length !== playersToReplace.length}
+                  onClick={handleConfirmSubstitution}
+                >
+                  Confirm Substitution
+                </Button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
