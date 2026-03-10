@@ -228,6 +228,163 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
             </div>
           </div>
 
+          {/* Expanded Live Stats for In-Progress Games */}
+          {liveGame.status === 'in_progress' && isLiveExpanded && (
+            <div className="mt-6 pt-6 border-t border-orange-200 space-y-6">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-wide">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse inline-block" />
+                  Live Stats · Updating Live
+                </span>
+              </div>
+              {[
+                { team: awayTeam, playerStats: awayPlayerStats, teamStats: awayTeamStats, score: displayAwayScore },
+                { team: homeTeam, playerStats: homePlayerStats, teamStats: homeTeamStats, score: displayHomeScore },
+              ].map(({ team, playerStats, teamStats, score }) => (
+                <div key={team?.id}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <TeamLogo team={team} size="md" />
+                    <h4 className="font-semibold text-slate-900 truncate">{team?.name}</h4>
+                  </div>
+
+                  {/* Mobile: card per player */}
+                  <div className="block sm:hidden space-y-2">
+                    {playerStats.map(stat => {
+                      const player = players?.find(p => p.id === stat.player_id);
+                      const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                      const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                      return (
+                        <div key={stat.id} className="bg-slate-50 rounded-lg p-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                              style={{ backgroundColor: team?.color || '#f97316' }}>
+                              {player?.jersey_number}
+                            </div>
+                            <span className="font-semibold text-sm text-slate-900 truncate">{player?.name}</span>
+                            <span className="ml-auto font-bold text-slate-900">{points} PTS</span>
+                          </div>
+                          <div className="grid grid-cols-4 gap-1 text-xs text-center">
+                            {[
+                              ['3PT', stat.points_3 || 0],
+                              ['FT', stat.free_throws || 0],
+                              ['REB', rebounds],
+                              ['AST', stat.assists || 0],
+                              ['STL', stat.steals || 0],
+                              ['BLK', stat.blocks || 0],
+                              ['TO', stat.turnovers || 0],
+                              ['F', stat.fouls || 0],
+                            ].map(([label, val]) => (
+                              <div key={label} className="bg-white rounded p-1">
+                                <div className="text-slate-400 text-[10px]">{label}</div>
+                                <div className="font-semibold text-slate-800">{val}</div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="bg-slate-800 text-white rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm">TEAM TOTALS</span>
+                        <span className="font-bold text-lg">{score ?? 0} PTS</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1 text-xs text-center">
+                        {[
+                          ['3PT', playerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)],
+                          ['FT', playerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)],
+                          ['REB', teamStats.rebounds],
+                          ['AST', teamStats.assists],
+                          ['STL', playerStats.reduce((acc, s) => acc + (s.steals || 0), 0)],
+                          ['BLK', playerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)],
+                          ['TO', playerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)],
+                          ['F', playerStats.reduce((acc, s) => acc + (s.fouls || 0), 0)],
+                        ].map(([label, val]) => (
+                          <div key={label} className="bg-slate-700 rounded p-1">
+                            <div className="text-slate-400 text-[10px]">{label}</div>
+                            <div className="font-semibold">{val}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Desktop: scrollable table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Player</TableHead>
+                          <TableHead className="text-center">PTS</TableHead>
+                          <TableHead className="text-center">3PT</TableHead>
+                          <TableHead className="text-center">FT</TableHead>
+                          <TableHead className="text-center">OREB</TableHead>
+                          <TableHead className="text-center">DREB</TableHead>
+                          <TableHead className="text-center">REB</TableHead>
+                          <TableHead className="text-center">AST</TableHead>
+                          <TableHead className="text-center">STL</TableHead>
+                          <TableHead className="text-center">BLK</TableHead>
+                          <TableHead className="text-center">TO</TableHead>
+                          <TableHead className="text-center">F</TableHead>
+                          <TableHead className="text-center">TF</TableHead>
+                          <TableHead className="text-center">UNSPO</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {playerStats.map(stat => {
+                          const player = players?.find(p => p.id === stat.player_id);
+                          const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                          const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                          return (
+                            <TableRow key={stat.id}>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                    style={{ backgroundColor: team?.color || '#f97316' }}>
+                                    {player?.jersey_number}
+                                  </div>
+                                  <span className="text-sm">{player?.name}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-center font-semibold">{points}</TableCell>
+                              <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
+                              <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
+                              <TableCell className="text-center">{stat.offensive_rebounds || 0}</TableCell>
+                              <TableCell className="text-center">{stat.defensive_rebounds || 0}</TableCell>
+                              <TableCell className="text-center">{rebounds}</TableCell>
+                              <TableCell className="text-center">{stat.assists || 0}</TableCell>
+                              <TableCell className="text-center">{stat.steals || 0}</TableCell>
+                              <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                              <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
+                              <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                              <TableCell className="text-center">{stat.technical_fouls || 0}</TableCell>
+                              <TableCell className="text-center">{stat.unsportsmanlike_fouls || 0}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                        <TableRow className="bg-slate-50 font-semibold">
+                          <TableCell>TEAM TOTALS</TableCell>
+                          <TableCell className="text-center">{score || 0}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.points_3 || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.free_throws || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.defensive_rebounds || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{teamStats.rebounds}</TableCell>
+                          <TableCell className="text-center">{teamStats.assists}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.steals || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.blocks || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.turnovers || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.fouls || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.technical_fouls || 0), 0)}</TableCell>
+                          <TableCell className="text-center">{playerStats.reduce((acc, s) => acc + (s.unsportsmanlike_fouls || 0), 0)}</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Expanded Stats for Completed Games */}
           {liveGame.status === 'completed' && isExpanded && (
             <div className="mt-6 pt-6 border-t border-slate-200 space-y-6">
