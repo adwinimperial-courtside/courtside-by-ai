@@ -1209,13 +1209,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {/* Substitution strip — compact, attached to stat buttons */}
             <div className="flex-shrink-0 mt-1.5 mb-2">
               <Button
-                onClick={() => { if (repairMode) return; resetSubDialog(); setShowSubDialog(true); }}
-                disabled={!!repairMode}
+                onClick={() => { if (repairMode || isInFinalReview) return; resetSubDialog(); setShowSubDialog(true); }}
+                disabled={!!repairMode || isInFinalReview}
                 className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ height: '36px' }}
+                title={isInFinalReview ? 'Substitutions are locked during final review' : undefined}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Make Substitution
+                {isInFinalReview ? 'Substitutions Locked (Review Mode)' : 'Make Substitution'}
               </Button>
             </div>
             {/* Activity log — all remaining space */}
