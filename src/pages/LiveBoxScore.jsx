@@ -14,54 +14,52 @@ export default function LiveBoxScorePage() {
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
 
-  const { data: game } = useQuery({
-    queryKey: ['game', gameId],
-    queryFn: async () => {
-      if (!gameId) return null;
-      const result = await base44.entities.Game.filter({ id: gameId });
-      return result?.[0] || null;
-    },
-    enabled: !!gameId,
-    staleTime: 60000,
-  });
+  const [pageData, setPageData] = useState({ game: null, teams: [], players: [], stats: [] });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: allStats = [] } = useQuery({
-    queryKey: ['playerStats', gameId],
-    queryFn: async () => {
-      if (!gameId) return [];
-      const stats = await base44.entities.PlayerStats.filter({ game_id: gameId });
-      return stats || [];
-    },
-    enabled: !!gameId,
-    staleTime: 3000,
-  });
+  useEffect(() => {
+    if (!gameId) {
+      setIsLoading(false);
+      return;
+    }
 
-  const teamIds = [game?.home_team_id, game?.away_team_id].filter(Boolean);
+    const loadData = async () => {
+      try {
+        const [gameResult, statsResult] = await Promise.all([
+          base44.entities.Game.filter({ id: gameId }),
+          base44.entities.PlayerStats.filter({ game_id: gameId })
+        ]);
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams', ...teamIds],
-    queryFn: async () => {
-      if (teamIds.length === 0) return [];
-      const homeTeam = teamIds[0] ? await base44.entities.Team.filter({ id: teamIds[0] }) : [];
-      const awayTeam = teamIds[1] ? await base44.entities.Team.filter({ id: teamIds[1] }) : [];
-      return [...homeTeam, ...awayTeam];
-    },
-    enabled: teamIds.length > 0,
-    staleTime: 60000,
-  });
+        const game = gameResult?.[0];
+        if (!game) {
+          setIsLoading(false);
+          return;
+        }
 
-  const { data: players = [] } = useQuery({
-    queryKey: ['players', ...teamIds],
-    queryFn: async () => {
-      if (teamIds.length === 0) return [];
-      const playersByTeam = await Promise.all(
-        teamIds.map(id => base44.entities.Player.filter({ team_id: id }))
-      );
-      return playersByTeam.flat();
-    },
-    enabled: teamIds.length > 0,
-    staleTime: 60000,
-  });
+        const [homeTeamResult, awayTeamResult, homePlayersResult, awayPlayersResult] = await Promise.all([
+          base44.entities.Team.filter({ id: game.home_team_id }),
+          base44.entities.Team.filter({ id: game.away_team_id }),
+          base44.entities.Player.filter({ team_id: game.home_team_id }),
+          base44.entities.Player.filter({ team_id: game.away_team_id })
+        ]);
+
+        setPageData({
+          game,
+          teams: [...(homeTeamResult || []), ...(awayTeamResult || [])],
+          players: [...(homePlayersResult || []), ...(awayPlayersResult || [])],
+          stats: statsResult || []
+        });
+      } catch (error) {
+        console.error('Error loading game data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [gameId]);
+
+  const { game, teams, players, allStats } = pageData;
   const homeTeam = teams.find(t => t.id === game?.home_team_id);
   const awayTeam = teams.find(t => t.id === game?.away_team_id);
 
