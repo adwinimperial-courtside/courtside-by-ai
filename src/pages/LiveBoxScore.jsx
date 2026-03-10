@@ -54,6 +54,23 @@ export default function LiveBoxScorePage() {
     };
   }, [gameId, queryClient]);
 
+  // Live clock for timed games
+  useEffect(() => {
+    if (!game || game.game_mode !== 'timed' || !game.clock_running) {
+      setDisplayTime(game?.clock_time_left || 0);
+      return;
+    }
+
+    const startTime = new Date(game.clock_started_at).getTime();
+    const interval = setInterval(() => {
+      const elapsed = (Date.now() - startTime) / 1000;
+      const timeLeft = Math.max(0, (game.clock_time_left || 0) - elapsed);
+      setDisplayTime(timeLeft);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [game?.clock_running, game?.clock_started_at, game?.clock_time_left, game?.game_mode]);
+
   const { data: homeTeam } = useQuery({
     queryKey: ['team', game?.home_team_id],
     queryFn: () => base44.entities.Team.get(game.home_team_id),
