@@ -793,13 +793,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     // Reverse: players who went OUT come back as starters
     for (const playerId of (out_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true } }));
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true, is_active: true } }));
     }
     
     // Reverse: players who came IN go back to bench
     for (const playerId of (in_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false } }));
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false, is_active: false } }));
     }
     
     // Execute stat updates in parallel + delete log in parallel
