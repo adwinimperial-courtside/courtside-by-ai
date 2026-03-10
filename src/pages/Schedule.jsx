@@ -37,16 +37,16 @@ export default function SchedulePage() {
     fetchUser();
   }, []);
 
-  const { data: leagues } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
-    initialData: [],
-  });
-
   const isLeagueAdmin = currentUser?.user_type === 'league_admin';
   const isAppAdmin = currentUser?.user_type === 'app_admin';
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
   const hasAssignedLeagues = assignedLeagueIds.length > 0;
+
+  const { data: leagues = [] } = useQuery({
+    queryKey: ['leagues'],
+    queryFn: () => base44.entities.League.list(),
+    staleTime: 300000,
+  });
 
   const visibleLeagues = isAppAdmin
     ? leagues
@@ -54,30 +54,49 @@ export default function SchedulePage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
-    initialData: [],
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams', selectedLeague],
+    queryFn: async () => {
+      if (selectedLeague === 'all') return [];
+      return base44.entities.Team.filter({ league_id: selectedLeague });
+    },
+    enabled: selectedLeague !== 'all',
+    staleTime: 300000,
   });
 
-  const { data: games, isLoading } = useQuery({
-    queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list('-game_date'),
-    initialData: [],
-    refetchOnMount: 'always',
+  const { data: games = [], isLoading } = useQuery({
+    queryKey: ['games', selectedLeague],
+    queryFn: async () => {
+      if (selectedLeague === 'all') return [];
+      const filtered = await base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date');
+      return filtered || [];
+    },
+    enabled: selectedLeague !== 'all',
+    staleTime: 5000,
   });
 
-  const { data: players } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
-    initialData: [],
-    refetchOnMount: 'always',
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      const gameTeamIds = teams.map(t => t.id);
+      if (gameTeamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: gameTeamIds } });
+    },
+    enabled: selectedLeague !== 'all' && teams.length > 0,
+    staleTime: 300000,
   });
 
-  const { data: allStats } = useQuery({
-    queryKey: ['allPlayerStats'],
-    queryFn: () => base44.entities.PlayerStats.list(),
-    initialData: [],
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['playerStats', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all' || games.length === 0) return [];
+      const gameIds = games.map(g => g.id);
+      if (gameIds.length === 0) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } });
+    },
+    enabled: selectedLeague !== 'all' && games.length > 0,
+    staleTime: 5000,
   });
 
   const createGameMutation = useMutation({
