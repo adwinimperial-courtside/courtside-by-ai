@@ -4,12 +4,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
 
 export default function GameCard({ game, teams, leagues, players, stats, onStartGame, currentUser }) {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
 
@@ -154,7 +157,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               )}
             </div>
 
-            <div className="flex">
+            <div className="flex gap-2 flex-wrap">
               {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
                 <Button
                   onClick={onStartGame}
@@ -164,14 +167,26 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   Start Game
                 </Button>
               )}
-              {liveGame.status === 'in_progress' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
-                <Button
-                  onClick={onStartGame}
-                  variant="outline"
-                  className="w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
-                >
-                  Continue
-                </Button>
+              {liveGame.status === 'in_progress' && (
+                <>
+                  <Button
+                    onClick={() => navigate(createPageUrl('LiveBoxScore') + `?gameId=${liveGame.id}`)}
+                    variant="outline"
+                    className="w-full sm:w-auto hover:bg-blue-50 border-blue-300 text-blue-600"
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    View Live Box Score
+                  </Button>
+                  {(currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
+                    <Button
+                      onClick={onStartGame}
+                      variant="outline"
+                      className="w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
+                    >
+                      Continue
+                    </Button>
+                  )}
+                </>
               )}
               {liveGame.status === 'completed' && (
                 <Button
