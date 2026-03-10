@@ -40,6 +40,14 @@ function computeTimeLeft(game) {
   return Math.max(0, stored - elapsed);
 }
 
+// Foul-reset period key: for quarters each period is its own key; for halves each half is its own key.
+// Overtime periods always get their own key (period number as string).
+function getFoulResetPeriodKey(period, periodType, totalPeriods) {
+  if (period > totalPeriods) return String(period); // each OT is fresh
+  if (periodType === 'halves') return period === 1 ? 'h1' : 'h2';
+  return String(period); // Q1, Q2, Q3, Q4 each unique
+}
+
 export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) {
   const [possession, setPossession] = useState(() => game.possession || null);
   const [showPossessionPicker, setShowPossessionPicker] = useState(false);
