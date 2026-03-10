@@ -1087,11 +1087,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600", side: "home" })}
           </div>
 
-          <div className="w-[50%] flex-shrink-0 flex flex-col gap-2 min-h-0">
-            <div className="flex-[7] min-h-0">
-              {StatPanel({ large: true })}
+          <div className="w-[50%] flex-shrink-0 flex flex-col min-h-0">
+            {/* Stat buttons — ~45% */}
+            <div style={{ flex: '0 0 45%' }} className="min-h-0">
+              {StatPanel({ large: true, showSub: false })}
             </div>
-            <div className="flex-[3] min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
+            {/* Substitution strip — compact */}
+            <div className="flex-shrink-0" style={{ marginTop: '7px', marginBottom: '8px' }}>
+              <Button
+                onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg"
+                style={{ height: '38px' }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Make Substitution
+              </Button>
+            </div>
+            {/* Activity log — remaining ~50% */}
+            <div className="flex-1 min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
               {ActivityLog({ compact: true })}
             </div>
           </div>
