@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, Trophy } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 function getPeriodLabel(period, periodType) {
