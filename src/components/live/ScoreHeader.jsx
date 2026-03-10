@@ -72,8 +72,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const handleSetPossession = async (team) => {
     setPossession(team);
     setShowPossessionPicker(false);
-    await base44.entities.Game.update(game.id, { possession: team });
-    if (onGameUpdate) onGameUpdate({ ...game, possession: team });
+    await base44.entities.Game.update(localGame.id, { possession: team });
+    if (onGameUpdate) onGameUpdate({ ...localGame, possession: team });
   };
 
   const handleSwitchPossession = async () => {
@@ -83,8 +83,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     }
     const next = possession === 'home' ? 'away' : 'home';
     setPossession(next);
-    await base44.entities.Game.update(game.id, { possession: next });
-    if (onGameUpdate) onGameUpdate({ ...game, possession: next });
+    await base44.entities.Game.update(localGame.id, { possession: next });
+    if (onGameUpdate) onGameUpdate({ ...localGame, possession: next });
   };
   // ── Team Fouls state ─────────────────────────────────────────────
   const gameRules = { ...DEFAULT_GAME_RULES, ...(game.game_rules || {}) };
