@@ -54,9 +54,6 @@ export default function LiveBoxScorePage() {
     staleTime: 5000,
     refetchOnWindowFocus: false
   });
-  const homeTeam = teams.find(t => t.id === game?.home_team_id);
-  const awayTeam = teams.find(t => t.id === game?.away_team_id);
-
   // Get all players who appeared in the game (is_starter = true)
   const playersInGame = new Set(allStats.map(s => s.player_id));
   const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
