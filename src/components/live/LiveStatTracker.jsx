@@ -822,11 +822,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <RefreshCw className="w-3 h-3 text-cyan-500 flex-shrink-0" />
                   <span className="text-[10px] font-bold text-cyan-600 flex-shrink-0">SUB</span>
-                  <span className="text-[10px] text-slate-500 truncate">
-                    <span className="font-semibold" style={{ color: log.player?.team_id === game.home_team_id ? '#3b82f6' : '#ef4444' }}>{log.player?.name}</span>
-                    <span className="text-slate-400"> → </span>
-                    <span className="font-semibold text-green-600">{log.playerIn?.name}</span>
-                  </span>
+                  <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
+                </div>
+              ) : log.statType.key === 'ejection' ? (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-red-600 truncate">{log.statType.label}</span>
                 </div>
               ) : (
                 <>
