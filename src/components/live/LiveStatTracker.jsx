@@ -110,6 +110,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
+  // Track active player counts per team to detect lineup violations reactively
+  const homeActiveCount = existingStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
+  const awayActiveCount = existingStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
+
+  // Fire repair check whenever lineup counts change (catches bad state on load + real-time updates)
+  useEffect(() => {
+    if (existingStats.length === 0) return;
+    if (isSubmittingSubRef.current) return; // Skip mid-substitution to avoid false positives
+    checkAndTriggerRepair(existingStats);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [homeActiveCount, awayActiveCount]);
+
   useEffect(() => {
     activePlayers.forEach(stat => {
       if (!playerMinutesRef.current[stat.player_id]) {
