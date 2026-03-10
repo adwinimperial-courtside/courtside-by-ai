@@ -486,8 +486,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                     {formatTime(displayTime)}
                   </span>
                   <div className="flex items-center gap-0.5">
-                    <button onClick={handlePrevPeriod} disabled={period <= 1} className="text-white/40 hover:text-white/80 disabled:opacity-0 transition-colors px-0.5 text-base">‹</button>
-                    <button onClick={handleNextPeriod} className="text-white font-bold text-xl hover:text-white/80 transition-colors" title="Next period">{periodLabel}</button>
+                    <span className="text-white font-bold text-xl">{periodLabel}</span>
                   </div>
                 </div>
 
