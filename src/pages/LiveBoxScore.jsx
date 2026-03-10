@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, BarChart3 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "@/components/teams/TeamLogo";
+import ClockDisplay from "@/components/live/ClockDisplay";
 
 export default function LiveBoxScorePage() {
   const navigate = useNavigate();
