@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Timer } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 

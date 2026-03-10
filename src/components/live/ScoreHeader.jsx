@@ -38,8 +38,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
 
   // Local display state — derived from game, updated every second if running
   const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(game));
-  const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState({});
-  const [awayTimeoutsUsed, setAwayTimeoutsUsed] = useState({});
+  const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState(() => game.home_timeouts || {});
+  const [awayTimeoutsUsed, setAwayTimeoutsUsed] = useState(() => game.away_timeouts || {});
   const tickRef = useRef(null);
 
   const period = game?.clock_period ?? 1;
