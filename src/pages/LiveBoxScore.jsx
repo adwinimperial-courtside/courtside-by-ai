@@ -117,10 +117,9 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  // Get all players who appeared in the game
-  const playersInGame = new Set(allStats.map(s => s.player_id));
-  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
-  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && playersInGame.has(s.player_id));
+  // Get only active players currently on court
+  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && s.is_active);
+  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && s.is_active);
 
   const getPeriodLabel = () => {
     if (!game.clock_period) return 'Q1';
