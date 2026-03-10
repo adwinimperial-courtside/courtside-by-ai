@@ -152,7 +152,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (!isTimed || isSaving.current) return;
     const currentTimeLeft = computeTimeLeft(game);
 
-    // If time is 0 and not running, advance to next period instead
+    // If time is 0 and not running, advance to next period AND immediately start the clock
     if (currentTimeLeft <= 0 && !running) {
       isSaving.current = true;
       try {
@@ -167,8 +167,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         const updates = {
           clock_period: nextPeriod,
           clock_time_left: nextMins * 60,
-          clock_running: false,
-          clock_started_at: null,
+          clock_running: true,
+          clock_started_at: new Date().toISOString(),
           period_status: 'active',
           home_team_fouls: newHomeFouls,
           away_team_fouls: newAwayFouls,
