@@ -44,10 +44,11 @@ const getDeviceName = () => {
 export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats: initialStats, onBack, onGameUpdate }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showSubDialog, setShowSubDialog] = useState(false);
-  const [playersToReplace, setPlayersToReplace] = useState([]);
-  const [replacementPlayers, setReplacementPlayers] = useState([]);
+  const [homePlayersOut, setHomePlayersOut] = useState([]);
+  const [awayPlayersOut, setAwayPlayersOut] = useState([]);
+  const [homePlayersIn, setHomePlayersIn] = useState([]);
+  const [awayPlayersIn, setAwayPlayersIn] = useState([]);
   const [subStep, setSubStep] = useState('select_out');
-  const [subTeamFilter, setSubTeamFilter] = useState(null); // locked to one team once first player selected
   const [ejectedPlayer, setEjectedPlayer] = useState(null);
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -128,7 +129,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       timestamp: new Date(log.created_date),
       player: player,
       playerIn: playerIn,
-      isSubstitution: log.stat_type === 'substitution' || log.stat_type === 'ejection',
+      isSubstitution: log.stat_type === 'substitution',
       statType: {
         key: log.stat_type,
         label: log.stat_label,
