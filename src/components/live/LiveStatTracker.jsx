@@ -60,6 +60,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const playerMinutesRef = React.useRef({});
   const playerGameClockStateRef = React.useRef({});
   const isSubmittingSubRef = React.useRef(false);
+  const isProcessingStatRef = React.useRef(false);
   const queryClient = useQueryClient();
 
   const computeTimeLeft = (currentGame) => {
