@@ -22,6 +22,17 @@ function formatTime(seconds) {
  * Compute the current time left in seconds from the persisted clock state.
  * If clock_running = true, subtract elapsed time since clock_started_at.
  */
+const DEFAULT_GAME_RULES = {
+  teamFoulBonusThreshold: 5,
+  countPersonalFoulsAsTeamFoul: true,
+  countOffensiveFoulsAsTeamFoul: true,
+  countPlayerTechnicalAsTeamFoul: true,
+  countUnsportsmanlikeAsTeamFoul: true,
+  countPlayerDisqualifyingAsTeamFoul: true,
+  countBenchTechnicalAsTeamFoul: false,
+  countCoachTechnicalAsTeamFoul: false,
+};
+
 function computeTimeLeft(game) {
   const stored = game.clock_time_left ?? ((game.period_minutes || 10) * 60);
   if (!game.clock_running || !game.clock_started_at) return Math.max(0, stored);
