@@ -917,13 +917,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           })}
         </div>
 
-        <Button
-          onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
-          className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          Make Substitution
-        </Button>
+        {showSub && (
+          <Button
+            onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
+            className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
+          >
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Make Substitution
+          </Button>
+        )}
       </div>
     );
   };
