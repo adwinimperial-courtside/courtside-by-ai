@@ -853,7 +853,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   // ── Stat control panel ──
-  const StatPanel = ({ large }) => {
+  const StatPanel = ({ large, showSub = true }) => {
     const btnH = large ? 'h-[4.5rem]' : 'h-14';
     return (
       <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3 flex flex-col h-full">
