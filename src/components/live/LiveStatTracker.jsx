@@ -546,6 +546,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
     await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
+    // Validate lineup integrity after substitution
+    const postSubStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+    checkAndTriggerRepair(postSubStats);
+
     isSubmittingSubRef.current = false;
   };
 
