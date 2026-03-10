@@ -51,10 +51,23 @@ function getFoulResetPeriodKey(period, periodType, totalPeriods) {
 export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame, lineupBlocked = false }) {
   const [possession, setPossession] = useState(() => game.possession || null);
   const [showPossessionPicker, setShowPossessionPicker] = useState(false);
+  const [localGame, setLocalGame] = useState(game);
 
   useEffect(() => {
+    setLocalGame(game);
     setPossession(game.possession || null);
-  }, [game.possession]);
+  }, [game.possession, game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period]);
+
+  // Subscribe to real-time game updates
+  useEffect(() => {
+    if (!game?.id) return;
+    const unsubscribe = base44.entities.Game.subscribe((event) => {
+      if (event.id === game.id) {
+        setLocalGame(event.data);
+      }
+    });
+    return () => unsubscribe();
+  }, [game?.id]);
 
   const handleSetPossession = async (team) => {
     setPossession(team);
