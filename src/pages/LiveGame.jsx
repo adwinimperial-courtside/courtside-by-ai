@@ -188,12 +188,14 @@ export default function LiveGamePage() {
           player_id: playerId,
           team_id: mergedGame.home_team_id,
           is_starter: true,
+          is_active: true,
         })),
         ...awayStarters.map(playerId => ({
           game_id: gameId,
           player_id: playerId,
           team_id: mergedGame.away_team_id,
           is_starter: true,
+          is_active: true,
         }))
       ];
 
