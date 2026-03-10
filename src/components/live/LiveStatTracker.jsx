@@ -597,6 +597,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
+    // Decrement team fouls if this stat counted as a team foul
+    if (statCountsAsTeamFoul(logEntry.statType.key)) {
+      const isHome = logEntry.teamId === game.home_team_id;
+      const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
+      const period = game.clock_period ?? 1;
+      const resetKey = getFoulResetKey(period);
+      const currentFoulMap = { ...(game[foulKey] || {}) };
+      currentFoulMap[resetKey] = Math.max(0, (currentFoulMap[resetKey] || 0) - 1);
+      await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
+    }
+
     await deleteLogMutation.mutateAsync(logEntry.id);
   };
 
