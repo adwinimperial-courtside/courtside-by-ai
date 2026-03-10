@@ -107,6 +107,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
   const threshold = gameRules.teamFoulBonusThreshold;
   const homeInBonus = homeFoulsNow >= threshold;
   const awayInBonus = awayFoulsNow >= threshold;
+  const homeNearBonus = homeFoulsNow === threshold - 1;
+  const awayNearBonus = awayFoulsNow === threshold - 1;
 
   // Recompute display time whenever game clock state changes
   useEffect(() => {
