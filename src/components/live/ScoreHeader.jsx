@@ -501,18 +501,18 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
               <>
                 {/* Game state label */}
                 {isInFinalReview ? (
-                  <div className="flex flex-col items-center mb-2">
-                    <span className="text-lg font-black text-amber-300 tracking-widest uppercase">{getReviewLabel()}</span>
-                    <span className="text-[10px] text-white/60 font-semibold mt-0.5">Review final actions before confirming</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${running ? 'bg-red-400 animate-pulse' : 'bg-white/30'}`} />
-                    <span className={`text-xs font-bold tracking-widest uppercase ${running ? 'text-red-300' : 'text-white/50'}`}>
-                      {running ? 'LIVE' : 'DEAD BALL'}
-                    </span>
-                  </div>
-                )}
+                   <div className="flex flex-col items-center mb-2">
+                     <span className="text-lg font-black text-amber-300 tracking-widest uppercase">{getReviewLabel()}</span>
+                     <span className="text-[10px] text-white/60 font-semibold mt-0.5">Review final actions before confirming</span>
+                   </div>
+                 ) : (
+                   <div className="flex items-center gap-1.5 mb-1">
+                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${running ? 'bg-red-400 animate-pulse' : 'bg-white/30'}`} />
+                     <span className={`text-xs font-bold tracking-widest uppercase ${running ? 'text-red-300' : 'text-white/50'}`}>
+                       {running ? 'LIVE' : 'DEAD BALL'}
+                     </span>
+                   </div>
+                 )} 
 
                 {/* Clock + period */}
                 <div className="flex items-baseline gap-3 mb-3">
