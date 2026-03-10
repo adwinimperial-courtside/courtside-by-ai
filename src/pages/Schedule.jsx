@@ -75,29 +75,7 @@ export default function SchedulePage() {
     staleTime: 5000,
   });
 
-  const { data: players = [] } = useQuery({
-    queryKey: ['players', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      const gameTeamIds = teams.map(t => t.id);
-      if (gameTeamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: gameTeamIds } });
-    },
-    enabled: selectedLeague !== 'all' && teams.length > 0,
-    staleTime: 300000,
-  });
 
-  const { data: allStats = [] } = useQuery({
-    queryKey: ['playerStats', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all' || games.length === 0) return [];
-      const gameIds = games.map(g => g.id);
-      if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } });
-    },
-    enabled: selectedLeague !== 'all' && games.length > 0,
-    staleTime: 5000,
-  });
 
   const createGameMutation = useMutation({
     mutationFn: (gameData) => base44.entities.Game.create(gameData),
