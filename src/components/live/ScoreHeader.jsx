@@ -159,6 +159,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   const handlePlayPause = async () => {
     if (!isTimed || isSaving.current || lineupBlocked) return;
+    // In final review with unequal scores, only END GAME is allowed — block clock start
+    if (isInFinalReview && (game.home_score || 0) !== (game.away_score || 0)) return;
     const currentTimeLeft = computeTimeLeft(game);
 
     // In final review mode with tied scores → START OT: advance to next OT period
