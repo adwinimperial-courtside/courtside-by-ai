@@ -76,13 +76,32 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
     setDisplayTime(computeTimeLeft(game));
   }, [game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period]);
 
-  // Tick every second while running to update display
+  // Tick every second while running to update display; auto-stop when time expires
   useEffect(() => {
     clearInterval(tickRef.current);
+    autoStopFiredRef.current = false;
     if (running) {
-      tickRef.current = setInterval(() => {
-        setDisplayTime(computeTimeLeft(game));
-      }, 500); // 500ms for snappier display
+      tickRef.current = setInterval(async () => {
+        const t = computeTimeLeft(game);
+        setDisplayTime(t);
+        if (t <= 0 && !autoStopFiredRef.current && !isSaving.current) {
+          autoStopFiredRef.current = true;
+          clearInterval(tickRef.current);
+          isSaving.current = true;
+          try {
+            const updates = {
+              clock_running: false,
+              clock_time_left: 0,
+              clock_started_at: null,
+              period_status: 'completed',
+            };
+            await base44.entities.Game.update(game.id, updates);
+            if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+          } finally {
+            isSaving.current = false;
+          }
+        }
+      }, 500);
     }
     return () => clearInterval(tickRef.current);
   }, [running, game.clock_started_at, game.clock_time_left]);
