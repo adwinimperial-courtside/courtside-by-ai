@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -14,53 +14,46 @@ export default function LiveBoxScorePage() {
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
 
-  const [pageData, setPageData] = useState({ game: null, teams: [], players: [], stats: [] });
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: game } = useQuery({
+    queryKey: ['game', gameId],
+    queryFn: () => base44.entities.Game.get(gameId),
+    enabled: !!gameId,
+    staleTime: 2000,
+    refetchOnWindowFocus: false
+  });
 
-  useEffect(() => {
-    if (!gameId) {
-      setIsLoading(false);
-      return;
-    }
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['playerStats', gameId],
+    queryFn: () => base44.entities.PlayerStats.filter({ game_id: gameId }),
+    enabled: !!gameId,
+    staleTime: 2000,
+    refetchOnWindowFocus: false
+  });
 
-    const loadData = async () => {
-      try {
-        const [gameResult, statsResult] = await Promise.all([
-          base44.entities.Game.filter({ id: gameId }),
-          base44.entities.PlayerStats.filter({ game_id: gameId })
-        ]);
+  const { data: homeTeam } = useQuery({
+    queryKey: ['team', game?.home_team_id],
+    queryFn: () => base44.entities.Team.get(game.home_team_id),
+    enabled: !!game?.home_team_id,
+    staleTime: 5000,
+    refetchOnWindowFocus: false
+  });
 
-        const game = gameResult?.[0];
-        if (!game) {
-          setIsLoading(false);
-          return;
-        }
+  const { data: awayTeam } = useQuery({
+    queryKey: ['team', game?.away_team_id],
+    queryFn: () => base44.entities.Team.get(game.away_team_id),
+    enabled: !!game?.away_team_id,
+    staleTime: 5000,
+    refetchOnWindowFocus: false
+  });
 
-        const playerIds = statsResult?.map(s => s.player_id) || [];
-
-        const [homeTeamResult, awayTeamResult, playersResult] = await Promise.all([
-          base44.entities.Team.filter({ id: game.home_team_id }),
-          base44.entities.Team.filter({ id: game.away_team_id }),
-          playerIds.length > 0 ? base44.entities.Player.filter({ id: { $in: playerIds } }) : Promise.resolve([])
-        ]);
-
-        setPageData({
-          game,
-          teams: [...(homeTeamResult || []), ...(awayTeamResult || [])],
-          players: playersResult || [],
-          stats: statsResult || []
-        });
-      } catch (error) {
-        console.error('Error loading game data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [gameId]);
-
-  const { game, teams, players, stats: allStats } = pageData;
+  const playerIds = allStats?.map(s => s.player_id) || [];
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', playerIds],
+    queryFn: () => playerIds.length > 0 ? base44.entities.Player.filter({ id: { $in: playerIds } }) : Promise.resolve([]),
+    enabled: playerIds.length > 0,
+    staleTime: 5000,
+    refetchOnWindowFocus: false
+  });
   const homeTeam = teams.find(t => t.id === game?.home_team_id);
   const awayTeam = teams.find(t => t.id === game?.away_team_id);
 

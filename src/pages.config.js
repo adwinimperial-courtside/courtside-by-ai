@@ -59,6 +59,7 @@ import LeagueIDs from './pages/LeagueIDs';
 import LeagueOwners from './pages/LeagueOwners';
 import LeagueSelection from './pages/LeagueSelection';
 import Leagues from './pages/Leagues';
+import LiveBoxScore from './pages/LiveBoxScore';
 import LiveGame from './pages/LiveGame';
 import Players from './pages/Players';
 import RequestManagement from './pages/RequestManagement';
@@ -70,7 +71,6 @@ import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
-import LiveBoxScore from './pages/LiveBoxScore';
 import __Layout from './Layout.jsx';
 
 
@@ -87,6 +87,7 @@ export const PAGES = {
     "LeagueOwners": LeagueOwners,
     "LeagueSelection": LeagueSelection,
     "Leagues": Leagues,
+    "LiveBoxScore": LiveBoxScore,
     "LiveGame": LiveGame,
     "Players": Players,
     "RequestManagement": RequestManagement,
@@ -98,7 +99,6 @@ export const PAGES = {
     "UserRoles": UserRoles,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
-    "LiveBoxScore": LiveBoxScore,
 }
 
 export const pagesConfig = {
