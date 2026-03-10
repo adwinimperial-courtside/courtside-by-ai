@@ -38,6 +38,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
 
   // Local display state — derived from game, updated every second if running
   const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(game));
+  const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState({});
+  const [awayTimeoutsUsed, setAwayTimeoutsUsed] = useState({});
   const tickRef = useRef(null);
 
   const period = game?.clock_period ?? 1;
@@ -157,6 +159,28 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
 
   const timeExpired = displayTime <= 0;
 
+  // Timeout helpers
+  const getSegmentKey = (p) => {
+    if (p > totalPeriods) return `ot${p - totalPeriods}`;
+    if (periodType === 'halves') return `h${p}`;
+    return p <= 2 ? 'half1' : 'half2';
+  };
+  const getSegmentSlots = (segKey) => {
+    if (segKey.startsWith('ot')) return 1;
+    if (segKey === 'h1' || segKey === 'half1') return 2;
+    return 3;
+  };
+  const currentSegKey = getSegmentKey(period);
+  const currentSlots = getSegmentSlots(currentSegKey);
+  const homeUsed = homeTimeoutsUsed[currentSegKey] || 0;
+  const awayUsed = awayTimeoutsUsed[currentSegKey] || 0;
+  const handleHomeTimeout = () => {
+    if (homeUsed < currentSlots) setHomeTimeoutsUsed(prev => ({ ...prev, [currentSegKey]: homeUsed + 1 }));
+  };
+  const handleAwayTimeout = () => {
+    if (awayUsed < currentSlots) setAwayTimeoutsUsed(prev => ({ ...prev, [currentSegKey]: awayUsed + 1 }));
+  };
+
   return (
     <>
       {/* ── MOBILE layout (< 900px) ── */}
@@ -227,16 +251,33 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
         <div className="flex items-stretch divide-x divide-white/20">
 
           {/* LEFT: Home team */}
-          <div className="flex-1 flex items-center gap-4 px-7 py-4">
-            <div
-              className="w-13 h-13 w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
-              style={{ backgroundColor: homeTeam?.color || '#f97316' }}
-            >
-              {homeTeam?.name?.[0]}
+          <div className="flex-1 flex flex-col justify-center px-7 py-3">
+            <div className="flex items-center gap-4 mb-2">
+              <div
+                className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                style={{ backgroundColor: homeTeam?.color || '#f97316' }}
+              >
+                {homeTeam?.name?.[0]}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white/80 font-semibold text-sm truncate">{homeTeam?.name}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{game.home_score || 0}</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-white/80 font-semibold text-sm truncate">{homeTeam?.name}</p>
-              <p className="text-5xl font-black text-white leading-none tabular-nums">{game.home_score || 0}</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: currentSlots }).map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < homeUsed ? 'bg-white border-white' : 'border-white/40'}`} />
+                ))}
+              </div>
+              <button
+                onClick={handleHomeTimeout}
+                disabled={homeUsed >= currentSlots}
+                className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                style={{ minHeight: '36px', minWidth: '100px' }}
+              >
+                TIMEOUT
+              </button>
             </div>
           </div>
 
@@ -296,16 +337,33 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
           </div>
 
           {/* RIGHT: Away team */}
-          <div className="flex-1 flex items-center justify-end gap-4 px-7 py-4">
-            <div className="text-right min-w-0">
-              <p className="text-white/80 font-semibold text-sm truncate">{awayTeam?.name}</p>
-              <p className="text-5xl font-black text-white leading-none tabular-nums">{game.away_score || 0}</p>
+          <div className="flex-1 flex flex-col justify-center items-end px-7 py-3">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="text-right min-w-0">
+                <p className="text-white/80 font-semibold text-sm truncate">{awayTeam?.name}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{game.away_score || 0}</p>
+              </div>
+              <div
+                className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
+                style={{ backgroundColor: awayTeam?.color || '#f97316' }}
+              >
+                {awayTeam?.name?.[0]}
+              </div>
             </div>
-            <div
-              className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
-              style={{ backgroundColor: awayTeam?.color || '#f97316' }}
-            >
-              {awayTeam?.name?.[0]}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleAwayTimeout}
+                disabled={awayUsed >= currentSlots}
+                className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                style={{ minHeight: '36px', minWidth: '100px' }}
+              >
+                TIMEOUT
+              </button>
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: currentSlots }).map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < awayUsed ? 'bg-white border-white' : 'border-white/40'}`} />
+                ))}
+              </div>
             </div>
           </div>
 
