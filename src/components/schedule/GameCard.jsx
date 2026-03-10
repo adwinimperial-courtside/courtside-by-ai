@@ -168,8 +168,8 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
               )}
             </div>
 
-            <div className="flex">
-              {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
+            <div className="flex flex-wrap gap-2">
+              {liveGame.status === 'scheduled' && isAdmin && (
                 <Button
                   onClick={onStartGame}
                   className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
@@ -178,13 +178,32 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
                   Start Game
                 </Button>
               )}
-              {liveGame.status === 'in_progress' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
+              {liveGame.status === 'in_progress' && isAdmin && (
                 <Button
                   onClick={onStartGame}
                   variant="outline"
                   className="w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
                 >
                   Continue
+                </Button>
+              )}
+              {liveGame.status === 'in_progress' && (
+                <Button
+                  variant="outline"
+                  onClick={() => setIsLiveExpanded(!isLiveExpanded)}
+                  className="w-full sm:w-auto hover:bg-slate-50"
+                >
+                  {isLiveExpanded ? (
+                    <>
+                      <ChevronUp className="w-4 h-4 mr-2" />
+                      Hide Live Stats
+                    </>
+                  ) : (
+                    <>
+                      <Activity className="w-4 h-4 mr-2" />
+                      View Live Stats
+                    </>
+                  )}
                 </Button>
               )}
               {liveGame.status === 'completed' && (
