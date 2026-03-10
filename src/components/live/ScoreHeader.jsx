@@ -531,15 +531,26 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
                 {/* START / STOP buttons */}
                 <div className="flex gap-4">
-                  <button
-                    onClick={handlePlayPause}
-                    disabled={running}
-                    className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-green-500 hover:bg-green-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-                    style={{ minWidth: '140px', minHeight: '56px' }}
-                  >
-                    <Play className="w-4 h-4" />
-                    START CLOCK
-                  </button>
+                  {showEndGame ? (
+                    <button
+                      onClick={onEndGame}
+                      className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white transition-all shadow-lg"
+                      style={{ minWidth: '140px', minHeight: '56px' }}
+                    >
+                      <Trophy className="w-4 h-4" />
+                      END GAME
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handlePlayPause}
+                      disabled={running}
+                      className={`flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg ${startButtonIsNextPeriod ? 'bg-blue-500 hover:bg-blue-400' : 'bg-green-500 hover:bg-green-400'}`}
+                      style={{ minWidth: '140px', minHeight: '56px' }}
+                    >
+                      <Play className="w-4 h-4" />
+                      {startButtonLabel}
+                    </button>
+                  )}
                   <button
                     onClick={handlePlayPause}
                     disabled={!running || timeExpired}
