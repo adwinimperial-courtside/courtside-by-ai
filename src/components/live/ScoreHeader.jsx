@@ -173,11 +173,11 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const handlePlayPause = async () => {
     if (!isTimed || isSaving.current || lineupBlocked) return;
     // In final review with unequal scores, only END GAME is allowed — block clock start
-    if (isInFinalReview && (game.home_score || 0) !== (game.away_score || 0)) return;
-    const currentTimeLeft = computeTimeLeft(game);
+    if (isInFinalReview && (localGame.home_score || 0) !== (localGame.away_score || 0)) return;
+    const currentTimeLeft = computeTimeLeft(localGame);
 
     // In final review mode with tied scores → START OT: advance to next OT period
-    if (isInFinalReview && (game.home_score || 0) === (game.away_score || 0)) {
+    if (isInFinalReview && (localGame.home_score || 0) === (localGame.away_score || 0)) {
       isSaving.current = true;
       try {
         const nextPeriod = period + 1;
@@ -189,8 +189,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: null,
           period_status: 'active',
         };
-        await base44.entities.Game.update(game.id, updates);
-        if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+        await base44.entities.Game.update(localGame.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
       } finally {
         isSaving.current = false;
       }
@@ -212,8 +212,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: new Date().toISOString(),
           period_status: 'active',
         };
-        await base44.entities.Game.update(game.id, updates);
-        if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+        await base44.entities.Game.update(localGame.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
       } finally {
         isSaving.current = false;
       }
@@ -238,8 +238,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: new Date().toISOString(),
         };
       }
-      await base44.entities.Game.update(game.id, updates);
-      if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       isSaving.current = false;
     }
