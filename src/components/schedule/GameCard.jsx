@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
 
-export default function GameCard({ game, teams, leagues, players, stats, onStartGame, currentUser }) {
+export default function GameCard({ game, teams, leagues, onStartGame, currentUser }) {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
@@ -31,6 +32,25 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     }
   }, [game.id, game.status]);
 
+  // Fetch stats and players for this game on-demand
+  const { data: gamePlayerStats = [] } = useQuery({
+    queryKey: ['playerStats', liveGame.id],
+    queryFn: () => base44.entities.PlayerStats.filter({ game_id: liveGame.id }),
+    enabled: liveGame.status === 'completed' && isExpanded,
+    staleTime: 300000,
+  });
+
+  const { data: gamePlayers = [] } = useQuery({
+    queryKey: ['gamePlayers', liveGame.home_team_id, liveGame.away_team_id],
+    queryFn: async () => {
+      const home = await base44.entities.Player.filter({ team_id: liveGame.home_team_id });
+      const away = await base44.entities.Player.filter({ team_id: liveGame.away_team_id });
+      return [...(home || []), ...(away || [])];
+    },
+    enabled: liveGame.status === 'completed' && isExpanded,
+    staleTime: 300000,
+  });
+
   const homeTeam = teams.find(t => t.id === liveGame.home_team_id);
   const awayTeam = teams.find(t => t.id === liveGame.away_team_id);
   const league = leagues.find(l => l.id === liveGame.league_id);
@@ -47,8 +67,6 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
   };
 
   const editedBadgeColor = "bg-amber-100 text-amber-800";
-
-  const gamePlayerStats = stats?.filter(s => s.game_id === liveGame.id) || [];
   
   const hasPlayerStats = (stat) => {
     const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
