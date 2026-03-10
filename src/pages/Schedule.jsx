@@ -90,7 +90,6 @@ export default function SchedulePage() {
     navigate(`${baseUrl}?gameId=${game.id}`);
   };
 
-  // Filter teams/games to only show data from assigned leagues for non-app-admins with assigned leagues
   const visibleTeams = (hasAssignedLeagues && !isAppAdmin)
     ? teams.filter(t => assignedLeagueIds.includes(t.league_id))
     : teams;
