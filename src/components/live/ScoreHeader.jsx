@@ -578,7 +578,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                     ) : (
                       <button
                         onClick={onEndGame}
-                        className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white transition-all shadow-lg"
+                        disabled={scoresTied}
+                        className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
                         style={{ minWidth: '140px', minHeight: '56px' }}
                       >
                         <Trophy className="w-4 h-4" />
