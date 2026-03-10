@@ -11,7 +11,11 @@ import TeamLogo from "../teams/TeamLogo";
 
 export default function GameCard({ game, teams, leagues, players, stats, onStartGame, currentUser }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isLiveExpanded, setIsLiveExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
+  const [liveStats, setLiveStats] = useState(stats?.filter(s => s.game_id === game.id) || []);
+
+  const isAdmin = currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin';
 
   useEffect(() => {
     setLiveGame(game);
