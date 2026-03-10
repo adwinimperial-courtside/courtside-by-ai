@@ -1077,7 +1077,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
 
         <div className="flex-shrink-0 mb-2">
-          <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
+          <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} />
         </div>
 
         <div className="flex gap-3 flex-1 min-h-0">
