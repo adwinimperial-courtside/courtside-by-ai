@@ -336,9 +336,9 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   // ── Sync from persisted game record ──────────────────────────────
   useEffect(() => {
-    if (game.home_timeouts) setHomeTimeoutsUsed(game.home_timeouts);
-    if (game.away_timeouts) setAwayTimeoutsUsed(game.away_timeouts);
-  }, [game.home_timeouts, game.away_timeouts]);
+    if (localGame.home_timeouts) setHomeTimeoutsUsed(localGame.home_timeouts);
+    if (localGame.away_timeouts) setAwayTimeoutsUsed(localGame.away_timeouts);
+  }, [localGame.home_timeouts, localGame.away_timeouts]);
 
   const homeUsed = homeTimeoutsUsed[segmentKey] || 0;
   const awayUsed = awayTimeoutsUsed[segmentKey] || 0;
