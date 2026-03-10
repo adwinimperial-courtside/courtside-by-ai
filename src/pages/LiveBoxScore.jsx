@@ -132,9 +132,9 @@ export default function LiveBoxScorePage() {
   };
 
   const formatClockTime = () => {
-    if (game.clock_time_left === undefined || game.clock_time_left === null) return '--:--';
-    const mins = Math.floor(game.clock_time_left / 60);
-    const secs = Math.floor(game.clock_time_left % 60);
+    if (displayTime === undefined || displayTime === null) return '--:--';
+    const mins = Math.floor(displayTime / 60);
+    const secs = Math.floor(displayTime % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
