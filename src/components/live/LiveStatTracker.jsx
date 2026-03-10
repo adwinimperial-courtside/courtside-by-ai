@@ -47,6 +47,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [playersToReplace, setPlayersToReplace] = useState([]);
   const [replacementPlayers, setReplacementPlayers] = useState([]);
   const [subStep, setSubStep] = useState('select_out');
+  const [subTeamFilter, setSubTeamFilter] = useState(null); // locked to one team once first player selected
   const [ejectedPlayer, setEjectedPlayer] = useState(null);
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
