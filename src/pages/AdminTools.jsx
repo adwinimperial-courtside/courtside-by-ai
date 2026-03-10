@@ -36,7 +36,7 @@ export default function AdminTools() {
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
-  const {{ data: teams = [] } = useQuery({
+  const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
     staleTime: 0,
