@@ -350,8 +350,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (usedCount >= segmentAllowance || isSaving.current) return;
     isSaving.current = true;
     try {
-      const currentTimeLeft = computeTimeLeft(game);
-      const newSegMap = { ...(game[timeoutsKey] || {}), [segmentKey]: usedCount + 1 };
+      const currentTimeLeft = computeTimeLeft(localGame);
+      const newSegMap = { ...(localGame[timeoutsKey] || {}), [segmentKey]: usedCount + 1 };
       const updates = { [timeoutsKey]: newSegMap };
       // Reuse existing stop-clock logic
       if (running) {
@@ -359,19 +359,19 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         updates.clock_time_left = Math.max(0, Math.round(currentTimeLeft));
         updates.clock_started_at = null;
       }
-      await base44.entities.Game.update(game.id, updates);
+      await base44.entities.Game.update(localGame.id, updates);
       setUsed(newSegMap);
-      if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
       await base44.entities.GameLog.create({
-        game_id: game.id,
+        game_id: localGame.id,
         player_id: '',
         team_id: teamId,
         stat_type: 'timeout',
         stat_label: `Timeout – ${teamName}`,
         stat_points: 0,
         stat_color: 'bg-amber-500',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
+        old_home_score: localGame.home_score || 0,
+        old_away_score: localGame.away_score || 0,
       });
     } finally {
       isSaving.current = false;
