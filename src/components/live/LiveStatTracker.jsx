@@ -456,7 +456,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         device_name: getDeviceName()
       }));
 
-      // Handle ejections (create log in parallel, then show dialog)
+      // Handle ejections
       let ejectionLog = null;
       if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
         ejectionLog = {
@@ -492,13 +492,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           logged_by: currentUser?.email || '',
           device_name: getDeviceName()
         }));
-        setEjectedPlayer(selectedPlayer);
-        setEjectionReason(ejectionLog.reason);
-        setSelectedPlayer(null);
       }
 
       // Execute all in parallel
       await Promise.all(promises);
+
+      // Show ejection dialog after mutations complete
+      if (ejectionLog) {
+        setEjectedPlayer(selectedPlayer);
+        setEjectionReason(ejectionLog.reason);
+        setSelectedPlayer(null);
+      }
     } finally {
       isProcessingStatRef.current = false;
     }
