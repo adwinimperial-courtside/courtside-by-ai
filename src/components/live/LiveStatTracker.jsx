@@ -764,19 +764,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-1 min-[900px]:content-stretch">
           {teamPlayers.map((player) => (
-            <PlayerButton
-              key={player.id}
-              player={player}
-              teamColor={team?.color}
-              isDesktop={side !== undefined}
-              onSubClick={(p) => {
-                resetSubDialog();
-                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
-                else setAwayPlayersOut([p]);
-                setSubStep('select_in');
-                setShowSubDialog(true);
-              }}
-            />
+            <React.Fragment key={player.id}>
+              {PlayerButton({
+                player,
+                teamColor: team?.color,
+                isDesktop: side !== undefined,
+                onSubClick: (p) => {
+                  resetSubDialog();
+                  if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                  else setAwayPlayersOut([p]);
+                  setSubStep('select_in');
+                  setShowSubDialog(true);
+                }
+              })}
+            </React.Fragment>
           ))}
         </div>
       </div>
