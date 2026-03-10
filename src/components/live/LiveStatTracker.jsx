@@ -803,7 +803,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
 
         <Button
-          onClick={() => { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setShowSubDialog(true); }}
+          onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
           className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
         >
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -923,7 +923,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 </motion.div>
               ); })}
             </div>
-            <Button onClick={() => { setPlayersToReplace([]); setReplacementPlayers([]); setSubStep('select_out'); setShowSubDialog(true); }} className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg">
+            <Button onClick={() => { resetSubDialog(); setShowSubDialog(true); }} className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg">
               <RefreshCw className="w-4 h-4 mr-2" />Make Substitution
             </Button>
           </div>
@@ -1014,7 +1014,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <Button
             className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white mt-2"
             onClick={() => {
-              if (ejectedPlayer) { setPlayersToReplace([ejectedPlayer]); setReplacementPlayers([]); setSubStep('select_in'); setShowSubDialog(true); }
+              if (ejectedPlayer) {
+                resetSubDialog();
+                if (ejectedPlayer.team_id === game.home_team_id) setHomePlayersOut([ejectedPlayer]);
+                else setAwayPlayersOut([ejectedPlayer]);
+                setSubStep('select_in');
+                setShowSubDialog(true);
+              }
               setEjectedPlayer(null);
             }}
           >
