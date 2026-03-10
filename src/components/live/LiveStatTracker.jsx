@@ -248,6 +248,34 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
   }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers]);
 
+  // FIBA-style default rules — reads from game.game_rules with fallback
+  const getGameRules = () => ({
+    teamFoulBonusThreshold: 5,
+    countPersonalFoulsAsTeamFoul: true,
+    countOffensiveFoulsAsTeamFoul: true,
+    countPlayerTechnicalAsTeamFoul: true,
+    countUnsportsmanlikeAsTeamFoul: true,
+    countPlayerDisqualifyingAsTeamFoul: true,
+    countBenchTechnicalAsTeamFoul: false,
+    countCoachTechnicalAsTeamFoul: false,
+    ...(game.game_rules || {}),
+  });
+
+  const statCountsAsTeamFoul = (statKey) => {
+    const rules = getGameRules();
+    if (statKey === 'fouls') return rules.countPersonalFoulsAsTeamFoul;
+    if (statKey === 'technical_fouls') return rules.countPlayerTechnicalAsTeamFoul;
+    if (statKey === 'unsportsmanlike_fouls') return rules.countUnsportsmanlikeAsTeamFoul;
+    return false;
+  };
+
+  const getFoulResetKey = (period) => {
+    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    if (period > totalPeriods) return String(period);
+    if (game.period_type === 'halves') return period === 1 ? 'h1' : 'h2';
+    return String(period);
+  };
+
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
 
@@ -260,6 +288,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
     await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
+
+    // ── Increment team fouls if this stat type counts as a team foul ──
+    if (statCountsAsTeamFoul(statType.key)) {
+      const isHome = selectedPlayer.team_id === game.home_team_id;
+      const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
+      const period = game.clock_period ?? 1;
+      const resetKey = getFoulResetKey(period);
+      const currentFoulMap = { ...(game[foulKey] || {}) };
+      currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
+      await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
+    }
 
     if (statType.points > 0) {
       const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
