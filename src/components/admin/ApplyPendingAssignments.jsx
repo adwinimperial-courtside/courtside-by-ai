@@ -39,7 +39,7 @@ export default function ApplyPendingAssignments() {
     };
 
     applyPendingAssignment();
-  }, [currentUser]);
+  }, [currentUser?.email, currentUser?.id]);
 
   return null;
 }
