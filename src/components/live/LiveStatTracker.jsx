@@ -154,7 +154,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         home: log.old_home_score,
         away: log.old_away_score
       },
-      teamColor: teamColor
+      teamColor: teamColor,
+      teamId: log.team_id
     };
   });
 
