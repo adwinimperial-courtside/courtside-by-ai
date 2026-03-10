@@ -87,14 +87,14 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (onGameUpdate) onGameUpdate({ ...localGame, possession: next });
   };
   // ── Team Fouls state ─────────────────────────────────────────────
-  const gameRules = { ...DEFAULT_GAME_RULES, ...(game.game_rules || {}) };
-  const [homeTeamFouls, setHomeTeamFouls] = useState(() => game.home_team_fouls || {});
-  const [awayTeamFouls, setAwayTeamFouls] = useState(() => game.away_team_fouls || {});
+  const gameRules = { ...DEFAULT_GAME_RULES, ...(localGame.game_rules || {}) };
+  const [homeTeamFouls, setHomeTeamFouls] = useState(() => localGame.home_team_fouls || {});
+  const [awayTeamFouls, setAwayTeamFouls] = useState(() => localGame.away_team_fouls || {});
 
   useEffect(() => {
-    if (game.home_team_fouls) setHomeTeamFouls(game.home_team_fouls);
-    if (game.away_team_fouls) setAwayTeamFouls(game.away_team_fouls);
-  }, [game.home_team_fouls, game.away_team_fouls]);
+    if (localGame.home_team_fouls) setHomeTeamFouls(localGame.home_team_fouls);
+    if (localGame.away_team_fouls) setAwayTeamFouls(localGame.away_team_fouls);
+  }, [localGame.home_team_fouls, localGame.away_team_fouls]);
 
   const isTimed = localGame?.game_mode === "timed" || (!localGame?.game_mode && localGame?.period_minutes);
   const periodType = localGame?.period_type || "quarters";
