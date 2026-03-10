@@ -226,18 +226,21 @@ export default function LiveBoxScorePage() {
             </TableHeader>
             <TableBody>
               {teamPlayers.map(stat => {
-                const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
-                const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
-                return (
-                  <TableRow key={stat.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
+              const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
+              const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+              return (
+                <TableRow key={stat.id} style={{ backgroundColor: stat.is_active ? 'rgba(34,197,94,0.08)' : 'transparent' }}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
                         <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: team?.color || '#f97316' }}>
                           {stat.player?.jersey_number}
                         </div>
-                        <span className="text-sm">{stat.player?.name}</span>
+                        {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
                       </div>
-                    </TableCell>
+                      <span className="text-sm">{stat.player?.name}</span>
+                    </div>
+                  </TableCell>
                     {game.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
                     <TableCell className="text-center font-semibold">{points}</TableCell>
                     <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
