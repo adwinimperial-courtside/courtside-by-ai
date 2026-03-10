@@ -258,8 +258,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         clock_running: false,
         clock_started_at: null,
       };
-      await base44.entities.Game.update(game.id, updates);
-      if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       isSaving.current = false;
     }
@@ -278,8 +278,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         clock_running: false,
         clock_started_at: null,
       };
-      await base44.entities.Game.update(game.id, updates);
-      if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       isSaving.current = false;
     }
