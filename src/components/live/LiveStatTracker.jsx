@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { usePlayerStatsDebounce } from "@/components/hooks/usePlayerStatsDebounce";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock } from "lucide-react";
@@ -88,16 +87,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
   });
 
-  // Debounce PlayerStats subscription refreshes for live scorer context (350ms)
-  // Live scoring console needs responsiveness, but we still avoid API floods
-  const { trigger: debouncedInvalidate, cleanup: cleanupDebounce } = usePlayerStatsDebounce(
-    () => queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] }),
-    350
-  );
-
   useEffect(() => {
     const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      debouncedInvalidate();
+      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
     });
     const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
       queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
@@ -112,9 +104,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       unsubscribeStats();
       unsubscribeLogs();
       unsubscribeGame();
-      cleanupDebounce();
     };
-  }, [game.id, queryClient, debouncedInvalidate, cleanupDebounce]);
+  }, [game.id, queryClient]);
 
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
@@ -954,21 +945,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
-          {teamPlayers.map((player) => 
-            PlayerButton({
-              key: player.id,
-              player,
-              teamColor: team?.color,
-              isDesktop: side !== undefined,
-              onSubClick: (p) => {
-                resetSubDialog();
-                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
-                else setAwayPlayersOut([p]);
-                setSubStep('select_in');
-                setShowSubDialog(true);
-              }
-            })
-          )}
+          {teamPlayers.map((player) => (
+            <React.Fragment key={player.id}>
+              {PlayerButton({
+                player,
+                teamColor: team?.color,
+                isDesktop: side !== undefined,
+                onSubClick: (p) => {
+                  resetSubDialog();
+                  if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                  else setAwayPlayersOut([p]);
+                  setSubStep('select_in');
+                  setShowSubDialog(true);
+                }
+              })}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     );

@@ -52,10 +52,10 @@ export default function StatisticsPage() {
     return () => clearTimeout(timer);
   }, [playerSearch]);
 
-  const { data: leagues = [] } = useQuery({
+  const { data: leagues } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    staleTime: 30 * 1000,
+    initialData: [],
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -67,28 +67,28 @@ export default function StatisticsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams = [] } = useQuery({
+  const { data: teams } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    staleTime: 30 * 1000,
+    initialData: [],
   });
 
-  const { data: players = [] } = useQuery({
+  const { data: players } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
-    staleTime: 30 * 1000,
+    initialData: [],
   });
 
-  const { data: games = [] } = useQuery({
+  const { data: games } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list(),
-    staleTime: 15 * 1000,
+    initialData: [],
   });
 
-  const { data: allStats = [] } = useQuery({
+  const { data: allStats } = useQuery({
     queryKey: ['allPlayerStats'],
     queryFn: () => base44.entities.PlayerStats.list(),
-    staleTime: 15 * 1000,
+    initialData: [],
   });
 
   // Restrict data to assigned leagues for non-app-admins with assigned leagues
