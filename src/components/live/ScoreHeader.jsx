@@ -96,20 +96,20 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (game.away_team_fouls) setAwayTeamFouls(game.away_team_fouls);
   }, [game.home_team_fouls, game.away_team_fouls]);
 
-  const isTimed = game?.game_mode === "timed" || (!game?.game_mode && game?.period_minutes);
-  const periodType = game?.period_type || "quarters";
-  const totalPeriods = game?.period_count || (periodType === "halves" ? 2 : 4);
-  const periodMinutes = game?.period_minutes || 10;
-  const overtimeMinutes = game?.overtime_minutes || 5;
+  const isTimed = localGame?.game_mode === "timed" || (!localGame?.game_mode && localGame?.period_minutes);
+  const periodType = localGame?.period_type || "quarters";
+  const totalPeriods = localGame?.period_count || (periodType === "halves" ? 2 : 4);
+  const periodMinutes = localGame?.period_minutes || 10;
+  const overtimeMinutes = localGame?.overtime_minutes || 5;
 
   // Local display state — derived from game, updated every second if running
-  const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(game));
-  const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState(() => game.home_timeouts || {});
-  const [awayTimeoutsUsed, setAwayTimeoutsUsed] = useState(() => game.away_timeouts || {});
+  const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(localGame));
+  const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState(() => localGame.home_timeouts || {});
+  const [awayTimeoutsUsed, setAwayTimeoutsUsed] = useState(() => localGame.away_timeouts || {});
   const tickRef = useRef(null);
 
-  const period = game?.clock_period ?? 1;
-  const running = game?.clock_running ?? false;
+  const period = localGame?.clock_period ?? 1;
+  const running = localGame?.clock_running ?? false;
   const isOvertime = period > totalPeriods;
   const periodLabel = getPeriodLabel(period, periodType);
 
