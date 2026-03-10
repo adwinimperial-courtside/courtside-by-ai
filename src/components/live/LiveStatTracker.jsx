@@ -75,6 +75,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
+  const { data: liveGame = game } = useQuery({
+    queryKey: ['game', game.id],
+    queryFn: () => base44.entities.Game.get(game.id),
+    staleTime: 2000,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
+
   const { data: liveStats = initialStats } = useQuery({
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
