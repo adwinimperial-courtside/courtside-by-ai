@@ -32,40 +32,53 @@ export default function LiveGamePage() {
     fetchUser();
   }, []);
 
-  const { data: games = [], isLoading: gamesLoading } = useQuery({
-    queryKey: ['games'],
+  const { data: game = null, isLoading: gamesLoading } = useQuery({
+    queryKey: ['game', gameId],
     queryFn: async () => {
-      const result = await base44.entities.Game.list();
-      return result || [];
+      if (!gameId) return null;
+      const result = await base44.entities.Game.filter({ id: gameId });
+      return result?.[0] || null;
     },
+    enabled: !!gameId,
+    staleTime: 2000,
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
+    queryKey: ['teams', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
-      const result = await base44.entities.Team.list();
-      return result || [];
+      if (!game?.home_team_id || !game?.away_team_id) return [];
+      const [homeTeam, awayTeam] = await Promise.all([
+        base44.entities.Team.filter({ id: game.home_team_id }),
+        base44.entities.Team.filter({ id: game.away_team_id })
+      ]);
+      return [...(homeTeam || []), ...(awayTeam || [])];
     },
-    enabled: games.length > 0, // Only fetch after games
+    enabled: !!game?.home_team_id && !!game?.away_team_id,
+    staleTime: 300000,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
+    queryKey: ['players', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
-      const result = await base44.entities.Player.list();
-      return result || [];
+      if (!game?.home_team_id || !game?.away_team_id) return [];
+      const [homePlayers, awayPlayers] = await Promise.all([
+        base44.entities.Player.filter({ team_id: game.home_team_id }),
+        base44.entities.Player.filter({ team_id: game.away_team_id })
+      ]);
+      return [...(homePlayers || []), ...(awayPlayers || [])];
     },
-    enabled: teams.length > 0, // Only fetch after teams
+    enabled: !!game?.home_team_id && !!game?.away_team_id,
+    staleTime: 300000,
   });
 
   const { data: existingStats = [] } = useQuery({
     queryKey: ['playerStats', gameId],
     queryFn: async () => {
       if (!gameId) return [];
-      const allStats = await base44.entities.PlayerStats.list();
-      return (allStats || []).filter(s => s.game_id === gameId);
+      return base44.entities.PlayerStats.filter({ game_id: gameId });
     },
     enabled: !!gameId,
+    staleTime: 2000,
   });
 
   const updateGameMutation = useMutation({
