@@ -212,27 +212,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     mutationFn: async ({ statId, updates }) => {
       return await base44.entities.PlayerStats.update(statId, updates);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-    },
+    // Let subscriptions handle cache invalidation (debounced to 500ms)
   });
 
   const createStatMutation = useMutation({
     mutationFn: async (statData) => {
       return await base44.entities.PlayerStats.create(statData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-    },
   });
 
   const updateGameMutation = useMutation({
     mutationFn: async ({ gameId, data }) => {
       return await base44.entities.Game.update(gameId, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      queryClient.invalidateQueries({ queryKey: ['game', game.id] });
     },
   });
 
@@ -250,17 +241,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     mutationFn: async (logData) => {
       return await base44.entities.GameLog.create(logData);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-    },
   });
 
   const deleteLogMutation = useMutation({
     mutationFn: async (logId) => {
       return await base44.entities.GameLog.delete(logId);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
     },
   });
 
