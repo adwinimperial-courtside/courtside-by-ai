@@ -404,9 +404,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       
       const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
+      // Wait for stat update to complete before proceeding
       await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
+      await new Promise(resolve => setTimeout(resolve, 50));
 
-      // ── Increment team fouls if this stat type counts as a team foul ──
+      // Update team fouls if applicable
       if (statCountsAsTeamFoul(statType.key)) {
         const isHome = selectedPlayer.team_id === game.home_team_id;
         const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
@@ -415,8 +417,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         const currentFoulMap = { ...(game[foulKey] || {}) };
         currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
         await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
 
+      // Update score if points were awarded
       if (statType.points > 0) {
         const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
         const newScore = isHomeTeam 
@@ -429,8 +433,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             ? { home_score: newScore }
             : { away_score: newScore }
         });
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
 
+      // Create game log entry last
       await createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: selectedPlayer.id,
