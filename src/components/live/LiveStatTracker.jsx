@@ -879,7 +879,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           )}
         </div>
 
-        <div className={`grid grid-cols-3 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+        <div className={`grid grid-cols-3 gap-1.5 ${large ? 'mb-1' : 'mb-1.5'}`}>
           <div className="flex rounded-lg overflow-hidden shadow-md">
             <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTM</motion.button>
             <div className="w-px bg-indigo-900/30" />
@@ -895,7 +895,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           })}
         </div>
 
-        <div className={`grid grid-cols-3 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+        <div className={`grid grid-cols-3 gap-1.5 ${large ? 'mb-1' : 'mb-1.5'}`}>
           {['offensive_rebounds', 'defensive_rebounds', 'assists'].map(key => {
             const stat = STAT_TYPES.find(s => s.key === key);
             return (
@@ -906,7 +906,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           })}
         </div>
 
-        <div className={`grid grid-cols-6 gap-1.5 mb-${large ? '2' : '1.5'}`}>
+        <div className={`grid grid-cols-6 gap-1.5 ${large ? 'mb-0' : 'mb-1.5'}`}>
           {['steals', 'blocks', 'turnovers', 'fouls', 'technical_fouls', 'unsportsmanlike_fouls'].map(key => {
             const stat = STAT_TYPES.find(s => s.key === key);
             return (
