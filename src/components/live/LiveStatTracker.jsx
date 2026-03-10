@@ -90,19 +90,36 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   });
 
   useEffect(() => {
+    let timeoutStats, timeoutLogs, timeoutGame;
+    
     const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      clearTimeout(timeoutStats);
+      timeoutStats = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      }, 200);
     });
+    
     const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
-      queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+      clearTimeout(timeoutLogs);
+      timeoutLogs = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+      }, 200);
     });
+    
     const unsubscribeGame = base44.entities.Game.subscribe((event) => {
+      clearTimeout(timeoutGame);
       if (event.id === game.id) {
-        queryClient.invalidateQueries({ queryKey: ['games'] });
-        queryClient.invalidateQueries({ queryKey: ['game', game.id] });
+        timeoutGame = setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['games'] });
+          queryClient.invalidateQueries({ queryKey: ['game', game.id] });
+        }, 200);
       }
     });
+    
     return () => {
+      clearTimeout(timeoutStats);
+      clearTimeout(timeoutLogs);
+      clearTimeout(timeoutGame);
       unsubscribeStats();
       unsubscribeLogs();
       unsubscribeGame();
