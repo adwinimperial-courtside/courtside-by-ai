@@ -102,12 +102,12 @@ export default function LiveGamePage() {
   }, [game]);
 
   useEffect(() => {
-    if (game && existingStats && existingStats.length > 0) {
+    if (mergedGame && existingStats && existingStats.length > 0) {
       const homeStarterIds = existingStats
-        .filter(s => s.team_id === game.home_team_id && s.is_starter)
+        .filter(s => s.team_id === mergedGame.home_team_id && s.is_starter)
         .map(s => s.player_id);
       const awayStarterIds = existingStats
-        .filter(s => s.team_id === game.away_team_id && s.is_starter)
+        .filter(s => s.team_id === mergedGame.away_team_id && s.is_starter)
         .map(s => s.player_id);
       
       if (homeStarterIds.length > 0 || awayStarterIds.length > 0) {
@@ -116,7 +116,7 @@ export default function LiveGamePage() {
         setIsSetupComplete(true);
       }
     }
-  }, [game, existingStats]);
+  }, [mergedGame, existingStats]);
 
   if (currentUser?.user_type === "viewer") {
     return (
