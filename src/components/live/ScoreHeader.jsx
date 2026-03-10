@@ -165,7 +165,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
       }, 500);
     }
     return () => clearInterval(tickRef.current);
-  }, [running, localGame.clock_started_at, localGame.clock_time_left];
+  }, [running, localGame.clock_started_at, localGame.clock_time_left]);
 
   const isSaving = useRef(false);
   const autoStopFiredRef = useRef(false);
