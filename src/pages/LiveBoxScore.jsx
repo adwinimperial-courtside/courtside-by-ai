@@ -1,0 +1,292 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ArrowLeft, BarChart3 } from "lucide-react";
+import { createPageUrl } from "@/utils";
+import TeamLogo from "@/components/teams/TeamLogo";
+
+export default function LiveBoxScorePage() {
+  const navigate = useNavigate();
+  const urlParams = new URLSearchParams(window.location.search);
+  const gameId = urlParams.get('gameId');
+
+  const { data: games = [] } = useQuery({
+    queryKey: ['games'],
+    queryFn: async () => {
+      const result = await base44.entities.Game.list();
+      return result || [];
+    },
+  });
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: async () => {
+      const result = await base44.entities.Team.list();
+      return result || [];
+    },
+    enabled: games.length > 0,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players'],
+    queryFn: async () => {
+      const result = await base44.entities.Player.list();
+      return result || [];
+    },
+    enabled: teams.length > 0,
+  });
+
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['playerStats', gameId],
+    queryFn: async () => {
+      if (!gameId) return [];
+      const stats = await base44.entities.PlayerStats.filter({ game_id: gameId });
+      return stats || [];
+    },
+    enabled: !!gameId,
+  });
+
+  const game = games.find(g => g.id === gameId);
+  const homeTeam = teams.find(t => t.id === game?.home_team_id);
+  const awayTeam = teams.find(t => t.id === game?.away_team_id);
+
+  // Get all players who appeared in the game (is_starter = true)
+  const playersInGame = new Set(allStats.map(s => s.player_id));
+  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
+  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && playersInGame.has(s.player_id));
+
+  // Compute current scores
+  const computedHomeScore = homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+  const computedAwayScore = awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+
+  if (!gameId || !game) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Not Found</h2>
+          <Button onClick={() => navigate(createPageUrl('Schedule'))}>Back to Schedule</Button>
+        </div>
+      </div>
+    );
+  }
+
+  const getPeriodLabel = () => {
+    if (!game.clock_period) return 'Q1';
+    const period = game.clock_period;
+    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+    if (period > totalPeriods) return `OT${period - totalPeriods}`;
+    if (game.period_type === 'halves') return period === 1 ? '1H' : '2H';
+    return `Q${period}`;
+  };
+
+  const formatClockTime = () => {
+    if (game.clock_time_left === undefined || game.clock_time_left === null) return '--:--';
+    const mins = Math.floor(game.clock_time_left / 60);
+    const secs = Math.floor(game.clock_time_left % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const StatTable = ({ team, playerStats }) => {
+    const teamPlayers = playerStats.map(stat => ({
+      ...stat,
+      player: players.find(p => p.id === stat.player_id)
+    })).sort((a, b) => (b.points_2 || 0) * 2 + (b.points_3 || 0) * 3 + (b.free_throws || 0) - ((a.points_2 || 0) * 2 + (a.points_3 || 0) * 3 + (a.free_throws || 0)));
+
+    const teamScore = teamPlayers.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+    const team3PT = teamPlayers.reduce((acc, s) => acc + (s.points_3 || 0), 0);
+    const teamFT = teamPlayers.reduce((acc, s) => acc + (s.free_throws || 0), 0);
+    const teamREB = teamPlayers.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+    const teamAST = teamPlayers.reduce((acc, s) => acc + (s.assists || 0), 0);
+    const teamSTL = teamPlayers.reduce((acc, s) => acc + (s.steals || 0), 0);
+    const teamBLK = teamPlayers.reduce((acc, s) => acc + (s.blocks || 0), 0);
+    const teamTO = teamPlayers.reduce((acc, s) => acc + (s.turnovers || 0), 0);
+    const teamF = teamPlayers.reduce((acc, s) => acc + (s.fouls || 0), 0);
+
+    return (
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <TeamLogo team={team} size="md" />
+          <h3 className="font-bold text-lg text-slate-900">{team?.name}</h3>
+        </div>
+
+        {/* Mobile: Cards */}
+        <div className="block md:hidden space-y-2 mb-4">
+          {teamPlayers.map(stat => {
+            const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
+            const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+            return (
+              <div key={stat.id} className="bg-slate-50 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: team?.color || '#f97316' }}>
+                    {stat.player?.jersey_number}
+                  </div>
+                  <span className="font-semibold text-sm text-slate-900 truncate">{stat.player?.name}</span>
+                  <span className="ml-auto font-bold text-slate-900">{points} PTS</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1 text-xs text-center">
+                  {[['3PT', stat.points_3 || 0], ['FT', stat.free_throws || 0], ['REB', rebounds], ['AST', stat.assists || 0], ['STL', stat.steals || 0], ['BLK', stat.blocks || 0], ['TO', stat.turnovers || 0], ['F', stat.fouls || 0]].map(([label, val]) => (
+                    <div key={label} className="bg-white rounded p-1">
+                      <div className="text-slate-400 text-[10px]">{label}</div>
+                      <div className="font-semibold text-slate-800">{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          <div className="bg-slate-800 text-white rounded-lg p-3">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-bold text-sm">TEAM TOTALS</span>
+              <span className="font-bold text-lg">{teamScore} PTS</span>
+            </div>
+            <div className="grid grid-cols-4 gap-1 text-xs text-center">
+              {[['3PT', team3PT], ['FT', teamFT], ['REB', teamREB], ['AST', teamAST], ['STL', teamSTL], ['BLK', teamBLK], ['TO', teamTO], ['F', teamF]].map(([label, val]) => (
+                <div key={label} className="bg-slate-700 rounded p-1">
+                  <div className="text-slate-400 text-[10px]">{label}</div>
+                  <div className="font-semibold">{val}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop: Table */}
+        <div className="hidden md:block overflow-x-auto mb-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Player</TableHead>
+                <TableHead className="text-center">PTS</TableHead>
+                <TableHead className="text-center">3PT</TableHead>
+                <TableHead className="text-center">FT</TableHead>
+                <TableHead className="text-center">OREB</TableHead>
+                <TableHead className="text-center">DREB</TableHead>
+                <TableHead className="text-center">REB</TableHead>
+                <TableHead className="text-center">AST</TableHead>
+                <TableHead className="text-center">STL</TableHead>
+                <TableHead className="text-center">BLK</TableHead>
+                <TableHead className="text-center">TO</TableHead>
+                <TableHead className="text-center">F</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {teamPlayers.map(stat => {
+                const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
+                const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                return (
+                  <TableRow key={stat.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: team?.color || '#f97316' }}>
+                          {stat.player?.jersey_number}
+                        </div>
+                        <span className="text-sm">{stat.player?.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center font-semibold">{points}</TableCell>
+                    <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
+                    <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
+                    <TableCell className="text-center">{stat.offensive_rebounds || 0}</TableCell>
+                    <TableCell className="text-center">{stat.defensive_rebounds || 0}</TableCell>
+                    <TableCell className="text-center">{rebounds}</TableCell>
+                    <TableCell className="text-center">{stat.assists || 0}</TableCell>
+                    <TableCell className="text-center">{stat.steals || 0}</TableCell>
+                    <TableCell className="text-center">{stat.blocks || 0}</TableCell>
+                    <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
+                    <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow className="bg-slate-50 font-semibold">
+                <TableCell>TEAM TOTALS</TableCell>
+                <TableCell className="text-center">{teamScore}</TableCell>
+                <TableCell className="text-center">{team3PT}</TableCell>
+                <TableCell className="text-center">{teamFT}</TableCell>
+                <TableCell className="text-center">{teamPlayers.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0)}</TableCell>
+                <TableCell className="text-center">{teamPlayers.reduce((acc, s) => acc + (s.defensive_rebounds || 0), 0)}</TableCell>
+                <TableCell className="text-center">{teamREB}</TableCell>
+                <TableCell className="text-center">{teamAST}</TableCell>
+                <TableCell className="text-center">{teamSTL}</TableCell>
+                <TableCell className="text-center">{teamBLK}</TableCell>
+                <TableCell className="text-center">{teamTO}</TableCell>
+                <TableCell className="text-center">{teamF}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-6">
+          <Button variant="ghost" onClick={() => navigate(createPageUrl('Schedule'))} className="mb-4 text-slate-600 hover:bg-slate-200/50">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Schedule
+          </Button>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="w-5 h-5 text-blue-600" />
+              <h1 className="text-2xl font-bold text-slate-900">Live Box Score</h1>
+            </div>
+
+            {game.status === 'in_progress' && (
+              <Badge className="bg-orange-100 text-orange-800 mb-4">Live</Badge>
+            )}
+
+            {/* Game info */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              {/* Home team */}
+              <div className="flex flex-col items-center gap-2">
+                <TeamLogo team={homeTeam} size="lg" />
+                <div className="text-center">
+                  <h3 className="font-bold text-lg text-slate-900">{homeTeam?.name}</h3>
+                  <p className="text-4xl font-bold text-slate-900">{computedHomeScore}</p>
+                </div>
+              </div>
+
+              {/* Center info */}
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-center">
+                  <p className="text-sm text-slate-500 font-semibold">{getPeriodLabel()}</p>
+                  <p className="text-xl font-bold text-slate-900">{formatClockTime()}</p>
+                </div>
+                {game.status === 'in_progress' && (
+                  <Badge className="bg-blue-100 text-blue-800">In Progress</Badge>
+                )}
+              </div>
+
+              {/* Away team */}
+              <div className="flex flex-col items-center gap-2">
+                <TeamLogo team={awayTeam} size="lg" />
+                <div className="text-center">
+                  <h3 className="font-bold text-lg text-slate-900">{awayTeam?.name}</h3>
+                  <p className="text-4xl font-bold text-slate-900">{computedAwayScore}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Tables */}
+        <div className="space-y-8">
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <StatTable team={awayTeam} playerStats={awayPlayerStats} />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
+            <StatTable team={homeTeam} playerStats={homePlayerStats} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

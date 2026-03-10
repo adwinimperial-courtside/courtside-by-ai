@@ -70,6 +70,7 @@ import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
+import LiveBoxScore from './pages/LiveBoxScore';
 import __Layout from './Layout.jsx';
 
 
@@ -97,6 +98,7 @@ export const PAGES = {
     "UserRoles": UserRoles,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
+    "LiveBoxScore": LiveBoxScore,
 }
 
 export const pagesConfig = {
