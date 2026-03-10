@@ -14,7 +14,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
   const [isLiveExpanded, setIsLiveExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
   const [liveStats, setLiveStats] = useState(stats?.filter(s => s.game_id === game.id) || []);
-  const debounceRef = React.useRef(null);
+  const debounceRef = useRef(null);
 
   const isAdmin = currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin';
 
