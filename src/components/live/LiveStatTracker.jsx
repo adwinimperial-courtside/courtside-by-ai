@@ -730,19 +730,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const handleUndo = async (logEntry) => {
     const updates = { [logEntry.statType.key]: logEntry.oldValue };
-    await updateStatMutation.mutateAsync({ statId: logEntry.statId, updates });
-
+    
+    // Prepare game updates (can batch score + fouls)
+    const gameUpdates = {};
+    
     if (logEntry.statType.points > 0) {
-      await updateGameMutation.mutateAsync({
-        gameId: game.id,
-        data: { 
-          home_score: logEntry.oldScores.home,
-          away_score: logEntry.oldScores.away
-        }
-      });
+      gameUpdates.home_score = logEntry.oldScores.home;
+      gameUpdates.away_score = logEntry.oldScores.away;
     }
 
-    // Decrement team fouls if this stat counted as a team foul
     if (statCountsAsTeamFoul(logEntry.statType.key)) {
       const isHome = logEntry.teamId === game.home_team_id;
       const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
@@ -750,10 +746,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const resetKey = getFoulResetKey(period);
       const currentFoulMap = { ...(game[foulKey] || {}) };
       currentFoulMap[resetKey] = Math.max(0, (currentFoulMap[resetKey] || 0) - 1);
-      await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
+      gameUpdates[foulKey] = currentFoulMap;
     }
 
-    await deleteLogMutation.mutateAsync(logEntry.id);
+    // Batch stat update + game update (if needed) + log delete
+    const promises = [
+      updateStatMutation.mutateAsync({ statId: logEntry.statId, updates })
+    ];
+    
+    if (Object.keys(gameUpdates).length > 0) {
+      promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
+    }
+    
+    promises.push(deleteLogMutation.mutateAsync(logEntry.id));
+    
+    await Promise.all(promises);
   };
 
   const getTimeoutSegmentKey = (period) => {
@@ -777,17 +784,27 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (!logEntry.subData) return;
     const { out_ids, in_ids } = logEntry.subData;
     const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+    
+    // Batch all stat updates
+    const statUpdatePromises = [];
+    
     // Reverse: players who went OUT come back as starters
     for (const playerId of (out_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) await updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true } });
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true } }));
     }
+    
     // Reverse: players who came IN go back to bench
     for (const playerId of (in_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) await updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false } });
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false } }));
     }
-    await deleteLogMutation.mutateAsync(logEntry.id);
+    
+    // Execute stat updates in parallel + delete log in parallel
+    await Promise.all([
+      ...statUpdatePromises,
+      deleteLogMutation.mutateAsync(logEntry.id)
+    ]);
 
     // Validate lineup integrity after undo substitution
     const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
