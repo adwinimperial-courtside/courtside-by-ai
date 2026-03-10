@@ -518,37 +518,61 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                 </div>
 
                 {/* START / STOP buttons */}
-                <div className="flex gap-4">
-                  {showEndGame ? (
-                    <button
-                      onClick={onEndGame}
-                      className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white transition-all shadow-lg"
-                      style={{ minWidth: '140px', minHeight: '56px' }}
-                    >
-                      <Trophy className="w-4 h-4" />
-                      END GAME
-                    </button>
-                  ) : (
+                {isInFinalReview ? (
+                  <div className="flex gap-3">
+                    {(game.home_score || 0) === (game.away_score || 0) ? (
+                      <button
+                        onClick={handlePlayPause}
+                        className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-blue-500 hover:bg-blue-400 text-white transition-all shadow-lg"
+                        style={{ minWidth: '140px', minHeight: '56px' }}
+                      >
+                        <Play className="w-4 h-4" />
+                        {isOvertime ? `START OT${period - totalPeriods + 1}` : 'START OT'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={onEndGame}
+                        className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white transition-all shadow-lg"
+                        style={{ minWidth: '140px', minHeight: '56px' }}
+                      >
+                        <Trophy className="w-4 h-4" />
+                        END GAME
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex gap-4">
+                    {showEndGame ? (
+                      <button
+                        onClick={onEndGame}
+                        className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-yellow-500 hover:bg-yellow-400 text-white transition-all shadow-lg"
+                        style={{ minWidth: '140px', minHeight: '56px' }}
+                      >
+                        <Trophy className="w-4 h-4" />
+                        END GAME
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handlePlayPause}
+                        disabled={running}
+                        className={`flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg ${startButtonIsNextPeriod ? 'bg-blue-500 hover:bg-blue-400' : 'bg-green-500 hover:bg-green-400'}`}
+                        style={{ minWidth: '140px', minHeight: '56px' }}
+                      >
+                        <Play className="w-4 h-4" />
+                        {startButtonLabel}
+                      </button>
+                    )}
                     <button
                       onClick={handlePlayPause}
-                      disabled={running}
-                      className={`flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg ${startButtonIsNextPeriod ? 'bg-blue-500 hover:bg-blue-400' : 'bg-green-500 hover:bg-green-400'}`}
+                      disabled={!running || timeExpired}
+                      className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-red-500 hover:bg-red-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
                       style={{ minWidth: '140px', minHeight: '56px' }}
                     >
-                      <Play className="w-4 h-4" />
-                      {startButtonLabel}
+                      <Pause className="w-4 h-4" />
+                      STOP CLOCK
                     </button>
-                  )}
-                  <button
-                    onClick={handlePlayPause}
-                    disabled={!running || timeExpired}
-                    className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-red-500 hover:bg-red-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-                    style={{ minWidth: '140px', minHeight: '56px' }}
-                  >
-                    <Pause className="w-4 h-4" />
-                    STOP CLOCK
-                  </button>
-                </div>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex flex-col items-center gap-2">
