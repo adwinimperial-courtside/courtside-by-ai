@@ -407,29 +407,28 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const togglePlayerToReplace = (player) => {
-    setPlayersToReplace(prev => 
-      prev.some(p => p.id === player.id)
-        ? prev.filter(p => p.id !== player.id)
-        : [...prev, player]
-    );
+    setPlayersToReplace(prev => {
+      if (prev.some(p => p.id === player.id)) {
+        const next = prev.filter(p => p.id !== player.id);
+        if (next.length === 0) setSubTeamFilter(null);
+        return next;
+      }
+      // Lock to the team of the first selected player
+      if (prev.length === 0) setSubTeamFilter(player.team_id);
+      if (subTeamFilter && player.team_id !== subTeamFilter) return prev;
+      return [...prev, player];
+    });
+    setReplacementPlayers([]); // reset incoming when outgoing changes
   };
 
-  const toggleReplacementPlayer = (playerId, playerOutId) => {
-    setReplacementPlayers(prev => {
-      const outIndex = playersToReplace.findIndex(p => p.id === playerOutId);
-      const newSelections = [...prev];
-      // If this player is already selected for this slot, deselect
-      if (newSelections[outIndex] === playerId) {
-        newSelections[outIndex] = undefined;
-        return newSelections.filter(id => id !== undefined);
-      }
-      // If this player is selected for another slot, ignore
-      if (newSelections.includes(playerId)) return prev;
-      // Assign this player to this slot (replace any previous choice for this slot)
-      newSelections[outIndex] = playerId;
-      // Return only defined slots in order
-      return playersToReplace.map((_, i) => newSelections[i]).filter(id => id !== undefined);
-    });
+  const toggleReplacementPlayer = (playerId) => {
+    setReplacementPlayers(prev =>
+      prev.includes(playerId)
+        ? prev.filter(id => id !== playerId)
+        : prev.length < playersToReplace.length
+          ? [...prev, playerId]
+          : prev
+    );
   };
 
   const handleStartNextPeriod = async () => {
