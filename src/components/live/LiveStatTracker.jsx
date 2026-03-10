@@ -122,6 +122,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         };
       }
     });
+    // Initialize valid lineup snapshots on first load
+    if (existingStats.length > 0) {
+      updateValidSnapshots(existingStats);
+    }
   }, [activePlayers, game.clock_time_left, game.clock_period, game.clock_running, game.clock_started_at]);
 
   const gameLog = gameLogs.map(log => {
