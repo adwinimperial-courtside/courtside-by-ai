@@ -389,8 +389,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                   <span className="text-white/70 text-[10px] font-bold tracking-widest uppercase">LIVE</span>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 w-full">
-                  <button onClick={handlePrevPeriod} disabled={period <= 1} className="text-white/40 hover:text-white/80 text-xs px-0.5 disabled:opacity-0 transition-colors">‹</button>
-                  <button onClick={handleNextPeriod} className="text-white font-bold text-[11px] leading-none hover:text-white/80 transition-colors flex-shrink-0" title="Next period">{periodLabel}</button>
+                  <span className="text-white font-bold text-[11px] leading-none flex-shrink-0">{periodLabel}</span>
                   <span className="text-white/30 text-[10px]">|</span>
                   <span className={`font-mono font-bold text-sm leading-none flex-shrink-0 ${running ? 'text-green-300' : timeExpired ? 'text-red-300' : 'text-white'}`}>
                     {formatTime(displayTime)}
