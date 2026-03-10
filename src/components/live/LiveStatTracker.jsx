@@ -283,10 +283,53 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       setEjectedPlayer(selectedPlayer);
       setEjectionReason('2 Technical Fouls');
       setSelectedPlayer(null);
-    } else if (statType.key === 'fouls' && currentValue + 1 >= 5) {
+      await createLogMutation.mutateAsync({
+        game_id: game.id,
+        player_id: selectedPlayer.id,
+        team_id: selectedPlayer.team_id,
+        stat_type: 'ejection',
+        stat_label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
+        stat_points: 0,
+        stat_color: 'bg-pink-700 hover:bg-pink-800',
+        old_home_score: game.home_score || 0,
+        old_away_score: game.away_score || 0,
+        logged_by: currentUser?.email || '',
+        device_name: getDeviceName()
+      });
+    } else if (statType.key === 'fouls' && currentValue + 1 >= MAX_FOUL_LIMIT) {
       setEjectedPlayer(selectedPlayer);
-      setEjectionReason('5 Fouls');
+      setEjectionReason(`${MAX_FOUL_LIMIT} Fouls`);
       setSelectedPlayer(null);
+      await createLogMutation.mutateAsync({
+        game_id: game.id,
+        player_id: selectedPlayer.id,
+        team_id: selectedPlayer.team_id,
+        stat_type: 'ejection',
+        stat_label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
+        stat_points: 0,
+        stat_color: 'bg-red-700 hover:bg-red-800',
+        old_home_score: game.home_score || 0,
+        old_away_score: game.away_score || 0,
+        logged_by: currentUser?.email || '',
+        device_name: getDeviceName()
+      });
+    } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
+      setEjectedPlayer(selectedPlayer);
+      setEjectionReason('2 Unsportsmanlike Fouls');
+      setSelectedPlayer(null);
+      await createLogMutation.mutateAsync({
+        game_id: game.id,
+        player_id: selectedPlayer.id,
+        team_id: selectedPlayer.team_id,
+        stat_type: 'ejection',
+        stat_label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
+        stat_points: 0,
+        stat_color: 'bg-rose-700 hover:bg-rose-800',
+        old_home_score: game.home_score || 0,
+        old_away_score: game.away_score || 0,
+        logged_by: currentUser?.email || '',
+        device_name: getDeviceName()
+      });
     }
   };
 
