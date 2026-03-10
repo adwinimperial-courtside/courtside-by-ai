@@ -61,16 +61,10 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
     ? liveStats
     : (stats?.filter(s => s.game_id === liveGame.id) || []);
   
-  const hasPlayerStats = (stat) => {
-    const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-    return points > 0 || (stat.offensive_rebounds || 0) > 0 || (stat.defensive_rebounds || 0) > 0 || 
-           (stat.assists || 0) > 0 || (stat.steals || 0) > 0 || (stat.blocks || 0) > 0 || 
-           (stat.turnovers || 0) > 0 || (stat.fouls || 0) > 0 || (stat.technical_fouls || 0) > 0 || 
-           (stat.unsportsmanlike_fouls || 0) > 0;
-  };
-  
-  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && hasPlayerStats(s));
-  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
+  // A PlayerStats record is only created when a player enters the game (starter or sub-in),
+  // so having a record means they appeared — show all players with records regardless of stats.
+  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id);
+  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id);
 
   // Compute scores from actual player stats (source of truth for completed games)
   const computedHomeScore = gamePlayerStats
