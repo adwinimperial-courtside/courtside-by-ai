@@ -30,6 +30,30 @@ function computeTimeLeft(game) {
 }
 
 export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) {
+  const [possession, setPossession] = useState(() => game.possession || null);
+  const [showPossessionPicker, setShowPossessionPicker] = useState(false);
+
+  useEffect(() => {
+    setPossession(game.possession || null);
+  }, [game.possession]);
+
+  const handleSetPossession = async (team) => {
+    setPossession(team);
+    setShowPossessionPicker(false);
+    await base44.entities.Game.update(game.id, { possession: team });
+    if (onGameUpdate) onGameUpdate({ ...game, possession: team });
+  };
+
+  const handleSwitchPossession = async () => {
+    if (!possession) {
+      setShowPossessionPicker(true);
+      return;
+    }
+    const next = possession === 'home' ? 'away' : 'home';
+    setPossession(next);
+    await base44.entities.Game.update(game.id, { possession: next });
+    if (onGameUpdate) onGameUpdate({ ...game, possession: next });
+  };
   const isTimed = game?.game_mode === "timed" || (!game?.game_mode && game?.period_minutes);
   const periodType = game?.period_type || "quarters";
   const totalPeriods = game?.period_count || (periodType === "halves" ? 2 : 4);
