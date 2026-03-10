@@ -1134,7 +1134,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <div className="flex flex-wrap gap-1.5">
                         {homePlayersOut.map(p => (
                           <div key={p.id} className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: homeTeam?.color }}>{p.jersey_number}</div>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-blue-600">{p.jersey_number}</div>
                             <span className="text-xs font-semibold text-slate-800">{p.name}</span>
                           </div>
                         ))}
@@ -1156,7 +1156,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
                                 ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
                                   isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
-                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: homeTeam?.color }}>{player.jersey_number}</div>
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
                                 <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
@@ -1178,7 +1178,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <div className="flex flex-wrap gap-1.5">
                         {awayPlayersOut.map(p => (
                           <div key={p.id} className="flex items-center gap-1 bg-white border border-red-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs" style={{ backgroundColor: awayTeam?.color }}>{p.jersey_number}</div>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-red-600">{p.jersey_number}</div>
                             <span className="text-xs font-semibold text-slate-800">{p.name}</span>
                           </div>
                         ))}
@@ -1200,7 +1200,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                               className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
                                 ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
                                   isSelected ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
-                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: awayTeam?.color }}>{player.jersey_number}</div>
+                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
                               <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
                                 <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
