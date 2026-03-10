@@ -1168,7 +1168,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <Trophy className="w-4 h-4 mr-1" />End Game
           </Button>
         </div>
-        <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} />
+        <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} />
         <div className="mt-3 space-y-3">
           {/* Mobile uses side=undefined so isDesktop=false → no R/A */}
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
