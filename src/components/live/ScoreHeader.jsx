@@ -88,6 +88,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
   }, [running, game.clock_started_at, game.clock_time_left]);
 
   const isSaving = useRef(false);
+  const autoStopFiredRef = useRef(false);
 
   const handlePlayPause = async () => {
     if (!isTimed || isSaving.current) return;
