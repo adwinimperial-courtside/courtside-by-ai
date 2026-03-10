@@ -67,28 +67,50 @@ export default function StatisticsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
-    initialData: [],
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Team.filter({ league_id: selectedLeague });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 300000,
   });
 
-  const { data: players } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
-    initialData: [],
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague });
+      const teamIds = leagueTeams.map(t => t.id);
+      if (teamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 300000,
   });
 
-  const { data: games } = useQuery({
-    queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list(),
-    initialData: [],
+  const { data: games = [] } = useQuery({
+    queryKey: ['games', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Game.filter({ league_id: selectedLeague });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 5000,
   });
 
-  const { data: allStats } = useQuery({
-    queryKey: ['allPlayerStats'],
-    queryFn: () => base44.entities.PlayerStats.list(),
-    initialData: [],
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['allPlayerStats', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague });
+      const gameIds = leagueGames.map(g => g.id);
+      if (gameIds.length === 0) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 5000,
   });
 
   // Restrict data to assigned leagues for non-app-admins with assigned leagues
