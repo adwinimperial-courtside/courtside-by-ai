@@ -826,7 +826,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <p className="text-slate-400 text-xs">No actions yet</p>
           </div>
         ) : (
-          gameLog.filter(log => log.player || log.isSubstitution || log.statType.key === 'ejection').slice(0, 30).map((log, index) => (
+          gameLog.filter(log => log.player || log.isSubstitution || log.statType.key === 'ejection' || log.statType.key === 'substitution').slice(0, 30).map((log, index) => (
             <div key={log.id} className={`flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 last:border-0 ${index === 0 ? 'bg-amber-50/60' : 'hover:bg-slate-50/50'}`}>
               {log.isSubstitution ? (
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
