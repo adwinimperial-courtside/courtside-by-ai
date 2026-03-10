@@ -78,6 +78,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   
   const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && hasPlayerStats(s));
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
+  const players = gamePlayers;
 
   // Compute scores from actual player stats (source of truth for completed games)
   const computedHomeScore = gamePlayerStats
