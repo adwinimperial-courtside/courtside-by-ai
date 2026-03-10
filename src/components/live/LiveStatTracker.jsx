@@ -830,7 +830,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
-        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-1 min-[900px]:content-stretch">
+        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
           {teamPlayers.map((player) => (
             <React.Fragment key={player.id}>
               {PlayerButton({
