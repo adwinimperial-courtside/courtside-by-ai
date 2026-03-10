@@ -14,6 +14,7 @@ export default function LiveBoxScorePage() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
+  const [displayTime, setDisplayTime] = React.useState(0);
 
   const { data: game } = useQuery({
     queryKey: ['game', gameId],
