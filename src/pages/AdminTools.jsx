@@ -28,23 +28,26 @@ export default function AdminTools() {
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    staleTime: 5 * 60000, // 5 minutes
+    staleTime: 0,
+    gcTime: 5 * 60000,
   });
 
   const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
-  const { data: teams = [] } = useQuery({
+  const {{ data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    staleTime: 5 * 60000, // 5 minutes
+    staleTime: 0,
+    gcTime: 5 * 60000,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
-    staleTime: 5 * 60000, // 5 minutes
+    staleTime: 0,
+    gcTime: 5 * 60000,
   });
 
   const recalculateGameScores = async () => {

@@ -56,7 +56,8 @@ export default function TeamsPage() {
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    staleTime: 5 * 60000, // 5 minutes
+    staleTime: 0,
+    gcTime: 5 * 60000,
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -73,7 +74,8 @@ export default function TeamsPage() {
   const { data: teams = [], isLoading } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list('-created_date'),
-    staleTime: 5 * 60000, // 5 minutes
+    staleTime: 0,
+    gcTime: 5 * 60000,
   });
 
   const createTeamMutation = useMutation({
