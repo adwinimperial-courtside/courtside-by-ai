@@ -106,21 +106,7 @@ export default function LiveBoxScorePage() {
   const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id);
   const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id);
 
-  const getPeriodLabel = () => {
-    if (!game.clock_period) return 'Q1';
-    const period = game.clock_period;
-    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
-    if (period > totalPeriods) return `OT${period - totalPeriods}`;
-    if (game.period_type === 'halves') return period === 1 ? '1H' : '2H';
-    return `Q${period}`;
-  };
 
-  const formatClockTime = () => {
-    if (displayTime === undefined || displayTime === null) return '--:--';
-    const mins = Math.floor(displayTime / 60);
-    const secs = Math.floor(displayTime % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const StatTable = ({ team, playerStats }) => {
     const teamPlayers = playerStats.map(stat => ({
