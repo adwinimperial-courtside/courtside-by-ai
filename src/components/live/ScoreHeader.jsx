@@ -48,7 +48,7 @@ function getFoulResetPeriodKey(period, periodType, totalPeriods) {
   return String(period); // Q1, Q2, Q3, Q4 each unique
 }
 
-export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame }) {
+export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame, lineupBlocked = false }) {
   const [possession, setPossession] = useState(() => game.possession || null);
   const [showPossessionPicker, setShowPossessionPicker] = useState(false);
 

@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import ScoreHeader from "./ScoreHeader";
 import EndOfPeriodModal from "./EndOfPeriodModal";
 import { findPlayerOfGame } from "../utils/pogCalculator";
+import EmergencyLineupRepair from "./EmergencyLineupRepair";
 
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
