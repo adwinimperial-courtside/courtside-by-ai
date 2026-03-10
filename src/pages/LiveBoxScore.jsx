@@ -22,33 +22,7 @@ export default function LiveBoxScorePage() {
       return result?.[0] || null;
     },
     enabled: !!gameId,
-    staleTime: 3000,
-  });
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ['gameTeams', game?.home_team_id, game?.away_team_id],
-    queryFn: async () => {
-      if (!game?.home_team_id || !game?.away_team_id) return [];
-      const result = await base44.entities.Team.filter({ 
-        id: { $in: [game.home_team_id, game.away_team_id] }
-      });
-      return result || [];
-    },
-    enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 5000,
-  });
-
-  const { data: players = [] } = useQuery({
-    queryKey: ['gamePlayers', game?.home_team_id, game?.away_team_id],
-    queryFn: async () => {
-      if (!game?.home_team_id || !game?.away_team_id) return [];
-      const result = await base44.entities.Player.filter({
-        team_id: { $in: [game.home_team_id, game.away_team_id] }
-      });
-      return result || [];
-    },
-    enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 5000,
+    staleTime: 60000,
   });
 
   const { data: allStats = [] } = useQuery({
@@ -59,7 +33,34 @@ export default function LiveBoxScorePage() {
       return stats || [];
     },
     enabled: !!gameId,
-    staleTime: 2000,
+    staleTime: 3000,
+  });
+
+  const teamIds = [game?.home_team_id, game?.away_team_id].filter(Boolean);
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams', ...teamIds],
+    queryFn: async () => {
+      if (teamIds.length === 0) return [];
+      const homeTeam = teamIds[0] ? await base44.entities.Team.filter({ id: teamIds[0] }) : [];
+      const awayTeam = teamIds[1] ? await base44.entities.Team.filter({ id: teamIds[1] }) : [];
+      return [...homeTeam, ...awayTeam];
+    },
+    enabled: teamIds.length > 0,
+    staleTime: 60000,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['players', ...teamIds],
+    queryFn: async () => {
+      if (teamIds.length === 0) return [];
+      const playersByTeam = await Promise.all(
+        teamIds.map(id => base44.entities.Player.filter({ team_id: id }))
+      );
+      return playersByTeam.flat();
+    },
+    enabled: teamIds.length > 0,
+    staleTime: 60000,
   });
   const homeTeam = teams.find(t => t.id === game?.home_team_id);
   const awayTeam = teams.find(t => t.id === game?.away_team_id);
