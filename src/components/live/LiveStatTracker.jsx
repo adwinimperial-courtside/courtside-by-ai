@@ -1208,6 +1208,23 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
       </div>
 
+      {/* Emergency Lineup Repair Modal */}
+      {repairMode && (
+        <EmergencyLineupRepair
+          repairData={repairMode}
+          existingStats={existingStats}
+          players={players}
+          game={game}
+          lastValidLineups={lastValidLineupsRef.current}
+          onComplete={async () => {
+            setRepairMode(null);
+            const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+            updateValidSnapshots(freshStats);
+            queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+          }}
+        />
+      )}
+
       {/* Exit Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
         <DialogContent className="bg-white border-slate-200 w-[95vw] max-w-md">
