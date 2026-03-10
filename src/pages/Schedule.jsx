@@ -196,8 +196,6 @@ export default function SchedulePage() {
                 game={game}
                 teams={teams}
                 leagues={leagues}
-                players={players}
-                stats={allStats}
                 onStartGame={() => startGame(game)}
                 currentUser={currentUser}
               />
