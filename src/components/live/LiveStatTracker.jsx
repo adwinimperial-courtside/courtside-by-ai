@@ -856,8 +856,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const StatPanel = ({ large, showSub = true }) => {
     const btnH = large ? 'h-[4.5rem]' : 'h-14';
     return (
-      <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3 flex flex-col h-full">
-        <div className="flex items-center justify-center gap-3 mb-3">
+      <div className={`bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl flex flex-col ${large && !showSub ? 'p-2' : 'p-3 h-full'}`}>
+        <div className={`flex items-center justify-center gap-3 ${large ? 'mb-1.5' : 'mb-3'}`}>
           {selectedPlayer ? (
             <>
               <div
