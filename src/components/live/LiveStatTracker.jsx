@@ -499,6 +499,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         setEjectionReason(ejectionLog.reason);
         setSelectedPlayer(null);
       }
+    } catch (error) {
+      console.error('Error recording stat:', error);
     } finally {
       isProcessingStatRef.current = false;
     }
