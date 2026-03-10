@@ -1,19 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
 
 export default function ApplyPendingAssignments() {
-  const { data: currentUser } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me(),
-    retry: false,
-  });
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
-    const applyPendingAssignment = async () => {
-      if (!currentUser?.email) return;
+    // Only run once per session
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
 
+    const applyPendingAssignment = async () => {
       try {
+        const currentUser = await base44.auth.me();
+        if (!currentUser?.email) return;
+
         const pendingAssignments = await base44.entities.PendingUserAssignment.filter({
           email: currentUser.email.toLowerCase(),
           applied: false,
@@ -39,7 +39,7 @@ export default function ApplyPendingAssignments() {
     };
 
     applyPendingAssignment();
-  }, [currentUser?.email, currentUser?.id]);
+  }, []);
 
   return null;
 }
