@@ -567,7 +567,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }
         playerGameClockStateRef.current[playerOut.id] = null;
         const outStat = freshStats.find(s => s.player_id === playerOut.id);
-        if (outStat) await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false } });
+        if (outStat) {
+          const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
+          const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+          await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
+        }
         if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
       }
 
