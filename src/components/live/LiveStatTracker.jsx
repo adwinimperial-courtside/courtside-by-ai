@@ -406,9 +406,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       
       const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
-      // Update player stat
-      await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
-
       // Build game update payload (can combine multiple fields)
       const gameUpdates = {};
       
@@ -432,13 +429,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         gameUpdates[isHomeTeam ? 'home_score' : 'away_score'] = newScore;
       }
 
-      // Single game update call (combines fouls + score)
+      // Batch all mutations in parallel
+      const promises = [
+        updateStatMutation.mutateAsync({ statId: playerStat.id, updates })
+      ];
+
       if (Object.keys(gameUpdates).length > 0) {
-        await updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates });
+        promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
       }
 
-      // Create game log entry
-      await createLogMutation.mutateAsync({
+      // Main stat log
+      promises.push(createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: selectedPlayer.id,
         team_id: selectedPlayer.team_id,
@@ -453,60 +454,51 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         old_away_score: oldScores.away,
         logged_by: currentUser?.email || '',
         device_name: getDeviceName()
-      });
+      }));
 
+      // Handle ejections (create log in parallel, then show dialog)
+      let ejectionLog = null;
       if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
-        setEjectedPlayer(selectedPlayer);
-        setEjectionReason('2 Technical Fouls');
-        setSelectedPlayer(null);
-        await createLogMutation.mutateAsync({
-          game_id: game.id,
-          player_id: selectedPlayer.id,
-          team_id: selectedPlayer.team_id,
-          stat_type: 'ejection',
-          stat_label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
-          stat_points: 0,
-          stat_color: 'bg-pink-700 hover:bg-pink-800',
-          old_home_score: game.home_score || 0,
-          old_away_score: game.away_score || 0,
-          logged_by: currentUser?.email || '',
-          device_name: getDeviceName()
-        });
+        ejectionLog = {
+          reason: '2 Technical Fouls',
+          label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
+          color: 'bg-pink-700 hover:bg-pink-800'
+        };
       } else if (statType.key === 'fouls' && currentValue + 1 >= MAX_FOUL_LIMIT) {
-        setEjectedPlayer(selectedPlayer);
-        setEjectionReason(`${MAX_FOUL_LIMIT} Fouls`);
-        setSelectedPlayer(null);
-        await createLogMutation.mutateAsync({
-          game_id: game.id,
-          player_id: selectedPlayer.id,
-          team_id: selectedPlayer.team_id,
-          stat_type: 'ejection',
-          stat_label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
-          stat_points: 0,
-          stat_color: 'bg-red-700 hover:bg-red-800',
-          old_home_score: game.home_score || 0,
-          old_away_score: game.away_score || 0,
-          logged_by: currentUser?.email || '',
-          device_name: getDeviceName()
-        });
+        ejectionLog = {
+          reason: `${MAX_FOUL_LIMIT} Fouls`,
+          label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
+          color: 'bg-red-700 hover:bg-red-800'
+        };
       } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
-        setEjectedPlayer(selectedPlayer);
-        setEjectionReason('2 Unsportsmanlike Fouls');
-        setSelectedPlayer(null);
-        await createLogMutation.mutateAsync({
+        ejectionLog = {
+          reason: '2 Unsportsmanlike Fouls',
+          label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
+          color: 'bg-rose-700 hover:bg-rose-800'
+        };
+      }
+
+      if (ejectionLog) {
+        promises.push(createLogMutation.mutateAsync({
           game_id: game.id,
           player_id: selectedPlayer.id,
           team_id: selectedPlayer.team_id,
           stat_type: 'ejection',
-          stat_label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
+          stat_label: ejectionLog.label,
           stat_points: 0,
-          stat_color: 'bg-rose-700 hover:bg-rose-800',
-          old_home_score: game.home_score || 0,
-          old_away_score: game.away_score || 0,
+          stat_color: ejectionLog.color,
+          old_home_score: oldScores.home,
+          old_away_score: oldScores.away,
           logged_by: currentUser?.email || '',
           device_name: getDeviceName()
-        });
+        }));
+        setEjectedPlayer(selectedPlayer);
+        setEjectionReason(ejectionLog.reason);
+        setSelectedPlayer(null);
       }
+
+      // Execute all in parallel
+      await Promise.all(promises);
     } finally {
       isProcessingStatRef.current = false;
     }
