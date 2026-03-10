@@ -945,22 +945,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
-          {teamPlayers.map((player) => (
-            <React.Fragment key={player.id}>
-              {PlayerButton({
-                player,
-                teamColor: team?.color,
-                isDesktop: side !== undefined,
-                onSubClick: (p) => {
-                  resetSubDialog();
-                  if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
-                  else setAwayPlayersOut([p]);
-                  setSubStep('select_in');
-                  setShowSubDialog(true);
-                }
-              })}
-            </React.Fragment>
-          ))}
+          {teamPlayers.map((player) => 
+            PlayerButton({
+              key: player.id,
+              player,
+              teamColor: team?.color,
+              isDesktop: side !== undefined,
+              onSubClick: (p) => {
+                resetSubDialog();
+                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                else setAwayPlayersOut([p]);
+                setSubStep('select_in');
+                setShowSubDialog(true);
+              }
+            })
+          )}
         </div>
       </div>
     );
