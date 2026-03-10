@@ -1187,8 +1187,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             {/* Substitution strip — compact, attached to stat buttons */}
             <div className="flex-shrink-0 mt-1.5 mb-2">
               <Button
-                onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg"
+                onClick={() => { if (repairMode) return; resetSubDialog(); setShowSubDialog(true); }}
+                disabled={!!repairMode}
+                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ height: '36px' }}
               >
                 <RefreshCw className="w-4 h-4 mr-2" />
