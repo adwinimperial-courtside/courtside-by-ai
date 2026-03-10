@@ -763,7 +763,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <motion.button
           whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
           onClick={() => setSelectedPlayer(player)}
-          className={`w-full p-1.5 rounded-xl border-2 ${isDesktop ? 'hover:shadow-md' : isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100'}`}
+          className={`w-full rounded-xl border-2 ${isDesktop ? 'p-2 hover:shadow-md' : 'p-1.5'} ${!isDesktop && (isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100')}`}
           style={desktopStyle}
         >
           <div className="flex flex-col items-center gap-0.5">
