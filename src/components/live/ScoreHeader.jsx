@@ -383,6 +383,43 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                   </div>
                 </div>
 
+                {/* Possession indicator */}
+                <div className="flex flex-col items-center gap-1 mb-3">
+                  {showPossessionPicker ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-white/70 text-xs font-bold uppercase tracking-wide mr-1">SET:</span>
+                      <button
+                        onClick={() => handleSetPossession('home')}
+                        className="px-3 py-1 rounded-lg text-xs font-bold bg-white/20 hover:bg-white/40 text-white transition-all"
+                      >
+                        ← {homeTeam?.name || 'HOME'}
+                      </button>
+                      <button
+                        onClick={() => handleSetPossession('away')}
+                        className="px-3 py-1 rounded-lg text-xs font-bold bg-white/20 hover:bg-white/40 text-white transition-all"
+                      >
+                        {awayTeam?.name || 'AWAY'} →
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-bold text-sm tracking-wide">
+                        {!possession
+                          ? 'SET POSSESSION'
+                          : possession === 'home'
+                          ? `← ${homeTeam?.name || 'HOME'}`
+                          : `${awayTeam?.name || 'AWAY'} →`}
+                      </span>
+                      <button
+                        onClick={handleSwitchPossession}
+                        className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white/20 hover:bg-white/35 text-white/80 hover:text-white transition-all uppercase tracking-wide"
+                      >
+                        {possession ? 'SWITCH' : 'SET'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* START / STOP buttons */}
                 <div className="flex gap-4">
                   <button
