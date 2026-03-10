@@ -272,6 +272,36 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     },
   });
 
+  // Real-time minutes tracking
+  useEffect(() => {
+    if (game.game_mode !== 'timed' || !game.clock_running || activePlayers.length === 0) return;
+
+    const interval = setInterval(() => {
+      const currentComputedTimeLeft = computeTimeLeft(game);
+      const updates = [];
+
+      activePlayers.forEach(stat => {
+        const clockState = playerGameClockStateRef.current[stat.player_id];
+        if (clockState && clockState.period === game.clock_period) {
+          const elapsed = clockState.timeLeft - currentComputedTimeLeft;
+          if (elapsed > 0) {
+            playerMinutesRef.current[stat.player_id] = (playerMinutesRef.current[stat.player_id] || 0) + elapsed;
+            const totalSeconds = playerMinutesRef.current[stat.player_id] || 0;
+            const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+            updates.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { minutes_played: totalMinutes } }));
+            playerGameClockStateRef.current[stat.player_id].timeLeft = currentComputedTimeLeft;
+          }
+        }
+      });
+
+      if (updates.length > 0) {
+        Promise.all(updates).catch(() => {});
+      }
+    }, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [game.clock_running, game.game_mode, game.clock_started_at, game.clock_time_left, game.clock_period, activePlayers, updateStatMutation]);
+
   useEffect(() => {
     if (game.game_mode !== 'timed' || !game.clock_running) return;
 
