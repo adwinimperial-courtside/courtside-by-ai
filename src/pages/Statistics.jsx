@@ -56,7 +56,6 @@ export default function StatisticsPage() {
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     staleTime: 5 * 60000, // 5 minutes
-    refetchOnMount: true,
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -72,28 +71,24 @@ export default function StatisticsPage() {
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
     staleTime: 5 * 60000, // 5 minutes
-    refetchOnMount: true,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
     staleTime: 5 * 60000, // 5 minutes
-    refetchOnMount: true,
   });
 
   const { data: games = [] } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list(),
     staleTime: 2 * 60000, // 2 minutes
-    refetchOnMount: true,
   });
 
   const { data: allStats = [] } = useQuery({
     queryKey: ['allPlayerStats'],
     queryFn: () => base44.entities.PlayerStats.list(),
     staleTime: 2 * 60000, // 2 minutes
-    refetchOnMount: true,
   });
 
   // Restrict data to assigned leagues for non-app-admins with assigned leagues

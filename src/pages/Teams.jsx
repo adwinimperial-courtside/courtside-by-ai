@@ -57,7 +57,6 @@ export default function TeamsPage() {
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
     staleTime: 5 * 60000, // 5 minutes
-    refetchOnMount: true,
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -75,7 +74,6 @@ export default function TeamsPage() {
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list('-created_date'),
     staleTime: 5 * 60000, // 5 minutes
-    refetchOnMount: true,
   });
 
   const createTeamMutation = useMutation({
