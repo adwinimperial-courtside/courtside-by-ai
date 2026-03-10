@@ -241,7 +241,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
           </div>
 
           {/* CENTER: game state + clock + controls */}
-          <div className="flex flex-col items-center justify-center px-10 py-4 flex-shrink-0">
+          <div className="flex flex-col items-center justify-center px-10 py-3 flex-shrink-0">
             {isTimed ? (
               <>
                 {/* Game state label */}
@@ -269,7 +269,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                     onClick={() => { if (!running) handlePlayPause(); }}
                     disabled={running}
                     className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-green-500 hover:bg-green-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-                    style={{ minWidth: '160px', minHeight: '52px' }}
+                    style={{ minWidth: '140px', minHeight: '56px' }}
                   >
                     <Play className="w-4 h-4" />
                     START CLOCK
@@ -278,7 +278,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                     onClick={() => { if (running) handlePlayPause(); }}
                     disabled={!running}
                     className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-red-500 hover:bg-red-400 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg"
-                    style={{ minWidth: '160px', minHeight: '52px' }}
+                    style={{ minWidth: '140px', minHeight: '56px' }}
                   >
                     <Pause className="w-4 h-4" />
                     STOP CLOCK

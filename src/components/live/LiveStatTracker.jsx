@@ -945,7 +945,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </Button>
         </div>
 
-        <div className="flex-shrink-0 mb-2" style={{ height: '90px' }}>
+        <div className="flex-shrink-0 mb-2">
           <ScoreHeader game={game} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} />
         </div>
 
