@@ -957,7 +957,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 <Button size="sm" variant="ghost" onClick={() => handleUndoSubstitution(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
                   <Undo2 className="w-2.5 h-2.5" />
                 </Button>
-              ) : !log.isSubstitution ? (
+              ) : !log.isSubstitution && log.statId && log.statType.key !== 'ejection' && log.statType.key !== 'timeout' ? (
                 <Button size="sm" variant="ghost" onClick={() => handleUndo(log)} className="h-5 w-5 p-0 hover:bg-red-100 text-slate-300 hover:text-red-500 flex-shrink-0">
                   <Undo2 className="w-2.5 h-2.5" />
                 </Button>
