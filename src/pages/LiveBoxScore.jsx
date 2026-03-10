@@ -54,44 +54,7 @@ export default function LiveBoxScorePage() {
     staleTime: 5000,
     refetchOnWindowFocus: false
   });
-  // Get all players who appeared in the game (is_starter = true)
-  const playersInGame = new Set(allStats.map(s => s.player_id));
-  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
-  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && playersInGame.has(s.player_id));
 
-  // Compute current scores
-  const computedHomeScore = homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
-  const computedAwayScore = awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
-
-  if (!gameId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Not Found</h2>
-          <Button onClick={() => navigate(createPageUrl('Schedule'))}>Back to Schedule</Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!game || !homeTeam || !awayTeam) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Get all players who appeared in the game (is_starter = true)
-  const playersInGame = new Set(allStats.map(s => s.player_id));
-  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
-  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && playersInGame.has(s.player_id));
-
-  // Compute current scores
-  const computedHomeScore = homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
-  const computedAwayScore = awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
 
   const getPeriodLabel = () => {
     if (!game.clock_period) return 'Q1';
