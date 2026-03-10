@@ -54,6 +54,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [repairMode, setRepairMode] = useState(null); // null or { teams: [...] }
+  const lastValidLineupsRef = React.useRef({});
   const periodEndHandledRef = React.useRef(false);
   const playerMinutesRef = React.useRef({});
   const playerGameClockStateRef = React.useRef({});
