@@ -635,7 +635,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             <div className="flex items-center gap-4 mb-2">
               <div className="text-right min-w-0">
                 <p className="text-white/80 font-semibold text-sm truncate">{awayTeam?.name}</p>
-                <p className="text-5xl font-black text-white leading-none tabular-nums">{game.away_score || 0}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{localGame.away_score || 0}</p>
               </div>
               <div
                 className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
