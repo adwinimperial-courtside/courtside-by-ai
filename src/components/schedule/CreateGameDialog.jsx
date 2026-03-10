@@ -118,7 +118,12 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
               id="gameDate"
               type="datetime-local"
               value={formData.game_date}
-              onChange={(e) => setFormData({ ...formData, game_date: e.target.value })}
+              onChange={(e) => {
+                clearTimeout(dateInputTimeoutRef.current);
+                dateInputTimeoutRef.current = setTimeout(() => {
+                  setFormData(prev => ({ ...prev, game_date: e.target.value }));
+                }, 100);
+              }}
               required
               className="mt-1.5"
             />
