@@ -81,10 +81,6 @@ export default function LiveBoxScorePage() {
   const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id && playersInGame.has(s.player_id));
   const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id && playersInGame.has(s.player_id));
 
-  // Compute current scores
-  const computedHomeScore = homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
-  const computedAwayScore = awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
-
   const getPeriodLabel = () => {
     if (!game.clock_period) return 'Q1';
     const period = game.clock_period;
