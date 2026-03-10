@@ -46,6 +46,7 @@ export default function LiveGamePage() {
       const result = await base44.entities.Team.list();
       return result || [];
     },
+    enabled: games.length > 0, // Only fetch after games
   });
 
   const { data: players = [] } = useQuery({
@@ -54,6 +55,7 @@ export default function LiveGamePage() {
       const result = await base44.entities.Player.list();
       return result || [];
     },
+    enabled: teams.length > 0, // Only fetch after teams
   });
 
   const { data: existingStats = [] } = useQuery({
