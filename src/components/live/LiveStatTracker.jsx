@@ -385,10 +385,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleStatClick = async (statType) => {
+    // Prevent rapid repeated clicks
+    if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
 
     const playerStat = existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStat) return;
+
+    isProcessingStatRef.current = true;
+    try {
 
     const currentValue = playerStat[statType.key] || 0;
     const updates = { [statType.key]: currentValue + 1 };
