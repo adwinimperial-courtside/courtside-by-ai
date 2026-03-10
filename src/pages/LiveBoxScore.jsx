@@ -37,7 +37,7 @@ export default function LiveBoxScorePage() {
     if (!gameId) return;
 
     const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      if (event.game_id === gameId) {
+      if (event.data?.game_id === gameId) {
         queryClient.invalidateQueries({ queryKey: ['playerStats', gameId] });
       }
     });
