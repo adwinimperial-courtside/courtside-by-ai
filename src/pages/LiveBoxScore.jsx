@@ -63,12 +63,22 @@ export default function LiveBoxScorePage() {
   const computedHomeScore = homePlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
   const computedAwayScore = awayPlayerStats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
 
-  if (!gameId || !game) {
+  if (!gameId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Not Found</h2>
           <Button onClick={() => navigate(createPageUrl('Schedule'))}>Back to Schedule</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!game || !homeTeam || !awayTeam) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600">Loading...</p>
         </div>
       </div>
     );
