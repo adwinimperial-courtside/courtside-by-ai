@@ -159,36 +159,50 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
 
   const timeExpired = displayTime <= 0;
 
-  // Sync timeout state from game prop (e.g. after reload or real-time update)
+  // ── Segment logic ────────────────────────────────────────────────
+  // Segments: FIRST_HALF | SECOND_HALF | OVERTIME
+  const getSegment = (p) => {
+    if (p > totalPeriods) return 'OVERTIME';
+    if (periodType === 'halves') {
+      return p === 1 ? 'FIRST_HALF' : 'SECOND_HALF';
+    }
+    // quarters: Q1+Q2 = FIRST_HALF, Q3+Q4 = SECOND_HALF
+    return p <= 2 ? 'FIRST_HALF' : 'SECOND_HALF';
+  };
+
+  // Default allowances per segment and format
+  const getSegmentAllowance = (segment) => {
+    if (segment === 'OVERTIME') return 1;
+    if (segment === 'FIRST_HALF') return 2;
+    // SECOND_HALF
+    if (periodType === 'halves') return 2;
+    return 3; // quarters SECOND_HALF
+  };
+
+  const currentSegment = getSegment(period);
+  const segmentKey = currentSegment; // used as key in persisted map
+  const segmentAllowance = getSegmentAllowance(currentSegment);
+
+  // ── Sync from persisted game record ──────────────────────────────
   useEffect(() => {
     if (game.home_timeouts) setHomeTimeoutsUsed(game.home_timeouts);
     if (game.away_timeouts) setAwayTimeoutsUsed(game.away_timeouts);
   }, [game.home_timeouts, game.away_timeouts]);
 
-  // Timeout helpers
-  const getSegmentKey = (p) => {
-    if (p > totalPeriods) return `ot${p - totalPeriods}`;
-    if (periodType === 'halves') return `h${p}`;
-    return p <= 2 ? 'half1' : 'half2';
-  };
-  const getSegmentSlots = (segKey) => {
-    if (segKey.startsWith('ot')) return 1;
-    if (segKey === 'h1' || segKey === 'half1') return 2;
-    return 3;
-  };
-  const currentSegKey = getSegmentKey(period);
-  const currentSlots = getSegmentSlots(currentSegKey);
-  const homeUsed = homeTimeoutsUsed[currentSegKey] || 0;
-  const awayUsed = awayTimeoutsUsed[currentSegKey] || 0;
+  const homeUsed = homeTimeoutsUsed[segmentKey] || 0;
+  const awayUsed = awayTimeoutsUsed[segmentKey] || 0;
+  const homeRemaining = Math.max(0, segmentAllowance - homeUsed);
+  const awayRemaining = Math.max(0, segmentAllowance - awayUsed);
 
+  // ── Timeout action ────────────────────────────────────────────────
   const handleTimeout = async (teamId, usedCount, timeoutsKey, setUsed, teamName) => {
-    if (usedCount >= currentSlots || isSaving.current) return;
+    if (usedCount >= segmentAllowance || isSaving.current) return;
     isSaving.current = true;
     try {
       const currentTimeLeft = computeTimeLeft(game);
-      const newSegMap = { ...(game[timeoutsKey] || {}), [currentSegKey]: usedCount + 1 };
+      const newSegMap = { ...(game[timeoutsKey] || {}), [segmentKey]: usedCount + 1 };
       const updates = { [timeoutsKey]: newSegMap };
-      // Stop clock if running
+      // Reuse existing stop-clock logic
       if (running) {
         updates.clock_running = false;
         updates.clock_time_left = Math.max(0, Math.round(currentTimeLeft));
@@ -197,7 +211,6 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
       await base44.entities.Game.update(game.id, updates);
       setUsed(newSegMap);
       if (onGameUpdate) onGameUpdate({ ...game, ...updates });
-      // Log the timeout in game activity
       await base44.entities.GameLog.create({
         game_id: game.id,
         player_id: '',
