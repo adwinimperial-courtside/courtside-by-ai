@@ -252,6 +252,7 @@ export default function LiveBoxScorePage() {
               })}
               <TableRow className="bg-slate-50 font-semibold">
                 <TableCell>TEAM TOTALS</TableCell>
+                {game.game_mode === 'timed' && <TableCell className="text-center">—</TableCell>}
                 <TableCell className="text-center">{teamScore}</TableCell>
                 <TableCell className="text-center">{team3PT}</TableCell>
                 <TableCell className="text-center">{teamFT}</TableCell>
