@@ -405,7 +405,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const handleStatClick = async (statType) => {
     // Prevent rapid repeated clicks with cooldown
     const now = Date.now();
-    if (now - lastStatClickTimeRef.current < 300) return;
+    if (now - lastStatClickTimeRef.current < 500) return;
     if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
     
@@ -421,11 +421,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       
       const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
-      // Wait for stat update to complete before proceeding
+      // Update player stat
       await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
-      await new Promise(resolve => setTimeout(resolve, 50));
 
-      // Update team fouls if applicable
+      // Build game update payload (can combine multiple fields)
+      const gameUpdates = {};
+      
+      // Add team fouls if applicable
       if (statCountsAsTeamFoul(statType.key)) {
         const isHome = selectedPlayer.team_id === game.home_team_id;
         const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
@@ -433,27 +435,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         const resetKey = getFoulResetKey(period);
         const currentFoulMap = { ...(game[foulKey] || {}) };
         currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
-        await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
-        await new Promise(resolve => setTimeout(resolve, 50));
+        gameUpdates[foulKey] = currentFoulMap;
       }
 
-      // Update score if points were awarded
+      // Add score if points were awarded
       if (statType.points > 0) {
         const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
         const newScore = isHomeTeam 
           ? (game.home_score || 0) + statType.points
           : (game.away_score || 0) + statType.points;
-
-        await updateGameMutation.mutateAsync({
-          gameId: game.id,
-          data: isHomeTeam 
-            ? { home_score: newScore }
-            : { away_score: newScore }
-        });
-        await new Promise(resolve => setTimeout(resolve, 50));
+        gameUpdates[isHomeTeam ? 'home_score' : 'away_score'] = newScore;
       }
 
-      // Create game log entry last
+      // Single game update call (combines fouls + score)
+      if (Object.keys(gameUpdates).length > 0) {
+        await updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates });
+      }
+
+      // Create game log entry
       await createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: selectedPlayer.id,
