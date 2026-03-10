@@ -268,7 +268,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           clock_running: false,
           clock_time_left: 0,
           clock_started_at: null,
-          period_status: 'completed'
+          period_status: 'completed',
         }
       });
     }
