@@ -71,9 +71,14 @@ export default function TeamsPage() {
       : leagues;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list('-created_date'),
+    queryKey: ['teams', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Team.filter({ league_id: selectedLeague }, '-created_date');
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
     initialData: [],
+    staleTime: 300000,
   });
 
   const createTeamMutation = useMutation({
@@ -150,10 +155,11 @@ export default function TeamsPage() {
         await base44.entities.Player.delete(player.id);
       }
       
-      // Delete all games for this team
-      const games = await base44.entities.Game.filter({});
-      const teamGames = games.filter(g => g.home_team_id === teamId || g.away_team_id === teamId);
-      for (const game of teamGames) {
+      // Delete games where this team is home or away (filtered query is more efficient)
+      const homeGames = await base44.entities.Game.filter({ home_team_id: teamId });
+      const awayGames = await base44.entities.Game.filter({ away_team_id: teamId });
+      const allTeamGames = [...(homeGames || []), ...(awayGames || [])];
+      for (const game of allTeamGames) {
         await base44.entities.Game.delete(game.id);
       }
       

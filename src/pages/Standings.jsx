@@ -44,28 +44,29 @@ export default function StandingsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
-    initialData: [],
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Team.filter({ league_id: selectedLeague });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 300000,
   });
 
-  const { data: games } = useQuery({
-    queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list(),
-    initialData: [],
+  const { data: games = [] } = useQuery({
+    queryKey: ['games', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Game.filter({ league_id: selectedLeague });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 5000,
   });
 
-  const baseTeams = (hasAssignedLeagues && !isAppAdmin) ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
-  const baseGames = (hasAssignedLeagues && !isAppAdmin) ? games.filter(g => assignedLeagueIds.includes(g.league_id)) : games;
-
-  const filteredTeams = selectedLeague === "all" 
-    ? baseTeams 
-    : baseTeams.filter(t => t.league_id === selectedLeague);
-
-  const filteredGames = selectedLeague === "all"
-    ? baseGames
-    : baseGames.filter(g => g.league_id === selectedLeague);
+  // Data is already league-filtered from queries above
+  const filteredTeams = teams;
+  const filteredGames = games;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 overflow-x-hidden">
