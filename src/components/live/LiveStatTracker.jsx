@@ -386,9 +386,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleStatClick = async (statType) => {
-    // Prevent rapid repeated clicks
+    // Prevent rapid repeated clicks with cooldown
+    const now = Date.now();
+    if (now - lastStatClickTimeRef.current < 300) return;
     if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
+    
+    lastStatClickTimeRef.current = now;
 
     const playerStat = existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStat) return;
