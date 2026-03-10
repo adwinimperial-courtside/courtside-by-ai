@@ -567,16 +567,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }
         playerGameClockStateRef.current[playerOut.id] = null;
         const outStat = freshStats.find(s => s.player_id === playerOut.id);
-        if (outStat) await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false } });
+        if (outStat) await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false } });
         if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
       }
 
       for (const playerInId of playersIn) {
         const inStat = freshStats.find(s => s.player_id === playerInId);
         if (inStat) {
-          await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true } });
+          await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
         } else {
-          await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, minutes_played: 0 });
+          await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
         }
         playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
         if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
