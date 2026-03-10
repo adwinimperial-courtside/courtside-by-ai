@@ -238,8 +238,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const updateTeamRecordMutation = useMutation({
     mutationFn: async ({ teamId, isWin }) => {
-      const teams = await base44.entities.Team.filter({ id: teamId });
-      const team = teams[0];
+      const team = await base44.entities.Team.get(teamId);
       return await base44.entities.Team.update(teamId, {
         wins: isWin ? (team.wins || 0) + 1 : team.wins || 0,
         losses: !isWin ? (team.losses || 0) + 1 : team.losses || 0
@@ -832,19 +831,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         player_of_game: findPlayerOfGame(existingStats, game)
       });
 
-      const homeTeams = await base44.entities.Team.filter({ id: game.home_team_id });
-      const homeTeamData = homeTeams[0];
-      
+      const homeTeamData = await base44.entities.Team.get(game.home_team_id);
       await base44.entities.Team.update(game.home_team_id, {
         wins: homeWins ? (homeTeamData.wins || 0) + 1 : homeTeamData.wins || 0,
         losses: !homeWins ? (homeTeamData.losses || 0) + 1 : homeTeamData.losses || 0
       });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const awayTeams = await base44.entities.Team.filter({ id: game.away_team_id });
-      const awayTeamData = awayTeams[0];
-      
+      const awayTeamData = await base44.entities.Team.get(game.away_team_id);
       await base44.entities.Team.update(game.away_team_id, {
         wins: !homeWins ? (awayTeamData.wins || 0) + 1 : awayTeamData.wins || 0,
         losses: homeWins ? (awayTeamData.losses || 0) + 1 : awayTeamData.losses || 0
