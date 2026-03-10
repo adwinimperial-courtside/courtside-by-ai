@@ -552,11 +552,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && activePlayerIds.includes(p.id)
   );
 
-  const isEligibleReplacement = (playerId) => {
+  const isDisqualified = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
-    if (!stats) return true;
-    return (stats.technical_fouls || 0) < 2 && (stats.fouls || 0) < 5;
+    if (!stats) return false;
+    return (
+      (stats.fouls || 0) >= MAX_FOUL_LIMIT ||
+      (stats.technical_fouls || 0) >= 2 ||
+      (stats.unsportsmanlike_fouls || 0) >= 2
+    );
   };
+
+  const isEligibleReplacement = (playerId) => !isDisqualified(playerId);
 
   const homeBenchPlayers = players.filter(p => 
     p.team_id === game.home_team_id && !activePlayerIds.includes(p.id)
