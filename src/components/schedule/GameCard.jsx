@@ -14,6 +14,7 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
   const [isLiveExpanded, setIsLiveExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
   const [liveStats, setLiveStats] = useState(stats?.filter(s => s.game_id === game.id) || []);
+  const debounceRef = React.useRef(null);
 
   const isAdmin = currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin';
 
@@ -23,19 +24,28 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
 
   useEffect(() => {
     if (game.status === 'in_progress') {
+      const fetchStats = () => {
+        // Debounce: wait 800ms after last event before fetching to avoid rate limits
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+          base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
+        }, 800);
+      };
+
       const unsubscribeGame = base44.entities.Game.subscribe((event) => {
         if (event.id === game.id && event.type === 'update') {
           setLiveGame(event.data);
         }
       });
-      const unsubscribeStats = base44.entities.PlayerStats.subscribe(() => {
-        base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
-      });
-      // Initial fetch of live stats
+      const unsubscribeStats = base44.entities.PlayerStats.subscribe(fetchStats);
+
+      // Initial fetch of live stats (no debounce needed on mount)
       base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
+
       return () => {
         unsubscribeGame();
         unsubscribeStats();
+        clearTimeout(debounceRef.current);
       };
     }
   }, [game.id, game.status]);
