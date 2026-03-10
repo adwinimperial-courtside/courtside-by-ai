@@ -161,8 +161,30 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (!isTimed || isSaving.current || lineupBlocked) return;
     const currentTimeLeft = computeTimeLeft(game);
 
-    // If time is 0 and not running, advance to next period AND immediately start the clock
-    if (currentTimeLeft <= 0 && !running) {
+    // In final review mode with tied scores → START OT: advance to next OT period
+    if (isInFinalReview && (game.home_score || 0) === (game.away_score || 0)) {
+      isSaving.current = true;
+      try {
+        const nextPeriod = period + 1;
+        const nextMins = overtimeMinutes;
+        const updates = {
+          clock_period: nextPeriod,
+          clock_time_left: nextMins * 60,
+          clock_running: false,
+          clock_started_at: null,
+          period_status: 'active',
+        };
+        await base44.entities.Game.update(game.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      } finally {
+        isSaving.current = false;
+      }
+      return;
+    }
+
+    // If time is 0 and not running but NOT in final review (mid-game period transition),
+    // advance to next period AND immediately start the clock
+    if (currentTimeLeft <= 0 && !running && !isInFinalReview) {
       isSaving.current = true;
       try {
         const nextPeriod = period + 1;
