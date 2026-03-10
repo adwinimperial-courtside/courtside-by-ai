@@ -72,9 +72,11 @@ export default function Layout({ children }) {
     fetchUser();
   }, [navigate, location.pathname]);
 
-  // Track page navigation (exclude app_admin)
+  // Track page navigation (exclude app_admin) - debounced to avoid rate limiting
   useEffect(() => {
-    if (currentUser && currentUser.user_type !== 'app_admin') {
+    if (!currentUser || currentUser.user_type === 'app_admin') return;
+    
+    const timer = setTimeout(() => {
       const pageName = location.pathname.split('/').filter(Boolean)[0] || 'Home';
       base44.analytics.track({
         eventName: 'page_navigation',
@@ -85,7 +87,9 @@ export default function Layout({ children }) {
           user_type: currentUser.user_type
         }
       });
-    }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [location.pathname, currentUser]);
 
   // Track user activity periodically to show live visitors
