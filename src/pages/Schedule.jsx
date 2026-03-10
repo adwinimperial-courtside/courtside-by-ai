@@ -58,26 +58,30 @@ export default function SchedulePage() {
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
     initialData: [],
+    staleTime: 60000, // 1 minute
   });
 
   const { data: games, isLoading } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list('-game_date'),
     initialData: [],
-    refetchOnMount: 'always',
+    staleTime: 30000, // 30 seconds for live updates
   });
 
   const { data: players } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
     initialData: [],
-    refetchOnMount: 'always',
+    enabled: selectedLeague !== null && selectedLeague !== 'all', // Only fetch when league selected
+    staleTime: 60000,
   });
 
   const { data: allStats } = useQuery({
     queryKey: ['allPlayerStats'],
     queryFn: () => base44.entities.PlayerStats.list(),
     initialData: [],
+    enabled: selectedLeague !== null && selectedLeague !== 'all', // Only fetch when league selected
+    staleTime: 30000,
   });
 
   const createGameMutation = useMutation({
