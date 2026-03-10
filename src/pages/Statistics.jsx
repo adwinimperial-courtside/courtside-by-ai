@@ -113,50 +113,21 @@ export default function StatisticsPage() {
     staleTime: 5000,
   });
 
-  // Restrict data to assigned leagues for non-app-admins with assigned leagues
-  const baseTeams = (hasAssignedLeagues && !isAppAdmin) ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
-  const baseGames = (hasAssignedLeagues && !isAppAdmin) ? games.filter(g => assignedLeagueIds.includes(g.league_id)) : games;
-
-  // Filter data based on selections
-  const filteredTeams = selectedLeague === "all" 
-    ? baseTeams 
-    : baseTeams.filter(t => t.league_id === selectedLeague);
-
+  // Already league-filtered from queries above
+  const filteredTeams = teams;
   const filteredPlayers = selectedTeam === "all" 
-    ? (selectedLeague === "all" 
-        ? players 
-        : players.filter(p => {
-            const team = teams.find(t => t.id === p.team_id);
-            return team?.league_id === selectedLeague;
-          }))
+    ? players 
     : players.filter(p => p.team_id === selectedTeam);
 
-  const filteredGames = selectedLeague === "all"
-    ? (selectedTeam === "all" 
-        ? baseGames 
-        : baseGames.filter(g => g.home_team_id === selectedTeam || g.away_team_id === selectedTeam))
-    : baseGames.filter(g => {
-        const homeTeam = teams.find(t => t.id === g.home_team_id);
-        const awayTeam = teams.find(t => t.id === g.away_team_id);
-        if (selectedTeam === "all") {
-          return homeTeam?.league_id === selectedLeague || awayTeam?.league_id === selectedLeague;
-        }
-        return (g.home_team_id === selectedTeam || g.away_team_id === selectedTeam);
-      });
+  const filteredGames = selectedTeam === "all" 
+    ? games 
+    : games.filter(g => g.home_team_id === selectedTeam || g.away_team_id === selectedTeam);
 
   const filteredStats = selectedTeam === "all"
-    ? (selectedLeague === "all"
-        ? allStats
-        : allStats.filter(s => {
-            const game = games.find(g => g.id === s.game_id);
-            const homeTeam = teams.find(t => t.id === game?.home_team_id);
-            return homeTeam?.league_id === selectedLeague;
-          }))
+    ? allStats
     : allStats.filter(s => s.team_id === selectedTeam);
 
-  const availableTeams = selectedLeague === "all" 
-    ? baseTeams 
-    : baseTeams.filter(t => t.league_id === selectedLeague);
+  const availableTeams = teams;
 
   const searchedPlayers = debouncedSearch.trim()
     ? filteredPlayers.filter(p => 
