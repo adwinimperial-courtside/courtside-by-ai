@@ -235,6 +235,7 @@ export default function LiveBoxScorePage() {
                         <span className="text-sm">{stat.player?.name}</span>
                       </div>
                     </TableCell>
+                    {game.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
                     <TableCell className="text-center font-semibold">{points}</TableCell>
                     <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
                     <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
