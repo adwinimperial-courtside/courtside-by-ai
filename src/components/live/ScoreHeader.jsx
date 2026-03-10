@@ -536,12 +536,6 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
           {/* RIGHT: Away team */}
           <div className="flex-1 flex flex-col justify-center items-end px-7 py-3">
             <div className="flex items-center gap-4 mb-2">
-              <div className="mr-auto flex flex-col items-center">
-                <span className="text-white/70 text-xs font-bold uppercase tracking-wide">FOULS: <span className="text-white">{awayFoulsNow}</span></span>
-                {awayInBonus && (
-                  <span className="mt-0.5 px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
-                )}
-              </div>
               <div className="text-right min-w-0">
                 <p className="text-white/80 font-semibold text-sm truncate">{awayTeam?.name}</p>
                 <p className="text-5xl font-black text-white leading-none tabular-nums">{game.away_score || 0}</p>
@@ -567,6 +561,12 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                   <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < awayRemaining ? 'bg-white border-white' : 'border-white/40'}`} />
                 ))}
               </div>
+            </div>
+            <div className="flex items-center gap-2 mt-1.5">
+              {awayInBonus && (
+                <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
+              )}
+              <span className="text-white/70 text-xs font-bold uppercase tracking-wide">FOULS: <span className="text-white">{awayFoulsNow}</span></span>
             </div>
           </div>
 
