@@ -466,7 +466,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
               </div>
               <div className="min-w-0">
                 <p className="text-white/80 font-semibold text-sm truncate">{homeTeam?.name}</p>
-                <p className="text-5xl font-black text-white leading-none tabular-nums">{game.home_score || 0}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{localGame.home_score || 0}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
