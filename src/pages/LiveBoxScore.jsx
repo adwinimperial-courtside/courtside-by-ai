@@ -281,15 +281,7 @@ export default function LiveBoxScorePage() {
               </div>
 
               {/* Center info */}
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="text-center">
-                  <p className="text-sm text-slate-500 font-semibold">{getPeriodLabel()}</p>
-                  <p className="text-xl font-bold text-slate-900">{formatClockTime()}</p>
-                </div>
-                {game.status === 'in_progress' && (
-                  <Badge className="bg-blue-100 text-blue-800">In Progress</Badge>
-                )}
-              </div>
+              <ClockDisplay game={game} />
 
               {/* Away team */}
               <div className="flex flex-col items-center gap-2">
