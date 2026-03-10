@@ -23,12 +23,20 @@ export default function GameCard({ game, teams, leagues, players, stats, onStart
 
   useEffect(() => {
     if (game.status === 'in_progress') {
-      const unsubscribe = base44.entities.Game.subscribe((event) => {
+      const unsubscribeGame = base44.entities.Game.subscribe((event) => {
         if (event.id === game.id && event.type === 'update') {
           setLiveGame(event.data);
         }
       });
-      return unsubscribe;
+      const unsubscribeStats = base44.entities.PlayerStats.subscribe(() => {
+        base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
+      });
+      // Initial fetch of live stats
+      base44.entities.PlayerStats.filter({ game_id: game.id }).then(setLiveStats);
+      return () => {
+        unsubscribeGame();
+        unsubscribeStats();
+      };
     }
   }, [game.id, game.status]);
 
