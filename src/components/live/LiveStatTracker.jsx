@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Timer } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 
@@ -826,12 +826,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <p className="text-slate-400 text-xs">No actions yet</p>
           </div>
         ) : (
-          gameLog.filter(log => log.player || log.isSubstitution || log.statType.key === 'ejection' || log.statType.key === 'substitution').slice(0, 30).map((log, index) => (
+          gameLog.filter(log => log.player || log.isSubstitution || log.statType.key === 'ejection' || log.statType.key === 'substitution' || log.statType.key === 'timeout').slice(0, 30).map((log, index) => (
             <div key={log.id} className={`flex items-center gap-2 px-2 py-1.5 border-b border-slate-100 last:border-0 ${index === 0 ? 'bg-amber-50/60' : 'hover:bg-slate-50/50'}`}>
               {log.isSubstitution ? (
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <RefreshCw className="w-3 h-3 text-cyan-500 flex-shrink-0" />
                   <span className="text-[10px] font-bold text-cyan-600 flex-shrink-0">SUB</span>
+                  <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
+                </div>
+              ) : log.statType.key === 'timeout' ? (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <Clock className="w-3 h-3 text-amber-500 flex-shrink-0" />
+                  <span className="text-[10px] font-bold text-amber-600 flex-shrink-0">T/O</span>
                   <span className="text-[10px] text-slate-600 truncate">{log.statType.label}</span>
                 </div>
               ) : log.statType.key === 'ejection' ? (

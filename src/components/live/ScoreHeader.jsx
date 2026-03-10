@@ -159,6 +159,12 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
 
   const timeExpired = displayTime <= 0;
 
+  // Sync timeout state from game prop (e.g. after reload or real-time update)
+  useEffect(() => {
+    if (game.home_timeouts) setHomeTimeoutsUsed(game.home_timeouts);
+    if (game.away_timeouts) setAwayTimeoutsUsed(game.away_timeouts);
+  }, [game.home_timeouts, game.away_timeouts]);
+
   // Timeout helpers
   const getSegmentKey = (p) => {
     if (p > totalPeriods) return `ot${p - totalPeriods}`;
@@ -174,12 +180,48 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
   const currentSlots = getSegmentSlots(currentSegKey);
   const homeUsed = homeTimeoutsUsed[currentSegKey] || 0;
   const awayUsed = awayTimeoutsUsed[currentSegKey] || 0;
-  const handleHomeTimeout = () => {
-    if (homeUsed < currentSlots) setHomeTimeoutsUsed(prev => ({ ...prev, [currentSegKey]: homeUsed + 1 }));
+
+  const handleTimeout = async (teamId, usedCount, timeoutsKey, setUsed, teamName) => {
+    if (usedCount >= currentSlots || isSaving.current) return;
+    isSaving.current = true;
+    try {
+      const currentTimeLeft = computeTimeLeft(game);
+      const newSegMap = { ...(game[timeoutsKey] || {}), [currentSegKey]: usedCount + 1 };
+      const updates = { [timeoutsKey]: newSegMap };
+      // Stop clock if running
+      if (running) {
+        updates.clock_running = false;
+        updates.clock_time_left = Math.max(0, Math.round(currentTimeLeft));
+        updates.clock_started_at = null;
+      }
+      await base44.entities.Game.update(game.id, updates);
+      setUsed(newSegMap);
+      if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+      // Log the timeout in game activity
+      await base44.entities.GameLog.create({
+        game_id: game.id,
+        player_id: '',
+        team_id: teamId,
+        stat_type: 'timeout',
+        stat_label: `Timeout – ${teamName}`,
+        stat_points: 0,
+        stat_color: 'bg-amber-500',
+        old_home_score: game.home_score || 0,
+        old_away_score: game.away_score || 0,
+      });
+    } finally {
+      isSaving.current = false;
+    }
   };
-  const handleAwayTimeout = () => {
-    if (awayUsed < currentSlots) setAwayTimeoutsUsed(prev => ({ ...prev, [currentSegKey]: awayUsed + 1 }));
-  };
+
+  const handleHomeTimeout = () => handleTimeout(
+    game.home_team_id, homeUsed, 'home_timeouts',
+    (val) => setHomeTimeoutsUsed(val), homeTeam?.name || 'Home'
+  );
+  const handleAwayTimeout = () => handleTimeout(
+    game.away_team_id, awayUsed, 'away_timeouts',
+    (val) => setAwayTimeoutsUsed(val), awayTeam?.name || 'Away'
+  );
 
   return (
     <>
