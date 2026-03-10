@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,6 +11,7 @@ import TeamLogo from "@/components/teams/TeamLogo";
 
 export default function LiveBoxScorePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
 
@@ -29,6 +30,28 @@ export default function LiveBoxScorePage() {
     staleTime: 2000,
     refetchOnWindowFocus: false
   });
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!gameId) return;
+
+    const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
+      if (event.game_id === gameId) {
+        queryClient.invalidateQueries({ queryKey: ['playerStats', gameId] });
+      }
+    });
+
+    const unsubscribeGame = base44.entities.Game.subscribe((event) => {
+      if (event.id === gameId) {
+        queryClient.invalidateQueries({ queryKey: ['game', gameId] });
+      }
+    });
+
+    return () => {
+      unsubscribeStats();
+      unsubscribeGame();
+    };
+  }, [gameId, queryClient]);
 
   const { data: homeTeam } = useQuery({
     queryKey: ['team', game?.home_team_id],
