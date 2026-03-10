@@ -1086,7 +1086,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         <button key={player.id} onClick={() => togglePlayerOut(player, game.home_team_id)}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
                             ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: homeTeam?.color }}>{player.jersey_number}</div>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
                             <p className="text-xs text-slate-500">{player.position}</p>
@@ -1112,7 +1112,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                         <button key={player.id} onClick={() => togglePlayerOut(player, game.away_team_id)}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
                             ${isSelected ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: awayTeam?.color }}>{player.jersey_number}</div>
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
                             <p className="text-xs text-slate-500">{player.position}</p>
