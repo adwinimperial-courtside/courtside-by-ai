@@ -394,108 +394,107 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     isProcessingStatRef.current = true;
     try {
+      const currentValue = playerStat[statType.key] || 0;
+      const updates = { [statType.key]: currentValue + 1 };
+      
+      const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
 
-    const currentValue = playerStat[statType.key] || 0;
-    const updates = { [statType.key]: currentValue + 1 };
-    
-    const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
+      await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
 
-    await updateStatMutation.mutateAsync({ statId: playerStat.id, updates });
+      // ── Increment team fouls if this stat type counts as a team foul ──
+      if (statCountsAsTeamFoul(statType.key)) {
+        const isHome = selectedPlayer.team_id === game.home_team_id;
+        const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
+        const period = game.clock_period ?? 1;
+        const resetKey = getFoulResetKey(period);
+        const currentFoulMap = { ...(game[foulKey] || {}) };
+        currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
+        await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
+      }
 
-    // ── Increment team fouls if this stat type counts as a team foul ──
-    if (statCountsAsTeamFoul(statType.key)) {
-      const isHome = selectedPlayer.team_id === game.home_team_id;
-      const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
-      const period = game.clock_period ?? 1;
-      const resetKey = getFoulResetKey(period);
-      const currentFoulMap = { ...(game[foulKey] || {}) };
-      currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
-      await updateGameMutation.mutateAsync({ gameId: game.id, data: { [foulKey]: currentFoulMap } });
-    }
+      if (statType.points > 0) {
+        const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
+        const newScore = isHomeTeam 
+          ? (game.home_score || 0) + statType.points
+          : (game.away_score || 0) + statType.points;
 
-    if (statType.points > 0) {
-      const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
-      const newScore = isHomeTeam 
-        ? (game.home_score || 0) + statType.points
-        : (game.away_score || 0) + statType.points;
+        await updateGameMutation.mutateAsync({
+          gameId: game.id,
+          data: isHomeTeam 
+            ? { home_score: newScore }
+            : { away_score: newScore }
+        });
+      }
 
-      await updateGameMutation.mutateAsync({
-        gameId: game.id,
-        data: isHomeTeam 
-          ? { home_score: newScore }
-          : { away_score: newScore }
-      });
-    }
-
-    await createLogMutation.mutateAsync({
-      game_id: game.id,
-      player_id: selectedPlayer.id,
-      team_id: selectedPlayer.team_id,
-      stat_type: statType.key,
-      stat_label: statType.label,
-      stat_points: statType.points,
-      stat_color: statType.color,
-      player_stat_id: playerStat.id,
-      old_value: currentValue,
-      new_value: currentValue + 1,
-      old_home_score: oldScores.home,
-      old_away_score: oldScores.away,
-      logged_by: currentUser?.email || '',
-      device_name: getDeviceName()
-    });
-
-    if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
-      setEjectedPlayer(selectedPlayer);
-      setEjectionReason('2 Technical Fouls');
-      setSelectedPlayer(null);
       await createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: selectedPlayer.id,
         team_id: selectedPlayer.team_id,
-        stat_type: 'ejection',
-        stat_label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
-        stat_points: 0,
-        stat_color: 'bg-pink-700 hover:bg-pink-800',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
+        stat_type: statType.key,
+        stat_label: statType.label,
+        stat_points: statType.points,
+        stat_color: statType.color,
+        player_stat_id: playerStat.id,
+        old_value: currentValue,
+        new_value: currentValue + 1,
+        old_home_score: oldScores.home,
+        old_away_score: oldScores.away,
         logged_by: currentUser?.email || '',
         device_name: getDeviceName()
       });
-    } else if (statType.key === 'fouls' && currentValue + 1 >= MAX_FOUL_LIMIT) {
-      setEjectedPlayer(selectedPlayer);
-      setEjectionReason(`${MAX_FOUL_LIMIT} Fouls`);
-      setSelectedPlayer(null);
-      await createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: selectedPlayer.id,
-        team_id: selectedPlayer.team_id,
-        stat_type: 'ejection',
-        stat_label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
-        stat_points: 0,
-        stat_color: 'bg-red-700 hover:bg-red-800',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      });
-    } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
-      setEjectedPlayer(selectedPlayer);
-      setEjectionReason('2 Unsportsmanlike Fouls');
-      setSelectedPlayer(null);
-      await createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: selectedPlayer.id,
-        team_id: selectedPlayer.team_id,
-        stat_type: 'ejection',
-        stat_label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
-        stat_points: 0,
-        stat_color: 'bg-rose-700 hover:bg-rose-800',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      });
-    }
+
+      if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
+        setEjectedPlayer(selectedPlayer);
+        setEjectionReason('2 Technical Fouls');
+        setSelectedPlayer(null);
+        await createLogMutation.mutateAsync({
+          game_id: game.id,
+          player_id: selectedPlayer.id,
+          team_id: selectedPlayer.team_id,
+          stat_type: 'ejection',
+          stat_label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
+          stat_points: 0,
+          stat_color: 'bg-pink-700 hover:bg-pink-800',
+          old_home_score: game.home_score || 0,
+          old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '',
+          device_name: getDeviceName()
+        });
+      } else if (statType.key === 'fouls' && currentValue + 1 >= MAX_FOUL_LIMIT) {
+        setEjectedPlayer(selectedPlayer);
+        setEjectionReason(`${MAX_FOUL_LIMIT} Fouls`);
+        setSelectedPlayer(null);
+        await createLogMutation.mutateAsync({
+          game_id: game.id,
+          player_id: selectedPlayer.id,
+          team_id: selectedPlayer.team_id,
+          stat_type: 'ejection',
+          stat_label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
+          stat_points: 0,
+          stat_color: 'bg-red-700 hover:bg-red-800',
+          old_home_score: game.home_score || 0,
+          old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '',
+          device_name: getDeviceName()
+        });
+      } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
+        setEjectedPlayer(selectedPlayer);
+        setEjectionReason('2 Unsportsmanlike Fouls');
+        setSelectedPlayer(null);
+        await createLogMutation.mutateAsync({
+          game_id: game.id,
+          player_id: selectedPlayer.id,
+          team_id: selectedPlayer.team_id,
+          stat_type: 'ejection',
+          stat_label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
+          stat_points: 0,
+          stat_color: 'bg-rose-700 hover:bg-rose-800',
+          old_home_score: game.home_score || 0,
+          old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '',
+          device_name: getDeviceName()
+        });
+      }
     } finally {
       isProcessingStatRef.current = false;
     }
