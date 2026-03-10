@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -57,21 +57,21 @@ export default function SchedulePage() {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams', selectedLeague],
     queryFn: async () => {
-      if (selectedLeague === 'all') return [];
+      if (!selectedLeague || selectedLeague === 'all') return [];
       return base44.entities.Team.filter({ league_id: selectedLeague });
     },
-    enabled: selectedLeague !== 'all',
+    enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 300000,
   });
 
   const { data: games = [], isLoading } = useQuery({
     queryKey: ['games', selectedLeague],
     queryFn: async () => {
-      if (selectedLeague === 'all') return [];
+      if (!selectedLeague || selectedLeague === 'all') return [];
       const filtered = await base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date');
       return filtered || [];
     },
-    enabled: selectedLeague !== 'all',
+    enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 5000,
   });
 
