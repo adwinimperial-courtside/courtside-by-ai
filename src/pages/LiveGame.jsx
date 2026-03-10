@@ -156,7 +156,7 @@ export default function LiveGamePage() {
     );
   }
 
-  if (!game) {
+  if (!mergedGame) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center text-white">
