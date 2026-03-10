@@ -321,13 +321,13 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
-                {Array.from({ length: currentSlots }).map((_, i) => (
-                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < homeUsed ? 'bg-white border-white' : 'border-white/40'}`} />
+                {Array.from({ length: segmentAllowance }).map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < homeRemaining ? 'bg-white border-white' : 'border-white/40'}`} />
                 ))}
               </div>
               <button
                 onClick={handleHomeTimeout}
-                disabled={homeUsed >= currentSlots}
+                disabled={homeRemaining <= 0}
                 className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 style={{ minHeight: '36px', minWidth: '100px' }}
               >
@@ -408,15 +408,15 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
             <div className="flex items-center gap-3">
               <button
                 onClick={handleAwayTimeout}
-                disabled={awayUsed >= currentSlots}
+                disabled={awayRemaining <= 0}
                 className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 style={{ minHeight: '36px', minWidth: '100px' }}
               >
                 TIMEOUT
               </button>
               <div className="flex items-center gap-1.5">
-                {Array.from({ length: currentSlots }).map((_, i) => (
-                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < awayUsed ? 'bg-white border-white' : 'border-white/40'}`} />
+                {Array.from({ length: segmentAllowance }).map((_, i) => (
+                  <div key={i} className={`w-3 h-3 rounded-full border-2 ${i < awayRemaining ? 'bg-white border-white' : 'border-white/40'}`} />
                 ))}
               </div>
             </div>
