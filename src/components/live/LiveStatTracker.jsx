@@ -114,6 +114,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const homeActiveCount = existingStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
   const awayActiveCount = existingStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
 
+  // Final review mode: clock at 00:00, not running, last regulation period or any overtime
+  const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
+  const currentPeriod = game.clock_period ?? 1;
+  const isInFinalReview = (
+    (game.clock_time_left === 0 || game.clock_time_left == null) &&
+    !game.clock_running &&
+    (currentPeriod === totalPeriods || currentPeriod > totalPeriods) &&
+    game.period_status === 'completed'
+  );
+
   // Fire repair check whenever lineup counts change (catches bad state on load + real-time updates)
   useEffect(() => {
     if (existingStats.length === 0) return;
