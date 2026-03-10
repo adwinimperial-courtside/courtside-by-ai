@@ -88,9 +88,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
   });
 
+  // Debounce PlayerStats subscription refreshes for live scorer context (350ms)
+  // Live scoring console needs responsiveness, but we still avoid API floods
+  const { trigger: debouncedInvalidate, cleanup: cleanupDebounce } = usePlayerStatsDebounce(
+    () => queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] }),
+    350
+  );
+
   useEffect(() => {
     const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      debouncedInvalidate();
     });
     const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
       queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
@@ -105,8 +112,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       unsubscribeStats();
       unsubscribeLogs();
       unsubscribeGame();
+      cleanupDebounce();
     };
-  }, [game.id, queryClient]);
+  }, [game.id, queryClient, debouncedInvalidate, cleanupDebounce]);
 
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
