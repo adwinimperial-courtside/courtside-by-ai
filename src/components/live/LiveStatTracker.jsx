@@ -280,6 +280,83 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return String(period);
   };
 
+  // ── Lineup validation ────────────────────────────────────────────
+  const getFoulLimits = () => ({
+    personalFoulLimit: game.game_rules?.personalFoulLimit ?? MAX_FOUL_LIMIT,
+    technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
+    unsportsmanlikeFoulLimit: game.game_rules?.unsportsmanlikeFoulLimit ?? 2,
+  });
+
+  const isPlayerEligibleForCourt = (playerId, stats) => {
+    const limits = getFoulLimits();
+    const s = stats.find(st => st.player_id === playerId);
+    if (!s) return true;
+    return (
+      (s.fouls || 0) < limits.personalFoulLimit &&
+      (s.technical_fouls || 0) < limits.technicalFoulLimit &&
+      (s.unsportsmanlike_fouls || 0) < limits.unsportsmanlikeFoulLimit
+    );
+  };
+
+  const checkAndTriggerRepair = (freshStats) => {
+    const teamIds = [game.home_team_id, game.away_team_id];
+    const teamsNeedingRepair = [];
+
+    for (const teamId of teamIds) {
+      const teamPlayers = players.filter(p => p.team_id === teamId);
+      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_starter).map(s => s.player_id));
+      const activePls = teamPlayers.filter(p => activeIds.has(p.id));
+      const activeCount = activePls.length;
+      const benchPls = teamPlayers.filter(p => !activeIds.has(p.id));
+      const eligibleBench = benchPls.filter(p => isPlayerEligibleForCourt(p.id, freshStats));
+
+      const isValid = activeCount === 5 || (activeCount < 5 && eligibleBench.length === 0);
+      if (!isValid) {
+        const teamObj = teamId === game.home_team_id ? homeTeam : awayTeam;
+        teamsNeedingRepair.push({
+          teamId,
+          teamName: teamObj?.name || (teamId === game.home_team_id ? 'Home' : 'Away'),
+          team: teamObj,
+          activePlayers: activePls,
+        });
+      } else {
+        // Valid — update snapshot
+        lastValidLineupsRef.current[teamId] = {
+          playerIds: [...activeIds],
+          timestamp: new Date().toISOString(),
+          period: game.clock_period ?? 1,
+          clockTime: game.clock_time_left ?? 0,
+        };
+      }
+    }
+
+    if (teamsNeedingRepair.length > 0) {
+      setRepairMode({ teams: teamsNeedingRepair });
+    }
+    return teamsNeedingRepair.length === 0;
+  };
+
+  const updateValidSnapshots = (freshStats) => {
+    const teamIds = [game.home_team_id, game.away_team_id];
+    for (const teamId of teamIds) {
+      const teamPlayers = players.filter(p => p.team_id === teamId);
+      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_starter).map(s => s.player_id));
+      const activePls = teamPlayers.filter(p => activeIds.has(p.id));
+      const activeCount = activePls.length;
+      const benchPls = teamPlayers.filter(p => !activeIds.has(p.id));
+      const eligibleBench = benchPls.filter(p => isPlayerEligibleForCourt(p.id, freshStats));
+      const isValid = activeCount === 5 || (activeCount < 5 && eligibleBench.length === 0);
+      if (isValid) {
+        lastValidLineupsRef.current[teamId] = {
+          playerIds: [...activeIds],
+          timestamp: new Date().toISOString(),
+          period: game.clock_period ?? 1,
+          clockTime: game.clock_time_left ?? 0,
+        };
+      }
+    }
+  };
+
   const handleStatClick = async (statType) => {
     if (!selectedPlayer) return;
 
