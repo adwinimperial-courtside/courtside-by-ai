@@ -260,6 +260,29 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   const timeExpired = displayTime <= 0;
 
+  // ── Context-aware START button logic ─────────────────────────────
+  // Is the game at the end of the last regulation period with scores not tied?
+  const isLastRegulationPeriod = period === totalPeriods;
+  const scoresTied = (game.home_score || 0) === (game.away_score || 0);
+  const showEndGame = timeExpired && !running && isLastRegulationPeriod && !scoresTied;
+
+  // Next period label for the START button
+  const getNextPeriodLabel = () => {
+    const nextPeriod = period + 1;
+    const nextIsOT = nextPeriod > totalPeriods;
+    if (nextIsOT) {
+      const otNumber = nextPeriod - totalPeriods;
+      return otNumber === 1 ? 'START OT' : `START OT${otNumber}`;
+    }
+    if (periodType === 'halves') {
+      return nextPeriod === 2 ? 'START 2ND HALF' : `START H${nextPeriod}`;
+    }
+    return `START Q${nextPeriod}`;
+  };
+
+  const startButtonLabel = timeExpired && !running ? getNextPeriodLabel() : 'START CLOCK';
+  const startButtonIsNextPeriod = timeExpired && !running;
+
   // ── Segment logic ────────────────────────────────────────────────
   // Segments: FIRST_HALF | SECOND_HALF | OVERTIME
   const getSegment = (p) => {
