@@ -59,7 +59,7 @@ export default function LiveBoxScorePage() {
     loadData();
   }, [gameId]);
 
-  const { game, teams, players, allStats } = pageData;
+  const { game, teams, players, stats: allStats } = pageData;
   const homeTeam = teams.find(t => t.id === game?.home_team_id);
   const awayTeam = teams.find(t => t.id === game?.away_team_id);
 
