@@ -14,32 +14,40 @@ export default function LiveBoxScorePage() {
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
 
-  const { data: games = [] } = useQuery({
-    queryKey: ['games'],
+  const { data: game } = useQuery({
+    queryKey: ['game', gameId],
     queryFn: async () => {
-      const result = await base44.entities.Game.list();
-      return result || [];
+      if (!gameId) return null;
+      const result = await base44.entities.Game.filter({ id: gameId });
+      return result?.[0] || null;
     },
-    staleTime: 5000,
+    enabled: !!gameId,
+    staleTime: 3000,
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
+    queryKey: ['gameTeams', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
-      const result = await base44.entities.Team.list();
+      if (!game?.home_team_id || !game?.away_team_id) return [];
+      const result = await base44.entities.Team.filter({ 
+        id: { $in: [game.home_team_id, game.away_team_id] }
+      });
       return result || [];
     },
-    enabled: games.length > 0,
+    enabled: !!game?.home_team_id && !!game?.away_team_id,
     staleTime: 5000,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
+    queryKey: ['gamePlayers', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
-      const result = await base44.entities.Player.list();
+      if (!game?.home_team_id || !game?.away_team_id) return [];
+      const result = await base44.entities.Player.filter({
+        team_id: { $in: [game.home_team_id, game.away_team_id] }
+      });
       return result || [];
     },
-    enabled: teams.length > 0,
+    enabled: !!game?.home_team_id && !!game?.away_team_id,
     staleTime: 5000,
   });
 
@@ -50,11 +58,9 @@ export default function LiveBoxScorePage() {
       const stats = await base44.entities.PlayerStats.filter({ game_id: gameId });
       return stats || [];
     },
-    enabled: !!gameId && players.length > 0,
+    enabled: !!gameId,
     staleTime: 2000,
   });
-
-  const game = games.find(g => g.id === gameId);
   const homeTeam = teams.find(t => t.id === game?.home_team_id);
   const awayTeam = teams.find(t => t.id === game?.away_team_id);
 
