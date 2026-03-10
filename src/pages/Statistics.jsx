@@ -262,7 +262,7 @@ export default function StatisticsPage() {
                 <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
               )}
               {mobileTab === "games" && (
-                <MobileGameStats games={filteredGames} teams={teams} players={players} stats={allStats} />
+                <MobileGameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
               )}
             </div>
 
