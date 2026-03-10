@@ -52,11 +52,11 @@ export default function StatisticsPage() {
     return () => clearTimeout(timer);
   }, [playerSearch]);
 
-  const { data: leagues } = useQuery({
+  const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    initialData: [],
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -68,32 +68,32 @@ export default function StatisticsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams } = useQuery({
+  const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    initialData: [],
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
-  const { data: players } = useQuery({
+  const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
-    initialData: [],
     staleTime: 5 * 60000, // 5 minutes
+    refetchOnMount: true,
   });
 
-  const { data: games } = useQuery({
+  const { data: games = [] } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list(),
-    initialData: [],
     staleTime: 2 * 60000, // 2 minutes
+    refetchOnMount: true,
   });
 
-  const { data: allStats } = useQuery({
+  const { data: allStats = [] } = useQuery({
     queryKey: ['allPlayerStats'],
     queryFn: () => base44.entities.PlayerStats.list(),
-    initialData: [],
     staleTime: 2 * 60000, // 2 minutes
+    refetchOnMount: true,
   });
 
   // Restrict data to assigned leagues for non-app-admins with assigned leagues
