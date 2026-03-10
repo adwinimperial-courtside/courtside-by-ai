@@ -414,11 +414,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         return next;
       }
       // Lock to the team of the first selected player
+      const lockedTeam = prev.length > 0 ? prev[0].team_id : null;
+      if (lockedTeam && player.team_id !== lockedTeam) return prev;
       if (prev.length === 0) setSubTeamFilter(player.team_id);
-      if (subTeamFilter && player.team_id !== subTeamFilter) return prev;
       return [...prev, player];
     });
-    setReplacementPlayers([]); // reset incoming when outgoing changes
+    setReplacementPlayers([]);
   };
 
   const toggleReplacementPlayer = (playerId) => {
