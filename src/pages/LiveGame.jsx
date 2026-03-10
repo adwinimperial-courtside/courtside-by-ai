@@ -170,10 +170,10 @@ export default function LiveGamePage() {
     );
   }
 
-  const homeTeam = teams.find(t => t.id === game.home_team_id);
-  const awayTeam = teams.find(t => t.id === game.away_team_id);
-  const homePlayers = players.filter(p => p.team_id === game.home_team_id);
-  const awayPlayers = players.filter(p => p.team_id === game.away_team_id);
+  const homeTeam = teams.find(t => t.id === mergedGame.home_team_id);
+  const awayTeam = teams.find(t => t.id === mergedGame.away_team_id);
+  const homePlayers = players.filter(p => p.team_id === mergedGame.home_team_id);
+  const awayPlayers = players.filter(p => p.team_id === mergedGame.away_team_id);
 
   const handleStartGame = async () => {
     if (homeStarters.length !== 5 || awayStarters.length !== 5) {
