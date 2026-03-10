@@ -417,6 +417,12 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate }) 
                 <p className="text-white/80 font-semibold text-sm truncate">{homeTeam?.name}</p>
                 <p className="text-5xl font-black text-white leading-none tabular-nums">{game.home_score || 0}</p>
               </div>
+              <div className="ml-auto flex flex-col items-center">
+                <span className="text-white/70 text-xs font-bold uppercase tracking-wide">FOULS: <span className="text-white">{homeFoulsNow}</span></span>
+                {homeInBonus && (
+                  <span className="mt-0.5 px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
