@@ -52,6 +52,7 @@ export default function Analytics() {
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me(),
+    staleTime: 10 * 60000, // 10 minutes
   });
 
   const { data: todayData, isLoading: loadingToday, refetch: refetchToday } = useQuery({
@@ -59,12 +60,14 @@ export default function Analytics() {
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "today" }).then(r => r.data),
     enabled: currentUser?.role === "admin",
     refetchInterval: 60000,
+    staleTime: 30000, // 30 seconds
   });
 
   const { data: dailyData, isLoading: loadingDaily } = useQuery({
     queryKey: ["analytics_daily"],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "daily_active" }).then(r => r.data),
     enabled: currentUser?.role === "admin",
+    staleTime: 5 * 60000, // 5 minutes
   });
 
   const { data: searchData, isLoading: loadingSearch } = useQuery({
