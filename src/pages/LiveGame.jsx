@@ -214,7 +214,7 @@ export default function LiveGamePage() {
   if (!isSetupComplete) {
     return (
       <StartingLineup
-        game={game}
+        game={mergedGame}
         homeTeam={homeTeam}
         awayTeam={awayTeam}
         homePlayers={homePlayers}
@@ -231,7 +231,7 @@ export default function LiveGamePage() {
 
   return (
     <LiveStatTracker
-      game={game}
+      game={mergedGame}
       homeTeam={homeTeam}
       awayTeam={awayTeam}
       players={players}
