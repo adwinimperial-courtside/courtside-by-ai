@@ -24,36 +24,31 @@ export default function CoachInsights() {
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    staleTime: 0,
-    gcTime: 5 * 60000,
+    staleTime: 30 * 1000,
   });
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    staleTime: 0,
-    gcTime: 5 * 60000,
+    staleTime: 30 * 1000,
   });
 
   const { data: games = [] } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list(),
-    staleTime: 0,
-    gcTime: 2 * 60000,
+    staleTime: 15 * 1000,
   });
 
   const { data: playerStats = [] } = useQuery({
     queryKey: ['playerStats'],
     queryFn: () => base44.entities.PlayerStats.list(),
-    staleTime: 0,
-    gcTime: 2 * 60000,
+    staleTime: 15 * 1000,
   });
 
   const { data: players = [] } = useQuery({
     queryKey: ['players'],
     queryFn: () => base44.entities.Player.list(),
-    staleTime: 0,
-    gcTime: 5 * 60000,
+    staleTime: 30 * 1000,
   });
 
   if (currentUser && currentUser.user_type === 'viewer') {

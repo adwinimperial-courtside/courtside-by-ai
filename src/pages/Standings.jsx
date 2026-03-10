@@ -32,8 +32,7 @@ export default function StandingsPage() {
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    staleTime: 0,
-    gcTime: 5 * 60000,
+    staleTime: 30 * 1000,
   });
 
   const isAppAdmin = currentUser?.user_type === 'app_admin';
@@ -48,15 +47,13 @@ export default function StandingsPage() {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    staleTime: 0,
-    gcTime: 5 * 60000,
+    staleTime: 30 * 1000,
   });
 
   const { data: games = [] } = useQuery({
     queryKey: ['games'],
     queryFn: () => base44.entities.Game.list(),
-    staleTime: 0,
-    gcTime: 2 * 60000,
+    staleTime: 15 * 1000,
   });
 
   const baseTeams = (hasAssignedLeagues && !isAppAdmin) ? teams.filter(t => assignedLeagueIds.includes(t.league_id)) : teams;
