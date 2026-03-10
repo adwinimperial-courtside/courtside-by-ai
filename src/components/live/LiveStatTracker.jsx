@@ -727,6 +727,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (stat) await updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false } });
     }
     await deleteLogMutation.mutateAsync(logEntry.id);
+
+    // Validate lineup integrity after undo substitution
+    const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+    checkAndTriggerRepair(postUndoStats);
   };
 
   const handleEndGame = async () => {
