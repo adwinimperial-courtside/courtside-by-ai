@@ -290,7 +290,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   // ── Context-aware START button logic ─────────────────────────────
   // Is the game at the end of the last regulation period with scores not tied?
   const isLastRegulationPeriod = period === totalPeriods;
-  const scoresTied = (game.home_score || 0) === (game.away_score || 0);
+  const scoresTied = (localGame.home_score || 0) === (localGame.away_score || 0);
   const showEndGame = timeExpired && !running && isLastRegulationPeriod && !scoresTied;
 
   // Next period label for the START button
