@@ -134,8 +134,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   // Recompute display time whenever game clock state changes
   useEffect(() => {
-    setDisplayTime(computeTimeLeft(game));
-  }, [game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period]);
+    setDisplayTime(computeTimeLeft(localGame));
+  }, [localGame.clock_running, localGame.clock_started_at, localGame.clock_time_left, localGame.clock_period]);
 
   // Tick every second while running to update display; auto-stop when time expires
   useEffect(() => {
@@ -143,7 +143,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     autoStopFiredRef.current = false;
     if (running) {
       tickRef.current = setInterval(async () => {
-        const t = computeTimeLeft(game);
+        const t = computeTimeLeft(localGame);
         setDisplayTime(t);
         if (t <= 0 && !autoStopFiredRef.current && !isSaving.current) {
           autoStopFiredRef.current = true;
@@ -156,8 +156,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
               clock_started_at: null,
               period_status: 'completed',
             };
-            await base44.entities.Game.update(game.id, updates);
-            if (onGameUpdate) onGameUpdate({ ...game, ...updates });
+            await base44.entities.Game.update(localGame.id, updates);
+            if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
           } finally {
             isSaving.current = false;
           }
@@ -165,7 +165,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
       }, 500);
     }
     return () => clearInterval(tickRef.current);
-  }, [running, game.clock_started_at, game.clock_time_left]);
+  }, [running, localGame.clock_started_at, localGame.clock_time_left];
 
   const isSaving = useRef(false);
   const autoStopFiredRef = useRef(false);
