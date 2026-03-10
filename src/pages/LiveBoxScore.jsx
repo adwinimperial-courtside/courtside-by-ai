@@ -20,6 +20,7 @@ export default function LiveBoxScorePage() {
       const result = await base44.entities.Game.list();
       return result || [];
     },
+    staleTime: 5000,
   });
 
   const { data: teams = [] } = useQuery({
@@ -29,6 +30,7 @@ export default function LiveBoxScorePage() {
       return result || [];
     },
     enabled: games.length > 0,
+    staleTime: 5000,
   });
 
   const { data: players = [] } = useQuery({
@@ -38,6 +40,7 @@ export default function LiveBoxScorePage() {
       return result || [];
     },
     enabled: teams.length > 0,
+    staleTime: 5000,
   });
 
   const { data: allStats = [] } = useQuery({
@@ -47,7 +50,8 @@ export default function LiveBoxScorePage() {
       const stats = await base44.entities.PlayerStats.filter({ game_id: gameId });
       return stats || [];
     },
-    enabled: !!gameId,
+    enabled: !!gameId && players.length > 0,
+    staleTime: 2000,
   });
 
   const game = games.find(g => g.id === gameId);
