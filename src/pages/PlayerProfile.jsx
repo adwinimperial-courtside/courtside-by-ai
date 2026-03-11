@@ -159,6 +159,13 @@ export default function PlayerProfile() {
           onPhotoUpdate={handlePhotoUpdate}
         />
 
+        {/* Trend */}
+        <PlayerTrendCard
+          myStats={myStats}
+          games={leagueGames}
+          teamId={teamId}
+        />
+
         {/* Last Game */}
         <PlayerLastGame
           games={leagueGames}
