@@ -92,13 +92,6 @@ export default function PlayerProfile() {
   // Stats for THIS player using resolved playerRecord
   const resolvedPlayerId = playerRecord?.id;
 
-  const myStats = useMemo(
-    () => resolvedPlayerId
-      ? allLeagueStats.filter(s => s.player_id === resolvedPlayerId && completedGameIds.has(s.game_id) && didPlayerParticipate(s))
-      : [],
-    [allLeagueStats, resolvedPlayerId, completedGameIds]
-  );
-
   const didPlayerParticipate = (stat) => {
     const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
                      (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
@@ -110,6 +103,13 @@ export default function PlayerProfile() {
     if (hasStats) return true;
     return false;
   };
+
+  const myStats = useMemo(
+    () => resolvedPlayerId
+      ? allLeagueStats.filter(s => s.player_id === resolvedPlayerId && completedGameIds.has(s.game_id) && didPlayerParticipate(s))
+      : [],
+    [allLeagueStats, resolvedPlayerId, completedGameIds]
+  );
 
   const allCompletedStats = useMemo(
     () => allLeagueStats.filter(s => completedGameIds.has(s.game_id) && didPlayerParticipate(s)),
