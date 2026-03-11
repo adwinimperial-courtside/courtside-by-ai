@@ -187,6 +187,18 @@ export default function PlayerDashboardCard({
             <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
               <TrendingUp className="w-4 h-4" />
               {primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank: #{primaryRank.rank}
+              {rankMovement.direction === 'up' && (
+                <span className="flex items-center gap-0.5 text-green-600 font-bold">
+                  <TrendingUp className="w-3 h-3" />
+                  +{rankMovement.change}
+                </span>
+              )}
+              {rankMovement.direction === 'down' && (
+                <span className="flex items-center gap-0.5 text-red-600 font-bold">
+                  <TrendingDown className="w-3 h-3" />
+                  -{rankMovement.change}
+                </span>
+              )}
             </span>
           ) : (
             <span className="text-xs text-slate-400 font-medium">Game Participation</span>
