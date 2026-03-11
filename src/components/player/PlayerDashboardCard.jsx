@@ -65,8 +65,6 @@ export default function PlayerDashboardCard({
   const initials = displayName.charAt(0).toUpperCase();
 
   const stats = useMemo(() => computeStats(myStats), [myStats]);
-  const doubleDoubles = useMemo(() => getDoubleDoubles(myStats), [myStats]);
-  const twentyPlus = useMemo(() => getTwentyPlusGames(myStats), [myStats]);
   const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
   const scoringRank = useMemo(() => getScoringRank(playerRecord?.id, allStats), [playerRecord, allStats]);
 
