@@ -145,13 +145,13 @@ export default function PlayerTrendCard({ myStats, games, teamId }) {
   if (!trend) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Trend</p>
-      <div className="flex items-center gap-3">
-        <span className="text-2xl">{trend.emoji}</span>
-        <div>
-          <p className="text-sm font-bold text-slate-900">{trend.label}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{trend.description}</p>
+    <div className="bg-orange-50 rounded-2xl shadow-sm border border-orange-200 border-l-4 border-l-orange-400 px-6 py-5">
+      <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-3">Current Trend</p>
+      <div className="flex items-start gap-4">
+        <span className="text-3xl flex-shrink-0">{trend.emoji}</span>
+        <div className="min-w-0">
+          <p className="text-base font-bold text-orange-900">{trend.label}</p>
+          <p className="text-sm text-orange-700 mt-1 font-medium">{trend.description}</p>
         </div>
       </div>
     </div>
