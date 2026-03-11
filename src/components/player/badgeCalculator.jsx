@@ -163,7 +163,8 @@ export function calculatePlayerBadges(myStats, games) {
     );
 
     const playerPoints = getPoints(stat);
-    const isLeadingScorer = teamStats.every(s => getPoints(s) <= playerPoints);
+    const maxTeamScore = Math.max(...teamStats.map(getPoints));
+    const isLeadingScorer = playerPoints === maxTeamScore && playerPoints > 0;
 
     if (isLeadingScorer) badgeCounts.clutch_performer++;
   });
