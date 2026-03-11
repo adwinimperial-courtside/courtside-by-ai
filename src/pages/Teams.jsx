@@ -71,18 +71,15 @@ export default function TeamsPage() {
       : leagues;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ['teams', selectedLeague, assignedLeagues.map(l => l.id).join(',')],
+    queryKey: ['teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague) return [];
       if (selectedLeague === 'all') {
-        const leagueIds = assignedLeagues.map(l => l.id);
-        if (leagueIds.length === 0) return [];
-        const results = await Promise.all(leagueIds.map(id => base44.entities.Team.filter({ league_id: id })));
-        return results.flat();
+        return base44.entities.Team.list();
       }
-      return base44.entities.Team.filter({ league_id: selectedLeague }, '-created_date');
+      return base44.entities.Team.filter({ league_id: selectedLeague });
     },
-    enabled: !!selectedLeague && (isAppAdmin ? leagues.length > 0 : assignedLeagues.length > 0),
+    enabled: !!selectedLeague,
     initialData: [],
     staleTime: 300000,
   });
