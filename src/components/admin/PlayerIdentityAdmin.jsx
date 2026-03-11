@@ -25,6 +25,7 @@ export default function PlayerIdentityAdmin() {
   const [isRepairing, setIsRepairing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [matchingPlayer, setMatchingPlayer] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: players = [], isLoading } = useQuery({
