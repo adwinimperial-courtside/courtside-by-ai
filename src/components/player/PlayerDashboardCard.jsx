@@ -174,7 +174,7 @@ export default function PlayerDashboardCard({
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
 
-      {/* ── 1. Ranking + Game Participation ── */}
+      {/* ── 1. Ranking + Milestone Progress ── */}
       <div className="pb-6">
         <div className="flex items-center justify-between gap-3 mb-3">
           {primaryRank ? (
@@ -195,21 +195,19 @@ export default function PlayerDashboardCard({
               )}
             </span>
           ) : (
-            <span className="text-xs text-slate-400 font-medium">Game Participation</span>
-          )}
-          {teamGamesPlayed > 0 && (
-            <span className="text-sm font-bold text-slate-700 bg-indigo-50 px-3 py-1 rounded-full">{progressPct}%</span>
+            <span className="text-xs text-slate-400 font-medium">Season Progress</span>
           )}
         </div>
-        {teamGamesPlayed > 0 && (
+        {milestone && (
           <>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{milestone.name}</p>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
+                style={{ width: `${Math.min(milestone.progress, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-slate-500 mt-2 font-medium">{playerGamesPlayed} of {teamGamesPlayed} team games played</p>
+            <p className="text-sm font-bold text-slate-800">{milestone.current} / {milestone.target} {milestone.unit}</p>
           </>
         )}
       </div>
