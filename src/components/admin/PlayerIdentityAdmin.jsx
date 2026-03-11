@@ -291,4 +291,5 @@ export default function PlayerIdentityAdmin() {
       </CardContent>
     </Card>
   );
+  return <>{inner}</>;
 }
