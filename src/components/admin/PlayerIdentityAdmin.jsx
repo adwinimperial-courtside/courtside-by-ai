@@ -71,7 +71,7 @@ export default function PlayerIdentityAdmin() {
 
   const startEdit = (player) => {
     setEditingId(player.id);
-    setEditValues({ display_name: player.display_name || "", handle: player.handle || "" });
+    setEditValues({ full_name: player.full_name || "", display_name: player.display_name || "", handle: player.handle || "" });
   };
 
   const cancelEdit = () => { setEditingId(null); setEditValues({}); };
