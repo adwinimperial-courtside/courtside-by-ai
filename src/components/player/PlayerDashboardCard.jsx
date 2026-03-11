@@ -99,98 +99,96 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
 
       {/* ── 1. Ranking + Season Progress ── */}
-      <div className="px-5 pt-4 pb-3 border-b border-slate-100">
-        <div className="flex items-center justify-between gap-3 mb-2">
+      <div className="pb-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
           {scoringRank ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
-              <TrendingUp className="w-3.5 h-3.5" />
+              <TrendingUp className="w-4 h-4" />
               Scoring Rank: #{scoringRank}
             </span>
           ) : (
             <span className="text-xs text-slate-400 font-medium">Season Progress</span>
           )}
-          <span className="text-xs font-semibold text-slate-500">{progressPct}%</span>
+          <span className="text-sm font-bold text-slate-700 bg-indigo-50 px-3 py-1 rounded-full">{progressPct}%</span>
         </div>
-        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
           <div
-            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>
         {totalGames > 0 && (
-          <p className="text-xs text-slate-400 mt-1">{completedCount} of {totalGames} games completed</p>
+          <p className="text-xs text-slate-500 mt-2 font-medium">{completedCount} of {totalGames} games completed</p>
         )}
       </div>
 
       {/* ── 2. Player Identity ── */}
-      <div className="px-5 pt-4 pb-3 border-b border-slate-100">
-        <div className="flex items-center gap-4">
-          {/* Avatar */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="relative flex-shrink-0 group cursor-pointer">
-                <div className="w-16 h-16 rounded-full overflow-hidden bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center">
-                  {uploading ? (
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                  ) : photoUrl ? (
-                    <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-indigo-600">{initials}</span>
-                  )}
-                </div>
-                <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Camera className="w-4 h-4 text-white" />
-                </div>
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                <Upload className="w-4 h-4 mr-2" /> Upload Photo
+      <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
+        {/* Avatar */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="relative flex-shrink-0 group cursor-pointer">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
+                {uploading ? (
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                ) : photoUrl ? (
+                  <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-4xl font-bold text-indigo-600">{initials}</span>
+                )}
+              </div>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="w-5 h-5 text-white" />
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+              <Upload className="w-4 h-4 mr-2" /> Upload Photo
+            </DropdownMenuItem>
+            {photoUrl && (
+              <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
+                <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
               </DropdownMenuItem>
-              {photoUrl && (
-                <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
-                  <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
-          {/* Name / team / position */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-slate-900 leading-tight">{displayName}</h2>
-              {hotStreak >= 3 && (
-                <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold">
-                  <Flame className="w-3 h-3" /> Hot Streak
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-500 mt-0.5 leading-snug">
-              {[
-                team?.name || leagueName,
-                playerRecord?.position,
-                playerRecord?.jersey_number !== undefined ? `#${playerRecord.jersey_number}` : null,
-              ].filter(Boolean).join(" | ")}
-            </p>
-            {handle && (
-              <p className="text-xs text-slate-400 font-medium mt-0.5">@{handle}</p>
+        {/* Name / team / position */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <h2 className="text-3xl font-bold text-slate-900 leading-tight">{displayName}</h2>
+            {hotStreak >= 3 && (
+              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
+                <Flame className="w-4 h-4" /> Hot
+              </span>
             )}
           </div>
+          <p className="text-base text-slate-600 font-semibold leading-snug">
+            {[
+              team?.name || leagueName,
+              playerRecord?.position,
+              playerRecord?.jersey_number !== undefined ? `#${playerRecord.jersey_number}` : null,
+            ].filter(Boolean).join(" • ")}
+          </p>
+          {handle && (
+            <p className="text-sm text-slate-500 font-medium mt-2">@{handle}</p>
+          )}
         </div>
       </div>
 
       {/* ── 3. Stat Tiles ── */}
-      <div className="px-5 pt-3 pb-3 border-b border-slate-100">
-        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Performance</p>
-        <div className="grid grid-cols-4 gap-2">
+      <div className="pt-6">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Season Stats</p>
+        <div className="grid grid-cols-4 gap-3">
           {statTiles.map(({ label, value }) => (
-            <div key={label} className="bg-indigo-50 rounded-xl py-3 px-1 text-center">
-              <p className="text-xl font-bold text-indigo-700 leading-none">{value ?? "—"}</p>
-              <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wide mt-1">{label}</p>
+            <div key={label} className="bg-slate-50 rounded-xl py-4 px-2 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <p className="text-2xl font-bold text-slate-900 leading-none">{value ?? "—"}</p>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-2">{label}</p>
             </div>
           ))}
         </div>
