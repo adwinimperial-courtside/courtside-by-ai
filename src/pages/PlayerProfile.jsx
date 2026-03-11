@@ -173,7 +173,7 @@ export default function PlayerProfile() {
         {userLeagues.length > 1 && (
           <div className="px-4 md:px-8 mb-6 md:mb-32">
             <label className="block text-sm font-semibold text-slate-700 mb-2">Select League</label>
-            <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
+            <Select value={selectedLeagueId || ""} onValueChange={handleLeagueChange}>
               <SelectTrigger className="w-full bg-white border-slate-300 shadow-md">
                 <SelectValue placeholder="Choose a league" />
               </SelectTrigger>
