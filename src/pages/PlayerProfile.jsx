@@ -125,70 +125,82 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
-      <div className="max-w-lg mx-auto space-y-4">
+    <div className="min-h-screen bg-white p-4 md:p-8">
+      {/* Hero Gradient Background Section */}
+      <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-indigo-50 via-blue-50 to-white pointer-events-none" />
+      
+      <div className="max-w-2xl mx-auto relative z-10">
 
         {/* Page title */}
-        <div className="pt-2 pb-1">
-          <h1 className="text-2xl font-bold text-slate-900">Player Dashboard</h1>
-          <p className="text-sm text-slate-500">Your stats and upcoming games in one place</p>
+        <div className="pt-4 pb-6">
+          <h1 className="text-3xl font-bold text-slate-900">Player Dashboard</h1>
+          <p className="text-sm text-slate-500 mt-1">Your performance, achievements & upcoming games</p>
         </div>
 
         {/* League Selector (only if multiple leagues) */}
         {userLeagues.length > 1 && (
-          <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
-            <SelectTrigger className="w-full bg-white border-slate-200">
-              <SelectValue placeholder="Select league" />
-            </SelectTrigger>
-            <SelectContent>
-              {userLeagues.map(l => (
-                <SelectItem key={l.id} value={l.id}>{l.name} — {l.season}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="mb-8">
+            <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
+              <SelectTrigger className="w-full bg-white border-slate-200 shadow-sm">
+                <SelectValue placeholder="Select league" />
+              </SelectTrigger>
+              <SelectContent>
+                {userLeagues.map(l => (
+                  <SelectItem key={l.id} value={l.id}>{l.name} — {l.season}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
 
-        {/* Main dashboard card */}
-        <PlayerDashboardCard
-          currentUser={currentUser}
-          team={currentTeam}
-          playerRecord={playerRecord}
-          myStats={myStats}
-          allStats={allCompletedStats}
-          games={leagueGames}
-          leagueName={selectedLeague?.name}
-          onPhotoUpdate={handlePhotoUpdate}
-        />
+        {/* Main dashboard card - Floating Hero */}
+        <div className="mb-8 -mx-4 md:mx-0">
+          <PlayerDashboardCard
+            currentUser={currentUser}
+            team={currentTeam}
+            playerRecord={playerRecord}
+            myStats={myStats}
+            allStats={allCompletedStats}
+            games={leagueGames}
+            leagueName={selectedLeague?.name}
+            onPhotoUpdate={handlePhotoUpdate}
+          />
+        </div>
 
-        {/* Achievements */}
-        <PlayerAchievements
-          myStats={myStats}
-          games={leagueGames}
-          teamId={teamId}
-          playerRecord={playerRecord}
-        />
+        {/* Performance Section */}
+        <div className="space-y-6">
 
-        {/* Trend */}
-        <PlayerTrendCard
-          myStats={myStats}
-          games={leagueGames}
-          teamId={teamId}
-        />
+          {/* Achievements */}
+          <PlayerAchievements
+            myStats={myStats}
+            games={leagueGames}
+            teamId={teamId}
+            playerRecord={playerRecord}
+          />
 
-        {/* Last Game */}
-        <PlayerLastGame
-          games={leagueGames}
-          myStats={myStats}
-          teams={allTeams}
-          teamId={teamId}
-        />
+          {/* Trend */}
+          <PlayerTrendCard
+            myStats={myStats}
+            games={leagueGames}
+            teamId={teamId}
+          />
 
-        {/* Next Game */}
-        <PlayerNextGame
-          games={leagueGames}
-          teams={allTeams}
-          teamId={teamId}
-        />
+          {/* Last Game */}
+          <PlayerLastGame
+            games={leagueGames}
+            myStats={myStats}
+            teams={allTeams}
+            teamId={teamId}
+          />
+
+          {/* Next Game */}
+          <PlayerNextGame
+            games={leagueGames}
+            teams={allTeams}
+            teamId={teamId}
+          />
+
+        </div>
 
       </div>
     </div>
