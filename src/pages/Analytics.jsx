@@ -54,32 +54,34 @@ export default function Analytics() {
     queryFn: () => base44.auth.me(),
   });
 
+  const isAdmin = currentUser?.role === "admin" || currentUser?.user_type === "app_admin";
+
   const { data: todayData, isLoading: loadingToday, refetch: refetchToday } = useQuery({
     queryKey: ["analytics_today"],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "today" }).then(r => r.data),
-    enabled: currentUser?.role === "admin",
+    enabled: isAdmin,
     refetchInterval: 60000,
   });
 
   const { data: dailyData, isLoading: loadingDaily } = useQuery({
     queryKey: ["analytics_daily"],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "daily_active" }).then(r => r.data),
-    enabled: currentUser?.role === "admin",
+    enabled: isAdmin,
   });
 
   const { data: searchData, isLoading: loadingSearch } = useQuery({
     queryKey: ["analytics_search_users", userSearch],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "search_users", query: userSearch }).then(r => r.data),
-    enabled: currentUser?.role === "admin" && userSearch.length >= 1,
+    enabled: isAdmin && userSearch.length >= 1,
   });
 
   const { data: historyData, isLoading: loadingHistory } = useQuery({
     queryKey: ["analytics_history", selectedUser?.email],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "user_history", email: selectedUser?.email }).then(r => r.data),
-    enabled: !!selectedUser?.email && currentUser?.role === "admin",
+    enabled: !!selectedUser?.email && isAdmin,
   });
 
-  if (currentUser && currentUser.role !== "admin") {
+  if (currentUser && !isAdmin) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
         <div className="bg-white rounded-xl border border-red-200 p-8 text-center max-w-md">
