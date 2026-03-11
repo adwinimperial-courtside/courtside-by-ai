@@ -178,7 +178,7 @@ export default function PlayerProfile() {
         {/* Last Game */}
         <PlayerLastGame
           games={leagueGames}
-          myStats={allLeagueStats.filter(s => s.player_id === resolvedPlayerId)}
+          myStats={myStats}
           teams={allTeams}
           teamId={teamId}
         />
