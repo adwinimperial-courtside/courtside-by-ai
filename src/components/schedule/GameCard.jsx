@@ -47,7 +47,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
       const away = await base44.entities.Player.filter({ team_id: liveGame.away_team_id });
       return [...(home || []), ...(away || [])];
     },
-    enabled: liveGame.status === 'completed' && isExpanded,
+    enabled: liveGame.status === 'completed' && (isExpanded || !!liveGame.player_of_game),
     staleTime: 300000,
   });
 
