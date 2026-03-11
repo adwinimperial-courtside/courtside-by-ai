@@ -168,7 +168,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                     <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <span className="text-slate-600">Player of the Game:</span>
                     <span className="font-semibold text-slate-900">
-                      {players?.find(p => p.id === liveGame.player_of_game)?.name || 'Unknown'}
+                      {pogPlayer?.name || '...'}
                     </span>
                   </div>
                 </div>
