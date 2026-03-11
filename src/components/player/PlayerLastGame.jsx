@@ -33,8 +33,11 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
       ) : (
         <button
           className="w-full text-left px-5 pb-5 hover:bg-slate-50 transition-colors"
-          onClick={() => navigate(createPageUrl(`LiveBoxScore?gameId=${lastGame.id}`))}
-        >
+          onClick={() => {
+           // Navigate with lowercase gameId to match URL parsing
+           navigate(`/livegame?gameid=${lastGame.id}`);
+          }}
+          >
           {(() => {
             const isHome = lastGame.home_team_id === teamId;
             const opponentId = isHome ? lastGame.away_team_id : lastGame.home_team_id;
