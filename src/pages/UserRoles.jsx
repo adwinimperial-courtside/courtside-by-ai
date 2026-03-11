@@ -193,18 +193,6 @@ export default function UserRoles() {
     enabled: currentUser?.user_type === "app_admin",
   });
 
-  if (currentUser && currentUser.user_type !== "app_admin") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
-        <div className="bg-white rounded-xl border border-red-200 p-8 text-center max-w-md">
-          <Key className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h1>
-          <p className="text-slate-600">You don't have permission to access this page.</p>
-        </div>
-      </div>
-    );
-  }
-
   const counts = {
     league_owners: users.filter((u) => u.user_type === "league_admin").length,
     coaches: users.filter((u) => u.user_type === "coach").length,
