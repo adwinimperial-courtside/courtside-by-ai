@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, User, Pencil, Check, X } from "lucide-react";
+import { RefreshCw, User, Pencil, Check, X, Link2 } from "lucide-react";
+import PlayerLeagueMatchModal from "@/components/admin/PlayerLeagueMatchModal";
 
 function looksLikeRealName(name) {
   if (!name || typeof name !== "string") return false;
