@@ -190,12 +190,12 @@ export default function PlayerAchievements({ myStats, games, teamId, playerRecor
   if (!achievements.length) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-4">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Achievements</p>
-      <div className="flex flex-col gap-2">
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-amber-400 px-6 py-5">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Achievements</p>
+      <div className="flex flex-wrap gap-3">
         {achievements.map((a, i) => (
-          <div key={i} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 border ${a.bg} ${a.border}`}>
-            <span className="text-xl leading-none">{a.emoji}</span>
+          <div key={i} className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 border ${a.bg} ${a.border} shadow-sm hover:shadow-md transition-shadow`}>
+            <span className="text-lg leading-none">{a.emoji}</span>
             <span className={`text-sm font-semibold ${a.text}`}>{a.label}</span>
           </div>
         ))}
