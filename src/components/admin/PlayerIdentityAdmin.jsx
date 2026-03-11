@@ -262,6 +262,18 @@ export default function PlayerIdentityAdmin() {
                           </Button>
                         )}
                       </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                          onClick={() => setMatchingPlayer(player)}
+                          disabled={isEditing}
+                        >
+                          <Link2 className="w-3 h-3" />
+                          Match Leagues
+                        </Button>
+                      </td>
                     </tr>
                   );
                 })}
