@@ -94,7 +94,7 @@ export default function PlayerProfile() {
 
   const myStats = useMemo(
     () => resolvedPlayerId
-      ? allLeagueStats.filter(s => s.player_id === resolvedPlayerId && completedGameIds.has(s.game_id))
+      ? allLeagueStats.filter(s => s.player_id === resolvedPlayerId && completedGameIds.has(s.game_id) && didPlayerParticipate(s))
       : [],
     [allLeagueStats, resolvedPlayerId, completedGameIds]
   );
