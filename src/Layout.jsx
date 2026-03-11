@@ -12,6 +12,7 @@ import {
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 import RegistrationGate from "@/components/registration/RegistrationGate";
+import PlayerIdentityModal from "@/components/registration/PlayerIdentityModal";
 import { createPageUrl } from "./utils";
 
 
