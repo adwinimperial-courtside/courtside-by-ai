@@ -7,6 +7,18 @@ import { Trophy, Shield } from "lucide-react";
 import MobileAwardCards from "./MobileAwardCards";
 
 export default function AwardLeaders({ league, teams, games, players, stats }) {
+  const didPlayerParticipate = (stat) => {
+    const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+                     (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
+                     (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
+                     (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
+    
+    if (stat.did_play) return true;
+    if ((stat.minutes_played || 0) > 0) return true;
+    if (hasStats) return true;
+    return false;
+  };
+
   const mvpCandidates = useMemo(() => {
     if (!league || !teams || !games || !players || !stats) return [];
 
