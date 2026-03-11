@@ -21,7 +21,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [playerApplication, setPlayerApplication] = useState(null);
+  const [showPlayerIdentity, setShowPlayerIdentity] = useState(false);
   const sessionStartTimeRef = useRef(null);
   const hasLoggedLoginEventRef = useRef(false);
 

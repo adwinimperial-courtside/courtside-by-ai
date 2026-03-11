@@ -67,10 +67,10 @@ import Schedule from './pages/Schedule';
 import Standings from './pages/Standings';
 import Statistics from './pages/Statistics';
 import Teams from './pages/Teams';
+import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
-import UserManagement from './pages/UserManagement';
 import __Layout from './Layout.jsx';
 
 
@@ -95,10 +95,10 @@ export const PAGES = {
     "Standings": Standings,
     "Statistics": Statistics,
     "Teams": Teams,
+    "UserManagement": UserManagement,
     "UserRoles": UserRoles,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
-    "UserManagement": UserManagement,
 }
 
 export const pagesConfig = {

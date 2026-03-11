@@ -8,10 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, ChevronRight } from "lucide-react";
 
-export default function PlayerIdentityModal({ application, currentUser, onComplete }) {
+export default function PlayerIdentityModal({ user, onComplete }) {
   const [step, setStep] = useState("identity"); // "identity" | "leagues"
-  const [displayName, setDisplayName] = useState(application.display_name || "");
-  const [handle, setHandle] = useState(application.handle || "");
+  const [displayName, setDisplayName] = useState(user.display_name || "");
+  const [handle, setHandle] = useState(user.handle || "");
   const [leagueSelections, setLeagueSelections] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
