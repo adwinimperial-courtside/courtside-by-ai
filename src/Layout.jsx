@@ -215,6 +215,13 @@ export default function Layout({ children }) {
   return (
     <SidebarProvider defaultOpen={true}>
       <ApplyPendingAssignments />
+      {playerApplication && (
+        <PlayerIdentityModal
+          application={playerApplication}
+          currentUser={currentUser}
+          onComplete={() => setPlayerApplication(null)}
+        />
+      )}
       <style>{`
         :root {
           --primary: 222.2 47.4% 11.2%;
