@@ -136,6 +136,10 @@ export default function PlayerDashboardCard({
   const stats = useMemo(() => computeStats(myStats), [myStats]);
   const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
   const primaryRank = useMemo(() => getPrimaryRank(playerRecord?.id, allStats, myStats), [playerRecord?.id, allStats, myStats]);
+  const rankMovement = useMemo(() => {
+    if (!primaryRank || !leagueId || !playerRecord?.id) return { change: 0, direction: 'neutral' };
+    return getRankMovement(leagueId, playerRecord.id, primaryRank.rank, primaryRank.cat);
+  }, [primaryRank, leagueId, playerRecord?.id]);
 
   // Player participation: games with stats / team games played
   const playerGamesPlayed = useMemo(() => myStats.length, [myStats]);
