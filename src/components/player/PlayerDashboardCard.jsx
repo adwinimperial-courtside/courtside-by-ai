@@ -196,118 +196,119 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-4 pb-4 px-6 relative z-20 mb-8">
+    <div className="space-y-4 -mt-16 pt-0 pb-0 px-0 relative z-20 mb-8">
 
-      {/* ── 1. Ranking + Milestone Progress ── */}
-      <div className="pb-3">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          {primaryRank ? (
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
-              <TrendingUp className="w-4 h-4" />
-              {primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank: #{primaryRank.rank}
-              {rankMovement.direction === 'up' && (
-                <span className="flex items-center gap-0.5 text-green-600 font-bold">
-                  <TrendingUp className="w-3 h-3" />
-                  +{rankMovement.change}
-                </span>
-              )}
-              {rankMovement.direction === 'down' && (
-                <span className="flex items-center gap-0.5 text-red-600 font-bold">
-                  <TrendingDown className="w-3 h-3" />
-                  -{rankMovement.change}
-                </span>
-              )}
-            </span>
-          ) : (
-            <span className="text-xs text-slate-400 font-medium">Season Progress</span>
-          )}
-        </div>
-        {milestone && (
-          <>
-            <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{milestone.name}</p>
-              <span className="text-xs font-bold text-indigo-600">{Math.round(milestone.progress)}%</span>
+      {/* ── 1. Hero Rank Card ── */}
+      {primaryRank && (
+        <div className="mx-4 bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 rounded-2xl px-4 py-3 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold opacity-90 uppercase tracking-wider">TOP PERFORMER</p>
+              <p className="text-2xl font-black mt-1">{primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank</p>
+              <p className="text-3xl font-black mt-0">#{primaryRank.rank}</p>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-1.5">
-              <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(milestone.progress, 100)}%` }}
-              />
+            <div className="text-right">
+              <div className="bg-white/20 backdrop-blur rounded-xl px-3 py-2">
+                <p className="text-xs font-bold opacity-90">Percentile</p>
+                <p className="text-2xl font-black">{primaryRank.percentile}%</p>
+              </div>
+              {rankMovement.direction !== 'neutral' && (
+                <div className={`mt-2 flex items-center gap-1 font-bold ${rankMovement.direction === 'up' ? 'text-green-300' : 'text-orange-300'}`}>
+                  {rankMovement.direction === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                  {rankMovement.change}
+                </div>
+              )}
             </div>
-            <p className="text-sm font-bold text-slate-800">{milestone.current} / {milestone.target} {milestone.unit}</p>
-          </>
-        )}
-      </div>
-
-      {/* ── 2. Player Identity ── */}
-      <div className="flex items-center gap-3 md:gap-3 sm:gap-2 py-3 border-b border-slate-100">
-        {/* Avatar */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="relative flex-shrink-0 group cursor-pointer">
-              <div className="w-32 h-32 md:w-32 md:h-32 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
-                {uploading ? (
-                   <Loader2 className="w-10 h-10 sm:w-6 sm:h-6 animate-spin text-indigo-500" />
-                 ) : photoUrl ? (
-                   <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
-                 ) : (
-                   <span className="text-6xl sm:text-3xl font-bold text-indigo-600">{initials}</span>
-                 )}
-              </div>
-              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-4 h-4 mr-2" /> Upload Photo
-            </DropdownMenuItem>
-            {photoUrl && (
-              <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
-                <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
-
-        {/* Name / team / position */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h2 className="text-3xl md:text-3xl sm:text-xl font-bold text-slate-900 leading-tight break-words">{displayName}</h2>
-            {hotStreak >= 3 && (
-              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex-shrink-0">
-                <Flame className="w-4 h-4" /> Hot
-              </span>
-            )}
           </div>
-          <p className="text-base md:text-base sm:text-sm text-slate-600 font-semibold leading-snug break-words">
-            {[
-              team?.name || leagueName,
-              playerRecord?.position,
-              playerRecord?.jersey_number !== undefined ? `#${playerRecord.jersey_number}` : null,
-            ].filter(Boolean).join(" • ")}
-          </p>
-          {handle && (
-            <p className="text-sm md:text-sm sm:text-xs text-slate-500 font-medium mt-1 break-words">@{handle}</p>
-          )}
         </div>
-      </div>
+      )}
 
-      {/* ── 3. Stat Tiles ── */}
-      <div className="pt-3">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Season Stats</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {/* ── 2. Progress Bar ── */}
+      {milestone && (
+        <div className="mx-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-black text-slate-700 uppercase tracking-wider">{milestone.name}</p>
+            <span className="inline-flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(milestone.progress)}%</span>
+          </div>
+          <div className="w-full h-4 bg-slate-200 rounded-full overflow-hidden shadow-sm">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-full transition-all duration-500 shadow-lg"
+              style={{ width: `${Math.min(milestone.progress, 100)}%` }}
+            />
+          </div>
+          <p className="text-xs text-slate-600 font-bold mt-2">{milestone.current} / {milestone.target} {milestone.unit}</p>
+        </div>
+      )}
+
+      {/* ── 3. Player Card ── */}
+      <div className="mx-4 bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+        {/* Photo Hero on Mobile */}
+        <div className="bg-gradient-to-br from-slate-50 to-blue-50 px-4 pt-4 pb-0">
+          <div className="flex flex-col items-center text-center">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="relative group cursor-pointer mb-3">
+                  <div className="w-40 h-40 rounded-full overflow-hidden bg-gradient-to-br from-indigo-200 to-blue-200 border-4 border-indigo-300 flex items-center justify-center shadow-xl">
+                    {uploading ? (
+                       <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
+                     ) : photoUrl ? (
+                       <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                     ) : (
+                       <span className="text-7xl font-black text-indigo-600">{initials}</span>
+                     )}
+                  </div>
+                  <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="w-4 h-4 mr-2" /> Upload Photo
+                </DropdownMenuItem>
+                {photoUrl && (
+                  <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
+                    <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+
+            {/* Name and Info */}
+            <div className="w-full">
+              <div className="flex items-center gap-2 justify-center flex-wrap mb-2">
+                <h2 className="text-3xl font-black text-slate-900">{displayName}</h2>
+                {hotStreak >= 3 && (
+                  <span className="inline-flex items-center gap-1 bg-amber-200 text-amber-900 px-3 py-1 rounded-full text-xs font-black">
+                    <Flame className="w-4 h-4" /> HOT
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-600 font-bold">
+                {[
+                  team?.name || leagueName,
+                  playerRecord?.position,
+                  playerRecord?.jersey_number !== undefined ? `#${playerRecord.jersey_number}` : null,
+                ].filter(Boolean).join(" • ")}
+              </p>
+              {handle && (
+                <p className="text-xs text-slate-500 font-bold mt-1">@{handle}</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Stat Tiles */}
+        <div className="px-4 py-4 grid grid-cols-2 gap-2">
           {statTiles.map(({ label, value }) => (
-            <div key={label} className="bg-slate-50 rounded-xl py-3 px-2 text-center border border-slate-200 shadow-sm">
-              <p className="text-lg sm:text-xl font-bold text-slate-900 leading-none">{value ?? "—"}</p>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">{label}</p>
+            <div key={label} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl py-4 px-3 text-center border border-blue-200 shadow-sm hover:shadow-md transition-all">
+              <p className="text-2xl font-black text-indigo-600 leading-none">{value ?? "—"}</p>
+              <p className="text-xs text-slate-600 font-bold uppercase tracking-widest mt-2">{label}</p>
             </div>
           ))}
         </div>
       </div>
-
 
     </div>
   );
