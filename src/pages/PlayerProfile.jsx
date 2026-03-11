@@ -164,6 +164,7 @@ export default function PlayerProfile() {
             allStats={allCompletedStats}
             games={leagueGames}
             teamId={teamId}
+            leagueId={selectedLeagueId}
             leagueName={selectedLeague?.name}
             onPhotoUpdate={handlePhotoUpdate}
           />
