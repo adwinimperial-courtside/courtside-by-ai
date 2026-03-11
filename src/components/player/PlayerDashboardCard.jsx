@@ -70,7 +70,12 @@ export default function PlayerDashboardCard({
 
   // Player participation: games with stats / team games played
   const playerGamesPlayed = useMemo(() => myStats.length, [myStats]);
-  const teamGamesPlayed = useMemo(() => games.filter(g => g.status === 'completed').length, [games]);
+  const teamGamesPlayed = useMemo(() => {
+    if (!teamId) return 0;
+    return games.filter(
+      g => g.status === 'completed' && (g.home_team_id === teamId || g.away_team_id === teamId)
+    ).length;
+  }, [games, teamId]);
   const progressPct = teamGamesPlayed > 0 ? Math.round((playerGamesPlayed / teamGamesPlayed) * 100) : 0;
 
 
