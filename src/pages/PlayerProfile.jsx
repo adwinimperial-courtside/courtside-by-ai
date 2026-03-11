@@ -128,10 +128,19 @@ export default function PlayerProfile() {
     );
   }
 
-  if (currentUser && currentUser.user_type !== 'player') {
+  if (currentUser && currentUser.user_type !== 'player' && currentUser.user_type !== 'coach') {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-slate-500 text-lg">This page is only accessible to players.</p>
+        <p className="text-slate-500 text-lg">This page is only accessible to players and coaches.</p>
+      </div>
+    );
+  }
+
+  // Coaches need a matched player to view this page
+  if (currentUser?.user_type === 'coach' && !matchedPlayerId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-slate-500 text-lg">This page requires a matched player identity.</p>
       </div>
     );
   }
