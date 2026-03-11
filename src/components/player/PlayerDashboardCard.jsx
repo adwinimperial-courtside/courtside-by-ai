@@ -178,10 +178,10 @@ export default function PlayerDashboardCard({
       {/* ── 1. Ranking + Game Participation ── */}
       <div className="pb-6">
         <div className="flex items-center justify-between gap-3 mb-3">
-          {scoringRank ? (
+          {primaryRank ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
               <TrendingUp className="w-4 h-4" />
-              Scoring Rank: #{scoringRank}
+              {primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank: #{primaryRank.rank}
             </span>
           ) : (
             <span className="text-xs text-slate-400 font-medium">Game Participation</span>
