@@ -163,10 +163,16 @@ export function calculatePlayerBadges(myStats, games) {
     );
 
     const playerPoints = getPoints(stat);
-    const maxTeamScore = Math.max(...teamStats.map(getPoints));
-    const isLeadingScorer = playerPoints === maxTeamScore && playerPoints > 0;
+    const teamPoints = teamStats.map(getPoints);
+    const maxTeamScore = Math.max(...teamPoints);
+    const numberOfTopScorers = teamPoints.filter(p => p === maxTeamScore).length;
 
-    if (isLeadingScorer) badgeCounts.clutch_performer++;
+    const qualifies =
+      playerPoints === maxTeamScore &&
+      numberOfTopScorers === 1 &&
+      playerPoints >= 10;
+
+    if (qualifies) badgeCounts.clutch_performer++;
   });
 
   // All-Around Game: 5+ points, 5+ rebounds, 5+ assists

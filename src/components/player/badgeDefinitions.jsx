@@ -114,8 +114,8 @@ export const BADGE_DEFINITIONS = {
   clutch_performer: {
     badge_name: "Clutch Performer",
     badge_icon: "⚡",
-    badge_description: "Lead your team in scoring in a winning game.",
-    badge_rule: "team's leading scorer in a winning game",
+    badge_description: "Score 10+ points as your team's sole leading scorer in a winning game.",
+    badge_rule: "10+ points, unique team leading scorer, team wins",
   },
   all_around_game: {
     badge_name: "All-Around Game",
