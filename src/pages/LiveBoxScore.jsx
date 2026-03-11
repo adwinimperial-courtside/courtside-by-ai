@@ -306,8 +306,10 @@ export default function LiveBoxScorePage() {
                 <ClockDisplay game={game} />
                 <LatestActivity
                   latestLog={latestLog}
-                  player={latestLogPlayer}
-                  team={latestLogTeam}
+                  players={players}
+                  homeTeam={homeTeam}
+                  awayTeam={awayTeam}
+                  game={game}
                 />
               </div>
 
