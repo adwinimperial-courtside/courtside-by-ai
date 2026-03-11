@@ -97,10 +97,6 @@ export default function LiveBoxScorePage() {
     refetchOnWindowFocus: false
   });
   const latestLog = latestLogs[0] || null;
-  const latestLogPlayer = latestLog ? players.find(p => p.id === latestLog.player_id) ?? null : null;
-  const latestLogTeam = latestLog
-    ? (latestLog.team_id === game?.home_team_id ? homeTeam : latestLog.team_id === game?.away_team_id ? awayTeam : null)
-    : null;
 
   if (!gameId) {
     return (
