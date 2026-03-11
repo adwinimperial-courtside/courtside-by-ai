@@ -91,7 +91,7 @@ export default function PlayerIdentityModal({ user, onComplete }) {
         const identityStatus = sel.isManual ? "needs_review" : rosterName ? "completed" : "needs_review";
 
         await base44.entities.UserLeagueIdentity.create({
-          user_application_id: application.id,
+          user_id: user.id,
           league_id: pair.league_id,
           team_id: sel.teamId || pair.team_id || null,
           roster_player_name: rosterName || null,
@@ -99,9 +99,6 @@ export default function PlayerIdentityModal({ user, onComplete }) {
           identity_status: identityStatus,
         });
       }
-      await base44.entities.UserApplication.update(application.id, {
-        player_name_status: "completed",
-      });
       onComplete();
     } finally {
       setIsSaving(false);
