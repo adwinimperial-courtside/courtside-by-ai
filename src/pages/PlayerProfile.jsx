@@ -3,9 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
-import PlayerProfileHeader from "@/components/player/PlayerProfileHeader";
-import PlayerQuickStats from "@/components/player/PlayerQuickStats";
-import PlayerRecognition from "@/components/player/PlayerRecognition";
+import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
 import PlayerNextGame from "@/components/player/PlayerNextGame";
 
@@ -46,8 +44,8 @@ export default function PlayerProfile() {
     [identities, selectedLeagueId]
   );
 
-  const matchedPlayerId = currentIdentity?.matched_player_id;
   const teamId = currentIdentity?.team_id;
+  const matchedPlayerId = currentIdentity?.matched_player_id;
 
   const { data: allTeams = [] } = useQuery({
     queryKey: ['allTeams'],
@@ -55,10 +53,10 @@ export default function PlayerProfile() {
     enabled: !!selectedLeagueId,
   });
 
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ['allPlayers'],
-    queryFn: () => base44.entities.Player.list(),
-    enabled: !!selectedLeagueId,
+  const { data: teamPlayers = [] } = useQuery({
+    queryKey: ['teamPlayers', teamId],
+    queryFn: () => base44.entities.Player.filter({ team_id: teamId }),
+    enabled: !!teamId,
   });
 
   const { data: leagueGames = [] } = useQuery({
@@ -67,35 +65,42 @@ export default function PlayerProfile() {
     enabled: !!selectedLeagueId,
   });
 
-  const { data: myStats = [] } = useQuery({
-    queryKey: ['myStats', matchedPlayerId],
-    queryFn: () => base44.entities.PlayerStats.filter({ player_id: matchedPlayerId }),
-    enabled: !!matchedPlayerId,
-  });
-
   const { data: allLeagueStats = [] } = useQuery({
     queryKey: ['allLeagueStats', selectedLeagueId],
     queryFn: () => base44.entities.PlayerStats.list(),
     enabled: !!selectedLeagueId,
   });
 
+  const currentTeam = useMemo(() => allTeams.find(t => t.id === teamId) || null, [allTeams, teamId]);
+  const selectedLeague = useMemo(() => allLeagues.find(l => l.id === selectedLeagueId) || null, [allLeagues, selectedLeagueId]);
+
+  // Resolve the player record: prefer matched_player_id, fallback to display_name match
+  const playerRecord = useMemo(() => {
+    if (matchedPlayerId) return teamPlayers.find(p => p.id === matchedPlayerId) || null;
+    if (!currentUser?.display_name || !teamPlayers.length) return null;
+    const dn = currentUser.display_name.trim().toLowerCase();
+    return teamPlayers.find(p => p.name?.trim().toLowerCase() === dn) || null;
+  }, [teamPlayers, matchedPlayerId, currentUser]);
+
   const completedGameIds = useMemo(
     () => new Set(leagueGames.filter(g => g.status === 'completed').map(g => g.id)),
     [leagueGames]
   );
 
-  const myLeagueStats = useMemo(
-    () => myStats.filter(s => completedGameIds.has(s.game_id)),
-    [myStats, completedGameIds]
+  // Stats for THIS player using resolved playerRecord
+  const resolvedPlayerId = playerRecord?.id;
+
+  const myStats = useMemo(
+    () => resolvedPlayerId
+      ? allLeagueStats.filter(s => s.player_id === resolvedPlayerId && completedGameIds.has(s.game_id))
+      : [],
+    [allLeagueStats, resolvedPlayerId, completedGameIds]
   );
 
-  const allLeagueCompletedStats = useMemo(
+  const allCompletedStats = useMemo(
     () => allLeagueStats.filter(s => completedGameIds.has(s.game_id)),
     [allLeagueStats, completedGameIds]
   );
-
-  const currentTeam = useMemo(() => allTeams.find(t => t.id === teamId) || null, [allTeams, teamId]);
-  const playerRecord = useMemo(() => allPlayers.find(p => p.id === matchedPlayerId) || null, [allPlayers, matchedPlayerId]);
 
   const handlePhotoUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
@@ -104,7 +109,7 @@ export default function PlayerProfile() {
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
       </div>
     );
   }
@@ -118,63 +123,55 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-6">
+      <div className="max-w-lg mx-auto space-y-4">
 
-        <h1 className="text-2xl font-bold text-slate-900">Player Profile</h1>
+        {/* Page title */}
+        <div className="pt-2 pb-1">
+          <h1 className="text-2xl font-bold text-slate-900">Player Dashboard</h1>
+          <p className="text-sm text-slate-500">Your stats and upcoming games in one place</p>
+        </div>
 
-        {/* Header */}
-        <PlayerProfileHeader
+        {/* League Selector (only if multiple leagues) */}
+        {userLeagues.length > 1 && (
+          <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
+            <SelectTrigger className="w-full bg-white border-slate-200">
+              <SelectValue placeholder="Select league" />
+            </SelectTrigger>
+            <SelectContent>
+              {userLeagues.map(l => (
+                <SelectItem key={l.id} value={l.id}>{l.name} — {l.season}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {/* Main dashboard card */}
+        <PlayerDashboardCard
           currentUser={currentUser}
           team={currentTeam}
           playerRecord={playerRecord}
+          myStats={myStats}
+          allStats={allCompletedStats}
+          games={leagueGames}
+          leagueName={selectedLeague?.name}
           onPhotoUpdate={handlePhotoUpdate}
         />
 
-        {/* League Selector */}
-        {userLeagues.length > 1 && (
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-slate-600">League:</span>
-            <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
-              <SelectTrigger className="w-64">
-                <SelectValue placeholder="Select league" />
-              </SelectTrigger>
-              <SelectContent>
-                {userLeagues.map(l => (
-                  <SelectItem key={l.id} value={l.id}>{l.name} — {l.season}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+        {/* Last Game */}
+        <PlayerLastGame
+          games={leagueGames}
+          myStats={allLeagueStats.filter(s => s.player_id === resolvedPlayerId)}
+          teams={allTeams}
+          teamId={teamId}
+        />
 
-        {/* Quick Stats */}
-        <PlayerQuickStats stats={myLeagueStats} />
-
-        {/* Recognition + Games */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PlayerRecognition
-            myStats={myLeagueStats}
-            allStats={allLeagueCompletedStats}
-            teams={allTeams}
-            games={leagueGames}
-            matchedPlayerId={matchedPlayerId}
-            selectedLeagueId={selectedLeagueId}
-          />
-          <div className="space-y-4">
-            <PlayerLastGame
-              games={leagueGames}
-              myStats={myStats}
-              teams={allTeams}
-              teamId={teamId}
-            />
-            <PlayerNextGame
-              games={leagueGames}
-              teams={allTeams}
-              teamId={teamId}
-            />
-          </div>
-        </div>
+        {/* Next Game */}
+        <PlayerNextGame
+          games={leagueGames}
+          teams={allTeams}
+          teamId={teamId}
+        />
 
       </div>
     </div>
