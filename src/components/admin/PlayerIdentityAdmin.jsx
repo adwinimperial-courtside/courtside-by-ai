@@ -78,6 +78,7 @@ export default function PlayerIdentityAdmin() {
 
   const saveEdit = async (player) => {
     const updates = {
+      full_name: editValues.full_name.trim(),
       display_name: editValues.display_name.trim(),
       handle: editValues.handle.trim(),
       player_name_status: editValues.display_name.trim() ? "completed" : "missing",
