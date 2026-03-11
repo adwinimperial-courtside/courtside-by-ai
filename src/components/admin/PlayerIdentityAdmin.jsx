@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { RefreshCw, User, Pencil, Check, X } from "lucide-react";
 
 function looksLikeRealName(name) {
   if (!name || typeof name !== "string") return false;
@@ -21,18 +22,13 @@ const STATUS_COLORS = {
 export default function PlayerIdentityAdmin() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isRepairing, setIsRepairing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editValues, setEditValues] = useState({});
   const queryClient = useQueryClient();
 
-  // Fetch all users with user_type === "player"
-  const { data: playerUsers = [], isLoading: loadingUsers } = useQuery({
+  const { data: players = [], isLoading } = useQuery({
     queryKey: ["player_users"],
     queryFn: () => base44.entities.User.filter({ user_type: "player" }, "-created_date", 1000),
-  });
-
-  // Fetch all player applications
-  const { data: applications = [], isLoading: loadingApps } = useQuery({
-    queryKey: ["all_player_applications"],
-    queryFn: () => base44.entities.UserApplication.filter({ requested_role: "player" }, "-created_date", 1000),
   });
 
   const { data: leagues = [] } = useQuery({
@@ -40,25 +36,30 @@ export default function PlayerIdentityAdmin() {
     queryFn: () => base44.entities.League.list(),
   });
 
-  const isLoading = loadingUsers || loadingApps;
-
-  // Merge: for each player user, find their application (if any)
-  const rows = playerUsers.map(user => {
-    const app = applications.find(a => a.user_id === user.id || a.user_email === user.email);
-    return { user, app };
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list("-created_date", 1000),
   });
 
-  const filtered = rows.filter(({ app }) => {
-    if (statusFilter === "missing_display_name") return !app?.display_name;
-    if (statusFilter === "needs_review") return app?.player_name_status === "missing";
-    if (statusFilter === "completed") return app?.player_name_status === "completed";
+  const filtered = players.filter(p => {
+    if (statusFilter === "missing_display_name") return !p.display_name;
+    if (statusFilter === "needs_review") return p.player_name_status === "missing";
+    if (statusFilter === "completed") return p.player_name_status === "completed";
     return true;
   });
 
-  const getLeagueNames = (app) => {
-    if (!app) return "—";
-    const ids = app.league_ids?.length ? app.league_ids : app.league_id ? [app.league_id] : [];
-    return ids.map(id => leagues.find(l => l.id === id)?.name || id).join(", ") || "—";
+  const getLeagueTeamLabel = (player) => {
+    const pairs = player.league_team_pairs || [];
+    if (!pairs.length) {
+      const leagueIds = player.assigned_league_ids || [];
+      if (!leagueIds.length) return "—";
+      return leagueIds.map(id => leagues.find(l => l.id === id)?.name || id).join(", ");
+    }
+    return pairs.map(pair => {
+      const league = leagues.find(l => l.id === pair.league_id);
+      const team = teams.find(t => t.id === pair.team_id);
+      return [league?.name, team?.name].filter(Boolean).join(" / ") || pair.league_id;
+    }).join("; ");
   };
 
   const formatDate = (val) => {
@@ -66,32 +67,64 @@ export default function PlayerIdentityAdmin() {
     return d && !isNaN(d) ? d.toLocaleDateString() : "—";
   };
 
+  const startEdit = (player) => {
+    setEditingId(player.id);
+    setEditValues({
+      display_name: player.display_name || "",
+      handle: player.handle || "",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditValues({});
+  };
+
+  const saveEdit = async (player) => {
+    const updates = {
+      display_name: editValues.display_name.trim(),
+      handle: editValues.handle.trim(),
+      player_name_status: editValues.display_name.trim() ? "completed" : "missing",
+    };
+    await base44.auth.updateMe ? null : null; // no-op placeholder
+    await base44.entities.User.update(player.id, updates);
+    queryClient.invalidateQueries({ queryKey: ["player_users"] });
+    setEditingId(null);
+    setEditValues({});
+  };
+
+  // Repair: set player_name_status on all players who haven't completed it
   const handleRepair = async () => {
-    const targets = applications.filter(a => a.player_name_status !== "completed");
+    const targets = players.filter(p => p.player_name_status !== "completed");
     if (!confirm(
-      `Run player identity repair on ${targets.length} player application(s)?\n\n` +
-      `• Sets player_name_status = "missing"\n` +
-      `• Prefills display_name if name looks like a real name\n` +
-      `• Prefills handle if name looks like a username\n` +
+      `Run identity repair on ${targets.length} player(s)?\n\n` +
+      `• Sets player_name_status = "missing" if no display_name\n` +
+      `• Sets player_name_status = "completed" if display_name already set\n` +
+      `• Prefills display_name from full_name if it looks like a real name\n` +
       `• Never overwrites existing display_name or handle values`
     )) return;
 
     setIsRepairing(true);
     try {
-      for (const app of targets) {
-        const name = (app.user_name || "").trim();
-        const updates = { player_name_status: "missing" };
-        if (!app.display_name && !app.handle && name) {
-          if (looksLikeRealName(name)) {
-            updates.display_name = name;
+      for (const p of targets) {
+        const updates = {};
+        if (!p.display_name && p.full_name) {
+          if (looksLikeRealName(p.full_name)) {
+            updates.display_name = p.full_name.trim();
+            updates.player_name_status = "completed";
           } else {
-            updates.handle = name;
+            if (!p.handle) updates.handle = p.full_name.trim();
+            updates.player_name_status = "missing";
           }
+        } else if (p.display_name) {
+          updates.player_name_status = "completed";
+        } else {
+          updates.player_name_status = "missing";
         }
-        await base44.entities.UserApplication.update(app.id, updates);
+        await base44.entities.User.update(p.id, updates);
       }
-      queryClient.invalidateQueries({ queryKey: ["all_player_applications"] });
-      alert(`✅ Repaired ${targets.length} player application(s).`);
+      queryClient.invalidateQueries({ queryKey: ["player_users"] });
+      alert(`✅ Repaired ${targets.length} player(s).`);
     } catch (err) {
       alert("Repair failed: " + err.message);
     } finally {
@@ -109,7 +142,7 @@ export default function PlayerIdentityAdmin() {
               Player Identity Management
             </CardTitle>
             <p className="text-sm text-slate-600 mt-1">
-              All users with player role — {playerUsers.length} total
+              All users with player role — {players.length} total
             </p>
           </div>
           <Button
@@ -127,16 +160,15 @@ export default function PlayerIdentityAdmin() {
         <div className="flex flex-wrap gap-2 mt-4 items-center">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-52 h-8 text-sm">
-              <SelectValue placeholder="Player Name Status" />
+              <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="missing_display_name">Missing Display Name</SelectItem>
-              <SelectItem value="needs_review">Needs Review (missing)</SelectItem>
+              <SelectItem value="needs_review">Needs Review</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
             </SelectContent>
           </Select>
-
           <span className="text-sm text-slate-400">
             {filtered.length} record{filtered.length !== 1 ? "s" : ""}
           </span>
@@ -153,7 +185,7 @@ export default function PlayerIdentityAdmin() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                 <tr>
-                  {["Full Name", "Display Name", "Handle", "Email", "Joined", "Assigned Leagues", "Identity Status"].map(h => (
+                  {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", ""].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
@@ -161,47 +193,76 @@ export default function PlayerIdentityAdmin() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filtered.map(({ user, app }) => (
-                  <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                      {user.full_name || <span className="text-slate-300 italic">—</span>}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {app?.display_name ? (
-                        <span className="text-slate-800">{app.display_name}</span>
-                      ) : (
-                        <span className="text-slate-300 italic">not set</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {app?.handle ? (
-                        <span className="text-slate-500">@{app.handle}</span>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                      {user.email || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                      {formatDate(user.created_date)}
-                    </td>
-                    <td className="px-4 py-3 text-slate-600 max-w-[200px]">
-                      <span className="block truncate" title={getLeagueNames(app)}>
-                        {getLeagueNames(app)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {app ? (
-                        <Badge className={STATUS_COLORS[app.player_name_status] || "bg-slate-100 text-slate-500"}>
-                          {app.player_name_status || "not set"}
+                {filtered.map(player => {
+                  const isEditing = editingId === player.id;
+                  return (
+                    <tr key={player.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
+                        {player.full_name || <span className="text-slate-300 italic">—</span>}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editValues.display_name}
+                            onChange={e => setEditValues(v => ({ ...v, display_name: e.target.value }))}
+                            className="h-7 text-sm w-36"
+                            placeholder="Display name"
+                          />
+                        ) : player.display_name ? (
+                          <span className="text-slate-800">{player.display_name}</span>
+                        ) : (
+                          <span className="text-slate-300 italic">not set</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editValues.handle}
+                            onChange={e => setEditValues(v => ({ ...v, handle: e.target.value }))}
+                            className="h-7 text-sm w-28"
+                            placeholder="Handle"
+                          />
+                        ) : player.handle ? (
+                          <span className="text-slate-500">@{player.handle}</span>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                        {player.email || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
+                        {formatDate(player.created_date)}
+                      </td>
+                      <td className="px-4 py-3 text-slate-600 max-w-[200px]">
+                        <span className="block truncate" title={getLeagueTeamLabel(player)}>
+                          {getLeagueTeamLabel(player)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <Badge className={STATUS_COLORS[player.player_name_status] || "bg-slate-100 text-slate-500"}>
+                          {player.player_name_status || "not set"}
                         </Badge>
-                      ) : (
-                        <Badge className="bg-red-100 text-red-700">no application</Badge>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => saveEdit(player)}>
+                              <Check className="w-4 h-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400" onClick={cancelEdit}>
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => startEdit(player)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
