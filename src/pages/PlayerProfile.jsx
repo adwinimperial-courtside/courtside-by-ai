@@ -35,11 +35,20 @@ export default function PlayerProfile() {
     return allLeagues.filter(l => currentUser.assigned_league_ids.includes(l.id));
   }, [allLeagues, currentUser]);
 
+  // For coaches, select the first league they have an identity in
+  const coachIdentityLeagueId = useMemo(() => {
+    if (currentUser?.user_type !== 'coach') return null;
+    const coachIdentity = identities.find(i => i.matched_player_id);
+    return coachIdentity?.league_id || null;
+  }, [identities, currentUser?.user_type]);
+
   useEffect(() => {
     if (userLeagues.length > 0 && !selectedLeagueId) {
-      setSelectedLeagueId(userLeagues[0].id);
+      // For coaches, prefer the league with matched identity
+      const leagueToSelect = coachIdentityLeagueId ? coachIdentityLeagueId : userLeagues[0].id;
+      setSelectedLeagueId(leagueToSelect);
     }
-  }, [userLeagues]);
+  }, [userLeagues, coachIdentityLeagueId]);
 
   const currentIdentity = useMemo(
     () => identities.find(i => i.league_id === selectedLeagueId) || null,
