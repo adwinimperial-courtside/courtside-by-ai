@@ -30,13 +30,19 @@ function computeStats(stats) {
   const participatedStats = stats.filter(didPlayerParticipate);
   const gp = participatedStats.length;
   if (gp === 0) return { gp: 0, ppg: null, rpg: null, apg: null };
-  let pts = 0, reb = 0, ast = 0;
-  participatedStats.forEach(s => {
-    pts += (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
-    reb += (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0);
-    ast += s.assists || 0;
-  });
-  return { gp, ppg: (pts / gp).toFixed(1), rpg: (reb / gp).toFixed(1), apg: (ast / gp).toFixed(1) };
+  
+  const totals = participatedStats.reduce((acc, s) => ({
+    points: acc.points + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0),
+    rebounds: acc.rebounds + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0),
+    assists: acc.assists + (s.assists || 0)
+  }), { points: 0, rebounds: 0, assists: 0 });
+  
+  return {
+    gp,
+    ppg: (totals.points / gp).toFixed(1),
+    rpg: (totals.rebounds / gp).toFixed(1),
+    apg: (totals.assists / gp).toFixed(1)
+  };
 }
 
 function getCategoryRank(myPlayerId, allStats, categoryKey) {
