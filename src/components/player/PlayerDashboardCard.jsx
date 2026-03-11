@@ -102,7 +102,7 @@ export default function PlayerDashboardCard({
   return (
     <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
 
-      {/* ── 1. Ranking + Season Progress ── */}
+      {/* ── 1. Ranking + Game Participation ── */}
       <div className="pb-6">
         <div className="flex items-center justify-between gap-3 mb-3">
           {scoringRank ? (
@@ -111,18 +111,22 @@ export default function PlayerDashboardCard({
               Scoring Rank: #{scoringRank}
             </span>
           ) : (
-            <span className="text-xs text-slate-400 font-medium">Season Progress</span>
+            <span className="text-xs text-slate-400 font-medium">Game Participation</span>
           )}
-          <span className="text-sm font-bold text-slate-700 bg-indigo-50 px-3 py-1 rounded-full">{progressPct}%</span>
+          {teamGamesPlayed > 0 && (
+            <span className="text-sm font-bold text-slate-700 bg-indigo-50 px-3 py-1 rounded-full">{progressPct}%</span>
+          )}
         </div>
-        <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        {totalGames > 0 && (
-          <p className="text-xs text-slate-500 mt-2 font-medium">{completedCount} of {totalGames} games completed</p>
+        {teamGamesPlayed > 0 && (
+          <>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <p className="text-xs text-slate-500 mt-2 font-medium">{playerGamesPlayed} of {teamGamesPlayed} team games played</p>
+          </>
         )}
       </div>
 
