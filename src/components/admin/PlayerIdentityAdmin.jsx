@@ -77,13 +77,25 @@ export default function PlayerIdentityAdmin() {
   const cancelEdit = () => { setEditingId(null); setEditValues({}); };
 
   const saveEdit = async (player) => {
-    const updates = {
-      full_name: editValues.full_name.trim(),
-      display_name: editValues.display_name.trim(),
-      handle: editValues.handle.trim(),
-      player_name_status: editValues.display_name.trim() ? "completed" : "missing",
-    };
-    await base44.entities.User.update(player.id, updates);
+    const trimmedFullName = editValues.full_name.trim();
+    const trimmedDisplayName = editValues.display_name.trim();
+
+    // full_name is a built-in field — must use a service-role backend function
+    const promises = [
+      base44.entities.User.update(player.id, {
+        display_name: trimmedDisplayName,
+        handle: editValues.handle.trim(),
+        player_name_status: trimmedDisplayName ? "completed" : "missing",
+      }),
+    ];
+
+    if (trimmedFullName && trimmedFullName !== player.full_name) {
+      promises.push(
+        base44.functions.invoke('updateUserFullName', { userId: player.id, full_name: trimmedFullName })
+      );
+    }
+
+    await Promise.all(promises);
     queryClient.invalidateQueries({ queryKey: ["player_users"] });
     setEditingId(null);
     setEditValues({});
