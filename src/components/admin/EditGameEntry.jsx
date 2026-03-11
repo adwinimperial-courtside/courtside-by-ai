@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Save, Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -14,6 +15,8 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const [selectedGame, setSelectedGame] = useState(null);
   const [playerStats, setPlayerStats] = useState([]);
   const [winningTeamId, setWinningTeamId] = useState("");
+  const [addPlayerModal, setAddPlayerModal] = useState(false);
+  const [addPlayerTeamId, setAddPlayerTeamId] = useState(null);
 
   const { data: completedGames = [] } = useQuery({
     queryKey: ['completedGames', selectedLeague],
@@ -155,23 +158,17 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   };
 
   const addPlayer = (teamId) => {
-    const availablePlayers = players.filter(p => 
-      p.team_id === teamId && 
-      !playerStats.some(ps => ps.player_id === p.id)
-    );
-    
-    if (availablePlayers.length === 0) {
-      alert('No available players to add');
-      return;
-    }
+    setAddPlayerTeamId(teamId);
+    setAddPlayerModal(true);
+  };
 
-    const selectedPlayer = availablePlayers[0];
+  const selectPlayer = (player) => {
     setPlayerStats(prev => [...prev, {
       stat_id: null,
-      player_id: selectedPlayer.id,
-      team_id: teamId,
-      player_name: selectedPlayer.name,
-      jersey_number: selectedPlayer.jersey_number,
+      player_id: player.id,
+      team_id: addPlayerTeamId,
+      player_name: player.name,
+      jersey_number: player.jersey_number,
       stats: {
         total_points: 0,
         points_3: 0,
@@ -187,6 +184,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         unsportsmanlike_fouls: 0,
       }
     }]);
+    setAddPlayerModal(false);
   };
 
   const selectGame = (gameId) => {
@@ -227,8 +225,16 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const homeTeam = teams.find(t => t.id === selectedGame?.home_team_id);
   const awayTeam = teams.find(t => t.id === selectedGame?.away_team_id);
 
-  if (step === 1) {
-    return (
+  const availablePlayersForModal = addPlayerTeamId 
+    ? players.filter(p => 
+        p.team_id === addPlayerTeamId && 
+        !playerStats.some(ps => ps.player_id === p.id)
+      )
+    : [];
+
+  return (
+    <>
+      {step === 1 ? (
       <div className="space-y-6">
         <div className="space-y-4">
           <div className="space-y-2">
@@ -340,9 +346,6 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         </div>
       </div>
     );
-  }
-
-  return (
     <div className="space-y-6">
       <div className="bg-slate-100 p-4 rounded-lg">
         <div className="flex justify-between items-center">
