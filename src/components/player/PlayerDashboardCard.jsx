@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Camera, Upload, Trash2, Loader2, Flame } from "lucide-react";
+import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +17,7 @@ function computeStats(stats) {
     reb += (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0);
     ast += s.assists || 0;
   });
-  return {
-    gp,
-    ppg: (pts / gp).toFixed(1),
-    rpg: (reb / gp).toFixed(1),
-    apg: (ast / gp).toFixed(1),
-  };
+  return { gp, ppg: (pts / gp).toFixed(1), rpg: (reb / gp).toFixed(1), apg: (ast / gp).toFixed(1) };
 }
 
 function getScoringRank(myPlayerId, allStats) {
@@ -87,10 +82,15 @@ export default function PlayerDashboardCard({
   const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
   const scoringRank = useMemo(() => getScoringRank(playerRecord?.id, allStats), [playerRecord, allStats]);
 
-  // Season progress: completed games vs all team games
-  const completedGames = useMemo(() => games.filter(g => g.status === 'completed').length, [games]);
+  const completedCount = useMemo(() => games.filter(g => g.status === 'completed').length, [games]);
   const totalGames = games.length;
-  const progressPct = totalGames > 0 ? Math.round((completedGames / totalGames) * 100) : 0;
+  const progressPct = totalGames > 0 ? Math.round((completedCount / totalGames) * 100) : 0;
+
+  const achievements = [
+    doubleDoubles > 0 && { emoji: "📦", label: `Double-Double x${doubleDoubles}`, bg: "bg-purple-50", text: "text-purple-700" },
+    twentyPlus > 0 && { emoji: "🎯", label: `20+ Points Game x${twentyPlus}`, bg: "bg-orange-50", text: "text-orange-700" },
+    hotStreak >= 3 && { emoji: "🔥", label: `${hotStreak} Game Hot Streak`, bg: "bg-amber-50", text: "text-amber-700" },
+  ].filter(Boolean);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -109,26 +109,42 @@ export default function PlayerDashboardCard({
     onPhotoUpdate?.();
   };
 
+  const statTiles = [
+    { label: "PPG", value: stats.ppg },
+    { label: "RPG", value: stats.rpg },
+    { label: "APG", value: stats.apg },
+    { label: "GP",  value: stats.gp > 0 ? stats.gp : null },
+  ];
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      {/* Scoring rank bar */}
-      {scoringRank && (
-        <div className="px-5 pt-4 pb-3 border-b border-slate-100 flex items-center gap-3">
-          <span className="text-xs font-semibold text-indigo-600 flex items-center gap-1">
-            📊 Scoring Rank: #{scoringRank}
-          </span>
-          <div className="flex-1 flex items-center gap-2">
-            <span className="text-xs text-slate-400 hidden sm:block">Season Progress:</span>
-            <div className="flex-1 h-1.5 bg-slate-100 rounded-full">
-              <div className="h-full bg-indigo-400 rounded-full transition-all" style={{ width: `${progressPct}%` }} />
-            </div>
-            <span className="text-xs text-slate-500 font-medium">{progressPct}%</span>
-          </div>
-        </div>
-      )}
 
-      {/* Player identity */}
-      <div className="px-5 py-4">
+      {/* ── 1. Ranking + Season Progress ── */}
+      <div className="px-5 pt-4 pb-3 border-b border-slate-100">
+        <div className="flex items-center justify-between gap-3 mb-2">
+          {scoringRank ? (
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
+              <TrendingUp className="w-3.5 h-3.5" />
+              Scoring Rank: #{scoringRank}
+            </span>
+          ) : (
+            <span className="text-xs text-slate-400 font-medium">Season Progress</span>
+          )}
+          <span className="text-xs font-semibold text-slate-500">{progressPct}%</span>
+        </div>
+        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-indigo-500 rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        {totalGames > 0 && (
+          <p className="text-xs text-slate-400 mt-1">{completedCount} of {totalGames} games completed</p>
+        )}
+      </div>
+
+      {/* ── 2. Player Identity ── */}
+      <div className="px-5 pt-4 pb-3 border-b border-slate-100">
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <DropdownMenu>
@@ -161,61 +177,64 @@ export default function PlayerDashboardCard({
           </DropdownMenu>
           <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
-          {/* Name + badges */}
+          {/* Name / team / position */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-bold text-slate-900">{displayName}</h2>
+              <h2 className="text-lg font-bold text-slate-900 leading-tight">{displayName}</h2>
               {hotStreak >= 3 && (
-                <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold">
+                <span className="inline-flex items-center gap-0.5 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold">
                   <Flame className="w-3 h-3" /> Hot Streak
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-500 mt-0.5">
-              {team?.name || leagueName || "—"}
-              {playerRecord?.position ? ` | ${playerRecord.position}` : ""}
-              {playerRecord?.jersey_number !== undefined ? ` # ${playerRecord.jersey_number}` : ""}
+            <p className="text-sm text-slate-500 mt-0.5 leading-snug">
+              {[
+                team?.name || leagueName,
+                playerRecord?.position,
+                playerRecord?.jersey_number !== undefined ? `#${playerRecord.jersey_number}` : null,
+              ].filter(Boolean).join(" | ")}
             </p>
-            {handle && <p className="text-xs text-slate-400">@{handle}</p>}
+            {handle && (
+              <p className="text-xs text-slate-400 font-medium mt-0.5">@{handle}</p>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Stat strip */}
-        <div className="grid grid-cols-4 gap-2 mt-4">
-          {[
-            { label: "PPG", value: stats.ppg },
-            { label: "RPG", value: stats.rpg },
-            { label: "APG", value: stats.apg },
-            { label: "GP", value: stats.gp > 0 ? stats.gp : null },
-          ].map(({ label, value }) => (
-            <div key={label} className="bg-indigo-50 rounded-xl p-2 text-center">
-              <p className="text-lg font-bold text-indigo-700">{value ?? "—"}</p>
-              <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wide">{label}</p>
+      {/* ── 3. Stat Tiles ── */}
+      <div className="px-5 pt-3 pb-3 border-b border-slate-100">
+        <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Performance</p>
+        <div className="grid grid-cols-4 gap-2">
+          {statTiles.map(({ label, value }) => (
+            <div key={label} className="bg-indigo-50 rounded-xl py-3 px-1 text-center">
+              <p className="text-xl font-bold text-indigo-700 leading-none">{value ?? "—"}</p>
+              <p className="text-xs text-indigo-400 font-semibold uppercase tracking-wide mt-1">{label}</p>
             </div>
           ))}
         </div>
-
-        {/* Recognition badges */}
-        {(doubleDoubles > 0 || twentyPlus > 0 || hotStreak >= 3) && (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {doubleDoubles > 0 && (
-              <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold">
-                🏆 Double-Double ×{doubleDoubles}
-              </span>
-            )}
-            {twentyPlus > 0 && (
-              <span className="inline-flex items-center gap-1 bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-semibold">
-                🎯 20+ Points Game ×{twentyPlus}
-              </span>
-            )}
-            {hotStreak >= 3 && (
-              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-semibold">
-                {"🔥".repeat(Math.min(hotStreak, 3))} {hotStreak} Game Hot Streak
-              </span>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* ── 4. Achievements ── */}
+      {achievements.length > 0 && (
+        <div className="px-5 pt-3 pb-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Achievements</p>
+          <div className="flex flex-col gap-2">
+            {achievements.map((a, i) => (
+              <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2 ${a.bg}`}>
+                <span className="text-base">{a.emoji}</span>
+                <span className={`text-sm font-semibold ${a.text}`}>{a.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {achievements.length === 0 && (
+        <div className="px-5 pt-3 pb-4">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Achievements</p>
+          <p className="text-sm text-slate-400">No achievements yet — keep playing!</p>
+        </div>
+      )}
     </div>
   );
 }
