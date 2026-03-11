@@ -72,11 +72,7 @@ export default function PlayerDashboardCard({
   const totalGames = games.length;
   const progressPct = totalGames > 0 ? Math.round((completedCount / totalGames) * 100) : 0;
 
-  const achievements = [
-    doubleDoubles > 0 && { emoji: "📦", label: `Double-Double x${doubleDoubles}`, bg: "bg-purple-50", text: "text-purple-700" },
-    twentyPlus > 0 && { emoji: "🎯", label: `20+ Points Game x${twentyPlus}`, bg: "bg-orange-50", text: "text-orange-700" },
-    hotStreak >= 3 && { emoji: "🔥", label: `${hotStreak} Game Hot Streak`, bg: "bg-amber-50", text: "text-amber-700" },
-  ].filter(Boolean);
+
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
