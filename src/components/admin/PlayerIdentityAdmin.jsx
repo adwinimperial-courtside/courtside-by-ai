@@ -30,7 +30,13 @@ export default function PlayerIdentityAdmin() {
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ["player_users"],
-    queryFn: () => base44.entities.User.filter({ user_type: "player" }, "-created_date", 1000),
+    queryFn: async () => {
+      const [playerUsers, coachUsers] = await Promise.all([
+        base44.entities.User.filter({ user_type: "player" }, "-created_date", 1000),
+        base44.entities.User.filter({ user_type: "coach" }, "-created_date", 1000),
+      ]);
+      return [...playerUsers, ...coachUsers];
+    },
   });
 
   const { data: leagues = [] } = useQuery({
