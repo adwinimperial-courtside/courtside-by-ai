@@ -10,11 +10,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+function didPlayerParticipate(stat) {
+  // Check if player actually participated based on priority:
+  // 1. explicit did_play flag
+  // 2. starter status
+  // 3. minutes_played > 0
+  // 4. any recorded stat or foul > 0
+  if (stat.did_play) return true;
+  if (stat.is_starter) return true;
+  if ((stat.minutes_played || 0) > 0) return true;
+  const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+                   (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
+                   (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
+                   (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
+  return hasStats;
+}
+
 function computeStats(stats) {
-  const gp = new Set(stats.map(s => s.game_id)).size;
+  const participatedStats = stats.filter(didPlayerParticipate);
+  const gp = participatedStats.length;
   if (gp === 0) return { gp: 0, ppg: null, rpg: null, apg: null };
   let pts = 0, reb = 0, ast = 0;
-  stats.forEach(s => {
+  participatedStats.forEach(s => {
     pts += (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
     reb += (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0);
     ast += s.assists || 0;
