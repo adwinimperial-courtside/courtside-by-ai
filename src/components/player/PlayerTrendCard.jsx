@@ -11,6 +11,18 @@ function avg(items, fn) {
   return items.reduce((sum, x) => sum + fn(x.stat), 0) / items.length;
 }
 
+function didPlayerParticipate(stat) {
+  const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+                   (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
+                   (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
+                   (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
+  
+  if (stat.did_play) return true;
+  if ((stat.minutes_played || 0) > 0) return true;
+  if (hasStats) return true;
+  return false;
+}
+
 function computeTrend(myStats, games, teamId) {
   // Build sorted list of completed games player appeared in
   const completedGames = games
@@ -19,7 +31,7 @@ function computeTrend(myStats, games, teamId) {
 
   const playerGames = completedGames
     .map(g => ({ game: g, stat: myStats.find(s => s.game_id === g.id) }))
-    .filter(x => !!x.stat);
+    .filter(x => !!x.stat && didPlayerParticipate(x.stat));
 
   if (playerGames.length < 2) return null;
 
