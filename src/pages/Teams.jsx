@@ -71,7 +71,7 @@ export default function TeamsPage() {
       : leagues;
 
   const { data: teams, isLoading } = useQuery({
-    queryKey: ['teams', selectedLeague],
+    queryKey: ['teams', selectedLeague, assignedLeagues.map(l => l.id).join(',')],
     queryFn: async () => {
       if (!selectedLeague) return [];
       if (selectedLeague === 'all') {
