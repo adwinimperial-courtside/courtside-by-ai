@@ -64,10 +64,9 @@ export default function PlayerIdentityModal({ user, onComplete }) {
     if (!displayName.trim()) return;
     setIsSaving(true);
     try {
-      await base44.entities.UserApplication.update(application.id, {
+      await base44.auth.updateMe({
         display_name: displayName.trim(),
         handle: handle.trim() || null,
-        player_name_status: hasLeagues ? "missing" : "completed",
       });
       if (hasLeagues) {
         setStep("leagues");
