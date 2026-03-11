@@ -20,19 +20,19 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
   );
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Last Game</h3>
+    <div className={`rounded-2xl shadow-sm border overflow-hidden transition-all ${!lastGame ? 'bg-white border-slate-100' : lastGame.home_team_id === teamId && lastGame.home_score > lastGame.away_score || lastGame.away_team_id === teamId && lastGame.away_score > lastGame.home_score ? 'bg-green-50 border-green-200 border-l-4 border-l-green-500' : 'bg-red-50 border-red-200 border-l-4 border-l-red-500'}`}>
+      <div className="px-6 pt-5 pb-2 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Last Game</h3>
         {lastGame && <ChevronRight className="w-4 h-4 text-slate-300" />}
       </div>
 
       {!lastGame ? (
-        <div className="px-5 pb-5 pt-2">
+        <div className="px-6 pb-5 pt-2">
           <p className="text-slate-400 text-sm">No game stats available yet.</p>
         </div>
       ) : (
         <button
-          className="w-full text-left px-5 pb-5 hover:bg-slate-50 transition-colors"
+          className="w-full text-left px-6 pb-5 hover:opacity-85 transition-opacity"
           onClick={() => navigate(createPageUrl('Schedule'))}
           >
           {(() => {
@@ -49,54 +49,54 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
             const min = statLine ? Math.round(statLine.minutes_played || 0) : null;
 
             return (
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
                   {/* Win/Loss + opponent row */}
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${won ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
                       {won ? 'WIN' : 'LOSS'}
                     </span>
-                    <span className="text-sm font-semibold text-slate-600 truncate">{opponent?.name}</span>
+                    <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>{opponent?.name}</span>
                   </div>
 
                   {/* Score */}
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className={`text-3xl font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>
                     {myScore} – {oppScore}
-                    <span className="text-base font-normal text-slate-500 ml-1">vs {opponent?.name}</span>
                   </p>
+                  <p className={`text-sm ${won ? 'text-green-700' : 'text-red-700'} font-medium mt-1`}>vs {opponent?.name}</p>
 
                   {/* Stat line */}
                   {statLine ? (
-                    <div className="flex items-center gap-3 mt-2">
+                    <div className="flex items-center gap-4 mt-4">
                       <div className="text-center">
-                        <p className="text-base font-bold text-slate-800">{pts}</p>
-                        <p className="text-xs text-slate-400 font-medium">PTS</p>
+                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{pts}</p>
+                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>PTS</p>
                       </div>
-                      <div className="w-px h-6 bg-slate-200" />
+                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
                       <div className="text-center">
-                        <p className="text-base font-bold text-slate-800">{reb}</p>
-                        <p className="text-xs text-slate-400 font-medium">REB</p>
+                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{reb}</p>
+                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>REB</p>
                       </div>
-                      <div className="w-px h-6 bg-slate-200" />
+                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
                       <div className="text-center">
-                        <p className="text-base font-bold text-slate-800">{ast}</p>
-                        <p className="text-xs text-slate-400 font-medium">AST</p>
+                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{ast}</p>
+                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>AST</p>
                       </div>
                       {min > 0 && (
                         <>
-                          <div className="w-px h-6 bg-slate-200" />
+                          <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
                           <div className="text-center">
-                            <p className="text-base font-bold text-slate-800">{min}</p>
-                            <p className="text-xs text-slate-400 font-medium">MIN</p>
+                            <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{min}</p>
+                            <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>MIN</p>
                           </div>
                         </>
                       )}
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 mt-2">No personal stats recorded.</p>
+                    <p className={`text-sm ${won ? 'text-green-600' : 'text-red-600'} mt-3`}>No personal stats recorded.</p>
                   )}
 
-                  <p className="text-xs text-slate-400 mt-2">{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
+                  <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} mt-3 font-medium`}>{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
                 </div>
               </div>
             );
