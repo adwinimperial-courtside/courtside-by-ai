@@ -47,7 +47,6 @@ export default function PlayerIdentityAdmin() {
   });
 
   const filtered = applications.filter(app => {
-    if (roleFilter !== "all" && app.requested_role !== roleFilter) return false;
     if (statusFilter === "missing_display_name") return !app.display_name;
     if (statusFilter === "needs_review") return app.player_name_status === "missing";
     if (statusFilter === "completed") return app.player_name_status === "completed";
