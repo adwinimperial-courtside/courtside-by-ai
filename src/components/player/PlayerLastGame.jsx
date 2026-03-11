@@ -64,62 +64,55 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
             const won = myScore > oppScore;
 
             const pts = statLine ? (statLine.points_2||0)*2 + (statLine.points_3||0)*3 + (statLine.free_throws||0) : null;
-            const reb = statLine ? (statLine.offensive_rebounds||0) + (statLine.defensive_rebounds||0) : null;
-            const ast = statLine ? statLine.assists || 0 : null;
-            const min = statLine ? Math.round(statLine.minutes_played || 0) : null;
+             const reb = statLine ? (statLine.offensive_rebounds||0) + (statLine.defensive_rebounds||0) : null;
+             const ast = statLine ? statLine.assists || 0 : null;
+             const blk = statLine ? statLine.blocks || 0 : null;
+             const foul = statLine ? (statLine.fouls||0) + (statLine.technical_fouls||0) + (statLine.unsportsmanlike_fouls||0) : null;
 
-            return (
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  {/* Win/Loss + opponent row */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                      {won ? 'WIN' : 'LOSS'}
-                    </span>
-                    <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>{opponent?.name}</span>
-                  </div>
+             const StatTile = ({ value, label }) => (
+               <div className="flex flex-col items-center justify-center w-12 h-10 rounded-[10px] bg-slate-50 border border-slate-200 shadow-xs">
+                 <p className="text-sm font-bold text-slate-900">{value}</p>
+                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-tight">{label}</p>
+               </div>
+             );
 
-                  {/* Score */}
-                  <p className={`text-3xl font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>
-                    {myScore} – {oppScore}
-                  </p>
-                  <p className={`text-sm ${won ? 'text-green-700' : 'text-red-700'} font-medium mt-1`}>vs {opponent?.name}</p>
+             return (
+               <div className="flex items-start justify-between gap-6">
+                 <div className="min-w-0 flex-1">
+                   {/* Win/Loss + opponent row */}
+                   <div className="flex items-center gap-3 mb-3">
+                     <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                       {won ? 'WIN' : 'LOSS'}
+                     </span>
+                     <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>{opponent?.name}</span>
+                   </div>
 
-                  {/* Stat line */}
-                  {statLine ? (
-                    <div className="flex items-center gap-4 mt-4">
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{pts}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>PTS</p>
-                      </div>
-                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{reb}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>REB</p>
-                      </div>
-                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{ast}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>AST</p>
-                      </div>
-                      {min > 0 && (
-                        <>
-                          <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                          <div className="text-center">
-                            <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{min}</p>
-                            <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>MIN</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <p className={`text-sm ${won ? 'text-green-600' : 'text-red-600'} mt-3`}>No personal stats recorded.</p>
-                  )}
+                   {/* Score */}
+                   <p className={`text-3xl font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>
+                     {myScore} – {oppScore}
+                   </p>
+                   <p className={`text-sm ${won ? 'text-green-700' : 'text-red-700'} font-medium mt-1`}>vs {opponent?.name}</p>
 
-                  <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} mt-3 font-medium`}>{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
-                </div>
-              </div>
-            );
+                   {/* Date */}
+                   <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} mt-3 font-medium`}>{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
+                 </div>
+
+                 {/* Stat tiles on the right */}
+                 {statLine ? (
+                   <div className="flex flex-col gap-2">
+                     <div className="flex gap-2 flex-wrap justify-end">
+                       <StatTile value={pts} label="PTS" />
+                       <StatTile value={reb} label="REB" />
+                       <StatTile value={ast} label="AST" />
+                       <StatTile value={blk} label="BLK" />
+                       <StatTile value={foul} label="FOUL" />
+                     </div>
+                   </div>
+                 ) : (
+                   <p className={`text-sm ${won ? 'text-green-600' : 'text-red-600'}`}>No stats</p>
+                 )}
+               </div>
+             );
           })()}
         </button>
       )}
