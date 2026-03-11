@@ -20,20 +20,88 @@ function computeStats(stats) {
   return { gp, ppg: (pts / gp).toFixed(1), rpg: (reb / gp).toFixed(1), apg: (ast / gp).toFixed(1) };
 }
 
-function getScoringRank(myPlayerId, allStats) {
+function getCategoryRank(myPlayerId, allStats, categoryKey) {
   if (!myPlayerId || !allStats.length) return null;
-  const playerPts = {};
+
+  const playerStats = {};
   allStats.forEach(s => {
-    const pts = (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
-    if (!playerPts[s.player_id]) playerPts[s.player_id] = { pts: 0, gp: 0 };
-    playerPts[s.player_id].pts += pts;
-    playerPts[s.player_id].gp += 1;
+    if (!playerStats[s.player_id]) playerStats[s.player_id] = { total: 0, gp: 0 };
+    let catValue = 0;
+    if (categoryKey === 'points') {
+      catValue = (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
+    } else if (categoryKey === 'rebounds') {
+      catValue = (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0);
+    } else if (categoryKey === 'assists') {
+      catValue = s.assists || 0;
+    } else if (categoryKey === 'steals') {
+      catValue = s.steals || 0;
+    } else if (categoryKey === 'blocks') {
+      catValue = s.blocks || 0;
+    }
+    playerStats[s.player_id].total += catValue;
+    playerStats[s.player_id].gp += 1;
   });
-  const ranked = Object.entries(playerPts)
-    .map(([id, d]) => ({ id, ppg: d.gp > 0 ? d.pts / d.gp : 0 }))
+
+  const ranked = Object.entries(playerStats)
+    .map(([id, d]) => ({ id, ppg: d.gp > 0 ? d.total / d.gp : 0 }))
     .sort((a, b) => b.ppg - a.ppg);
+
   const idx = ranked.findIndex(r => r.id === myPlayerId);
-  return idx >= 0 ? idx + 1 : null;
+  if (idx < 0) return null;
+
+  const totalPlayers = ranked.length;
+  const percentile = totalPlayers > 0 ? Math.round(((totalPlayers - idx) / totalPlayers) * 100) : 0;
+
+  return { rank: idx + 1, ppg: parseFloat(ranked[idx].ppg), percentile };
+}
+
+function getPrimaryRank(myPlayerId, allStats, myStats) {
+  const THRESHOLDS = {
+    points: 8,
+    rebounds: 4,
+    assists: 3,
+    steals: 1,
+    blocks: 0.8,
+  };
+
+  const CATEGORIES = ['points', 'rebounds', 'assists', 'steals', 'blocks'];
+  const PRIORITY = { assists: 0, points: 1, rebounds: 2, steals: 3, blocks: 4 };
+
+  if (!myPlayerId || !allStats.length || !myStats.length) return null;
+
+  // Calculate player's averages
+  const myAverages = {};
+  CATEGORIES.forEach(cat => {
+    const catRankData = getCategoryRank(myPlayerId, allStats, cat);
+    if (catRankData) {
+      myAverages[cat] = catRankData.ppg;
+    }
+  });
+
+  // Filter valid categories by threshold and notability
+  const validCandidates = [];
+  CATEGORIES.forEach(cat => {
+    const threshold = THRESHOLDS[cat];
+    if (myAverages[cat] >= threshold) {
+      const rankData = getCategoryRank(myPlayerId, allStats, cat);
+      const isTopTen = rankData.rank <= 10;
+      const isTop25Percentile = rankData.percentile >= 75;
+      if (isTopTen || isTop25Percentile) {
+        validCandidates.push({ cat, ...rankData });
+      }
+    }
+  });
+
+  if (!validCandidates.length) return null;
+
+  // Sort by: best percentile, then lowest rank, then priority order
+  validCandidates.sort((a, b) => {
+    if (b.percentile !== a.percentile) return b.percentile - a.percentile;
+    if (a.rank !== b.rank) return a.rank - b.rank;
+    return PRIORITY[a.cat] - PRIORITY[b.cat];
+  });
+
+  return validCandidates[0];
 }
 
 function getHotStreak(stats, games) {
