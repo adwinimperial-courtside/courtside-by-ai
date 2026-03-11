@@ -9,6 +9,7 @@ import { ArrowLeft, BarChart3 } from "lucide-react";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "@/components/teams/TeamLogo";
 import ClockDisplay from "@/components/live/ClockDisplay";
+import LatestActivity from "@/components/live/LatestActivity";
 
 export default function LiveBoxScorePage() {
   const navigate = useNavigate();
