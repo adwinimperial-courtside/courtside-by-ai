@@ -187,7 +187,7 @@ export default function PlayerIdentityAdmin() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                 <tr>
-                  {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", ""].map(h => (
+                  {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", "", ""].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
