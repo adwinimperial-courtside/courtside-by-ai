@@ -80,8 +80,7 @@ export default function TeamsPage() {
       return base44.entities.Team.filter({ league_id: selectedLeague });
     },
     enabled: !!selectedLeague,
-    initialData: [],
-    staleTime: 300000,
+    placeholderData: [],
   });
 
   const createTeamMutation = useMutation({
