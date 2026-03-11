@@ -56,9 +56,10 @@ export default function SchedulePage() {
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Team.filter({ league_id: selectedLeague });
+    queryFn: async ({ queryKey }) => {
+      const leagueId = queryKey[1];
+      if (!leagueId || leagueId === 'all') return [];
+      return base44.entities.Team.filter({ league_id: leagueId });
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 300000,
@@ -66,13 +67,13 @@ export default function SchedulePage() {
 
   const { data: games = [], isLoading } = useQuery({
     queryKey: ['games', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      const filtered = await base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date');
-      return filtered || [];
+    queryFn: async ({ queryKey }) => {
+      const leagueId = queryKey[1];
+      if (!leagueId || leagueId === 'all') return [];
+      return base44.entities.Game.filter({ league_id: leagueId }, '-game_date') || [];
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 5000,
+    staleTime: 0,
   });
 
 
