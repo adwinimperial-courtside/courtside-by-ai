@@ -1,7 +1,6 @@
 import React, { useRef, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp } from "lucide-react";
-import { calculatePlayerBestRank } from "@/components/utils/rankCalculator";
 import {
   DropdownMenu,
   DropdownMenuContent,
