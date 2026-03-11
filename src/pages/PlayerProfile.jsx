@@ -10,6 +10,7 @@ import PlayerTrendCard from "@/components/player/PlayerTrendCard";
 import PlayerAchievements from "@/components/player/PlayerAchievements";
 
 export default function PlayerProfile() {
+  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading: userLoading } = useQuery({
@@ -41,11 +42,12 @@ export default function PlayerProfile() {
     return coachIdentity?.league_id || null;
   }, [identities, currentUser?.user_type]);
 
-  // Compute initial league ID without state to prevent re-render
-  const selectedLeagueId = useMemo(() => {
-    if (userLeagues.length === 0) return null;
-    return coachIdentityLeagueId || userLeagues[0].id;
-  }, [userLeagues, coachIdentityLeagueId]);
+  // Initialize league ID only once when data is ready, not on every render
+  useEffect(() => {
+    if (selectedLeagueId || userLeagues.length === 0) return; // Don't re-set if already set
+    const leagueToSelect = coachIdentityLeagueId || userLeagues[0].id;
+    setSelectedLeagueId(leagueToSelect);
+  }, [userLeagues.length]); // Only depend on length, not the array itself
 
   const currentIdentity = useMemo(
     () => identities.find(i => i.league_id === selectedLeagueId) || null,
