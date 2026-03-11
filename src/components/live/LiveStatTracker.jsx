@@ -78,7 +78,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: liveGame = game } = useQuery({
     queryKey: ['game', game.id],
     queryFn: () => base44.entities.Game.get(game.id),
-    staleTime: 2000,
+    staleTime: 0, // Always fresh to catch clock updates immediately
+    refetchInterval: game.clock_running ? 1000 : false, // Poll every second if running
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
