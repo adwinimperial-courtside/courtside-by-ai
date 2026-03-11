@@ -10,7 +10,6 @@ import PlayerTrendCard from "@/components/player/PlayerTrendCard";
 import PlayerAchievements from "@/components/player/PlayerAchievements";
 
 export default function PlayerProfile() {
-  const [selectedLeagueId, setSelectedLeagueId] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading: userLoading } = useQuery({
@@ -42,12 +41,10 @@ export default function PlayerProfile() {
     return coachIdentity?.league_id || null;
   }, [identities, currentUser?.user_type]);
 
-  useEffect(() => {
-    if (userLeagues.length > 0 && !selectedLeagueId) {
-      // For coaches, prefer the league with matched identity
-      const leagueToSelect = coachIdentityLeagueId ? coachIdentityLeagueId : userLeagues[0].id;
-      setSelectedLeagueId(leagueToSelect);
-    }
+  // Compute initial league ID without state to prevent re-render
+  const selectedLeagueId = useMemo(() => {
+    if (userLeagues.length === 0) return null;
+    return coachIdentityLeagueId || userLeagues[0].id;
   }, [userLeagues, coachIdentityLeagueId]);
 
   const currentIdentity = useMemo(
