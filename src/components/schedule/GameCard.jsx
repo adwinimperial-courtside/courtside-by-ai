@@ -32,7 +32,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     }
   }, [game.id, game.status]);
 
-  // Fetch stats and players for this game on-demand
+  // Fetch stats for this game on-demand (only when expanded)
   const { data: gamePlayerStats = [] } = useQuery({
     queryKey: ['playerStats', liveGame.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: liveGame.id }),
@@ -40,14 +40,20 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     staleTime: 300000,
   });
 
+  // Fetch players by IDs from stats (only when expanded)
+  const playerIds = gamePlayerStats.map(s => s.player_id).filter(Boolean);
   const { data: gamePlayers = [] } = useQuery({
-    queryKey: ['gamePlayers', liveGame.home_team_id, liveGame.away_team_id],
-    queryFn: async () => {
-      const home = await base44.entities.Player.filter({ team_id: liveGame.home_team_id });
-      const away = await base44.entities.Player.filter({ team_id: liveGame.away_team_id });
-      return [...(home || []), ...(away || [])];
-    },
-    enabled: liveGame.status === 'completed' && (isExpanded || !!liveGame.player_of_game),
+    queryKey: ['statsPlayers', liveGame.id, playerIds.join(',')],
+    queryFn: () => base44.entities.Player.filter({ id: { $in: playerIds } }),
+    enabled: isExpanded && playerIds.length > 0,
+    staleTime: 300000,
+  });
+
+  // Fetch POG player separately by ID
+  const { data: pogPlayer } = useQuery({
+    queryKey: ['player', liveGame.player_of_game],
+    queryFn: () => base44.entities.Player.get(liveGame.player_of_game),
+    enabled: liveGame.status === 'completed' && !!liveGame.player_of_game,
     staleTime: 300000,
   });
 
