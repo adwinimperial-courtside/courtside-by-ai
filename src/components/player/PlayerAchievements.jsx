@@ -10,7 +10,7 @@ export default function PlayerAchievements({ myStats, games, teamId, playerRecor
     // Filter only unlocked badges (count > 0) and sort by count descending
     return Object.entries(badgeCounts)
       .filter(([_, count]) => count > 0)
-      .sort(([_, countA], [_, countB]) => countB - countA)
+      .sort(([keyA, countA], [keyB, countB]) => countB - countA)
       .map(([badgeKey, count]) => ({
         badgeKey,
         count,
