@@ -36,18 +36,6 @@ function getScoringRank(myPlayerId, allStats) {
   return idx >= 0 ? idx + 1 : null;
 }
 
-function getDoubleDoubles(stats) {
-  return stats.filter(s => {
-    const pts = (s.points_2||0)*2 + (s.points_3||0)*3 + (s.free_throws||0);
-    const reb = (s.offensive_rebounds||0) + (s.defensive_rebounds||0);
-    return [pts >= 10, reb >= 10, (s.assists||0) >= 10].filter(Boolean).length >= 2;
-  }).length;
-}
-
-function getTwentyPlusGames(stats) {
-  return stats.filter(s => (s.points_2||0)*2 + (s.points_3||0)*3 + (s.free_throws||0) >= 20).length;
-}
-
 function getHotStreak(stats, games) {
   if (!stats.length || !games.length) return 0;
   const sorted = [...games]
