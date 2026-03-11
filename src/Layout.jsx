@@ -70,6 +70,12 @@ export default function Layout({ children }) {
         if (user && user.user_type === "player" && user.application_status === "Approved" && !user.display_name) {
           setShowPlayerIdentity(true);
         }
+
+        // Redirect fully authenticated players to their profile
+        if (user && user.user_type === "player" && user.application_status === "Approved" && user.display_name && !location.pathname.includes('PlayerProfile')) {
+          const playerProfilePath = createPageUrl('PlayerProfile');
+          navigate(playerProfilePath, { replace: true });
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       } finally {
