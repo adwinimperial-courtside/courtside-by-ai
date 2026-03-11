@@ -200,15 +200,15 @@ export default function PlayerDashboardCard({
         </div>
         {milestone && (
           <>
-            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{milestone.name}</p>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2 relative">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{milestone.name}</p>
+              <span className="text-xs font-bold text-indigo-600">{Math.round(milestone.progress)}%</span>
+            </div>
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500 flex items-center justify-center"
+                className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(milestone.progress, 100)}%` }}
               />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xs font-bold text-slate-700">{Math.round(milestone.progress)}%</span>
-              </div>
             </div>
             <p className="text-sm font-bold text-slate-800">{milestone.current} / {milestone.target} {milestone.unit}</p>
           </>
