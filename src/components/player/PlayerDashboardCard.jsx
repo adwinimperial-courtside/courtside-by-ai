@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 function computeStats(stats) {
-  const gp = stats.length;
+  const gp = new Set(stats.map(s => s.game_id)).size;
   if (gp === 0) return { gp: 0, ppg: null, rpg: null, apg: null };
   let pts = 0, reb = 0, ast = 0;
   stats.forEach(s => {
