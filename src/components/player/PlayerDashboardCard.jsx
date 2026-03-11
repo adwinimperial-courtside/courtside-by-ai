@@ -196,27 +196,7 @@ export default function PlayerDashboardCard({
         </div>
       </div>
 
-      {/* ── 4. Achievements ── */}
-      {achievements.length > 0 && (
-        <div className="px-5 pt-3 pb-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Achievements</p>
-          <div className="flex flex-col gap-2">
-            {achievements.map((a, i) => (
-              <div key={i} className={`flex items-center gap-2 rounded-xl px-3 py-2 ${a.bg}`}>
-                <span className="text-base">{a.emoji}</span>
-                <span className={`text-sm font-semibold ${a.text}`}>{a.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {achievements.length === 0 && (
-        <div className="px-5 pt-3 pb-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Achievements</p>
-          <p className="text-sm text-slate-400">No achievements yet — keep playing!</p>
-        </div>
-      )}
     </div>
   );
 }
