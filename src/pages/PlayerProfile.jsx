@@ -7,6 +7,7 @@ import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
 import PlayerNextGame from "@/components/player/PlayerNextGame";
 import PlayerTrendCard from "@/components/player/PlayerTrendCard";
+import PlayerAchievements from "@/components/player/PlayerAchievements";
 
 export default function PlayerProfile() {
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
@@ -157,6 +158,14 @@ export default function PlayerProfile() {
           games={leagueGames}
           leagueName={selectedLeague?.name}
           onPhotoUpdate={handlePhotoUpdate}
+        />
+
+        {/* Achievements */}
+        <PlayerAchievements
+          myStats={myStats}
+          games={leagueGames}
+          teamId={teamId}
+          playerRecord={playerRecord}
         />
 
         {/* Trend */}
