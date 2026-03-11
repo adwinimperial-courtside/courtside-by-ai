@@ -175,10 +175,10 @@ export default function PlayerIdentityAdmin() {
             <div>
               <CardTitle className="text-xl flex items-center gap-2">
                 <User className="w-5 h-5 text-green-600" />
-                Player Identity Management
+                Identity Management
               </CardTitle>
               <p className="text-sm text-slate-600 mt-1">
-                All users with player role &mdash; {players.length} total
+                Players and coaches &mdash; {players.length} total
               </p>
             </div>
             <Button
