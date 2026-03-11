@@ -12,7 +12,7 @@ export default function LiveGamePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
-  const gameId = urlParams.get('gameId');
+  const gameId = urlParams.get('gameid') || urlParams.get('gameId');
 
   const [isSetupComplete, setIsSetupComplete] = useState(false);
   const [homeStarters, setHomeStarters] = useState([]);
