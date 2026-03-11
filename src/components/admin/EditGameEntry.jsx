@@ -280,9 +280,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
             Cancel
           </Button>
         </div>
-      </div>
-    );
-  }
+        </div>
+        ) : null}
+        </>
+        );
+        }
 
   const homeStats = playerStats.filter(ps => ps.team_id === selectedGame?.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === selectedGame?.away_team_id);
@@ -343,10 +345,10 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
             <Save className="w-4 h-4 mr-2" />
             {updateGameMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
           </Button>
-        </div>
-      </div>
-    );
-    <div className="space-y-6">
+          </div>
+          </div>
+          ) : step === 2 ? (
+          <div className="space-y-6">
       <div className="bg-slate-100 p-4 rounded-lg">
         <div className="flex justify-between items-center">
           <div>
