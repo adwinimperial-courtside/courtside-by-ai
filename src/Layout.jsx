@@ -65,6 +65,21 @@ export default function Layout({ children }) {
             navigate(leagueSelectionPath, { replace: true });
           }
         }
+
+        // Check if player needs to complete identity
+        if (user && user.user_type !== "app_admin" && user.application_status === "Approved") {
+          try {
+            const apps = await base44.entities.UserApplication.filter({
+              user_id: user.id,
+              requested_role: "player",
+              status: "Approved",
+            });
+            const playerApp = apps.find(a =>
+              !a.display_name || a.player_name_status === "missing" || !a.player_name_status
+            );
+            if (playerApp) setPlayerApplication(playerApp);
+          } catch (e) {}
+        }
       } catch (error) {
         console.error("Failed to fetch user:", error);
       } finally {
