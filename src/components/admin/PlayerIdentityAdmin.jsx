@@ -135,6 +135,13 @@ export default function PlayerIdentityAdmin() {
   };
 
   return (
+    <>
+    {matchingPlayer && (
+      <PlayerLeagueMatchModal
+        player={matchingPlayer}
+        onClose={() => setMatchingPlayer(null)}
+      />
+    )}
     <Card className="border-slate-200 shadow-lg">
       <CardHeader className="border-b border-slate-200 bg-white">
         <div className="flex flex-wrap items-start justify-between gap-3">
