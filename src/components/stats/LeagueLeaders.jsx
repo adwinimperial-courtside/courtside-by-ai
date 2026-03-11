@@ -3,12 +3,24 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Award } from "lucide-react";
 
 export default function LeagueLeaders({ players, teams, stats }) {
+  const didPlayerParticipate = (stat) => {
+    if (stat.did_play) return true;
+    if (stat.is_starter) return true;
+    if ((stat.minutes_played || 0) > 0) return true;
+    const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+                     (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
+                     (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
+                     (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
+    return hasStats;
+  };
+
   const playerAggregates = players.map(player => {
     const playerStats = stats.filter(s => s.player_id === player.id);
+    const participatedStats = playerStats.filter(didPlayerParticipate);
     const team = teams.find(t => t.id === player.team_id);
-    const gamesPlayed = playerStats.length;
+    const gamesPlayed = participatedStats.length;
     
-    const totals = playerStats.reduce((acc, stat) => ({
+    const totals = participatedStats.reduce((acc, stat) => ({
       points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
       threes: acc.threes + (stat.points_3 || 0),
       rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
