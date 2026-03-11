@@ -126,6 +126,11 @@ export default function PlayerProfile() {
     queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
   };
 
+  const handleLeagueChange = (leagueId) => {
+    // Navigation or state management if needed for league changes
+    window.location.hash = `league=${leagueId}`;
+  };
+
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
