@@ -240,18 +240,18 @@ export default function PlayerDashboardCard({
       </div>
 
       {/* ── 2. Player Identity ── */}
-      <div className="flex items-center gap-3 py-3 border-b border-slate-100">
+      <div className="flex items-center gap-3 md:gap-3 sm:gap-2 py-3 border-b border-slate-100">
         {/* Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="relative flex-shrink-0 group cursor-pointer">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
+              <div className="w-32 h-32 md:w-32 md:h-32 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
                 {uploading ? (
-                   <Loader2 className="w-10 h-10 animate-spin text-indigo-500" />
+                   <Loader2 className="w-10 h-10 sm:w-6 sm:h-6 animate-spin text-indigo-500" />
                  ) : photoUrl ? (
                    <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
                  ) : (
-                   <span className="text-6xl font-bold text-indigo-600">{initials}</span>
+                   <span className="text-6xl sm:text-3xl font-bold text-indigo-600">{initials}</span>
                  )}
               </div>
               <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -275,14 +275,14 @@ export default function PlayerDashboardCard({
         {/* Name / team / position */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <h2 className="text-3xl font-bold text-slate-900 leading-tight">{displayName}</h2>
+            <h2 className="text-3xl md:text-3xl sm:text-xl font-bold text-slate-900 leading-tight break-words">{displayName}</h2>
             {hotStreak >= 3 && (
-              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
+              <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold flex-shrink-0">
                 <Flame className="w-4 h-4" /> Hot
               </span>
             )}
           </div>
-          <p className="text-base text-slate-600 font-semibold leading-snug">
+          <p className="text-base md:text-base sm:text-sm text-slate-600 font-semibold leading-snug break-words">
             {[
               team?.name || leagueName,
               playerRecord?.position,
@@ -290,7 +290,7 @@ export default function PlayerDashboardCard({
             ].filter(Boolean).join(" • ")}
           </p>
           {handle && (
-            <p className="text-sm text-slate-500 font-medium mt-1">@{handle}</p>
+            <p className="text-sm md:text-sm sm:text-xs text-slate-500 font-medium mt-1 break-words">@{handle}</p>
           )}
         </div>
       </div>
