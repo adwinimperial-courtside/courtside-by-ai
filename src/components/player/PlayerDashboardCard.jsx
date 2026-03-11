@@ -123,7 +123,7 @@ function getHotStreak(stats, games) {
 }
 
 export default function PlayerDashboardCard({
-  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueName, onPhotoUpdate
+  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueId, leagueName, onPhotoUpdate
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
