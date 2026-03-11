@@ -232,287 +232,308 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
       )
     : [];
 
+  const homeStats = playerStats.filter(ps => ps.team_id === selectedGame?.home_team_id);
+  const awayStats = playerStats.filter(ps => ps.team_id === selectedGame?.away_team_id);
+
   return (
     <>
-      {step === 1 ? (
-      <div className="space-y-6">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label>Select League *</Label>
-            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+      {step === 1 && (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Select League *</Label>
+              <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select league" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leagues.map(league => (
+                    <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {selectedLeague && (
+              <div className="space-y-2">
+                <Label>Select Completed Game *</Label>
+                <Select onValueChange={selectGame}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select game to edit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {completedGames.map(game => {
+                      const home = teams.find(t => t.id === game.home_team_id);
+                      const away = teams.find(t => t.id === game.away_team_id);
+                      return (
+                        <SelectItem key={game.id} value={game.id}>
+                          {home?.name} vs {away?.name} - {new Date(game.game_date).toLocaleDateString()} ({game.home_score}-{game.away_score})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 2 && (
+        <div className="space-y-6">
+          <div className="bg-slate-100 p-4 rounded-lg">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm text-slate-600">Editing Game</p>
+                <p className="font-semibold text-lg">
+                  {homeTeam?.name} vs {awayTeam?.name}
+                </p>
+                <p className="text-sm text-slate-600">{new Date(selectedGame.game_date).toLocaleString()}</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setStep(1)}>
+                Change Game
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: homeTeam?.color }}>
+                    {homeTeam?.name?.[0]}
+                  </div>
+                  {homeTeam?.name}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addPlayer(selectedGame.home_team_id)}
+                  className="h-8"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Player
+                </Button>
+              </div>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">#</th>
+                      <th className="px-3 py-2 text-left font-semibold">Player</th>
+                      <th className="px-3 py-2 text-center font-semibold">PTS</th>
+                      <th className="px-3 py-2 text-center font-semibold">3PT</th>
+                      <th className="px-3 py-2 text-center font-semibold">FT</th>
+                      <th className="px-3 py-2 text-center font-semibold">AST</th>
+                      <th className="px-3 py-2 text-center font-semibold">STL</th>
+                      <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                      <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                      <th className="px-3 py-2 text-center font-semibold">DREB</th>
+                      <th className="px-3 py-2 text-center font-semibold">TO</th>
+                      <th className="px-3 py-2 text-center font-semibold">FOUL</th>
+                      <th className="px-3 py-2 text-center font-semibold">TF</th>
+                      <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
+                      <th className="px-3 py-2 text-center font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {homeStats.map((ps, idx) => (
+                      <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+                        <td className="px-3 py-2">{ps.player_name}</td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2 text-center">
+                          <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-bold text-lg flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
+                    {awayTeam?.name?.[0]}
+                  </div>
+                  {awayTeam?.name}
+                </h3>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => addPlayer(selectedGame.away_team_id)}
+                  className="h-8"
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add Player
+                </Button>
+              </div>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">#</th>
+                      <th className="px-3 py-2 text-left font-semibold">Player</th>
+                      <th className="px-3 py-2 text-center font-semibold">PTS</th>
+                      <th className="px-3 py-2 text-center font-semibold">3PT</th>
+                      <th className="px-3 py-2 text-center font-semibold">FT</th>
+                      <th className="px-3 py-2 text-center font-semibold">AST</th>
+                      <th className="px-3 py-2 text-center font-semibold">STL</th>
+                      <th className="px-3 py-2 text-center font-semibold">BLK</th>
+                      <th className="px-3 py-2 text-center font-semibold">OREB</th>
+                      <th className="px-3 py-2 text-center font-semibold">DREB</th>
+                      <th className="px-3 py-2 text-center font-semibold">TO</th>
+                      <th className="px-3 py-2 text-center font-semibold">FOUL</th>
+                      <th className="px-3 py-2 text-center font-semibold">TF</th>
+                      <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
+                      <th className="px-3 py-2 text-center font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {awayStats.map((ps, idx) => (
+                      <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+                        <td className="px-3 py-2">{ps.player_name}</td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                        <td className="px-3 py-2 text-center">
+                          <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={onClose}>
+              <X className="w-4 h-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              onClick={proceedToPlayerSelection}
+              className="bg-gradient-to-r from-blue-500 to-blue-600"
+            >
+              Next: Select Player of the Game
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-6">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-300">
+            <div className="text-center mb-4">
+              <h3 className="text-2xl font-bold text-blue-900 mb-2">Review Changes</h3>
+              <div className="text-4xl font-bold text-blue-700">
+                {homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0)} - {awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0)}
+              </div>
+              <p className="text-slate-600 mt-2">
+                {homeTeam?.name} vs {awayTeam?.name}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-100 p-6 rounded-lg">
+            <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: teams.find(t => t.id === winningTeamId)?.color }}>
+                {teams.find(t => t.id === winningTeamId)?.name?.[0]}
+              </div>
+              Select Player of the Game from {teams.find(t => t.id === winningTeamId)?.name}
+            </h3>
+            <Select 
+              value={selectedGame.player_of_game || ""} 
+              onValueChange={(value) => setSelectedGame({ ...selectedGame, player_of_game: value })}
+            >
               <SelectTrigger>
-                <SelectValue placeholder="Select league" />
+                <SelectValue placeholder="Select player of the game" />
               </SelectTrigger>
               <SelectContent>
-                {leagues.map(league => (
-                  <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
+                {playerStats.filter(ps => ps.team_id === winningTeamId).map(ps => (
+                  <SelectItem key={ps.player_id} value={ps.player_id}>
+                    #{ps.jersey_number} {ps.player_name} - {ps.stats.total_points} PTS
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {selectedLeague && (
-            <div className="space-y-2">
-              <Label>Select Completed Game *</Label>
-              <Select onValueChange={selectGame}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select game to edit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {completedGames.map(game => {
-                    const home = teams.find(t => t.id === game.home_team_id);
-                    const away = teams.find(t => t.id === game.away_team_id);
-                    return (
-                      <SelectItem key={game.id} value={game.id}>
-                        {home?.name} vs {away?.name} - {new Date(game.game_date).toLocaleDateString()} ({game.home_score}-{game.away_score})
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={onClose}>
-            <X className="w-4 h-4 mr-2" />
-            Cancel
-          </Button>
-        </div>
-        </div>
-        ) : null}
-        </>
-        );
-        }
-
-  const homeStats = playerStats.filter(ps => ps.team_id === selectedGame?.home_team_id);
-  const awayStats = playerStats.filter(ps => ps.team_id === selectedGame?.away_team_id);
-
-  if (step === 3) {
-    const winningTeamPlayers = playerStats.filter(ps => ps.team_id === winningTeamId);
-    const winningTeam = teams.find(t => t.id === winningTeamId);
-    const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
-    const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
-
-    return (
-      <div className="space-y-6">
-        <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border-2 border-blue-300">
-          <div className="text-center mb-4">
-            <h3 className="text-2xl font-bold text-blue-900 mb-2">Review Changes</h3>
-            <div className="text-4xl font-bold text-blue-700">
-              {homeScore} - {awayScore}
-            </div>
-            <p className="text-slate-600 mt-2">
-              {homeTeam?.name} vs {awayTeam?.name}
-            </p>
-          </div>
-        </div>
-
-        <div className="bg-slate-100 p-6 rounded-lg">
-          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: winningTeam?.color }}>
-              {winningTeam?.name?.[0]}
-            </div>
-            Select Player of the Game from {winningTeam?.name}
-          </h3>
-          <Select 
-            value={selectedGame.player_of_game || ""} 
-            onValueChange={(value) => setSelectedGame({ ...selectedGame, player_of_game: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select player of the game" />
-            </SelectTrigger>
-            <SelectContent>
-              {winningTeamPlayers.map(ps => (
-                <SelectItem key={ps.player_id} value={ps.player_id}>
-                  #{ps.jersey_number} {ps.player_name} - {ps.stats.total_points} PTS
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => setStep(2)}>
-            Back to Stats
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={updateGameMutation.isPending}
-            className="bg-gradient-to-r from-blue-500 to-blue-600 flex-1"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            {updateGameMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
-          </Button>
-          </div>
-          </div>
-          ) : step === 2 ? (
-          <div className="space-y-6">
-      <div className="bg-slate-100 p-4 rounded-lg">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="text-sm text-slate-600">Editing Game</p>
-            <p className="font-semibold text-lg">
-              {homeTeam?.name} vs {awayTeam?.name}
-            </p>
-            <p className="text-sm text-slate-600">{new Date(selectedGame.game_date).toLocaleString()}</p>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setStep(1)}>
-            Change Game
-          </Button>
-        </div>
-      </div>
-
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: homeTeam?.color }}>
-                {homeTeam?.name?.[0]}
-              </div>
-              {homeTeam?.name}
-            </h3>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setStep(2)}>
+              Back to Stats
+            </Button>
             <Button
-              size="sm"
-              variant="outline"
-              onClick={() => addPlayer(selectedGame.home_team_id)}
-              className="h-8"
+              onClick={handleSubmit}
+              disabled={updateGameMutation.isPending}
+              className="bg-gradient-to-r from-blue-500 to-blue-600 flex-1"
             >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Player
+              <Save className="w-4 h-4 mr-2" />
+              {updateGameMutation.isPending ? 'Saving Changes...' : 'Save Changes'}
             </Button>
           </div>
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">#</th>
-                  <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                  <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">AST</th>
-                  <th className="px-3 py-2 text-center font-semibold">STL</th>
-                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                  <th className="px-3 py-2 text-center font-semibold">TF</th>
-                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                </tr>
-              </thead>
-              <tbody>
-                {homeStats.map((ps, idx) => (
-                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                    <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2 text-center">
-                      <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
         </div>
+      )}
 
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-lg flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
-                {awayTeam?.name?.[0]}
-              </div>
-              {awayTeam?.name}
-            </h3>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => addPlayer(selectedGame.away_team_id)}
-              className="h-8"
-            >
-              <Plus className="w-3 h-3 mr-1" />
-              Add Player
-            </Button>
+      <Dialog open={addPlayerModal} onOpenChange={setAddPlayerModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Player</DialogTitle>
+            <DialogDescription>Select a player to add to the game</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {availablePlayersForModal.length === 0 ? (
+              <p className="text-sm text-slate-600 text-center py-4">No available players</p>
+            ) : (
+              availablePlayersForModal.map(player => (
+                <button
+                  key={player.id}
+                  onClick={() => selectPlayer(player)}
+                  className="w-full text-left p-3 rounded-lg border border-slate-200 hover:bg-blue-50 hover:border-blue-300 transition-all"
+                >
+                  <div className="font-semibold">#{player.jersey_number} {player.name}</div>
+                  {player.position && <div className="text-xs text-slate-600">{player.position}</div>}
+                </button>
+              ))
+            )}
           </div>
-          <div className="overflow-x-auto border border-slate-200 rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">#</th>
-                  <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                  <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">AST</th>
-                  <th className="px-3 py-2 text-center font-semibold">STL</th>
-                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                  <th className="px-3 py-2 text-center font-semibold">TF</th>
-                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                  <th className="px-3 py-2 text-center font-semibold">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {awayStats.map((ps, idx) => (
-                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                    <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2 text-center">
-                      <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={onClose}>
-          <X className="w-4 h-4 mr-2" />
-          Cancel
-        </Button>
-        <Button
-          onClick={proceedToPlayerSelection}
-          className="bg-gradient-to-r from-blue-500 to-blue-600"
-        >
-          Next: Select Player of the Game
-        </Button>
-      </div>
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
