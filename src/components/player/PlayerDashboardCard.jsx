@@ -240,12 +240,12 @@ export default function PlayerDashboardCard({
       </div>
 
       {/* ── 2. Player Identity ── */}
-      <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
+      <div className="flex items-center gap-4 pb-8 border-b border-slate-100">
         {/* Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="relative flex-shrink-0 group cursor-pointer">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
+              <div className="w-32 h-32 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
                 {uploading ? (
                   <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                 ) : photoUrl ? (
