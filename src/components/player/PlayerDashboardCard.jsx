@@ -274,7 +274,7 @@ export default function PlayerDashboardCard({
 
         {/* Name / team / position */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
+          <div className="flex items-center gap-2 flex-wrap mb-1">
             <h2 className="text-3xl font-bold text-slate-900 leading-tight">{displayName}</h2>
             {hotStreak >= 3 && (
               <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
@@ -290,13 +290,13 @@ export default function PlayerDashboardCard({
             ].filter(Boolean).join(" • ")}
           </p>
           {handle && (
-            <p className="text-sm text-slate-500 font-medium mt-2">@{handle}</p>
+            <p className="text-sm text-slate-500 font-medium mt-1">@{handle}</p>
           )}
         </div>
       </div>
 
       {/* ── 3. Stat Tiles ── */}
-      <div className="pt-6">
+      <div className="pt-3">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Season Stats</p>
         <div className="grid grid-cols-4 gap-3">
           {statTiles.map(({ label, value }) => (
