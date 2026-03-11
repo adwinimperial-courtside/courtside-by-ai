@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Users, Key, User } from "lucide-react";
 import EnhancedUserManagement from "../components/admin/EnhancedUserManagement";
@@ -13,7 +13,7 @@ export default function UserManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [activeTab, setActiveTab] = useState("users");
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchUser = async () => {
       try {
         const user = await base44.auth.me();
