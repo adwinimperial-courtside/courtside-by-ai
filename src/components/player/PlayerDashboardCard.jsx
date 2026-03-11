@@ -50,6 +50,7 @@ function getCategoryRank(myPlayerId, allStats, categoryKey) {
 
   const playerStats = {};
   allStats.forEach(s => {
+    if (!didPlayerParticipate(s)) return; // Only count participated games
     if (!playerStats[s.player_id]) playerStats[s.player_id] = { total: 0, gp: 0 };
     let catValue = 0;
     if (categoryKey === 'points') {
