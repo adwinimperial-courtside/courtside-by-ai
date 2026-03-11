@@ -157,7 +157,10 @@ export default function PlayerIdentityAdmin() {
       {matchingPlayer && (
         <PlayerLeagueMatchModal
           player={matchingPlayer}
-          onClose={() => setMatchingPlayer(null)}
+          onClose={() => {
+            setMatchingPlayer(null);
+            queryClient.invalidateQueries({ queryKey: ["userLeagueIdentities"] });
+          }}
         />
       )}
       <Card className="border-slate-200 shadow-lg">
