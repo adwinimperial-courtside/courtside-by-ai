@@ -49,9 +49,16 @@ export default function LiveBoxScorePage() {
       }
     });
 
+    const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
+      if (event.data?.game_id === gameId) {
+        queryClient.invalidateQueries({ queryKey: ['gameLogs', gameId, 'latest'] });
+      }
+    });
+
     return () => {
       unsubscribeStats();
       unsubscribeGame();
+      unsubscribeLogs();
     };
   }, [gameId, queryClient]);
 
