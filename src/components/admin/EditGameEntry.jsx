@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save } from "lucide-react";
+import { X, Save, Plus, Trash2 } from "lucide-react";
 
 export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -60,7 +60,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   const updateGameMutation = useMutation({
     mutationFn: async (data) => {
-      // Update player stats
+      // Update and create player stats
       await Promise.all(
         data.playerStats.map(stat => {
           const points3Value = (stat.stats.points_3 || 0) * 3;
@@ -68,6 +68,28 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           const totalPoints = stat.stats.total_points || 0;
           const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
           
+          // New player (no stat_id)
+          if (!stat.stat_id) {
+            return base44.entities.PlayerStats.create({
+              game_id: data.game.id,
+              player_id: stat.player_id,
+              team_id: stat.team_id,
+              points_2: points2Value,
+              points_3: stat.stats.points_3,
+              free_throws: stat.stats.free_throws,
+              offensive_rebounds: stat.stats.offensive_rebounds,
+              defensive_rebounds: stat.stats.defensive_rebounds,
+              assists: stat.stats.assists,
+              steals: stat.stats.steals,
+              blocks: stat.stats.blocks,
+              turnovers: stat.stats.turnovers,
+              fouls: stat.stats.fouls,
+              technical_fouls: stat.stats.technical_fouls,
+              unsportsmanlike_fouls: stat.stats.unsportsmanlike_fouls,
+            });
+          }
+          
+          // Existing player
           return base44.entities.PlayerStats.update(stat.stat_id, {
             points_2: points2Value,
             points_3: stat.stats.points_3,
@@ -82,6 +104,20 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
             technical_fouls: stat.stats.technical_fouls,
             unsportsmanlike_fouls: stat.stats.unsportsmanlike_fouls,
           });
+        })
+      );
+
+      // Delete removed players
+      const existingPlayerIds = existingStats.map(s => s.player_id);
+      const currentPlayerIds = data.playerStats.map(ps => ps.player_id);
+      const removedPlayerIds = existingPlayerIds.filter(id => !currentPlayerIds.includes(id));
+      
+      await Promise.all(
+        removedPlayerIds.map(playerId => {
+          const statToDelete = existingStats.find(s => s.player_id === playerId);
+          if (statToDelete) {
+            return base44.entities.PlayerStats.delete(statToDelete.id);
+          }
         })
       );
 
@@ -112,6 +148,45 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           : ps
       )
     );
+  };
+
+  const removePlayer = (playerId) => {
+    setPlayerStats(prev => prev.filter(ps => ps.player_id !== playerId));
+  };
+
+  const addPlayer = (teamId) => {
+    const availablePlayers = players.filter(p => 
+      p.team_id === teamId && 
+      !playerStats.some(ps => ps.player_id === p.id)
+    );
+    
+    if (availablePlayers.length === 0) {
+      alert('No available players to add');
+      return;
+    }
+
+    const selectedPlayer = availablePlayers[0];
+    setPlayerStats(prev => [...prev, {
+      stat_id: null,
+      player_id: selectedPlayer.id,
+      team_id: teamId,
+      player_name: selectedPlayer.name,
+      jersey_number: selectedPlayer.jersey_number,
+      stats: {
+        total_points: 0,
+        points_3: 0,
+        free_throws: 0,
+        assists: 0,
+        steals: 0,
+        blocks: 0,
+        offensive_rebounds: 0,
+        defensive_rebounds: 0,
+        turnovers: 0,
+        fouls: 0,
+        technical_fouls: 0,
+        unsportsmanlike_fouls: 0,
+      }
+    }]);
   };
 
   const selectGame = (gameId) => {
@@ -286,12 +361,23 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
       <div className="space-y-6">
         <div>
-          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: homeTeam?.color }}>
-              {homeTeam?.name?.[0]}
-            </div>
-            {homeTeam?.name}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: homeTeam?.color }}>
+                {homeTeam?.name?.[0]}
+              </div>
+              {homeTeam?.name}
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => addPlayer(selectedGame.home_team_id)}
+              className="h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Player
+            </Button>
+          </div>
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -329,6 +415,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2 text-center">
+                      <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -337,12 +428,23 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         </div>
 
         <div>
-          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
-              {awayTeam?.name?.[0]}
-            </div>
-            {awayTeam?.name}
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: awayTeam?.color }}>
+                {awayTeam?.name?.[0]}
+              </div>
+              {awayTeam?.name}
+            </h3>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => addPlayer(selectedGame.away_team_id)}
+              className="h-8"
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Player
+            </Button>
+          </div>
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
@@ -361,6 +463,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                   <th className="px-3 py-2 text-center font-semibold">FOUL</th>
                   <th className="px-3 py-2 text-center font-semibold">TF</th>
                   <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
+                  <th className="px-3 py-2 text-center font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -380,6 +483,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+                    <td className="px-3 py-2 text-center">
+                      <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
