@@ -298,11 +298,11 @@ export default function LiveBoxScorePage() {
         {/* Stats Tables */}
         <div className="space-y-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={awayTeam} playerStats={awayPlayerStats} />
+            <StatTable team={homeTeam} playerStats={homePlayerStats} />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={homeTeam} playerStats={homePlayerStats} />
+            <StatTable team={awayTeam} playerStats={awayPlayerStats} />
           </div>
         </div>
       </div>
