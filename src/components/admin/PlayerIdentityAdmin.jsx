@@ -135,7 +135,7 @@ export default function PlayerIdentityAdmin() {
   };
 
   return (
-    <>
+    <div>
     {matchingPlayer && (
       <PlayerLeagueMatchModal
         player={matchingPlayer}
