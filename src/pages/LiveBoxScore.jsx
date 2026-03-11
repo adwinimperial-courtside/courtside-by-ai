@@ -82,6 +82,19 @@ export default function LiveBoxScorePage() {
     refetchOnWindowFocus: false
   });
 
+  const { data: latestLogs = [] } = useQuery({
+    queryKey: ['gameLogs', gameId, 'latest'],
+    queryFn: () => base44.entities.GameLog.filter({ game_id: gameId }, '-created_date', 1),
+    enabled: !!gameId,
+    staleTime: 2000,
+    refetchOnWindowFocus: false
+  });
+  const latestLog = latestLogs[0] || null;
+  const latestLogPlayer = latestLog ? players.find(p => p.id === latestLog.player_id) ?? null : null;
+  const latestLogTeam = latestLog
+    ? (latestLog.team_id === game?.home_team_id ? homeTeam : latestLog.team_id === game?.away_team_id ? awayTeam : null)
+    : null;
+
   if (!gameId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
