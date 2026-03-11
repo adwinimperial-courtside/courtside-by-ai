@@ -169,27 +169,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // D. Handle-assisted suggestion (suggestion only, no auto-match)
-      if (!matchResult && handle) {
-        const normalizedHandle = normalizeName(handle);
-        if (normalizedHandle.length >= 3) {
-          const handleMatches = rosterPlayers.filter(p => {
-            const normalizedRoster = normalizeName(p.name);
-            return normalizedRoster.includes(normalizedHandle) || normalizedHandle.includes(normalizedRoster);
-          });
-          if (handleMatches.length === 1) {
-            matchResult = {
-              matched_player_name: handleMatches[0].name,
-              matched_player_id: handleMatches[0].id,
-              team_id: handleMatches[0].team_id,
-              team_name: handleMatches[0].team_name,
-              match_status: 'needs_review',
-              match_confidence: 'low',
-              match_method: 'handle_to_name',
-            };
-          }
-        }
-      }
+
 
       if (!matchResult) {
         matchResult = { match_status: 'unmatched', match_confidence: null, match_method: 'none' };
