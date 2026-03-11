@@ -129,7 +129,7 @@ export default function SchedulePage() {
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="flex items-center gap-2 flex-1">
             <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
-            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+            <Select value={selectedLeague} onValueChange={(val) => { setSelectedLeague(val); setSelectedTeam("all"); }}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="All Leagues" />
               </SelectTrigger>
