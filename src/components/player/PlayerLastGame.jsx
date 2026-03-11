@@ -4,15 +4,35 @@ import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+function didPlayerParticipate(stat) {
+  const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+                   (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
+                   (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
+                   (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
+  
+  if (stat.did_play) return true;
+  if ((stat.minutes_played || 0) > 0) return true;
+  if (hasStats) return true;
+  return false;
+}
+
 export default function PlayerLastGame({ games, myStats, teams, teamId }) {
   const navigate = useNavigate();
 
   const lastGame = useMemo(() => {
     if (!teamId || !games.length) return null;
-    return games
+    const completedGames = games
       .filter(g => (g.home_team_id === teamId || g.away_team_id === teamId) && g.status === 'completed')
-      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date))[0] || null;
-  }, [games, teamId]);
+      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
+    
+    for (const game of completedGames) {
+      const stat = myStats.find(s => s.game_id === game.id);
+      if (stat && didPlayerParticipate(stat)) {
+        return game;
+      }
+    }
+    return null;
+  }, [games, teamId, myStats]);
 
   const statLine = useMemo(
     () => lastGame ? myStats.find(s => s.game_id === lastGame.id) || null : null,
