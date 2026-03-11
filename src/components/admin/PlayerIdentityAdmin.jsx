@@ -43,6 +43,11 @@ export default function PlayerIdentityAdmin() {
     queryFn: () => base44.entities.Team.list("-created_date", 1000),
   });
 
+  const { data: identities = [] } = useQuery({
+    queryKey: ["userLeagueIdentities"],
+    queryFn: () => base44.entities.UserLeagueIdentity.list("-created_date", 5000),
+  });
+
   const filtered = players.filter(p => {
     if (statusFilter === "missing_display_name") return !p.display_name;
     if (statusFilter === "needs_review") return p.player_name_status === "missing";
@@ -62,6 +67,21 @@ export default function PlayerIdentityAdmin() {
       const team = teams.find(t => t.id === pair.team_id);
       return [league?.name, team?.name].filter(Boolean).join(" / ") || pair.league_id;
     }).join("; ");
+  };
+
+  const getMatchStatus = (player) => {
+    const leagueIds = player.assigned_league_ids || [];
+    if (!leagueIds.length) return { label: "No Leagues", color: "bg-slate-100 text-slate-700" };
+    
+    const playerIdentities = identities.filter(i => i.user_id === player.id && leagueIds.includes(i.league_id));
+    if (!playerIdentities.length) return { label: "No Leagues", color: "bg-slate-100 text-slate-700" };
+    
+    const matched = playerIdentities.filter(i => i.match_status === "matched").length;
+    const total = playerIdentities.length;
+    
+    if (matched === total) return { label: "All Matched", color: "bg-green-100 text-green-800" };
+    if (matched === 0) return { label: "Not Matched", color: "bg-red-100 text-red-800" };
+    return { label: `${matched}/${total} Matched`, color: "bg-yellow-100 text-yellow-800" };
   };
 
   const formatDate = (val) => {
@@ -192,7 +212,7 @@ export default function PlayerIdentityAdmin() {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
                   <tr>
-                    {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", "", ""].map((h, i) => (
+                    {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", "Match", "", ""].map((h, i) => (
                       <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
                         {h}
                       </th>
@@ -258,6 +278,11 @@ export default function PlayerIdentityAdmin() {
                         <td className="px-4 py-3 whitespace-nowrap">
                           <Badge className={STATUS_COLORS[player.player_name_status] || "bg-slate-100 text-slate-500"}>
                             {player.player_name_status || "not set"}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <Badge className={getMatchStatus(player).color}>
+                            {getMatchStatus(player).label}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
