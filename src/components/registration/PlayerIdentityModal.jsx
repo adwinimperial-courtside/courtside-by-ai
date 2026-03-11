@@ -15,13 +15,11 @@ export default function PlayerIdentityModal({ user, onComplete }) {
   const [leagueSelections, setLeagueSelections] = useState({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Build league pairs from application
-  const leaguePairs = application.league_team_pairs?.length
-    ? application.league_team_pairs
-    : (application.league_ids || (application.league_id ? [application.league_id] : [])).map(id => ({
-        league_id: id,
-        team_id: application.team_id || "",
-      }));
+  // Build league pairs from user's assigned leagues
+  const leaguePairs = (user.assigned_league_ids || []).map(id => ({
+    league_id: id,
+    team_id: "",
+  }));
   const hasLeagues = leaguePairs.length > 0;
 
   const { data: leagues = [] } = useQuery({
