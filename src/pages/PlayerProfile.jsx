@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
 import PlayerNextGame from "@/components/player/PlayerNextGame";
+import PlayerTrendCard from "@/components/player/PlayerTrendCard";
 
 export default function PlayerProfile() {
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
