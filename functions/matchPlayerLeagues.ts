@@ -117,57 +117,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // B. Exact full_name match
-      if (!matchResult && full_name) {
-        const exactMatches = rosterPlayers.filter(p => p.name === full_name);
-        if (exactMatches.length === 1) {
-          matchResult = {
-            matched_player_name: exactMatches[0].name,
-            matched_player_id: exactMatches[0].id,
-            team_id: exactMatches[0].team_id,
-            team_name: exactMatches[0].team_name,
-            match_status: 'matched',
-            match_confidence: 'high',
-            match_method: 'exact_name',
-          };
-        } else if (exactMatches.length > 1) {
-          matchResult = {
-            match_status: 'needs_review',
-            match_confidence: 'low',
-            match_method: 'exact_name',
-            note: `${exactMatches.length} exact matches found for full name`,
-          };
-        }
-      }
 
-      // C. Normalized name match
-      if (!matchResult) {
-        const namesToCheck = [display_name, full_name].filter(Boolean);
-        for (const name of namesToCheck) {
-          const normalizedUser = normalizeName(name);
-          if (!normalizedUser) continue;
-          const normalizedMatches = rosterPlayers.filter(p => normalizeName(p.name) === normalizedUser);
-          if (normalizedMatches.length === 1) {
-            matchResult = {
-              matched_player_name: normalizedMatches[0].name,
-              matched_player_id: normalizedMatches[0].id,
-              team_id: normalizedMatches[0].team_id,
-              team_name: normalizedMatches[0].team_name,
-              match_status: 'matched',
-              match_confidence: 'medium',
-              match_method: 'normalized_name',
-            };
-            break;
-          } else if (normalizedMatches.length > 1 && !matchResult) {
-            matchResult = {
-              match_status: 'needs_review',
-              match_confidence: 'low',
-              match_method: 'normalized_name',
-              note: `${normalizedMatches.length} normalized matches found`,
-            };
-          }
-        }
-      }
 
 
 
