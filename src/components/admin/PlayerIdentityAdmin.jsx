@@ -34,8 +34,11 @@ export default function PlayerIdentityAdmin() {
   const queryClient = useQueryClient();
 
   const { data: applications = [], isLoading } = useQuery({
-    queryKey: ["all_applications_identity"],
-    queryFn: () => base44.entities.UserApplication.list("-created_date", 500),
+    queryKey: ["all_applications_identity", roleFilter],
+    queryFn: () => {
+      const query = roleFilter !== "all" ? { requested_role: roleFilter } : {};
+      return base44.entities.UserApplication.filter(query, "-created_date", 1000);
+    },
   });
 
   const { data: leagues = [] } = useQuery({
