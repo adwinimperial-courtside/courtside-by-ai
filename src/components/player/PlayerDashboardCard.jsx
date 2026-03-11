@@ -196,11 +196,11 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-4 pb-4 px-6 relative z-20 mb-8">
 
       {/* ── 1. Ranking + Milestone Progress ── */}
-      <div className="pb-6">
-        <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="pb-3">
+        <div className="flex items-center justify-between gap-3 mb-2">
           {primaryRank ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
               <TrendingUp className="w-4 h-4" />
@@ -224,11 +224,11 @@ export default function PlayerDashboardCard({
         </div>
         {milestone && (
           <>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-1.5">
               <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{milestone.name}</p>
               <span className="text-xs font-bold text-indigo-600">{Math.round(milestone.progress)}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-1.5">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(milestone.progress, 100)}%` }}
@@ -240,7 +240,7 @@ export default function PlayerDashboardCard({
       </div>
 
       {/* ── 2. Player Identity ── */}
-      <div className="flex items-center gap-4 pb-8 border-b border-slate-100">
+      <div className="flex items-center gap-3 py-3 border-b border-slate-100">
         {/* Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
