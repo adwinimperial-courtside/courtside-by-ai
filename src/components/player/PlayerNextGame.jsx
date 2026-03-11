@@ -1,6 +1,5 @@
 import React, { useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ChevronRight } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { format, isToday, isTomorrow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -16,53 +15,50 @@ export default function PlayerNextGame({ games, teams, teamId }) {
       .sort((a, b) => new Date(a.game_date) - new Date(b.game_date))[0] || null;
   }, [games, teamId]);
 
-  if (!nextGame) {
-    return (
-      <Card className="border-slate-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base text-slate-700">
-            <Calendar className="w-4 h-4 text-orange-500" />
-            Next Game
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-slate-400 text-sm text-center py-6">No upcoming games scheduled.</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const isHome = nextGame.home_team_id === teamId;
-  const opponentId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
-  const opponent = teams.find(t => t.id === opponentId);
-  const gameDate = new Date(nextGame.game_date);
-  const gameDay = isToday(gameDate);
-  const dateLabel = gameDay ? "Today" : isTomorrow(gameDate) ? "Tomorrow" : format(gameDate, "EEE, MMM d");
-
   return (
-    <Card
-      className={`border-slate-200 shadow-sm cursor-pointer hover:shadow-md transition-shadow ${gameDay ? 'border-l-4 border-l-orange-400' : ''}`}
-      onClick={() => navigate(createPageUrl(`LiveBoxScore?gameId=${nextGame.id}`))}
-    >
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base text-slate-700">
-          <Calendar className="w-4 h-4 text-orange-500" />
-          Next Game
-          {gameDay && (
-            <span className="text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-semibold">Game Day!</span>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-lg font-bold text-slate-900">{opponent?.name || "Opponent"}</p>
-            <p className="text-sm text-slate-500">{dateLabel} • {format(gameDate, "HH:mm")}</p>
-            <p className="text-xs text-slate-400 mt-1">{isHome ? "Home" : "Away"}</p>
-          </div>
-          <ChevronRight className="w-5 h-5 text-slate-400 flex-shrink-0" />
+    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="px-5 pt-4 pb-1">
+        <h3 className="text-sm font-semibold text-slate-700">Next Game</h3>
+      </div>
+
+      {!nextGame ? (
+        <div className="px-5 py-6 text-center">
+          <p className="text-slate-400 text-sm">No upcoming games scheduled.</p>
         </div>
-      </CardContent>
-    </Card>
+      ) : (
+        <button
+          className="w-full text-left px-5 pb-4 pt-2 hover:bg-slate-50 transition-colors"
+          onClick={() => navigate(createPageUrl(`LiveBoxScore?gameId=${nextGame.id}`))}
+        >
+          {(() => {
+            const isHome = nextGame.home_team_id === teamId;
+            const opponentId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
+            const opponent = teams.find(t => t.id === opponentId);
+            const gameDate = new Date(nextGame.game_date);
+            const gameDay = isToday(gameDate);
+            const dateLabel = gameDay ? "Today" : isTomorrow(gameDate) ? "Tomorrow" : format(gameDate, "EEE, MMM d");
+
+            return (
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-xs font-bold text-indigo-500">
+                    {opponent?.name?.charAt(0) || "?"}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-slate-900 truncate">{opponent?.name || "Opponent"}</p>
+                    <p className="text-xs text-slate-500">{dateLabel} · {format(gameDate, "HH:mm")}</p>
+                  </div>
+                </div>
+                {gameDay && (
+                  <span className="flex-shrink-0 bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+                    Game Day
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+        </button>
+      )}
+    </div>
   );
 }
