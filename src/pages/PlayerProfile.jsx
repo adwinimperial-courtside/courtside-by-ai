@@ -155,11 +155,11 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white px-4 py-6 md:p-8">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Hero Gradient Background Section */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-indigo-50 via-blue-50 to-white pointer-events-none" />
       
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="relative z-10 w-full overflow-x-hidden">
 
         {/* Page title */}
         <div className="pt-2 pb-4 md:pt-4 md:pb-6">
