@@ -193,7 +193,16 @@ export default function PlayerIdentityAdmin() {
                     return (
                       <tr key={player.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                          {player.full_name || <span className="text-slate-300 italic">none</span>}
+                          {isEditing ? (
+                            <Input
+                              value={editValues.full_name}
+                              onChange={e => setEditValues(v => ({ ...v, full_name: e.target.value }))}
+                              className="h-7 text-sm w-36"
+                              placeholder="Full name"
+                            />
+                          ) : (
+                            player.full_name || <span className="text-slate-300 italic">none</span>
+                          )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
                           {isEditing ? (
