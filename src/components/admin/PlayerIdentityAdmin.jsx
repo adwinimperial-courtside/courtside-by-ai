@@ -290,6 +290,6 @@ export default function PlayerIdentityAdmin() {
         )}
       </CardContent>
     </Card>
+    </div>
   );
-  return <>{inner}</>;
 }
