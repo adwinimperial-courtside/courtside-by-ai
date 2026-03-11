@@ -116,15 +116,21 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
   const totalUsersCount = allUsers.filter(u => u.user_type !== 'app_admin').length;
 
+  const playerNavItem = {
+    title: "Player Profile",
+    url: createPageUrl("PlayerProfile"),
+    icon: UserCircle
+  };
+
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
-      if (currentUser.user_type === "viewer") {
-        return navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title));
+      const base = currentUser.user_type === "viewer"
+        ? navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title))
+        : navigationItems;
+      if (currentUser.user_type === "player") {
+        return [playerNavItem, ...base];
       }
-      if (currentUser.user_type === "app_admin") {
-        return navigationItems;
-      }
-      return navigationItems;
+      return base;
     };
 
   const getVisibleAdminItems = () => {
