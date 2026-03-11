@@ -142,15 +142,8 @@ export default function PlayerDashboardCard({
     return getRankMovement(leagueId, playerRecord.id, primaryRank.rank, primaryRank.cat);
   }, [primaryRank, leagueId, playerRecord?.id]);
 
-  // Player participation: games with stats / team games played
-  const playerGamesPlayed = useMemo(() => myStats.length, [myStats]);
-  const teamGamesPlayed = useMemo(() => {
-    if (!teamId) return 0;
-    return games.filter(
-      g => g.status === 'completed' && (g.home_team_id === teamId || g.away_team_id === teamId)
-    ).length;
-  }, [games, teamId]);
-  const progressPct = teamGamesPlayed > 0 ? Math.round((playerGamesPlayed / teamGamesPlayed) * 100) : 0;
+  // Milestone progress
+  const milestone = useMemo(() => getMilestoneProgress(myStats, games), [myStats, games]);
 
 
 
