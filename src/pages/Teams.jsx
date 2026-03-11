@@ -82,7 +82,7 @@ export default function TeamsPage() {
       }
       return base44.entities.Team.filter({ league_id: selectedLeague }, '-created_date');
     },
-    enabled: !!selectedLeague && assignedLeagues.length > 0,
+    enabled: !!selectedLeague && (isAppAdmin ? leagues.length > 0 : assignedLeagues.length > 0),
     initialData: [],
     staleTime: 300000,
   });
