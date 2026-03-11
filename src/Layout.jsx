@@ -205,11 +205,10 @@ export default function Layout({ children }) {
   return (
     <SidebarProvider defaultOpen={true}>
       <ApplyPendingAssignments />
-      {playerApplication && (
+      {showPlayerIdentity && (
         <PlayerIdentityModal
-          application={playerApplication}
-          currentUser={currentUser}
-          onComplete={() => setPlayerApplication(null)}
+          user={currentUser}
+          onComplete={() => setShowPlayerIdentity(false)}
         />
       )}
       <style>{`
