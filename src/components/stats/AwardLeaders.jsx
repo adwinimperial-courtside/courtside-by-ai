@@ -128,6 +128,8 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
     leagueGames.forEach(game => {
       const gameStats = stats.filter(s => s.game_id === game.id);
       gameStats.forEach(playerStat => {
+        if (!didPlayerParticipate(playerStat)) return;
+        
         if (!playerDpoyScores[playerStat.player_id]) {
           playerDpoyScores[playerStat.player_id] = {
             gp: 0,
