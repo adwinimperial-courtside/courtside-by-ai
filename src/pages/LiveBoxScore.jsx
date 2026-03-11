@@ -302,7 +302,14 @@ export default function LiveBoxScorePage() {
               </div>
 
               {/* Center info */}
-              <ClockDisplay game={game} />
+              <div className="flex flex-col items-center">
+                <ClockDisplay game={game} />
+                <LatestActivity
+                  latestLog={latestLog}
+                  player={latestLogPlayer}
+                  team={latestLogTeam}
+                />
+              </div>
 
               {/* Away team */}
               <div className="flex flex-col items-center gap-2">
