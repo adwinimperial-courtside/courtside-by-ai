@@ -1,6 +1,7 @@
 import React, { useRef, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp } from "lucide-react";
+import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp, TrendingDown } from "lucide-react";
+import { getRankMovement } from "@/components/utils/rankMovementTracker";
 import {
   DropdownMenu,
   DropdownMenuContent,
