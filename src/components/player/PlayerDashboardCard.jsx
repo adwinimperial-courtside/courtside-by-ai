@@ -68,9 +68,10 @@ export default function PlayerDashboardCard({
   const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
   const scoringRank = useMemo(() => getScoringRank(playerRecord?.id, allStats), [playerRecord, allStats]);
 
-  const completedCount = useMemo(() => games.filter(g => g.status === 'completed').length, [games]);
-  const totalGames = games.length;
-  const progressPct = totalGames > 0 ? Math.round((completedCount / totalGames) * 100) : 0;
+  // Player participation: games with stats / team games played
+  const playerGamesPlayed = useMemo(() => myStats.length, [myStats]);
+  const teamGamesPlayed = useMemo(() => games.filter(g => g.status === 'completed').length, [games]);
+  const progressPct = teamGamesPlayed > 0 ? Math.round((playerGamesPlayed / teamGamesPlayed) * 100) : 0;
 
 
 
