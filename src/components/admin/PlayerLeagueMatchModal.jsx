@@ -192,16 +192,24 @@ export default function PlayerLeagueMatchModal({ player, onClose }) {
                   {/* Match summary */}
                   <div className="text-sm text-slate-600 mb-3">
                     {match.matched_player_name ? (
-                      <span>
-                        Matched to: <strong className="text-slate-900">{match.matched_player_name}</strong>
-                        {match.team_name && (
-                          <span className="text-slate-400"> · {match.team_name}</span>
-                        )}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span>
+                          Matched to: <strong className="text-slate-900">{match.matched_player_name}</strong>
+                          {match.team_name && (
+                            <span className="text-slate-400"> · {match.team_name}</span>
+                          )}
+                        </span>
+                        <Badge className="bg-green-100 text-green-800 text-xs ml-auto">Matched</Badge>
+                      </div>
                     ) : (
-                      <span className="text-slate-400 italic">
-                        {match.match_status === "unmatched" ? "No match found" : "Needs review — no single candidate"}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-400 italic">
+                          {match.match_status === "unmatched" ? "No match found" : "Needs review — no single candidate"}
+                        </span>
+                        <Badge className={`text-xs ml-auto ${match.match_status === "unmatched" ? "bg-red-100 text-red-800" : "bg-yellow-100 text-yellow-800"}`}>
+                          {match.match_status === "unmatched" ? "Not Matched" : "Needs Review"}
+                        </Badge>
+                      </div>
                     )}
                     {match.note && (
                       <span className="ml-2 text-orange-600 text-xs">({match.note})</span>
@@ -265,8 +273,8 @@ export default function PlayerLeagueMatchModal({ player, onClose }) {
                       )}
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="h-7 text-xs"
+                        className={!match.matched_player_name && !isPicking ? "bg-blue-600 hover:bg-blue-700 text-white h-7 text-xs" : "variant-outline h-7 text-xs"}
+                        variant={!match.matched_player_name && !isPicking ? "default" : "outline"}
                         onClick={() => {
                           setPickingLeagueId(isPicking ? null : match.league_id);
                           setSearchQuery("");
