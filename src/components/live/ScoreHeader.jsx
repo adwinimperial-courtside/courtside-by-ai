@@ -432,8 +432,14 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                   <span className={`font-mono font-bold text-sm leading-none flex-shrink-0 ${running ? 'text-green-300' : timeExpired ? 'text-red-300' : 'text-white'}`}>
                     {formatTime(displayTime)}
                   </span>
-                  <button onClick={handlePlayPause} className="flex-shrink-0 p-1.5 text-white/70 hover:text-white disabled:opacity-30 transition-colors cursor-pointer hover:bg-white/10 rounded-lg" title={running ? "Pause" : timeExpired ? "Advance to next period" : "Start"}>
-                    {running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                  <button
+                    onClick={handlePlayPause}
+                    disabled={isSavingUI}
+                    className="flex-shrink-0 p-2.5 text-white/70 hover:text-white disabled:opacity-40 transition-colors cursor-pointer hover:bg-white/10 active:bg-white/20 rounded-lg touch-manipulation"
+                    style={{ minWidth: '40px', minHeight: '40px' }}
+                    title={running ? "Pause" : timeExpired ? "Advance to next period" : "Start"}
+                  >
+                    {isSavingUI ? <span className="w-5 h-5 block border-2 border-white/60 border-t-white rounded-full animate-spin" /> : running ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
