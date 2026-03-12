@@ -196,11 +196,11 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-4 pb-4 px-6 relative z-20 mb-8">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
 
       {/* ── 1. Ranking + Milestone Progress ── */}
-      <div className="pb-3">
-        <div className="flex items-center justify-between gap-3 mb-2">
+      <div className="pb-6">
+        <div className="flex items-center justify-between gap-3 mb-3">
           {primaryRank ? (
             <span className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600">
               <TrendingUp className="w-4 h-4" />
@@ -224,11 +224,11 @@ export default function PlayerDashboardCard({
         </div>
         {milestone && (
           <>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">{milestone.name}</p>
               <span className="text-xs font-bold text-indigo-600">{Math.round(milestone.progress)}%</span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-1.5">
+            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden mb-2">
               <div
                 className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(milestone.progress, 100)}%` }}
@@ -240,7 +240,7 @@ export default function PlayerDashboardCard({
       </div>
 
       {/* ── 2. Player Identity ── */}
-      <div className="flex items-center gap-3 py-3 border-b border-slate-100">
+      <div className="flex items-center gap-4 pb-8 border-b border-slate-100">
         {/* Avatar */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -274,7 +274,7 @@ export default function PlayerDashboardCard({
 
         {/* Name / team / position */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
             <h2 className="text-3xl font-bold text-slate-900 leading-tight">{displayName}</h2>
             {hotStreak >= 3 && (
               <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold">
@@ -290,13 +290,13 @@ export default function PlayerDashboardCard({
             ].filter(Boolean).join(" • ")}
           </p>
           {handle && (
-            <p className="text-sm text-slate-500 font-medium mt-1">@{handle}</p>
+            <p className="text-sm text-slate-500 font-medium mt-2">@{handle}</p>
           )}
         </div>
       </div>
 
       {/* ── 3. Stat Tiles ── */}
-      <div className="pt-3">
+      <div className="pt-6">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Season Stats</p>
         <div className="grid grid-cols-4 gap-3">
           {statTiles.map(({ label, value }) => (
