@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit2, Trash2, Crown, Upload } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
   DialogContent,
