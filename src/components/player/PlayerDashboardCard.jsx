@@ -196,7 +196,7 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden -mt-20 pt-6 pb-6 px-6 relative z-20 mb-8">
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden pt-6 pb-6 px-6 relative z-20 mb-8">
 
       {/* ── 1. Ranking + Milestone Progress ── */}
       <div className="pb-6">
