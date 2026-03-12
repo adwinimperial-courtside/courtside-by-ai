@@ -298,11 +298,11 @@ export default function PlayerDashboardCard({
       {/* ── 3. Stat Tiles ── */}
       <div className="pt-3">
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Season Stats</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
           {statTiles.map(({ label, value }) => (
-            <div key={label} className="bg-slate-50 rounded-xl py-3 px-2 text-center border border-slate-200 shadow-sm">
-              <p className="text-lg sm:text-xl font-bold text-slate-900 leading-none">{value ?? "—"}</p>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">{label}</p>
+            <div key={label} className="bg-slate-50 rounded-xl py-3 px-2 text-center border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+              <p className="text-xl md:text-2xl font-bold text-slate-900 leading-none">{value ?? "—"}</p>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1.5">{label}</p>
             </div>
           ))}
         </div>
