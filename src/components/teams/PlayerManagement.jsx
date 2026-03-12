@@ -66,28 +66,35 @@ export default function PlayerManagement({ teamId, team, userType }) {
   const handleSaveAllPlayers = async () => {
     setIsSaving(true);
     try {
+      let savedCount = 0;
       for (const row of tableData) {
-        if (row.name && row.jersey_number !== '') {
+        const name = (row.name || '').trim();
+        const jerseyNum = String(row.jersey_number || '').trim();
+        const parsedJersey = parseInt(jerseyNum);
+        if (name && jerseyNum !== '' && !isNaN(parsedJersey)) {
           if (row.id) {
             await base44.entities.Player.update(row.id, {
-              name: row.name,
-              jersey_number: parseInt(row.jersey_number),
-              position: row.position
+              name,
+              jersey_number: parsedJersey,
+              position: row.position || 'PG'
             });
           } else {
             await base44.entities.Player.create({
-              name: row.name,
-              jersey_number: parseInt(row.jersey_number),
-              position: row.position,
+              name,
+              jersey_number: parsedJersey,
+              position: row.position || 'PG',
               team_id: teamId
             });
           }
+          savedCount++;
         }
       }
       queryClient.invalidateQueries({ queryKey: ['players', teamId] });
       queryClient.invalidateQueries({ queryKey: ['teams'] });
+      toast({ title: "Saved", description: `${savedCount} player${savedCount !== 1 ? 's' : ''} saved successfully.` });
     } catch (error) {
       console.error("Error saving players:", error);
+      toast({ title: "Error", description: "Failed to save players. Please try again.", variant: "destructive" });
     } finally {
       setIsSaving(false);
     }
