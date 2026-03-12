@@ -169,9 +169,10 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   const isSaving = useRef(false);
   const autoStopFiredRef = useRef(false);
+  const [isSavingUI, setIsSavingUI] = useState(false);
 
   const handlePlayPause = async () => {
-    if (!isTimed || isSaving.current || lineupBlocked) return;
+    if (!isTimed || isSaving.current || lineupBlocked || isSavingUI) return;
     // In final review with unequal scores, only END GAME is allowed — block clock start
     if (isInFinalReview && (localGame.home_score || 0) !== (localGame.away_score || 0)) return;
     const currentTimeLeft = computeTimeLeft(localGame);
