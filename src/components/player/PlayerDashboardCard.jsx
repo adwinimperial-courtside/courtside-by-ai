@@ -196,25 +196,25 @@ export default function PlayerDashboardCard({
   ];
 
   return (
-    <div className="space-y-3 -mt-16 pt-0 pb-0 px-3 relative z-20 mb-8 w-full max-w-full overflow-x-hidden">
+    <div className="space-y-4 -mt-16 pt-0 pb-0 px-0 relative z-20 mb-8">
 
       {/* ── 1. Hero Rank Card ── */}
       {primaryRank && (
-        <div className="bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 rounded-2xl px-3 py-3 text-white shadow-lg w-full overflow-hidden">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold opacity-90 uppercase tracking-wide truncate">TOP PERFORMER</p>
-              <p className="text-xl sm:text-2xl font-black mt-0.5 truncate">{primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank</p>
-              <p className="text-2xl sm:text-3xl font-black mt-0">#{primaryRank.rank}</p>
+        <div className="mx-4 bg-gradient-to-br from-indigo-600 via-blue-600 to-indigo-700 rounded-2xl px-4 py-3 text-white shadow-lg">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold opacity-90 uppercase tracking-wider">TOP PERFORMER</p>
+              <p className="text-2xl font-black mt-1">{primaryRank.cat.charAt(0).toUpperCase() + primaryRank.cat.slice(1)} Rank</p>
+              <p className="text-3xl font-black mt-0">#{primaryRank.rank}</p>
             </div>
-            <div className="text-right flex-shrink-0">
-              <div className="bg-white/20 backdrop-blur rounded-xl px-2 py-1">
+            <div className="text-right">
+              <div className="bg-white/20 backdrop-blur rounded-xl px-3 py-2">
                 <p className="text-xs font-bold opacity-90">Percentile</p>
-                <p className="text-xl sm:text-2xl font-black">{primaryRank.percentile}%</p>
+                <p className="text-2xl font-black">{primaryRank.percentile}%</p>
               </div>
               {rankMovement.direction !== 'neutral' && (
-                <div className={`mt-1 flex items-center justify-end gap-0.5 font-bold text-xs ${rankMovement.direction === 'up' ? 'text-green-300' : 'text-orange-300'}`}>
-                  {rankMovement.direction === 'up' ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                <div className={`mt-2 flex items-center gap-1 font-bold ${rankMovement.direction === 'up' ? 'text-green-300' : 'text-orange-300'}`}>
+                  {rankMovement.direction === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                   {rankMovement.change}
                 </div>
               )}
@@ -225,40 +225,40 @@ export default function PlayerDashboardCard({
 
       {/* ── 2. Progress Bar ── */}
       {milestone && (
-        <div className="w-full overflow-x-hidden">
-          <div className="flex items-center justify-between mb-2 gap-2">
-            <p className="text-xs font-black text-slate-700 uppercase tracking-wide truncate flex-1">{milestone.name}</p>
-            <span className="inline-flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-lg text-xs font-bold flex-shrink-0">{Math.round(milestone.progress)}%</span>
+        <div className="mx-4">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs font-black text-slate-700 uppercase tracking-wider">{milestone.name}</p>
+            <span className="inline-flex items-center bg-blue-100 text-blue-700 px-2 py-1 rounded-lg text-xs font-bold">{Math.round(milestone.progress)}%</span>
           </div>
-          <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-sm">
+          <div className="w-full h-4 bg-slate-200 rounded-full overflow-hidden shadow-sm">
             <div
               className="h-full bg-gradient-to-r from-blue-500 via-blue-600 to-indigo-600 rounded-full transition-all duration-500 shadow-lg"
               style={{ width: `${Math.min(milestone.progress, 100)}%` }}
             />
           </div>
-          <p className="text-xs text-slate-600 font-bold mt-1.5">{milestone.current} / {milestone.target} {milestone.unit}</p>
+          <p className="text-xs text-slate-600 font-bold mt-2">{milestone.current} / {milestone.target} {milestone.unit}</p>
         </div>
       )}
 
       {/* ── 3. Player Card ── */}
-      <div className="bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden w-full">
+      <div className="mx-4 bg-white rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
         {/* Photo Hero on Mobile */}
-        <div className="bg-gradient-to-br from-slate-50 to-blue-50 px-4 pt-4 pb-2 w-full overflow-x-hidden">
+        <div className="bg-gradient-to-br from-slate-50 to-blue-50 px-4 pt-4 pb-0">
           <div className="flex flex-col items-center text-center">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="relative group cursor-pointer mb-3 flex-shrink-0">
-                  <div className="w-36 h-36 rounded-full overflow-hidden bg-gradient-to-br from-indigo-200 to-blue-200 border-4 border-indigo-300 flex items-center justify-center shadow-xl flex-shrink-0">
+                <button className="relative group cursor-pointer mb-3">
+                  <div className="w-40 h-40 rounded-full overflow-hidden bg-gradient-to-br from-indigo-200 to-blue-200 border-4 border-indigo-300 flex items-center justify-center shadow-xl">
                     {uploading ? (
-                       <Loader2 className="w-10 h-10 animate-spin text-indigo-600" />
+                       <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
                      ) : photoUrl ? (
                        <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
                      ) : (
-                       <span className="text-6xl font-black text-indigo-600">{initials}</span>
+                       <span className="text-7xl font-black text-indigo-600">{initials}</span>
                      )}
                   </div>
                   <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <Camera className="w-5 h-5 text-white" />
+                    <Camera className="w-6 h-6 text-white" />
                   </div>
                 </button>
               </DropdownMenuTrigger>
@@ -276,16 +276,16 @@ export default function PlayerDashboardCard({
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
 
             {/* Name and Info */}
-            <div className="w-full px-1 min-w-0">
-              <div className="flex items-center gap-1 justify-center flex-wrap mb-2">
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 truncate">{displayName}</h2>
+            <div className="w-full">
+              <div className="flex items-center gap-2 justify-center flex-wrap mb-2">
+                <h2 className="text-3xl font-black text-slate-900">{displayName}</h2>
                 {hotStreak >= 3 && (
-                  <span className="inline-flex items-center gap-0.5 bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full text-xs font-black flex-shrink-0">
-                    <Flame className="w-3 h-3" /> HOT
+                  <span className="inline-flex items-center gap-1 bg-amber-200 text-amber-900 px-3 py-1 rounded-full text-xs font-black">
+                    <Flame className="w-4 h-4" /> HOT
                   </span>
                 )}
               </div>
-              <p className="text-xs sm:text-sm text-slate-600 font-bold truncate">
+              <p className="text-sm text-slate-600 font-bold">
                 {[
                   team?.name || leagueName,
                   playerRecord?.position,
@@ -293,18 +293,18 @@ export default function PlayerDashboardCard({
                 ].filter(Boolean).join(" • ")}
               </p>
               {handle && (
-                <p className="text-xs text-slate-500 font-bold mt-0.5 truncate">@{handle}</p>
+                <p className="text-xs text-slate-500 font-bold mt-1">@{handle}</p>
               )}
             </div>
           </div>
         </div>
 
         {/* Stat Tiles */}
-        <div className="px-3 py-3 grid grid-cols-2 gap-2 w-full">
+        <div className="px-4 py-4 grid grid-cols-2 gap-2">
           {statTiles.map(({ label, value }) => (
-            <div key={label} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl py-3 px-2 text-center border border-blue-200 shadow-sm overflow-hidden">
-              <p className="text-xl sm:text-2xl font-black text-indigo-600 leading-none truncate">{value ?? "—"}</p>
-              <p className="text-xs text-slate-600 font-bold uppercase tracking-wide mt-1 truncate">{label}</p>
+            <div key={label} className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl py-4 px-3 text-center border border-blue-200 shadow-sm hover:shadow-md transition-all">
+              <p className="text-2xl font-black text-indigo-600 leading-none">{value ?? "—"}</p>
+              <p className="text-xs text-slate-600 font-bold uppercase tracking-widest mt-2">{label}</p>
             </div>
           ))}
         </div>
