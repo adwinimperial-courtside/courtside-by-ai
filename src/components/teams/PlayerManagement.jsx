@@ -248,10 +248,8 @@ export default function PlayerManagement({ teamId, team, userType }) {
                            inputMode="numeric"
                            value={row.jersey_number}
                            onChange={(e) => {
-                             const val = e.target.value;
-                             if (val === '' || /^\d{0,2}$/.test(val)) {
-                               handleRowChange(index, 'jersey_number', val);
-                             }
+                             const val = e.target.value.replace(/[^\d]/g, '').slice(0, 2);
+                             handleRowChange(index, 'jersey_number', val);
                            }}
                            placeholder="#"
                            className="border-0 p-1 h-8"
