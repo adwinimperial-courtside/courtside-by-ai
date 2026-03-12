@@ -79,29 +79,34 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
              return (
                <div className="flex items-start justify-between gap-6">
                  <div className="min-w-0 flex-1">
-                   {/* Result, opponent, and score on one line */}
-                   <div className="flex items-center gap-3">
-                     <span className={`text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
+                   {/* Win/Loss + opponent row */}
+                   <div className="flex items-center gap-3 mb-3">
+                     <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
                        {won ? 'WIN' : 'LOSS'}
                      </span>
-                     <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>vs {opponent?.name}</span>
-                     <span className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'} whitespace-nowrap ml-auto`}>
-                       {myScore}–{oppScore}
-                     </span>
+                     <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>{opponent?.name}</span>
                    </div>
+
+                   {/* Score */}
+                   <p className={`text-3xl font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>
+                     {myScore} – {oppScore}
+                   </p>
+                   <p className={`text-sm ${won ? 'text-green-700' : 'text-red-700'} font-medium mt-1`}>vs {opponent?.name}</p>
+
+                   {/* Date */}
+                   <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} mt-3 font-medium`}>{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
                  </div>
 
-                 {/* Stat tiles and date on the right */}
+                 {/* Stat tiles on the right */}
                  {statLine ? (
-                   <div className="flex flex-col items-end gap-2">
-                     <div className="flex gap-2">
+                   <div className="flex flex-col gap-2">
+                     <div className="flex gap-2 flex-wrap justify-end">
                        <StatTile value={pts} label="PTS" />
                        <StatTile value={reb} label="REB" />
                        <StatTile value={ast} label="AST" />
                        <StatTile value={blk} label="BLK" />
                        <StatTile value={foul} label="FOUL" />
                      </div>
-                     <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} font-medium`}>{format(new Date(lastGame.game_date), "EEE MMM d")}</p>
                    </div>
                  ) : (
                    <p className={`text-sm ${won ? 'text-green-600' : 'text-red-600'}`}>No stats</p>
