@@ -155,21 +155,21 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white px-4 py-6 md:p-8">
       {/* Hero Gradient Background Section */}
       <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-indigo-50 via-blue-50 to-white pointer-events-none" />
       
-      <div className="relative z-10 w-full overflow-x-hidden">
+      <div className="max-w-2xl mx-auto relative z-10">
 
         {/* Page title */}
-        <div className="px-4 py-6 md:px-8 md:py-8 pt-2 md:pt-4">
+        <div className="pt-2 pb-4 md:pt-4 md:pb-6">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Player Dashboard</h1>
           <p className="text-xs md:text-sm text-slate-500 mt-1">Your performance, achievements & upcoming games</p>
         </div>
 
         {/* League Selector (only if multiple leagues) */}
         {userLeagues.length > 1 && (
-          <div className="px-4 md:px-8 mb-6 md:mb-32">
+          <div className="mb-6 md:mb-32">
             <label className="block text-sm font-semibold text-slate-700 mb-2">Select League</label>
             <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
               <SelectTrigger className="w-full bg-white border-slate-300 shadow-md">
@@ -201,7 +201,7 @@ export default function PlayerProfile() {
         </div>
 
         {/* Performance Section */}
-        <div className="px-4 md:px-8 space-y-4 md:space-y-6 max-w-2xl mx-auto">
+        <div className="space-y-4 md:space-y-6">
 
           {/* Achievements */}
           <PlayerAchievements
