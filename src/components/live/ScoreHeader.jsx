@@ -222,6 +222,12 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     }
 
     isSaving.current = true;
+    setIsSavingUI(true);
+    // Safety: always reset after 3 seconds in case of network issues
+    const safetyTimeout = setTimeout(() => {
+      isSaving.current = false;
+      setIsSavingUI(false);
+    }, 3000);
     try {
       let updates;
       if (running) {
@@ -239,10 +245,14 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: new Date().toISOString(),
         };
       }
+      // Optimistically update local state immediately so mobile UI responds instantly
+      setLocalGame(prev => ({ ...prev, ...updates }));
       await base44.entities.Game.update(localGame.id, updates);
       if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
+      clearTimeout(safetyTimeout);
       isSaving.current = false;
+      setIsSavingUI(false);
     }
   };
 
