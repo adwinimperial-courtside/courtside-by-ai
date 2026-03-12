@@ -42,12 +42,13 @@ export default function PlayerProfile() {
     return coachIdentity?.league_id || null;
   }, [identities, currentUser?.user_type]);
 
-  // Initialize league ID only once when data is ready, not on every render
   useEffect(() => {
-    if (selectedLeagueId || userLeagues.length === 0) return; // Don't re-set if already set
-    const leagueToSelect = coachIdentityLeagueId || userLeagues[0].id;
-    setSelectedLeagueId(leagueToSelect);
-  }, [userLeagues.length]); // Only depend on length, not the array itself
+    if (userLeagues.length > 0 && !selectedLeagueId) {
+      // For coaches, prefer the league with matched identity
+      const leagueToSelect = coachIdentityLeagueId ? coachIdentityLeagueId : userLeagues[0].id;
+      setSelectedLeagueId(leagueToSelect);
+    }
+  }, [userLeagues, coachIdentityLeagueId]);
 
   const currentIdentity = useMemo(
     () => identities.find(i => i.league_id === selectedLeagueId) || null,
