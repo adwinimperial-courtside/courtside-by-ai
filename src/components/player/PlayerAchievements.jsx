@@ -20,8 +20,8 @@ export default function PlayerAchievements({ myStats, games, teamId, playerRecor
 
   if (badges.length === 0) {
     return (
-      <div className="rounded-[16px] border border-[#E6EBF5] p-6" style={{background: 'linear-gradient(180deg, #F9FBFF 0%, #F3F6FF 100%)', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', borderLeft: '4px solid #F59E0B'}}>
-        <h3 className="text-[18px] font-semibold text-slate-900 mb-4">Achievements</h3>
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Achievements</h3>
         <p className="text-sm text-slate-500">
           No badges unlocked yet. Play more games to earn achievements!
         </p>
@@ -30,10 +30,10 @@ export default function PlayerAchievements({ myStats, games, teamId, playerRecor
   }
 
   return (
-    <div className="rounded-[16px] border border-[#E6EBF5] p-6" style={{background: 'linear-gradient(180deg, #F9FBFF 0%, #F3F6FF 100%)', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', borderLeft: '4px solid #F59E0B'}}>
-      <h3 className="text-[18px] font-semibold text-slate-900 mb-4">Achievements</h3>
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6">
+      <h3 className="text-lg font-bold text-slate-900 mb-4">Achievements</h3>
       
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-wrap gap-3">
         {badges.map(badge => (
           <BadgeCard
             key={badge.badgeKey}

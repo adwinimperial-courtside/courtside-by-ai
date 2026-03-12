@@ -61,29 +61,11 @@ export default function BadgeCard({ badgeKey, badgeName, badgeIcon, badgeDescrip
         onClick={handleTap}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="bg-white rounded-full px-4 py-2.5 border border-[#E4E8F0] hover:transition-all hover:duration-200 flex items-center gap-2 cursor-pointer"
-        style={{
-          boxShadow: '0 3px 8px rgba(0,0,0,0.05)',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-        }}
-        onMouseEnter={(e) => {
-          handleMouseEnter();
-          if (window.innerWidth >= 768) {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.08)';
-          }
-        }}
-        onMouseLeave={(e) => {
-          handleMouseLeave();
-          if (window.innerWidth >= 768) {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 3px 8px rgba(0,0,0,0.05)';
-          }
-        }}
+        className="bg-white rounded-full px-4 py-2 shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200 flex items-center gap-2 cursor-pointer"
       >
-        <span className="text-lg bg-[#EEF2FF] rounded-[8px] p-1" style={{marginRight: '6px'}}>{badgeIcon}</span>
-        <span className="font-medium text-slate-800 text-[14px]">{badgeName}</span>
-        <span className="text-xs font-semibold text-[#2563EB]" style={{marginLeft: '4px'}}>x{count}</span>
+        <span className="text-lg">{badgeIcon}</span>
+        <span className="font-semibold text-slate-800 text-sm">{badgeName}</span>
+        <span className="text-xs text-slate-500 font-medium">x{count}</span>
       </button>
 
       {/* Tooltip - Fixed Positioning */}
