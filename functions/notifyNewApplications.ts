@@ -1,4 +1,4 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.20';
 
 Deno.serve(async (req) => {
   try {
@@ -11,21 +11,23 @@ Deno.serve(async (req) => {
 
     const application = data;
 
-    await base44.integrations.Core.SendEmail({
-      to: 'Adwin.imperial@gmail.com',
-      subject: `New Role Application from ${application.user_name || application.user_email}`,
+    await base44.asServiceRole.integrations.Core.SendEmail({
+      to: 'adwin.imperial@gmail.com',
+      subject: `New Role Application: ${application.user_name || application.user_email} (${application.requested_role})`,
       body: `A new user has submitted a role application request.
 
-User: ${application.user_name}
+User: ${application.user_name || 'Unknown'}
 Email: ${application.user_email}
 Requested Role: ${application.requested_role}
 League: ${application.league_name || 'Not specified'}
 Country: ${application.country || 'Not specified'}
 Number of Teams: ${application.number_of_teams || 'Not specified'}
+Applied At: ${new Date().toLocaleString()}
 
-Please review this application in the admin panel.`
+Please review and approve/reject this application in the admin panel.`
     });
 
+    console.log(`Notification email sent for application from ${application.user_email}`);
     return Response.json({ success: true });
   } catch (error) {
     console.error('Error sending notification:', error);
