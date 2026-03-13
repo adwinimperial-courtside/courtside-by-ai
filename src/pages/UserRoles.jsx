@@ -182,9 +182,12 @@ export default function UserRoles() {
   });
 
   const { data: users = [] } = useQuery({
-    queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
+    queryKey: ["userRolesPageUsers"],
+    queryFn: () => base44.entities.User.list('-created_date', 500),
     enabled: currentUser?.user_type === "app_admin",
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
   });
 
   const { data: leagues = [] } = useQuery({
