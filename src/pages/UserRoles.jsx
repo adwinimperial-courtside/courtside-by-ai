@@ -202,7 +202,7 @@ export default function UserRoles() {
     players: users.filter((u) => u.user_type === "player").length,
     viewers: users.filter((u) => u.user_type === "viewer").length,
   };
-  const totalUsers = counts.league_owners + counts.coaches + counts.players + counts.viewers;
+  const totalUsers = users.length;
 
   const usersPerLeague = useMemo(() => {
     return leagues
