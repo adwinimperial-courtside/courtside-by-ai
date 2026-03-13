@@ -110,12 +110,14 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   });
 
   const { data: allUsers = [] } = useQuery({
-    queryKey: ['allUsers'],
+    queryKey: ['sidebarAllUsers'],
     queryFn: () => base44.entities.User.list('-created_date', 500),
     enabled: currentUser?.user_type === 'app_admin',
-    refetchInterval: 30000,
+    refetchInterval: 15000,
     staleTime: 0,
+    gcTime: 0,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
