@@ -10,8 +10,15 @@ export default function TeamStandings({ teams, games, leagues }) {
       g.status === 'completed' && (g.home_team_id === team.id || g.away_team_id === team.id)
     );
     
-    const wins = team.wins || 0;
-    const losses = team.losses || 0;
+    let wins = 0;
+    let losses = 0;
+    teamGames.forEach(game => {
+      const isHome = game.home_team_id === team.id;
+      const teamScore = isHome ? (game.home_score || 0) : (game.away_score || 0);
+      const oppScore = isHome ? (game.away_score || 0) : (game.home_score || 0);
+      if (teamScore > oppScore) wins++;
+      else losses++;
+    });
     const totalGames = wins + losses;
     const winPct = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0.0';
 
