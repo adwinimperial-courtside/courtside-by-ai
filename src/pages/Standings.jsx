@@ -51,7 +51,7 @@ export default function StandingsPage() {
       return base44.entities.Team.filter({ league_id: selectedLeague });
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 300000,
+    staleTime: 0,
   });
 
   const { data: games = [] } = useQuery({
@@ -61,7 +61,7 @@ export default function StandingsPage() {
       return base44.entities.Game.filter({ league_id: selectedLeague });
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 5000,
+    staleTime: 0,
   });
 
   // Data is already league-filtered from queries above
