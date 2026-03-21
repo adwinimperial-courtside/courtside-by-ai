@@ -37,11 +37,10 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         const totalPoints = stat.stats.total_points || 0;
         const points3 = stat.stats.points_3 || 0;
         const ftEntered = stat.stats.free_throws || 0;
-        // Calculate 2PT points remainder, then convert to made count.
-        // If remainder is odd, add 1 to FT so the recalc formula stays exact.
-        const twoPtRemainder = Math.max(0, totalPoints - (points3 * 3) - ftEntered);
-        const points2Made = Math.floor(twoPtRemainder / 2);
-        const ftAdjusted = ftEntered + (twoPtRemainder % 2); // absorb any odd remainder into FT
+        // points_2 = (total - 3PT*3 - FT*1) / 2
+        // No remainder possible: remaining points after 3PT and FT are always even (2-pointers)
+        const points2Made = Math.max(0, (totalPoints - (points3 * 3) - ftEntered)) / 2;
+        const ftAdjusted = ftEntered;
 
         // Check if player has any actual participation
         const hasStats = totalPoints > 0 || points3 > 0 || ftEntered > 0 ||
