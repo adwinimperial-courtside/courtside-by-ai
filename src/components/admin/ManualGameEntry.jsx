@@ -418,8 +418,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
+                  <th className="px-3 py-2 text-center font-semibold">2PT FG</th>
+                  <th className="px-3 py-2 text-center font-semibold">3PT FG</th>
                   <th className="px-3 py-2 text-center font-semibold">FT</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
                   <th className="px-3 py-2 text-center font-semibold">STL</th>
@@ -430,10 +430,10 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <th className="px-3 py-2 text-center font-semibold">FOUL</th>
                   <th className="px-3 py-2 text-center font-semibold">TF</th>
                   <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                </tr>
-              </thead>
-              <tbody>
-                {homeStats.map((ps, idx) => (
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {homeStats.map((ps, idx) => (
                   <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
                     <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
                     <td className="px-3 py-2">{ps.player_name}</td>
