@@ -39,7 +39,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         const ftEntered = stat.stats.free_throws || 0;
         // points_2 = (total - 3PT*3 - FT*1) / 2
         // No remainder possible: remaining points after 3PT and FT are always even (2-pointers)
-        const points2Made = Math.max(0, (totalPoints - (points3 * 3) - ftEntered)) / 2;
+        const points2Made = Math.max(0, totalPoints - (points3 * 3) - ftEntered);
         const ftAdjusted = ftEntered;
 
         // Check if player has any actual participation
