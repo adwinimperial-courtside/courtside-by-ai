@@ -34,10 +34,16 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     mutationFn: async (data) => {
       // Prepare player stats for database
       const statsForDb = data.playerStats.map(stat => {
-        const points2Value = stat.stats.total_points || 0;
-        
+        const totalPoints = stat.stats.total_points || 0;
+        const points3 = stat.stats.points_3 || 0;
+        const freethrows = stat.stats.free_throws || 0;
+        // Derive points_2 (made) from total so score recalculation stays consistent:
+        // total = (points_2 * 2) + (points_3 * 3) + free_throws
+        const remaining = totalPoints - (points3 * 3) - freethrows;
+        const points2Value = Math.max(0, Math.floor(remaining / 2));
+
         // Check if player has any actual participation
-        const hasStats = points2Value > 0 || (stat.stats.points_3 || 0) > 0 || (stat.stats.free_throws || 0) > 0 ||
+        const hasStats = totalPoints > 0 || points3 > 0 || freethrows > 0 ||
                         stat.stats.assists > 0 || stat.stats.steals > 0 ||
                         stat.stats.blocks > 0 || stat.stats.offensive_rebounds > 0 || 
                         stat.stats.defensive_rebounds > 0 || stat.stats.fouls > 0 ||
@@ -48,7 +54,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           team_id: stat.team_id,
           did_play: hasStats,
           points_2: points2Value,
-          points_3: stat.stats.points_3,
+          points_3: points3,
           free_throws: stat.stats.free_throws,
           offensive_rebounds: stat.stats.offensive_rebounds,
           defensive_rebounds: stat.stats.defensive_rebounds,
