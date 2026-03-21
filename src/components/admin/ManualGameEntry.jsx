@@ -240,7 +240,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     }
   };
 
-  const calcPlayerPoints = (stats) => (stats.total_points || 0) * 2 + (stats.points_3 || 0) * 3 + (stats.free_throws || 0);
+  const calcPlayerPoints = (stats) => stats.total_points || 0;
 
   const calculateScores = () => {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
