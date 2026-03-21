@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Key, AlertTriangle } from "lucide-react";
+import { Trash2, Key, AlertTriangle, User, Calendar, Hash } from "lucide-react";
 
 export default function DeleteLeague() {
   const [currentUser, setCurrentUser] = useState(null);
