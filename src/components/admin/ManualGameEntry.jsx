@@ -35,23 +35,28 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
       // Prepare player stats for database
       const statsForDb = data.playerStats.map(stat => {
         const totalPoints = stat.stats.total_points || 0;
+        const points3 = stat.stats.points_3 || 0;
+        const ftEntered = stat.stats.free_throws || 0;
+        // Calculate 2PT points remainder, then convert to made count.
+        // If remainder is odd, add 1 to FT so the recalc formula stays exact.
+        const twoPtRemainder = Math.max(0, totalPoints - (points3 * 3) - ftEntered);
+        const points2Made = Math.floor(twoPtRemainder / 2);
+        const ftAdjusted = ftEntered + (twoPtRemainder % 2); // absorb any odd remainder into FT
 
         // Check if player has any actual participation
-        const hasStats = totalPoints > 0 ||
+        const hasStats = totalPoints > 0 || points3 > 0 || ftEntered > 0 ||
                         stat.stats.assists > 0 || stat.stats.steals > 0 ||
                         stat.stats.blocks > 0 || stat.stats.offensive_rebounds > 0 || 
                         stat.stats.defensive_rebounds > 0 || stat.stats.fouls > 0 ||
                         stat.stats.technical_fouls > 0 || stat.stats.unsportsmanlike_fouls > 0;
         
-        // Store total PTS as free_throws (1pt each) — lossless storage.
-        // The standard recalc: (points_2*2) + (points_3*3) + free_throws = 0+0+totalPoints ✓
         return {
           player_id: stat.player_id,
           team_id: stat.team_id,
           did_play: hasStats,
-          points_2: 0,
-          points_3: 0,
-          free_throws: totalPoints,
+          points_2: points2Made,
+          points_3: points3,
+          free_throws: ftAdjusted,
           offensive_rebounds: stat.stats.offensive_rebounds,
           defensive_rebounds: stat.stats.defensive_rebounds,
           assists: stat.stats.assists,
