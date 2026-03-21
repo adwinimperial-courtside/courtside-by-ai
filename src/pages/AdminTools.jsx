@@ -90,10 +90,10 @@ export default function AdminTools() {
   };
 
   const calculateMissingPOG = async () => {
+    if (!selectedRecalcLeague) return;
     setIsCalculatingPOG(true);
     try {
-      // Get all data
-      const games = await base44.entities.Game.filter({ status: 'completed' });
+      const games = await base44.entities.Game.filter({ status: 'completed', league_id: selectedRecalcLeague });
       const stats = await base44.entities.PlayerStats.list();
       const allPlayers = await base44.entities.Player.list();
 
