@@ -311,7 +311,7 @@ export default function AdminTools() {
 
           {/* Recalculate Section */}
           {isRecalcAllowed && (
-           <div>
+          <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recalculate</h2>
 
             {/* League selector for recalculations */}
