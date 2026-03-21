@@ -310,8 +310,35 @@ export default function AdminTools() {
           </div>
 
           {/* Recalculate Section */}
+          {isRecalcAllowed && (
            <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recalculate</h2>
+
+            {/* League selector for recalculations */}
+            <Card className="border-slate-200 shadow-sm mb-4">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3">
+                  <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
+                  <span className="text-sm font-medium text-slate-700 flex-shrink-0">Select League:</span>
+                  <Select value={selectedRecalcLeague} onValueChange={setSelectedRecalcLeague}>
+                    <SelectTrigger className="w-72">
+                      <SelectValue placeholder="Choose a league to recalculate..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {filteredLeagues.map(league => (
+                        <SelectItem key={league.id} value={league.id}>
+                          {league.name} ({league.season})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {!selectedRecalcLeague && (
+                  <p className="text-xs text-amber-600 mt-2 ml-7">A league must be selected before running any recalculation.</p>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="grid gap-4">
               <Card className="border-slate-200 shadow-lg">
                 <CardHeader className="border-b border-slate-200 bg-white">
