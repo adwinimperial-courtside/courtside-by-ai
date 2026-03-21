@@ -35,27 +35,23 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
       // Prepare player stats for database
       const statsForDb = data.playerStats.map(stat => {
         const totalPoints = stat.stats.total_points || 0;
-        const points3 = stat.stats.points_3 || 0;
-        const freethrows = stat.stats.free_throws || 0;
-        // Derive points_2 (made) from total so score recalculation stays consistent:
-        // total = (points_2 * 2) + (points_3 * 3) + free_throws
-        const remaining = totalPoints - (points3 * 3) - freethrows;
-        const points2Value = Math.max(0, Math.floor(remaining / 2));
 
         // Check if player has any actual participation
-        const hasStats = totalPoints > 0 || points3 > 0 || freethrows > 0 ||
+        const hasStats = totalPoints > 0 ||
                         stat.stats.assists > 0 || stat.stats.steals > 0 ||
                         stat.stats.blocks > 0 || stat.stats.offensive_rebounds > 0 || 
                         stat.stats.defensive_rebounds > 0 || stat.stats.fouls > 0 ||
                         stat.stats.technical_fouls > 0 || stat.stats.unsportsmanlike_fouls > 0;
         
+        // Store total points in free_throws (1pt each) so that the standard
+        // recalc formula (points_2*2 + points_3*3 + free_throws) = totalPoints
         return {
           player_id: stat.player_id,
           team_id: stat.team_id,
           did_play: hasStats,
-          points_2: points2Value,
-          points_3: points3,
-          free_throws: freethrows,
+          points_2: 0,
+          points_3: 0,
+          free_throws: totalPoints,
           offensive_rebounds: stat.stats.offensive_rebounds,
           defensive_rebounds: stat.stats.defensive_rebounds,
           assists: stat.stats.assists,
