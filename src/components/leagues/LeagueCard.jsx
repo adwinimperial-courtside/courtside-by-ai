@@ -42,6 +42,9 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
             <p className="text-slate-600">
               <span className="font-medium">Created:</span> {new Date(league.created_date).toLocaleString()}
             </p>
+            <p className="text-slate-500 text-xs font-mono mt-1 break-all">
+              ID: {league.id}
+            </p>
           </div>
         )}
         <div className="space-y-3">
