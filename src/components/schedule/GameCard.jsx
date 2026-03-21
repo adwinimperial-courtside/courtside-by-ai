@@ -74,8 +74,15 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const editedBadgeColor = "bg-amber-100 text-amber-800";
   
+  const calcPoints = (stat) => {
+    if (liveGame.entry_type === 'manual') {
+      return (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+    }
+    return ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+  };
+
   const hasPlayerStats = (stat) => {
-    const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+    const points = calcPoints(stat);
     return points > 0 || (stat.offensive_rebounds || 0) > 0 || (stat.defensive_rebounds || 0) > 0 || 
            (stat.assists || 0) > 0 || (stat.steals || 0) > 0 || (stat.blocks || 0) > 0 || 
            (stat.turnovers || 0) > 0 || (stat.fouls || 0) > 0 || (stat.technical_fouls || 0) > 0 || 
