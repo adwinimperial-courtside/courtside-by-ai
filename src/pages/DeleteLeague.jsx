@@ -136,6 +136,27 @@ export default function DeleteLeague() {
             </div>
 
             {selectedLeague && (
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2 text-sm">
+                <p className="font-semibold text-slate-700 mb-2">League Details</p>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Hash className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                  <span className="font-medium">ID:</span>
+                  <span className="font-mono text-xs bg-slate-200 px-2 py-0.5 rounded">{selectedLeague.id}</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <User className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                  <span className="font-medium">Created by:</span>
+                  <span>{selectedLeague.created_by || "Unknown"}</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-600">
+                  <Calendar className="w-4 h-4 flex-shrink-0 text-slate-400" />
+                  <span className="font-medium">Created on:</span>
+                  <span>{selectedLeague.created_date ? new Date(selectedLeague.created_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Unknown"}</span>
+                </div>
+              </div>
+            )}
+
+            {selectedLeague && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
                   Type <span className="font-bold text-red-600">"{confirmationPhrase}"</span> to confirm deletion
