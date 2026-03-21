@@ -18,6 +18,7 @@ export default function AdminTools() {
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
   const [isRecalculatingStandings, setIsRecalculatingStandings] = useState(false);
+  const [selectedRecalcLeague, setSelectedRecalcLeague] = useState('');
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
