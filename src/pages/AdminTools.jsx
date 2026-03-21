@@ -3,7 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Settings, RefreshCw, Trash2, Trophy } from "lucide-react";
+import { Plus, Settings, RefreshCw, Trash2, Trophy, Filter } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ManualGameEntry from "../components/admin/ManualGameEntry";
 import EditGameEntry from "../components/admin/EditGameEntry";
