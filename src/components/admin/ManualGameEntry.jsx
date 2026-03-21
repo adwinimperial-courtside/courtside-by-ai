@@ -37,7 +37,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         const points3Value = (stat.stats.points_3 || 0) * 3;
         const ftValue = stat.stats.free_throws || 0;
         const totalPoints = stat.stats.total_points || 0;
-        const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+        const remaining = Math.max(0, totalPoints - points3Value - ftValue);
+        const points2Value = Math.round(remaining / 2);
         
         // Check if player has any actual participation
         const hasStats = totalPoints > 0 || stat.stats.assists > 0 || stat.stats.steals > 0 ||
