@@ -252,7 +252,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   <div className="block sm:hidden space-y-2">
                     {playerStats.map(stat => {
                       const player = players?.find(p => p.id === stat.player_id);
-                      const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                      const points = calcPoints(stat);
                       const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
                       return (
                         <div key={stat.id} className="bg-slate-50 rounded-lg p-3">
