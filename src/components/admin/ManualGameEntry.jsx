@@ -239,12 +239,14 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     }
   };
 
+  const calcPlayerPoints = (stats) => (stats.total_points || 0) * 2 + (stats.points_3 || 0) * 3 + (stats.free_throws || 0);
+
   const calculateScores = () => {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
-    const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
-    const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+    const homeScore = homeStats.reduce((sum, ps) => sum + calcPlayerPoints(ps.stats), 0);
+    const awayScore = awayStats.reduce((sum, ps) => sum + calcPlayerPoints(ps.stats), 0);
 
     setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
   };
@@ -253,8 +255,8 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
-    const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
-    const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+    const homeScore = homeStats.reduce((sum, ps) => sum + calcPlayerPoints(ps.stats), 0);
+    const awayScore = awayStats.reduce((sum, ps) => sum + calcPlayerPoints(ps.stats), 0);
 
     createGameMutation.mutate({
       ...gameData,
