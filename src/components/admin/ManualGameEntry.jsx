@@ -34,11 +34,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     mutationFn: async (data) => {
       // Prepare player stats for database
       const statsForDb = data.playerStats.map(stat => {
-        const points3Value = (stat.stats.points_3 || 0) * 3;
-        const ftValue = stat.stats.free_throws || 0;
-        const totalPoints = stat.stats.total_points || 0;
-        const remaining = Math.max(0, totalPoints - points3Value - ftValue);
-        const points2Value = Math.round(remaining / 2);
+        const points2Value = stat.stats.total_points || 0;
         
         // Check if player has any actual participation
         const hasStats = totalPoints > 0 || stat.stats.assists > 0 || stat.stats.steals > 0 ||
