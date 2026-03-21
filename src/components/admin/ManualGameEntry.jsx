@@ -424,8 +424,6 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
                   <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT FG</th>
-                  <th className="px-3 py-2 text-center font-semibold">FT</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
                   <th className="px-3 py-2 text-center font-semibold">STL</th>
                   <th className="px-3 py-2 text-center font-semibold">BLK</th>
@@ -443,8 +441,6 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                     <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
                     <td className="px-3 py-2">{ps.player_name}</td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
                     <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
