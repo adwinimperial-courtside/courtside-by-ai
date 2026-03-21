@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2 } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -95,6 +95,11 @@ const ownerItems = [
     title: "Analytics",
     url: createPageUrl("Analytics"),
     icon: LineChart
+  },
+  {
+    title: "Delete League",
+    url: createPageUrl("DeleteLeague"),
+    icon: Trash2
   }
 ];
 
