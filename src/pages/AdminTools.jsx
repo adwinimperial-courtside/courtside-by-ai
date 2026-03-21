@@ -353,11 +353,11 @@ export default function AdminTools() {
                 <CardContent className="pt-6">
                   <Button
                     onClick={recalculateGameScores}
-                    disabled={isRecalculating}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                    disabled={isRecalculating || !selectedRecalcLeague}
+                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
-                    {isRecalculating ? 'Recalculating...' : 'Recalculate All Game Scores'}
+                    {isRecalculating ? 'Recalculating...' : 'Recalculate Game Scores'}
                   </Button>
                 </CardContent>
               </Card>
