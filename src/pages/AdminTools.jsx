@@ -46,11 +46,13 @@ export default function AdminTools() {
     queryFn: () => base44.entities.Player.list(),
   });
 
+  const isRecalcAllowed = currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin';
+
   const recalculateGameScores = async () => {
+    if (!selectedRecalcLeague) return;
     setIsRecalculating(true);
     try {
-      // Get all completed games
-      const games = await base44.entities.Game.filter({ status: 'completed' });
+      const games = await base44.entities.Game.filter({ status: 'completed', league_id: selectedRecalcLeague });
       const stats = await base44.entities.PlayerStats.list();
 
       let updatedCount = 0;
