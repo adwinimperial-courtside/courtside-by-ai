@@ -427,7 +427,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">2PT FG</th>
+                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
                   <th className="px-3 py-2 text-center font-semibold">3PT FG</th>
                   <th className="px-3 py-2 text-center font-semibold">FT</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
@@ -496,7 +496,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
                 <tr>
                   <th className="px-3 py-2 text-left font-semibold">#</th>
                   <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">2PT FG</th>
+                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
                   <th className="px-3 py-2 text-center font-semibold">3PT FG</th>
                   <th className="px-3 py-2 text-center font-semibold">FT</th>
                   <th className="px-3 py-2 text-center font-semibold">AST</th>
