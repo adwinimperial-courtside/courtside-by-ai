@@ -55,7 +55,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           did_play: hasStats,
           points_2: points2Value,
           points_3: points3,
-          free_throws: stat.stats.free_throws,
+          free_throws: freethrows,
           offensive_rebounds: stat.stats.offensive_rebounds,
           defensive_rebounds: stat.stats.defensive_rebounds,
           assists: stat.stats.assists,
