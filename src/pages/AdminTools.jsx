@@ -143,11 +143,11 @@ export default function AdminTools() {
   };
 
   const recalculateTeamStandings = async () => {
+    if (!selectedRecalcLeague) return;
     setIsRecalculatingStandings(true);
     try {
-      // Get all completed games
-      const allGames = await base44.entities.Game.filter({ status: 'completed' });
-      const allTeams = await base44.entities.Team.list();
+      const allGames = await base44.entities.Game.filter({ status: 'completed', league_id: selectedRecalcLeague });
+      const allTeams = await base44.entities.Team.filter({ league_id: selectedRecalcLeague });
 
       // Group teams by league and calculate wins/losses
       const teamStats = {};
