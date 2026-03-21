@@ -375,11 +375,11 @@ export default function AdminTools() {
                 <CardContent className="pt-6">
                   <Button
                     onClick={calculateMissingPOG}
-                    disabled={isCalculatingPOG}
-                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
+                    disabled={isCalculatingPOG || !selectedRecalcLeague}
+                    className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50"
                   >
                     <Trophy className={`w-4 h-4 mr-2 ${isCalculatingPOG ? 'animate-spin' : ''}`} />
-                    {isCalculatingPOG ? 'Calculating...' : 'Calculate All Player of the Game'}
+                    {isCalculatingPOG ? 'Calculating...' : 'Calculate Player of the Game'}
                   </Button>
                 </CardContent>
               </Card>
