@@ -325,7 +325,7 @@ export default function AdminTools() {
           </div>
 
           {/* Recalculate Section */}
-          {isRecalcAllowed && (
+          {currentUser?.user_type === 'app_admin' && (
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Recalculate</h2>
 
