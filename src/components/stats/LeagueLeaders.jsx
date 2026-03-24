@@ -2,7 +2,8 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Award } from "lucide-react";
 
-export default function LeagueLeaders({ players, teams, stats }) {
+export default function LeagueLeaders({ players, teams, stats, games = [] }) {
+  const gameMap = Object.fromEntries(games.map(g => [g.id, g]));
   const didPlayerParticipate = (stat) => {
     const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
                      (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
@@ -21,14 +22,20 @@ export default function LeagueLeaders({ players, teams, stats }) {
     const team = teams.find(t => t.id === player.team_id);
     const gamesPlayed = participatedStats.length;
     
-    const totals = participatedStats.reduce((acc, stat) => ({
-      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
-      threes: acc.threes + (stat.points_3 || 0),
-      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-      assists: acc.assists + (stat.assists || 0),
-      steals: acc.steals + (stat.steals || 0),
-      blocks: acc.blocks + (stat.blocks || 0),
-    }), { points: 0, threes: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 });
+    const totals = participatedStats.reduce((acc, stat) => {
+      const isEdited = gameMap[stat.game_id]?.edited === true;
+      const pts = isEdited
+        ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
+        : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+      return {
+        points: acc.points + pts,
+        threes: acc.threes + (stat.points_3 || 0),
+        rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
+        assists: acc.assists + (stat.assists || 0),
+        steals: acc.steals + (stat.steals || 0),
+        blocks: acc.blocks + (stat.blocks || 0),
+      };
+    }, { points: 0, threes: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 });
 
     return { 
       ...player, 
