@@ -76,7 +76,44 @@ export default function DataBackup() {
     setIsBackingUp(false);
   };
 
-  // replaced by handleFileSelect above
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPendingFile(file);
+    setConfirmInput("");
+    setShowConfirmDialog(true);
+    e.target.value = "";
+  };
+
+  const handleConfirmedRestore = async () => {
+    if (!pendingFile || confirmInput !== CONFIRMATION_PHRASE) return;
+    setShowConfirmDialog(false);
+    setIsRestoring(true);
+    setRestoreStatus(null);
+    try {
+      const text = await pendingFile.text();
+      const backup = JSON.parse(text);
+      if (!backup.entities) throw new Error("Invalid backup file format.");
+      const counts = {};
+      for (const entity of ENTITIES) {
+        try {
+          const existing = await base44.entities[entity].list('-created_date', 5000);
+          await Promise.all(existing.map(r => base44.entities[entity].delete(r.id)));
+        } catch (_) {}
+        const records = backup.entities[entity];
+        if (!records || records.length === 0) { counts[entity] = 0; continue; }
+        const cleaned = records.map(({ id, created_date, updated_date, created_by, ...rest }) => rest);
+        await base44.entities[entity].bulkCreate(cleaned);
+        counts[entity] = cleaned.length;
+      }
+      setRestoreStatus({ success: true, message: "Clean restore completed successfully!", counts });
+    } catch (err) {
+      setRestoreStatus({ success: false, message: "Restore failed: " + err.message, counts: {} });
+    } finally {
+      setIsRestoring(false);
+      setPendingFile(null);
+    }
+  };
 
   const totalBackedUp = backupProgress.reduce((sum, p) => sum + p.count, 0);
 
