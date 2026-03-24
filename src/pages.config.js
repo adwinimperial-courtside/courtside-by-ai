@@ -48,6 +48,7 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AdminTools from './pages/AdminTools';
+import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
 import AwardLeaders from './pages/AwardLeaders';
@@ -78,6 +79,7 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "AdminTools": AdminTools,
+    "DataBackup": DataBackup,
     "DeleteLeague": DeleteLeague,
     "Analytics": Analytics,
     "AwardLeaders": AwardLeaders,
