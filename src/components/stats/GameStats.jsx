@@ -32,7 +32,10 @@ export default function GameStats({ games, teams, players, stats }) {
     if (!playerStat) return null;
 
     const player = players.find(p => p.id === game.player_of_game);
-    const points = ((playerStat.points_2 || 0) * 2) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0);
+    const isManual = game.entry_type === 'manual' || game.edited;
+    const points = isManual
+      ? (playerStat.points_2 || 0) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0)
+      : ((playerStat.points_2 || 0) * 2) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0);
     
     return { player, stat: playerStat, points };
   };
@@ -239,7 +242,10 @@ export default function GameStats({ games, teams, players, stats }) {
                               <TableBody>
                                 {awayPlayerStats.map(stat => {
                                   const player = players.find(p => p.id === stat.player_id);
-                                  const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                                  const isManual = game.entry_type === 'manual' || game.edited;
+                                  const points = isManual
+                                    ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
+                                    : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
                                   const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
                                   return (
                                     <TableRow key={stat.id}>
@@ -326,7 +332,10 @@ export default function GameStats({ games, teams, players, stats }) {
                               <TableBody>
                                 {homePlayerStats.map(stat => {
                                   const player = players.find(p => p.id === stat.player_id);
-                                  const points = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+                                  const isManual = game.entry_type === 'manual' || game.edited;
+                                  const points = isManual
+                                    ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
+                                    : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
                                   const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
                                   return (
                                     <TableRow key={stat.id}>
