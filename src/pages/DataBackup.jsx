@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, Database, CheckCircle, AlertTriangle, Loader2, Key } from "lucide-react";
+import { Download, Upload, Database, CheckCircle, AlertTriangle, Loader2, Key, Trash2 } from "lucide-react";
 
 const ENTITIES = [
   "League", "Team", "Player", "Game", "PlayerStats", "GameLog",
