@@ -57,7 +57,7 @@ export default function DataBackup() {
 
     for (const entity of ENTITIES) {
       try {
-        const records = await base44.entities[entity].list('-created_date', 5000);
+        const records = await base44.entities[entity].list('-created_date', 100000);
         backup.entities[entity] = records;
         setBackupProgress(prev => [...prev, { entity, count: records.length, status: "ok" }]);
       } catch (e) {
