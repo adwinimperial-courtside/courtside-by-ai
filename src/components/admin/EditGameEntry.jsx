@@ -32,9 +32,13 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   useEffect(() => {
     if (existingStats.length > 0 && selectedGame) {
+      const isManual = selectedGame.entry_type === 'manual';
       const stats = existingStats.map(stat => {
         const player = players.find(p => p.id === stat.player_id);
-        const totalPoints = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+        // Manual games store points_2 as (total - 3pt_pts - ft), not as 2-point field goal makes
+        const totalPoints = isManual
+          ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
+          : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
         return {
           stat_id: stat.id,
           player_id: stat.player_id,
@@ -63,13 +67,18 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   const updateGameMutation = useMutation({
     mutationFn: async (data) => {
+      const isManual = data.game.entry_type === 'manual';
       // Update and create player stats
       await Promise.all(
         data.playerStats.map(stat => {
           const points3Value = (stat.stats.points_3 || 0) * 3;
           const ftValue = stat.stats.free_throws || 0;
           const totalPoints = stat.stats.total_points || 0;
-          const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+          // Manual: store remaining points as-is (points_2 = total - 3pt_pts - ft)
+          // Digital: store number of 2-point field goals made (divide by 2)
+          const points2Value = isManual
+            ? Math.max(0, totalPoints - points3Value - ftValue)
+            : Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
           
           // New player (no stat_id)
           if (!stat.stat_id) {
