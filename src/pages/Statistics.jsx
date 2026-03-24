@@ -256,10 +256,11 @@ export default function StatisticsPage() {
                   players={searchedPlayers}
                   teams={teams}
                   stats={filteredStats}
+                  games={games}
                 />
               )}
               {mobileTab === "leaders" && (
-                <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
+                <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
               )}
               {mobileTab === "games" && (
                 <MobileGameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
@@ -292,10 +293,11 @@ export default function StatisticsPage() {
                     players={searchedPlayers}
                     teams={teams}
                     stats={filteredStats}
+                    games={games}
                   />
                 </TabsContent>
                 <TabsContent value="leaders">
-                  <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} />
+                  <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
                 </TabsContent>
                 <TabsContent value="games">
                    <GameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
