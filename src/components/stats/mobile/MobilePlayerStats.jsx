@@ -2,34 +2,27 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
 
-export default function MobilePlayerStats({ players, teams, stats, games = [] }) {
-  const gameMap = Object.fromEntries(games.map(g => [g.id, g]));
+export default function MobilePlayerStats({ players, teams, stats }) {
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   const playerAggregates = players.map(player => {
     const playerStats = stats.filter(s => s.player_id === player.id);
     const team = teams.find(t => t.id === player.team_id);
 
-    const totals = playerStats.reduce((acc, stat) => {
-      const isEdited = gameMap[stat.game_id]?.edited === true;
-      const pts = isEdited
-        ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
-        : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-      return {
-        points: acc.points + pts,
-        points_2: acc.points_2 + (stat.points_2 || 0),
-        points_3: acc.points_3 + (stat.points_3 || 0),
-        freeThrows: acc.freeThrows + (stat.free_throws || 0),
-        offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
-        defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
-        rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-        assists: acc.assists + (stat.assists || 0),
-        steals: acc.steals + (stat.steals || 0),
-        blocks: acc.blocks + (stat.blocks || 0),
-        turnovers: acc.turnovers + (stat.turnovers || 0),
-        games: acc.games + 1
-      };
-    }, { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, games: 0 });
+    const totals = playerStats.reduce((acc, stat) => ({
+      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
+      points_2: acc.points_2 + (stat.points_2 || 0),
+      points_3: acc.points_3 + (stat.points_3 || 0),
+      freeThrows: acc.freeThrows + (stat.free_throws || 0),
+      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
+      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
+      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
+      assists: acc.assists + (stat.assists || 0),
+      steals: acc.steals + (stat.steals || 0),
+      blocks: acc.blocks + (stat.blocks || 0),
+      turnovers: acc.turnovers + (stat.turnovers || 0),
+      games: acc.games + 1
+    }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, games: 0 });
 
     const gp = totals.games;
     return {
