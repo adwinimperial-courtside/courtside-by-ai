@@ -63,7 +63,8 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
             teamId: playerStat.team_id
           };
         }
-        const pts = (playerStat.points_2 || 0) * 2 + (playerStat.points_3 || 0) * 3 + (playerStat.free_throws || 0);
+        const isDigital = game.entry_type === 'digital' && !game.edited;
+        const pts = (isDigital ? (playerStat.points_2 || 0) * 2 : (playerStat.points_2 || 0)) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0);
         const gis = pts +
           1.2 * (playerStat.offensive_rebounds || 0) +
           1.0 * (playerStat.defensive_rebounds || 0) +
