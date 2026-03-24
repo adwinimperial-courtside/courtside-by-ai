@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -10,15 +12,20 @@ const ENTITIES = [
   "League", "Team", "Player", "Game", "PlayerStats", "GameLog",
   "UserApplication", "UserLeagueIdentity", "TacticalBriefing",
   "AIUsageCounter", "PendingUserAssignment", "LeagueSetupRequest",
-  "LeagueAccessRequest", "DeletionLog", "LoginEvent"
+  "LeagueAccessRequest", "DeletionLog", "LoginEvent", "User"
 ];
+
+const CONFIRMATION_PHRASE = "DELETE AND RESTORE";
 
 export default function DataBackup() {
   const [currentUser, setCurrentUser] = useState(null);
   const [isBackingUp, setIsBackingUp] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
-  const [restoreStatus, setRestoreStatus] = useState(null); // { success, message, counts }
+  const [restoreStatus, setRestoreStatus] = useState(null);
   const [backupProgress, setBackupProgress] = useState([]);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmInput, setConfirmInput] = useState("");
   const fileInputRef = useRef(null);
 
   React.useEffect(() => {
@@ -69,49 +76,7 @@ export default function DataBackup() {
     setIsBackingUp(false);
   };
 
-  const handleFileSelect = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsRestoring(true);
-    setRestoreStatus(null);
-
-    try {
-      const text = await file.text();
-      const backup = JSON.parse(text);
-
-      if (!backup.entities) throw new Error("Invalid backup file format.");
-
-      const counts = {};
-      for (const entity of ENTITIES) {
-        const records = backup.entities[entity];
-        if (!records || records.length === 0) {
-          counts[entity] = 0;
-          continue;
-        }
-
-        // Strip built-in fields and bulk create
-        const cleaned = records.map(({ id, created_date, updated_date, created_by, ...rest }) => rest);
-        await base44.entities[entity].bulkCreate(cleaned);
-        counts[entity] = cleaned.length;
-      }
-
-      setRestoreStatus({
-        success: true,
-        message: "Restore completed successfully!",
-        counts
-      });
-    } catch (err) {
-      setRestoreStatus({
-        success: false,
-        message: "Restore failed: " + err.message,
-        counts: {}
-      });
-    } finally {
-      setIsRestoring(false);
-      e.target.value = "";
-    }
-  };
+  // replaced by handleFileSelect above
 
   const totalBackedUp = backupProgress.reduce((sum, p) => sum + p.count, 0);
 
@@ -188,8 +153,8 @@ export default function DataBackup() {
               <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 flex gap-3">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold mb-1">Important: Restore appends data</p>
-                  <p>Records from the backup file will be added to your current database. Existing records are NOT deleted. To do a clean restore, delete existing data first.</p>
+                  <p className="font-semibold mb-1">Warning: This is a destructive operation</p>
+                  <p>ALL existing data will be permanently deleted and replaced with the backup. You will be asked to type a confirmation phrase before proceeding.</p>
                 </div>
               </div>
 
@@ -240,6 +205,44 @@ export default function DataBackup() {
           </Card>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showConfirmDialog} onOpenChange={(open) => { if (!open) { setShowConfirmDialog(false); setPendingFile(null); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-700">
+              <AlertTriangle className="w-5 h-5" />
+              Confirm Clean Restore
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p className="text-slate-700">This will <strong>permanently delete ALL existing data</strong> in every table and replace it with the contents of the backup file. This cannot be undone.</p>
+              <p className="text-slate-700">File: <span className="font-semibold">{pendingFile?.name}</span></p>
+              <div className="pt-2">
+                <p className="text-sm font-medium text-slate-700 mb-2">
+                  Type <span className="font-bold text-red-600">{CONFIRMATION_PHRASE}</span> to proceed:
+                </p>
+                <Input
+                  value={confirmInput}
+                  onChange={(e) => setConfirmInput(e.target.value)}
+                  placeholder={CONFIRMATION_PHRASE}
+                  className="border-red-300 focus-visible:ring-red-400"
+                />
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 justify-end mt-2">
+            <Button variant="outline" onClick={() => { setShowConfirmDialog(false); setPendingFile(null); }}>Cancel</Button>
+            <Button
+              disabled={confirmInput !== CONFIRMATION_PHRASE}
+              onClick={handleConfirmedRestore}
+              className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete All & Restore
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
