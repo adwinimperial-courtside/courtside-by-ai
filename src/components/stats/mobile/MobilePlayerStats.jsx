@@ -2,7 +2,12 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
 
-export default function MobilePlayerStats({ players, teams, stats }) {
+export default function MobilePlayerStats({ players, teams, stats, games = [] }) {
+  const calcPoints = (stat) => {
+    const game = games.find(g => g.id === stat.game_id);
+    const isDigital = game && game.entry_type === 'digital' && !game.edited;
+    return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+  };
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   const playerAggregates = players.map(player => {
@@ -10,7 +15,7 @@ export default function MobilePlayerStats({ players, teams, stats }) {
     const team = teams.find(t => t.id === player.team_id);
 
     const totals = playerStats.reduce((acc, stat) => ({
-      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
+      points: acc.points + calcPoints(stat),
       points_2: acc.points_2 + (stat.points_2 || 0),
       points_3: acc.points_3 + (stat.points_3 || 0),
       freeThrows: acc.freeThrows + (stat.free_throws || 0),
