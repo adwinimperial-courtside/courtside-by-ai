@@ -104,7 +104,7 @@ const ownerItems = [
   {
     title: "Data Backup",
     url: createPageUrl("DataBackup"),
-    icon: DatabaseBackup
+    icon: HardDrive
   }
 ];
 
