@@ -48,6 +48,7 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AdminTools from './pages/AdminTools';
+import FixManualStats from './pages/FixManualStats';
 import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
@@ -105,6 +106,7 @@ export const PAGES = {
     "UserRoles": UserRoles,
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
+    "FixManualStats": FixManualStats,
 }
 
 export const pagesConfig = {
