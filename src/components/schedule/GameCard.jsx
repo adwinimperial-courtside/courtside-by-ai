@@ -75,9 +75,6 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const editedBadgeColor = "bg-amber-100 text-amber-800";
   
   const calcPoints = (stat) => {
-    if (liveGame.entry_type === 'manual' || liveGame.edited) {
-      return (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-    }
     return ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
   };
 
