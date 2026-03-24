@@ -3,8 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
-export default function PlayerStats({ players, teams, stats, games = [] }) {
-  const gameMap = Object.fromEntries(games.map(g => [g.id, g]));
+export default function PlayerStats({ players, teams, stats }) {
   const [sortField, setSortField] = useState("points");
   const [sortDirection, setSortDirection] = useState("desc");
 
@@ -25,28 +24,21 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
     const participatedStats = playerStats.filter(didPlayerParticipate);
     const team = teams.find(t => t.id === player.team_id);
     
-    const totals = participatedStats.reduce((acc, stat) => {
-      const game = gameMap[stat.game_id];
-      const isManual = game?.entry_type === 'manual' || game?.edited === true;
-      const pts = isManual
-        ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
-        : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-      return {
-        points: acc.points + pts,
-        points_2: acc.points_2 + (stat.points_2 || 0),
-        points_3: acc.points_3 + (stat.points_3 || 0),
-        freeThrows: acc.freeThrows + (stat.free_throws || 0),
-        offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
-        defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
-        rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-        assists: acc.assists + (stat.assists || 0),
-        steals: acc.steals + (stat.steals || 0),
-        blocks: acc.blocks + (stat.blocks || 0),
-        turnovers: acc.turnovers + (stat.turnovers || 0),
-        fouls: acc.fouls + (stat.fouls || 0),
-        games: acc.games + 1
-      };
-    }, { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, games: 0 });
+    const totals = participatedStats.reduce((acc, stat) => ({
+      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
+      points_2: acc.points_2 + (stat.points_2 || 0),
+      points_3: acc.points_3 + (stat.points_3 || 0),
+      freeThrows: acc.freeThrows + (stat.free_throws || 0),
+      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
+      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
+      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
+      assists: acc.assists + (stat.assists || 0),
+      steals: acc.steals + (stat.steals || 0),
+      blocks: acc.blocks + (stat.blocks || 0),
+      turnovers: acc.turnovers + (stat.turnovers || 0),
+      fouls: acc.fouls + (stat.fouls || 0),
+      games: acc.games + 1
+    }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, games: 0 });
 
     return {
       ...player,
