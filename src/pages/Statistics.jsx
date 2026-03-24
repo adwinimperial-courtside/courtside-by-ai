@@ -241,7 +241,7 @@ export default function StatisticsPage() {
                   <SelectItem value="teamstats">Team Stats</SelectItem>
                   <SelectItem value="players">Player Stats</SelectItem>
                   <SelectItem value="leaders">League Leaders</SelectItem>
-                  <SelectItem value="games">Game Stats</SelectItem>
+
                 </SelectContent>
               </Select>
             </div>
@@ -262,9 +262,7 @@ export default function StatisticsPage() {
               {mobileTab === "leaders" && (
                 <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
               )}
-              {mobileTab === "games" && (
-                <MobileGameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
-              )}
+
             </div>
 
             {/* Desktop tabs - hidden on mobile */}
@@ -280,9 +278,7 @@ export default function StatisticsPage() {
                   <TabsTrigger value="leaders" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
                     League Leaders
                   </TabsTrigger>
-                  <TabsTrigger value="games" className="data-[state=active]:bg-purple-500 data-[state=active]:text-white px-6 py-2.5">
-                    Game Stats
-                  </TabsTrigger>
+
                 </TabsList>
 
                 <TabsContent value="teamstats">
@@ -299,9 +295,7 @@ export default function StatisticsPage() {
                 <TabsContent value="leaders">
                   <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
                 </TabsContent>
-                <TabsContent value="games">
-                   <GameStats games={filteredGames} teams={teams} players={players} stats={filteredStats} />
-                 </TabsContent>
+
               </Tabs>
             </div>
           </>
