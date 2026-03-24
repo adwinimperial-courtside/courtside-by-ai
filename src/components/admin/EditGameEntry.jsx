@@ -67,18 +67,15 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   const updateGameMutation = useMutation({
     mutationFn: async (data) => {
-      const isManual = data.game.entry_type === 'manual';
-      // Update and create player stats
+      // Always save edited stats in manual style:
+      // points_2 = total_points - (points_3 * 3) - free_throws
+      // and mark game as entry_type 'manual' so box score displays correctly.
       await Promise.all(
         data.playerStats.map(stat => {
           const points3Value = (stat.stats.points_3 || 0) * 3;
           const ftValue = stat.stats.free_throws || 0;
           const totalPoints = stat.stats.total_points || 0;
-          // Manual: store remaining points as-is (points_2 = total - 3pt_pts - ft)
-          // Digital: store number of 2-point field goals made (divide by 2)
-          const points2Value = isManual
-            ? Math.max(0, totalPoints - points3Value - ftValue)
-            : Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+          const points2Value = Math.max(0, totalPoints - points3Value - ftValue);
           
           // New player (no stat_id)
           if (!stat.stat_id) {
@@ -133,12 +130,14 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         })
       );
 
-      // Update game with new scores and mark as edited
+      // Update game with new scores, mark as edited and entry_type manual
+      // so calcPoints in GameCard uses the correct manual formula
       await base44.entities.Game.update(data.game.id, {
         home_score: data.home_score,
         away_score: data.away_score,
         player_of_game: data.player_of_game,
         edited: true,
+        entry_type: 'manual',
       });
 
       return data.game;
