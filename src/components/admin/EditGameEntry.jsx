@@ -69,7 +69,8 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           const points3Value = (stat.stats.points_3 || 0) * 3;
           const ftValue = stat.stats.free_throws || 0;
           const totalPoints = stat.stats.total_points || 0;
-          const points2Value = Math.max(0, Math.floor((totalPoints - points3Value - ftValue) / 2));
+          // Store remaining points directly (no /2) so display is lossless
+          const points2Value = Math.max(0, totalPoints - points3Value - ftValue);
           
           // New player (no stat_id)
           if (!stat.stat_id) {
