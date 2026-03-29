@@ -21,16 +21,18 @@ export default function LiveBoxScorePage() {
     queryKey: ['game', gameId],
     queryFn: () => base44.entities.Game.get(gameId),
     enabled: !!gameId,
-    staleTime: 2000,
-    refetchOnWindowFocus: false
+    staleTime: 0,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true
   });
 
   const { data: allStats = [] } = useQuery({
     queryKey: ['playerStats', gameId],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: gameId }),
     enabled: !!gameId,
-    staleTime: 2000,
-    refetchOnWindowFocus: false
+    staleTime: 0,
+    refetchInterval: 3000,
+    refetchOnWindowFocus: true
   });
 
   // Subscribe to real-time updates
