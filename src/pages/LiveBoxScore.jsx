@@ -131,7 +131,7 @@ export default function LiveBoxScorePage() {
     const teamPlayers = playerStats.map(stat => ({
       ...stat,
       player: players.find(p => p.id === stat.player_id)
-    })).sort((a, b) => (b.points_2 || 0) * 2 + (b.points_3 || 0) * 3 + (b.free_throws || 0) - ((a.points_2 || 0) * 2 + (a.points_3 || 0) * 3 + (a.free_throws || 0)));
+    })).sort((a, b) => (a.player?.jersey_number || 0) - (b.player?.jersey_number || 0));
 
     const teamScore = teamPlayers.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
     const team3PT = teamPlayers.reduce((acc, s) => acc + (s.points_3 || 0), 0);
