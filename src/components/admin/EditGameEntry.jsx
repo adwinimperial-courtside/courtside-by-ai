@@ -32,9 +32,12 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   useEffect(() => {
     if (existingStats.length > 0 && selectedGame) {
+      const isEdited = selectedGame.edited || selectedGame.entry_type === 'manual';
       const stats = existingStats.map(stat => {
         const player = players.find(p => p.id === stat.player_id);
-        const totalPoints = ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+        const totalPoints = isEdited
+          ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
+          : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
         return {
           stat_id: stat.id,
           player_id: stat.player_id,
