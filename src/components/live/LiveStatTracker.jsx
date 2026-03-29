@@ -907,12 +907,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
   };
 
-  const homeActivePlayers = players.filter(p => 
-    p.team_id === game.home_team_id && activePlayerIds.includes(p.id)
-  );
-  const awayActivePlayers = players.filter(p => 
-    p.team_id === game.away_team_id && activePlayerIds.includes(p.id)
-  );
+  const homeActivePlayers = players
+    .filter(p => p.team_id === game.home_team_id && activePlayerIds.includes(p.id))
+    .sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0));
+  const awayActivePlayers = players
+    .filter(p => p.team_id === game.away_team_id && activePlayerIds.includes(p.id))
+    .sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0));
 
   const isDisqualified = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
