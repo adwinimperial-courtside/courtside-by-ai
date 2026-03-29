@@ -414,7 +414,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-white text-sm truncate drop-shadow">{homeTeam?.name}</h3>
-              <p className="text-3xl font-bold text-white leading-tight">{game.home_score || 0}</p>
+              <p className="text-3xl font-bold text-white leading-tight">{localGame.home_score || 0}</p>
             </div>
           </div>
 
@@ -455,7 +455,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           <div className="py-3 px-4 flex items-center justify-end gap-3">
             <div className="text-right min-w-0">
               <h3 className="font-bold text-white text-sm truncate drop-shadow">{awayTeam?.name}</h3>
-              <p className="text-3xl font-bold text-white leading-tight">{game.away_score || 0}</p>
+              <p className="text-3xl font-bold text-white leading-tight">{localGame.away_score || 0}</p>
             </div>
             <div
               className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg"
