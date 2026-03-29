@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       const users = await base44.asServiceRole.entities.User.list('-created_date', 500);
       const q = (query || '').toLowerCase();
       const filtered = users
-        .filter(u => u.data?.user_type && u.data.user_type !== 'app_admin')
+        .filter(u => u.user_type !== 'app_admin')
         .filter(u =>
           !q ||
           (u.full_name || '').toLowerCase().includes(q) ||
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           id: u.id,
           full_name: u.full_name,
           email: u.email,
-          user_type: u.data?.user_type || 'unknown',
+          user_type: u.user_type || 'unknown',
         }));
       return Response.json({ users: filtered });
     }
