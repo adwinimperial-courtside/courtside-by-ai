@@ -56,7 +56,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   useEffect(() => {
     setLocalGame(game);
     setPossession(game.possession || null);
-  }, [game.possession, game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period]);
+  }, [game.possession, game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period, game.home_score, game.away_score, game.home_team_fouls, game.away_team_fouls]);
 
   // Subscribe to real-time game updates
   useEffect(() => {
