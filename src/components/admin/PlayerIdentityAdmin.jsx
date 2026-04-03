@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { RefreshCw, User, Pencil, Check, X, Link2 } from "lucide-react";
 import PlayerLeagueMatchModal from "@/components/admin/PlayerLeagueMatchModal";
+import BulkIdentityMatching from "@/components/admin/BulkIdentityMatching";
 
 function looksLikeRealName(name) {
   if (!name || typeof name !== "string") return false;
@@ -160,6 +161,7 @@ export default function PlayerIdentityAdmin() {
 
   return (
     <div>
+      <BulkIdentityMatching leagues={leagues} allUsers={players} />
       {matchingPlayer && (
         <PlayerLeagueMatchModal
           player={matchingPlayer}
