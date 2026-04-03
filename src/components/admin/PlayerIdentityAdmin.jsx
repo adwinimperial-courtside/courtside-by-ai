@@ -23,6 +23,7 @@ const STATUS_COLORS = {
 
 export default function PlayerIdentityAdmin() {
   const [statusFilter, setStatusFilter] = useState("all");
+  const [nameSearch, setNameSearch] = useState("");
   const [isRepairing, setIsRepairing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
@@ -56,9 +57,16 @@ export default function PlayerIdentityAdmin() {
   });
 
   const filtered = players.filter(p => {
-    if (statusFilter === "missing_display_name") return !p.display_name;
-    if (statusFilter === "needs_review") return p.player_name_status === "missing";
-    if (statusFilter === "completed") return p.player_name_status === "completed";
+    if (statusFilter === "missing_display_name" && p.display_name) return false;
+    if (statusFilter === "needs_review" && p.player_name_status !== "missing") return false;
+    if (statusFilter === "completed" && p.player_name_status !== "completed") return false;
+    if (nameSearch.trim()) {
+      const q = nameSearch.trim().toLowerCase();
+      const matchName = (p.full_name || "").toLowerCase().includes(q);
+      const matchDisplay = (p.display_name || "").toLowerCase().includes(q);
+      const matchEmail = (p.email || "").toLowerCase().includes(q);
+      if (!matchName && !matchDisplay && !matchEmail) return false;
+    }
     return true;
   });
 
@@ -207,6 +215,12 @@ export default function PlayerIdentityAdmin() {
                 <SelectItem value="completed">Completed</SelectItem>
               </SelectContent>
             </Select>
+            <Input
+              value={nameSearch}
+              onChange={e => setNameSearch(e.target.value)}
+              placeholder="Search by name or email…"
+              className="h-8 text-sm w-56"
+            />
             <span className="text-sm text-slate-400">
               {filtered.length} record{filtered.length !== 1 ? "s" : ""}
             </span>
