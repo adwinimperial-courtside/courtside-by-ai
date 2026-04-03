@@ -88,10 +88,6 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   };
   // ── Team Fouls state ─────────────────────────────────────────────
   const gameRules = { ...DEFAULT_GAME_RULES, ...(localGame.game_rules || {}) };
-  // Halves use 7-foul bonus rule; quarters use 5
-  if (!localGame.game_rules?.teamFoulBonusThreshold) {
-    gameRules.teamFoulBonusThreshold = periodType === 'halves' ? 7 : 5;
-  }
   const [homeTeamFouls, setHomeTeamFouls] = useState(() => localGame.home_team_fouls || {});
   const [awayTeamFouls, setAwayTeamFouls] = useState(() => localGame.away_team_fouls || {});
 
@@ -102,6 +98,10 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   const isTimed = localGame?.game_mode === "timed" || (!localGame?.game_mode && localGame?.period_minutes);
   const periodType = localGame?.period_type || "quarters";
+  // Halves use 7-foul bonus rule; quarters use 5
+  if (!localGame.game_rules?.teamFoulBonusThreshold) {
+    gameRules.teamFoulBonusThreshold = periodType === 'halves' ? 7 : 5;
+  }
   const totalPeriods = localGame?.period_count || (periodType === "halves" ? 2 : 4);
   const periodMinutes = localGame?.period_minutes || 10;
   const overtimeMinutes = localGame?.overtime_minutes || 5;
