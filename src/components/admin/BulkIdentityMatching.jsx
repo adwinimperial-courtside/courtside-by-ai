@@ -148,7 +148,6 @@ export default function BulkIdentityMatching({ leagues = [], allUsers = [] }) {
     const allRows = [...(preview?.ready || []), ...(preview?.review || [])];
     const toApply = allRows.filter(r => approvals[r.rowKey] === "approved");
     if (!toApply.length) { alert("No approved matches to apply."); return; }
-    if (!confirm(`Apply ${toApply.length} approved match(es) to ${leagues.find(l => l.id === targetLeagueId)?.name}?`)) return;
 
     setIsSaving(true);
     try {
