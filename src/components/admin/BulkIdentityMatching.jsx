@@ -34,10 +34,12 @@ export default function BulkIdentityMatching({ leagues = [], allUsers = [] }) {
       const targetTeams = allTeams.filter(t => t.league_id === targetLeagueId);
       const sourceTeams = allTeams.filter(t => t.league_id === sourceLeagueId);
 
-      const [targetPlayers, sourceIdentities] = await Promise.all([
-        base44.entities.Player.filter({ team_id: { $in: targetTeams.map(t => t.id) } }, "-created_date", 2000),
+      const [allPlayers, sourceIdentities] = await Promise.all([
+        base44.entities.Player.list("-created_date", 5000),
         base44.entities.UserLeagueIdentity.filter({ league_id: sourceLeagueId }, "-created_date", 2000),
       ]);
+      const targetTeamIds = new Set(targetTeams.map(t => t.id));
+      const targetPlayers = allPlayers.filter(p => targetTeamIds.has(p.team_id));
 
       // Fetch existing target identities to detect conflicts
       const existingTargetIdentities = await base44.entities.UserLeagueIdentity.filter({ league_id: targetLeagueId }, "-created_date", 2000);
