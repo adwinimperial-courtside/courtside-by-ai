@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Key, Users, Search, ArrowUpDown, BarChart3, ChevronDown, ChevronRight, ArrowDown } from "lucide-react";
 
-const TABS = ["overview", "league_owners", "coaches", "players", "viewers"];
+const TABS = ["overview", "by_team", "league_owners", "coaches", "players", "viewers"];
 const TAB_LABELS = {
   overview: "Overview",
+  by_team: "By League & Team",
   league_owners: "League Owners",
   coaches: "Coaches",
   players: "Players",
@@ -196,6 +197,47 @@ export default function UserRoles() {
     enabled: currentUser?.user_type === "app_admin",
   });
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list("-created_date", 1000),
+    enabled: currentUser?.user_type === "app_admin",
+  });
+
+  const { data: identities = [] } = useQuery({
+    queryKey: ["userLeagueIdentities"],
+    queryFn: () => base44.entities.UserLeagueIdentity.list("-created_date", 5000),
+    enabled: currentUser?.user_type === "app_admin",
+  });
+
+  const byTeamData = useMemo(() => {
+    return leagues.map(league => {
+      const leagueTeams = teams.filter(t => t.league_id === league.id);
+      const leagueIdentities = identities.filter(i => i.league_id === league.id && i.match_status === 'matched');
+      const leagueUsers = users.filter(u =>
+        u.assigned_league_ids?.includes(league.id) &&
+        ['league_admin', 'coach', 'player', 'viewer'].includes(u.user_type)
+      );
+
+      const teamRows = leagueTeams.map(team => {
+        const teamIdentities = leagueIdentities.filter(i => i.team_id === team.id);
+        const teamUsers = teamIdentities
+          .map(i => {
+            const user = users.find(u => u.id === i.user_id);
+            return user ? { ...user, matched_player_name: i.matched_player_name } : null;
+          })
+          .filter(Boolean);
+        // also add coaches/admins assigned to this league (no team match needed)
+        return { team, users: teamUsers };
+      });
+
+      // unassigned = users in league but no identity match to a team
+      const matchedUserIds = new Set(leagueIdentities.map(i => i.user_id));
+      const unassigned = leagueUsers.filter(u => u.user_type !== 'player' || !matchedUserIds.has(u.id));
+
+      return { league, teamRows, unassigned, leagueUsers };
+    }).filter(l => l.leagueUsers.length > 0 || l.teamRows.some(t => t.users.length > 0));
+  }, [leagues, teams, identities, users]);
+
   const counts = {
     league_owners: users.filter((u) => u.user_type === "league_admin").length,
     coaches: users.filter((u) => u.user_type === "coach").length,
@@ -258,7 +300,7 @@ export default function UserRoles() {
   };
 
   const getMobileSelectLabel = (tab) => {
-    if (tab === "overview") return "Overview";
+    if (tab === "overview" || tab === "by_team") return TAB_LABELS[tab];
     const count = counts[tab];
     return `${TAB_LABELS[tab]}${count > 0 ? ` (${count})` : ""}`;
   };
@@ -442,8 +484,93 @@ export default function UserRoles() {
           </div>
         )}
 
+        {/* BY LEAGUE & TEAM TAB */}
+        {activeTab === "by_team" && (
+          <div className="space-y-6">
+            {byTeamData.length === 0 ? (
+              <div className="bg-white rounded-xl border border-slate-200 p-10 text-center text-slate-500">No data yet</div>
+            ) : byTeamData.map(({ league, teamRows, unassigned }) => (
+              <Card key={league.id} className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-slate-50">
+                  <CardTitle className="text-lg">{league.name} <span className="text-slate-400 font-normal text-sm ml-1">{league.season}</span></CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {teamRows.filter(t => t.users.length > 0).map(({ team, users: teamUsers }) => (
+                    <div key={team.id} className="border-b border-slate-100 last:border-b-0">
+                      <div className="flex items-center gap-2 px-5 py-2 bg-white">
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: team.color || '#f97316' }} />
+                        <span className="font-semibold text-slate-800 text-sm">{team.name}</span>
+                        <Badge className="bg-slate-100 text-slate-600 text-xs ml-auto">{teamUsers.length}</Badge>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-slate-50">
+                              <TableHead className="pl-8">Player Name</TableHead>
+                              <TableHead>Account Name</TableHead>
+                              <TableHead>Email</TableHead>
+                              <TableHead>Role</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {teamUsers.map(user => (
+                              <TableRow key={user.id}>
+                                <TableCell className="pl-8 font-medium text-slate-800">{user.matched_player_name || '—'}</TableCell>
+                                <TableCell className="text-slate-600">{user.full_name}</TableCell>
+                                <TableCell className="text-slate-500 text-xs">{user.email}</TableCell>
+                                <TableCell>
+                                  <Badge className={{
+                                    player: 'bg-indigo-100 text-indigo-800',
+                                    coach: 'bg-green-100 text-green-800',
+                                    league_admin: 'bg-purple-100 text-purple-800',
+                                    viewer: 'bg-blue-100 text-blue-800',
+                                  }[user.user_type] || 'bg-slate-100 text-slate-700'}>
+                                    {user.user_type?.replace('_', ' ')}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  ))}
+                  {unassigned.filter(u => u.user_type !== 'player').length > 0 && (
+                    <div className="border-t border-slate-200">
+                      <div className="px-5 py-2 bg-slate-50">
+                        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">League-level (no team)</span>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableBody>
+                            {unassigned.filter(u => u.user_type !== 'player').map(user => (
+                              <TableRow key={user.id}>
+                                <TableCell className="pl-8 font-medium text-slate-800">{user.full_name}</TableCell>
+                                <TableCell className="text-slate-500 text-xs">{user.email}</TableCell>
+                                <TableCell>
+                                  <Badge className={{
+                                    coach: 'bg-green-100 text-green-800',
+                                    league_admin: 'bg-purple-100 text-purple-800',
+                                    viewer: 'bg-blue-100 text-blue-800',
+                                  }[user.user_type] || 'bg-slate-100 text-slate-700'}>
+                                    {user.user_type?.replace('_', ' ')}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* ROLE TABS */}
-        {activeTab !== "overview" && (
+        {activeTab !== "overview" && activeTab !== "by_team" && (
           <Card className="border-slate-200 shadow-lg">
             <CardHeader className="border-b border-slate-200 bg-white">
               <div className="flex items-center justify-between">
