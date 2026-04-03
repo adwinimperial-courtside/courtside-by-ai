@@ -185,21 +185,21 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                     />
                   </div>
                   <div>
-                    <Label htmlFor="overtime_minutes">Overtime Minutes</Label>
+                    <Label htmlFor="overtime_minutes">Overtime Minutes <span className="text-slate-400 font-normal">(0 = no overtime)</span></Label>
                     <Input
                       id="overtime_minutes"
                       type="number"
-                      min={1}
+                      min={0}
                       max={15}
                       value={formData.overtime_minutes}
                       onChange={(e) => setFormData({ ...formData, overtime_minutes: Number(e.target.value) })}
                       className="mt-1.5"
                     />
                   </div>
-                </div>
-              </>
-            )}
-          </div>
+                  </div>
+                  </>
+                  )}
+                  </div>
 
           <DialogFooter>
             <Button
