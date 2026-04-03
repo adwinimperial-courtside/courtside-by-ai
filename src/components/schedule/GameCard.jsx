@@ -5,17 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3 } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
+import EditGameSettingsDialog from "./EditGameSettingsDialog";
 
-export default function GameCard({ game, teams, leagues, onStartGame, currentUser }) {
+export default function GameCard({ game, teams, leagues, onStartGame, currentUser, onGameUpdated }) {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
+  const [showEditSettings, setShowEditSettings] = useState(false);
 
   useEffect(() => {
     setLiveGame(game);
@@ -184,13 +186,23 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
             <div className="flex gap-2 flex-wrap">
               {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
-                <Button
-                  onClick={onStartGame}
-                  className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Game
-                </Button>
+                <>
+                  <Button
+                    onClick={onStartGame}
+                    className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-lg"
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Game
+                  </Button>
+                  <Button
+                    onClick={() => setShowEditSettings(true)}
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Edit Settings
+                  </Button>
+                </>
               )}
               {liveGame.status === 'in_progress' && (
                 <>
@@ -388,6 +400,14 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
           )}
         </CardContent>
       </Card>
+      {showEditSettings && (
+        <EditGameSettingsDialog
+          open={showEditSettings}
+          onOpenChange={setShowEditSettings}
+          game={liveGame}
+          onSaved={() => { onGameUpdated && onGameUpdated(); }}
+        />
+      )}
     </motion.div>
   );
 }

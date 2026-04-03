@@ -193,12 +193,13 @@ export default function SchedulePage() {
           <div className="w-full space-y-4">
             {filteredGames.map((game) => (
               <GameCard
-                key={game.id}
-                game={game}
-                teams={teams}
-                leagues={leagues}
-                onStartGame={() => startGame(game)}
-                currentUser={currentUser}
+              key={game.id}
+              game={game}
+              teams={teams}
+              leagues={leagues}
+              onStartGame={() => startGame(game)}
+              currentUser={currentUser}
+              onGameUpdated={() => queryClient.invalidateQueries({ queryKey: ['games'] })}
               />
             ))}
           </div>
