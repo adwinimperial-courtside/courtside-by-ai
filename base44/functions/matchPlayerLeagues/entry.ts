@@ -94,9 +94,10 @@ Deno.serve(async (req) => {
       // Run matching logic
       let matchResult = null;
 
-      // A. Exact display_name match
+      // A. Normalized display_name match
       if (display_name) {
-        const exactMatches = rosterPlayers.filter(p => p.name === display_name);
+        const normDisplay = normalizeName(display_name);
+        const exactMatches = rosterPlayers.filter(p => normalizeName(p.name) === normDisplay);
         if (exactMatches.length === 1) {
           matchResult = {
             matched_player_name: exactMatches[0].name,
@@ -105,21 +106,51 @@ Deno.serve(async (req) => {
             team_name: exactMatches[0].team_name,
             match_status: 'matched',
             match_confidence: 'high',
-            match_method: 'exact_name',
+            match_method: 'normalized_name',
           };
         } else if (exactMatches.length > 1) {
           matchResult = {
             match_status: 'needs_review',
             match_confidence: 'low',
-            match_method: 'exact_name',
-            note: `${exactMatches.length} exact matches found for display name`,
+            match_method: 'normalized_name',
+            note: `${exactMatches.length} matches found for display name`,
           };
         }
       }
 
+      // B. Normalized handle match
+      if (!matchResult && handle) {
+        const normHandle = normalizeName(handle);
+        const handleMatches = rosterPlayers.filter(p => normalizeName(p.name) === normHandle);
+        if (handleMatches.length === 1) {
+          matchResult = {
+            matched_player_name: handleMatches[0].name,
+            matched_player_id: handleMatches[0].id,
+            team_id: handleMatches[0].team_id,
+            team_name: handleMatches[0].team_name,
+            match_status: 'matched',
+            match_confidence: 'medium',
+            match_method: 'handle_to_name',
+          };
+        }
+      }
 
-
-
+      // C. Normalized full_name match
+      if (!matchResult && full_name) {
+        const normFull = normalizeName(full_name);
+        const fullMatches = rosterPlayers.filter(p => normalizeName(p.name) === normFull);
+        if (fullMatches.length === 1) {
+          matchResult = {
+            matched_player_name: fullMatches[0].name,
+            matched_player_id: fullMatches[0].id,
+            team_id: fullMatches[0].team_id,
+            team_name: fullMatches[0].team_name,
+            match_status: 'matched',
+            match_confidence: 'medium',
+            match_method: 'normalized_name',
+          };
+        }
+      }
 
       if (!matchResult) {
         matchResult = { match_status: 'unmatched', match_confidence: null, match_method: 'none' };
