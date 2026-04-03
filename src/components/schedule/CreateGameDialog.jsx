@@ -11,6 +11,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const STAGE_PRESETS = {
+  elimination:   { overtime_allowed: false, timeouts_total: 2, timeouts_first_half: null, timeouts_second_half: null },
+  quarter_final: { overtime_allowed: true,  timeouts_total: 2, timeouts_first_half: null, timeouts_second_half: null },
+  semi_final:    { overtime_allowed: true,  timeouts_total: null, timeouts_first_half: 1, timeouts_second_half: 2 },
+  championship:  { overtime_allowed: true,  timeouts_total: null, timeouts_first_half: 2, timeouts_second_half: 3 },
+};
+
 export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams }) {
   const [formData, setFormData] = useState({
     league_id: "",
@@ -22,24 +29,55 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     period_type: "quarters",
     period_minutes: 10,
     overtime_minutes: 5,
+    game_stage: "",
+    overtime_allowed: null,
+    timeouts_total: "",
+    timeouts_first_half: "",
+    timeouts_second_half: "",
   });
 
 
   const isTimed = formData.game_mode === "timed";
+
+  const applyStagePreset = (stage) => {
+    const preset = STAGE_PRESETS[stage] || {};
+    setFormData(f => ({
+      ...f,
+      game_stage: stage,
+      overtime_allowed: preset.overtime_allowed ?? null,
+      timeouts_total: preset.timeouts_total != null ? preset.timeouts_total : "",
+      timeouts_first_half: preset.timeouts_first_half != null ? preset.timeouts_first_half : "",
+      timeouts_second_half: preset.timeouts_second_half != null ? preset.timeouts_second_half : "",
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const payload = { ...formData };
     if (isTimed) {
       payload.period_count = formData.period_type === "quarters" ? 4 : 2;
+      // Only include timeout/overtime fields if they have values
+      const gameRules = {};
+      if (formData.game_stage) gameRules.game_stage = formData.game_stage;
+      if (formData.overtime_allowed !== null) gameRules.overtime_allowed = formData.overtime_allowed;
+      if (formData.timeouts_total !== "") gameRules.timeouts_total = Number(formData.timeouts_total);
+      if (formData.timeouts_first_half !== "") gameRules.timeouts_first_half = Number(formData.timeouts_first_half);
+      if (formData.timeouts_second_half !== "") gameRules.timeouts_second_half = Number(formData.timeouts_second_half);
+      if (Object.keys(gameRules).length > 0) payload.game_rules = gameRules;
     } else {
       payload.period_type = null;
       payload.period_count = null;
       payload.period_minutes = null;
       payload.overtime_minutes = null;
     }
+    // Clean up UI-only fields from payload
+    delete payload.game_stage;
+    delete payload.overtime_allowed;
+    delete payload.timeouts_total;
+    delete payload.timeouts_first_half;
+    delete payload.timeouts_second_half;
     onSubmit(payload);
-    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", period_type: "quarters", period_minutes: 10, overtime_minutes: 5 });
+    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", period_type: "quarters", period_minutes: 10, overtime_minutes: 5, game_stage: "", overtime_allowed: null, timeouts_total: "", timeouts_first_half: "", timeouts_second_half: "" });
   };
 
   const leagueTeams = formData.league_id 
@@ -196,6 +234,86 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                       className="mt-1.5"
                     />
                   </div>
+                </div>
+
+                {/* Tournament / Timeout Settings */}
+                <div className="border border-slate-200 rounded-lg p-4 space-y-3 bg-slate-50">
+                  <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Tournament Settings <span className="font-normal text-slate-400">(Optional)</span></p>
+
+                  <div>
+                    <Label>Game Stage</Label>
+                    <Select value={formData.game_stage} onValueChange={applyStagePreset}>
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Select stage (fills defaults)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="elimination">Elimination</SelectItem>
+                        <SelectItem value="quarter_final">Quarter Final</SelectItem>
+                        <SelectItem value="semi_final">Semi Final</SelectItem>
+                        <SelectItem value="championship">Championship</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Overtime Allowed</Label>
+                    <Select
+                      value={formData.overtime_allowed === null ? "" : String(formData.overtime_allowed)}
+                      onValueChange={v => setFormData(f => ({ ...f, overtime_allowed: v === "" ? null : v === "true" }))}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue placeholder="Use default" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Use default</SelectItem>
+                        <SelectItem value="true">Yes — Overtime allowed</SelectItem>
+                        <SelectItem value="false">No — No overtime</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="timeouts_total" className="text-xs">Total Timeouts</Label>
+                      <Input
+                        id="timeouts_total"
+                        type="number"
+                        min={0}
+                        max={10}
+                        placeholder="—"
+                        value={formData.timeouts_total}
+                        onChange={e => setFormData(f => ({ ...f, timeouts_total: e.target.value }))}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="timeouts_first_half" className="text-xs">1st Half TOs</Label>
+                      <Input
+                        id="timeouts_first_half"
+                        type="number"
+                        min={0}
+                        max={10}
+                        placeholder="—"
+                        value={formData.timeouts_first_half}
+                        onChange={e => setFormData(f => ({ ...f, timeouts_first_half: e.target.value }))}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="timeouts_second_half" className="text-xs">2nd Half TOs</Label>
+                      <Input
+                        id="timeouts_second_half"
+                        type="number"
+                        min={0}
+                        max={10}
+                        placeholder="—"
+                        value={formData.timeouts_second_half}
+                        onChange={e => setFormData(f => ({ ...f, timeouts_second_half: e.target.value }))}
+                        className="mt-1 h-8 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400">Selecting a stage auto-fills these values. You can override them manually. Leave blank to use global defaults.</p>
                 </div>
               </>
             )}
