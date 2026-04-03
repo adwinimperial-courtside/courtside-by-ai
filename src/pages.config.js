@@ -49,6 +49,7 @@
  */
 import AdminTools from './pages/AdminTools';
 import FixManualStats from './pages/FixManualStats';
+import RosterUserMatching from './pages/RosterUserMatching';
 import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
@@ -107,6 +108,7 @@ export const PAGES = {
     "Viewers": Viewers,
     "Whiteboard": Whiteboard,
     "FixManualStats": FixManualStats,
+    "RosterUserMatching": RosterUserMatching,
 }
 
 export const pagesConfig = {
