@@ -370,6 +370,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         updates.clock_time_left = Math.max(0, Math.round(currentTimeLeft));
         updates.clock_started_at = null;
       }
+      setLocalGame(prev => ({ ...prev, ...updates }));
       await base44.entities.Game.update(localGame.id, updates);
       setUsed(newSegMap);
       if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
