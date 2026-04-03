@@ -172,46 +172,32 @@ export default function RosterUserMatching() {
 
     setIsSaving(true);
     try {
-      for (const match of toApply) {
-        const user = getEffectiveUser(match.idx, match);
-        if (!user) continue;
+      const matches = toApply
+        .map(match => {
+          const user = getEffectiveUser(match.idx, match);
+          if (!user) return null;
+          return {
+            userId: user.id,
+            playerId: match.player?.id,
+            playerName: match.player?.name,
+            teamId: match.team?.id || null,
+            confidence: match.confidence || "medium",
+            matchMethod: overrideUser[match.idx] ? "manual_admin" : "normalized_name",
+          };
+        })
+        .filter(Boolean);
 
-        const identity = overrideUser[match.idx] ? null : match.identity;
-
-        const existingIdentities = await base44.entities.UserLeagueIdentity.filter({
-          user_id: user.id, league_id: targetLeagueId
-        });
-
-        const identityData = {
-          user_id: user.id,
-          league_id: targetLeagueId,
-          team_id: match.team?.id || null,
-          matched_player_name: match.player.name,
-          matched_player_id: match.player.id,
-          match_status: "matched",
-          match_confidence: match.confidence || "medium",
-          match_method: overrideUser[match.idx] ? "manual_admin" : "normalized_name",
-          matched_at: new Date().toISOString(),
-          matched_by: currentUser.email,
-        };
-
-        if (existingIdentities.length > 0) {
-          await base44.entities.UserLeagueIdentity.update(existingIdentities[0].id, identityData);
-        } else {
-          await base44.entities.UserLeagueIdentity.create(identityData);
-        }
-
-        const existingLeagueIds = user.assigned_league_ids || [];
-        if (!existingLeagueIds.includes(targetLeagueId)) {
-          await base44.entities.User.update(user.id, {
-            assigned_league_ids: [...existingLeagueIds, targetLeagueId],
-          });
-        }
-      }
+      const response = await base44.functions.invoke('applyRosterMatches', { targetLeagueId, matches });
+      const { applied, errors } = response.data;
 
       queryClient.invalidateQueries({ queryKey: ["userLeagueIdentities"] });
       queryClient.invalidateQueries({ queryKey: ["allUsersForMatching"] });
-      alert(`Successfully applied ${toApply.length} match(es) to ${targetLeague?.name}.`);
+
+      if (errors?.length > 0) {
+        alert(`Applied ${applied} match(es). ${errors.length} error(s): ${errors.map(e => e.error).join(', ')}`);
+      } else {
+        alert(`Successfully applied ${applied} match(es) to ${targetLeague?.name}.`);
+      }
       setPreviewRows(null);
       setApprovalState({});
     } catch (err) {
