@@ -16,6 +16,7 @@ export default function LiveBoxScorePage() {
   const queryClient = useQueryClient();
   const urlParams = new URLSearchParams(window.location.search);
   const gameId = urlParams.get('gameId');
+  const [liveGame, setLiveGame] = useState(null);
 
   const { data: game } = useQuery({
     queryKey: ['game', gameId],
@@ -25,6 +26,11 @@ export default function LiveBoxScorePage() {
     refetchInterval: 3000,
     refetchOnWindowFocus: true
   });
+
+  // Sync liveGame from query data and real-time subscription
+  useEffect(() => {
+    if (game) setLiveGame(game);
+  }, [game]);
 
   const { data: allStats = [] } = useQuery({
     queryKey: ['playerStats', gameId],
@@ -47,6 +53,7 @@ export default function LiveBoxScorePage() {
 
     const unsubscribeGame = base44.entities.Game.subscribe((event) => {
       if (event.id === gameId) {
+        setLiveGame(event.data); // update immediately
         queryClient.invalidateQueries({ queryKey: ['game', gameId] });
       }
     });
@@ -111,7 +118,9 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  if (!game || !homeTeam || !awayTeam) {
+  const displayGame = liveGame || game;
+
+  if (!displayGame || !homeTeam || !awayTeam) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
         <div className="text-center">
@@ -122,12 +131,13 @@ export default function LiveBoxScorePage() {
   }
 
   // Show all players who have played in the game
-  const homePlayerStats = allStats.filter(s => s.team_id === game?.home_team_id);
-  const awayPlayerStats = allStats.filter(s => s.team_id === game?.away_team_id);
+  const homePlayerStats = allStats.filter(s => s.team_id === displayGame?.home_team_id);
+  const awayPlayerStats = allStats.filter(s => s.team_id === displayGame?.away_team_id);
 
 
 
-  const StatTable = ({ team, playerStats }) => {
+  const StatTable = ({ team, playerStats, game: tGame }) => {
+    const game = tGame || displayGame;
     const teamPlayers = playerStats.map(stat => ({
       ...stat,
       player: players.find(p => p.id === stat.player_id)
@@ -200,7 +210,7 @@ export default function LiveBoxScorePage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Player</TableHead>
-                {game.game_mode === 'timed' && <TableHead className="text-center">MIN</TableHead>}
+                {displayGame.game_mode === 'timed' && <TableHead className="text-center">MIN</TableHead>}
                 <TableHead className="text-center">PTS</TableHead>
                 <TableHead className="text-center">3PT</TableHead>
                 <TableHead className="text-center">FT</TableHead>
@@ -231,7 +241,7 @@ export default function LiveBoxScorePage() {
                       <span className="text-sm">{stat.player?.name}</span>
                     </div>
                   </TableCell>
-                    {game.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
+                    {displayGame.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
                     <TableCell className="text-center font-semibold">{points}</TableCell>
                     <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
                     <TableCell className="text-center">{stat.free_throws || 0}</TableCell>
@@ -248,7 +258,7 @@ export default function LiveBoxScorePage() {
               })}
               <TableRow className="bg-slate-50 font-semibold">
                 <TableCell>TEAM TOTALS</TableCell>
-                {game.game_mode === 'timed' && <TableCell className="text-center">—</TableCell>}
+                {displayGame.game_mode === 'timed' && <TableCell className="text-center">—</TableCell>}
                 <TableCell className="text-center">{teamScore}</TableCell>
                 <TableCell className="text-center">{team3PT}</TableCell>
                 <TableCell className="text-center">{teamFT}</TableCell>
@@ -284,7 +294,7 @@ export default function LiveBoxScorePage() {
               <h1 className="text-2xl font-bold text-slate-900">Live Box Score</h1>
             </div>
 
-            {game.status === 'in_progress' && (
+            {displayGame.status === 'in_progress' && (
               <Badge className="bg-orange-100 text-orange-800 mb-4">Live</Badge>
             )}
 
@@ -295,19 +305,19 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={homeTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{homeTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{game.home_score || 0}</p>
+                  <p className="text-4xl font-bold text-slate-900">{displayGame.home_score || 0}</p>
                 </div>
               </div>
 
               {/* Center info */}
               <div className="flex flex-col items-center">
-                <ClockDisplay game={game} />
+                <ClockDisplay game={displayGame} />
                 <LatestActivity
                   latestLog={latestLog}
                   players={players}
                   homeTeam={homeTeam}
                   awayTeam={awayTeam}
-                  game={game}
+                  game={displayGame}
                 />
               </div>
 
@@ -316,7 +326,7 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={awayTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{awayTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{game.away_score || 0}</p>
+                  <p className="text-4xl font-bold text-slate-900">{displayGame.away_score || 0}</p>
                 </div>
               </div>
             </div>
@@ -326,11 +336,11 @@ export default function LiveBoxScorePage() {
         {/* Stats Tables */}
         <div className="space-y-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={homeTeam} playerStats={homePlayerStats} />
+            <StatTable team={homeTeam} playerStats={homePlayerStats} game={displayGame} />
           </div>
 
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={awayTeam} playerStats={awayPlayerStats} />
+            <StatTable team={awayTeam} playerStats={awayPlayerStats} game={displayGame} />
           </div>
         </div>
       </div>
