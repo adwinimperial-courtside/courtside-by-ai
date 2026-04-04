@@ -68,6 +68,14 @@ export default function AwardLeadersPage() {
     initialData: [],
   });
 
+  const { data: allAwardSettings = [] } = useQuery({
+    queryKey: ['awardSettings'],
+    queryFn: () => base44.entities.AwardSettings.list(),
+    staleTime: 60000,
+  });
+
+  const leagueAwardSettings = allAwardSettings.find(s => s.league_id === selectedLeague) || null;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -115,6 +123,7 @@ export default function AwardLeadersPage() {
             games={games.filter(g => g.league_id === selectedLeague)}
             players={players.filter(p => teams.find(t => t.id === p.team_id)?.league_id === selectedLeague)}
             stats={allStats}
+            awardSettings={leagueAwardSettings}
           />
         )}
       </div>

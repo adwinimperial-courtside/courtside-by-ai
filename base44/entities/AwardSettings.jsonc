@@ -1,0 +1,191 @@
+{
+  "name": "AwardSettings",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league (one record per league)"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "Cached league name for display"
+    },
+    "mvp_pts_weight": {
+      "type": "number",
+      "default": 1.0
+    },
+    "mvp_oreb_weight": {
+      "type": "number",
+      "default": 1.2
+    },
+    "mvp_dreb_weight": {
+      "type": "number",
+      "default": 1.0
+    },
+    "mvp_ast_weight": {
+      "type": "number",
+      "default": 1.5
+    },
+    "mvp_stl_weight": {
+      "type": "number",
+      "default": 2.5
+    },
+    "mvp_blk_weight": {
+      "type": "number",
+      "default": 2.0
+    },
+    "mvp_turnover_penalty": {
+      "type": "number",
+      "default": 2.0
+    },
+    "mvp_foul_penalty": {
+      "type": "number",
+      "default": 0.5
+    },
+    "mvp_tech_penalty": {
+      "type": "number",
+      "default": 3.0
+    },
+    "mvp_unsportsmanlike_penalty": {
+      "type": "number",
+      "default": 4.0
+    },
+    "mvp_avg_gis_weight": {
+      "type": "number",
+      "default": 0.6
+    },
+    "mvp_gp_percent_weight": {
+      "type": "number",
+      "default": 20.0
+    },
+    "mvp_team_win_percent_weight": {
+      "type": "number",
+      "default": 20.0
+    },
+    "mvp_min_games_percent": {
+      "type": "number",
+      "default": 60.0
+    },
+    "mvp_tech_final_penalty": {
+      "type": "number",
+      "default": 3.0
+    },
+    "mvp_unsp_final_penalty": {
+      "type": "number",
+      "default": 5.0
+    },
+    "dpoy_stl_weight": {
+      "type": "number",
+      "default": 3.0
+    },
+    "dpoy_blk_weight": {
+      "type": "number",
+      "default": 2.5
+    },
+    "dpoy_oreb_weight": {
+      "type": "number",
+      "default": 1.5
+    },
+    "dpoy_dreb_weight": {
+      "type": "number",
+      "default": 1.0
+    },
+    "dpoy_foul_penalty": {
+      "type": "number",
+      "default": 1.5
+    },
+    "dpoy_turnover_penalty": {
+      "type": "number",
+      "default": 2.0
+    },
+    "dpoy_tech_penalty": {
+      "type": "number",
+      "default": 3.0
+    },
+    "dpoy_unsportsmanlike_penalty": {
+      "type": "number",
+      "default": 4.0
+    },
+    "dpoy_gp_percent_weight": {
+      "type": "number",
+      "default": 10.0
+    },
+    "dpoy_min_games_percent": {
+      "type": "number",
+      "default": 60.0
+    },
+    "dpoy_tech_final_penalty": {
+      "type": "number",
+      "default": 2.0
+    },
+    "dpoy_unsp_final_penalty": {
+      "type": "number",
+      "default": 3.0
+    },
+    "pog_pts_weight": {
+      "type": "number",
+      "default": 1.0
+    },
+    "pog_oreb_weight": {
+      "type": "number",
+      "default": 1.2
+    },
+    "pog_dreb_weight": {
+      "type": "number",
+      "default": 1.0
+    },
+    "pog_ast_weight": {
+      "type": "number",
+      "default": 1.5
+    },
+    "pog_stl_weight": {
+      "type": "number",
+      "default": 2.5
+    },
+    "pog_blk_weight": {
+      "type": "number",
+      "default": 2.0
+    },
+    "pog_turnover_penalty": {
+      "type": "number",
+      "default": 2.0
+    },
+    "pog_foul_penalty": {
+      "type": "number",
+      "default": 0.5
+    },
+    "pog_tech_penalty": {
+      "type": "number",
+      "default": 3.0
+    },
+    "pog_unsportsmanlike_penalty": {
+      "type": "number",
+      "default": 4.0
+    },
+    "pog_winning_team_only": {
+      "type": "boolean",
+      "default": true
+    },
+    "mythical_five_source": {
+      "type": "string",
+      "enum": [
+        "mvp_rankings"
+      ],
+      "default": "mvp_rankings"
+    },
+    "mythical_five_count": {
+      "type": "number",
+      "default": 5
+    },
+    "updated_by": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "league_id"
+  ]
+}

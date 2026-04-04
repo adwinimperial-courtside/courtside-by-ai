@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { resolveSettings } from "@/utils/awardDefaults";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Shield } from "lucide-react";
 import MobileAwardCards from "./MobileAwardCards";
 
-export default function AwardLeaders({ league, teams, games, players, stats }) {
+export default function AwardLeaders({ league, teams, games, players, stats, awardSettings }) {
+  const cfg = resolveSettings(awardSettings);
   const didPlayerParticipate = (stat) => {
     const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
                      (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
@@ -65,17 +67,17 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
         }
         // entry_type='digital' and not edited = double points_2; otherwise treat as raw points
         const isDigital = game.entry_type === 'digital' && !game.edited;
-        const pts = (isDigital ? (playerStat.points_2 || 0) * 2 : (playerStat.points_2 || 0)) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0);
+        const pts = cfg.mvp_pts_weight * ((isDigital ? (playerStat.points_2 || 0) * 2 : (playerStat.points_2 || 0)) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0));
         const gis = pts +
-          1.2 * (playerStat.offensive_rebounds || 0) +
-          1.0 * (playerStat.defensive_rebounds || 0) +
-          1.5 * (playerStat.assists || 0) +
-          2.5 * (playerStat.steals || 0) +
-          2.0 * (playerStat.blocks || 0) -
-          2.0 * (playerStat.turnovers || 0) -
-          0.5 * (playerStat.fouls || 0) -
-          3.0 * (playerStat.technical_fouls || 0) -
-          4.0 * (playerStat.unsportsmanlike_fouls || 0);
+          cfg.mvp_oreb_weight * (playerStat.offensive_rebounds || 0) +
+          cfg.mvp_dreb_weight * (playerStat.defensive_rebounds || 0) +
+          cfg.mvp_ast_weight * (playerStat.assists || 0) +
+          cfg.mvp_stl_weight * (playerStat.steals || 0) +
+          cfg.mvp_blk_weight * (playerStat.blocks || 0) -
+          cfg.mvp_turnover_penalty * (playerStat.turnovers || 0) -
+          cfg.mvp_foul_penalty * (playerStat.fouls || 0) -
+          cfg.mvp_tech_penalty * (playerStat.technical_fouls || 0) -
+          cfg.mvp_unsportsmanlike_penalty * (playerStat.unsportsmanlike_fouls || 0);
 
         playerMvpScores[playerStat.player_id].gp += 1;
         playerMvpScores[playerStat.player_id].sumGis += gis;
@@ -95,12 +97,12 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
 
         const avgGis = data.gp > 0 ? data.sumGis / data.gp : 0;
         const gpPct = teamData.gamesPlayed > 0 ? data.gp / teamData.gamesPlayed : 0;
-        const eligible = gpPct >= 0.60;
+        const eligible = gpPct >= cfg.mvp_min_games_percent / 100;
 
         if (!eligible) return null;
 
-        const teamBonus = 20 * teamData.winPct;
-        const mvpScore = 0.60 * avgGis + 20 * gpPct + teamBonus - 3 * data.sumTech - 5 * data.sumUnsp;
+        const teamBonus = cfg.mvp_team_win_percent_weight * teamData.winPct;
+        const mvpScore = cfg.mvp_avg_gis_weight * avgGis + cfg.mvp_gp_percent_weight * gpPct + teamBonus - cfg.mvp_tech_final_penalty * data.sumTech - cfg.mvp_unsp_final_penalty * data.sumUnsp;
 
         return {
           playerId,
@@ -156,14 +158,14 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
           };
         }
         
-        const defGis = 3.0 * (playerStat.steals || 0) +
-          2.5 * (playerStat.blocks || 0) +
-          1.5 * (playerStat.offensive_rebounds || 0) +
-          1.0 * (playerStat.defensive_rebounds || 0) -
-          1.5 * (playerStat.fouls || 0) -
-          2.0 * (playerStat.turnovers || 0) -
-          3.0 * (playerStat.technical_fouls || 0) -
-          4.0 * (playerStat.unsportsmanlike_fouls || 0);
+        const defGis = cfg.dpoy_stl_weight * (playerStat.steals || 0) +
+          cfg.dpoy_blk_weight * (playerStat.blocks || 0) +
+          cfg.dpoy_oreb_weight * (playerStat.offensive_rebounds || 0) +
+          cfg.dpoy_dreb_weight * (playerStat.defensive_rebounds || 0) -
+          cfg.dpoy_foul_penalty * (playerStat.fouls || 0) -
+          cfg.dpoy_turnover_penalty * (playerStat.turnovers || 0) -
+          cfg.dpoy_tech_penalty * (playerStat.technical_fouls || 0) -
+          cfg.dpoy_unsportsmanlike_penalty * (playerStat.unsportsmanlike_fouls || 0);
 
         playerDpoyScores[playerStat.player_id].gp += 1;
         playerDpoyScores[playerStat.player_id].sumDefGis += defGis;
@@ -181,12 +183,12 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
         if (!player || !team || tg === undefined || data.gp === 0 || tg === 0) return null;
 
         const gpPct = data.gp / tg;
-        const eligible = gpPct >= 0.60;
+        const eligible = gpPct >= cfg.dpoy_min_games_percent / 100;
 
         if (!eligible) return null;
 
         const avgDefGis = data.sumDefGis / data.gp;
-        const dpoyScore = avgDefGis + 10 * gpPct - 2 * data.sumTech - 3 * data.sumUnsp;
+        const dpoyScore = avgDefGis + cfg.dpoy_gp_percent_weight * gpPct - cfg.dpoy_tech_final_penalty * data.sumTech - cfg.dpoy_unsp_final_penalty * data.sumUnsp;
 
         return {
           playerId,
@@ -208,7 +210,7 @@ export default function AwardLeaders({ league, teams, games, players, stats }) {
     return leaders;
   }, [league, teams, games, players, stats]);
 
-  const mythical5 = mvpCandidates.slice(0, 5);
+  const mythical5 = mvpCandidates.slice(0, cfg.mythical_five_count);
 
   return (
     <Card className="border-slate-200">
