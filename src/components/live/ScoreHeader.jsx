@@ -48,7 +48,11 @@ function getFoulResetPeriodKey(period, periodType, totalPeriods) {
   return String(period); // Q1, Q2, Q3, Q4 each unique
 }
 
-export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame, lineupBlocked = false }) {
+export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame, lineupBlocked = false, playerStats = [] }) {
+  const calcScore = (teamId) => playerStats.reduce((acc, s) =>
+    s.team_id === teamId ? acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0) : acc, 0);
+  const derivedHomeScore = playerStats.length > 0 ? calcScore(game.home_team_id) : (game.home_score || 0);
+  const derivedAwayScore = playerStats.length > 0 ? calcScore(game.away_team_id) : (game.away_score || 0);
   const [possession, setPossession] = useState(() => game.possession || null);
   const [showPossessionPicker, setShowPossessionPicker] = useState(false);
   const [localGame, setLocalGame] = useState(game);
@@ -178,11 +182,11 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const handlePlayPause = async () => {
     if (!isTimed || isSaving.current || lineupBlocked || isSavingUI) return;
     // In final review with unequal scores, only END GAME is allowed — block clock start
-    if (isInFinalReview && (localGame.home_score || 0) !== (localGame.away_score || 0)) return;
+    if (isInFinalReview && derivedHomeScore !== derivedAwayScore) return;
     const currentTimeLeft = computeTimeLeft(localGame);
 
     // In final review mode with tied scores → START OT: advance to next OT period
-    if (isInFinalReview && (localGame.home_score || 0) === (localGame.away_score || 0)) {
+    if (isInFinalReview && derivedHomeScore === derivedAwayScore) {
       isSaving.current = true;
       try {
         const nextPeriod = period + 1;
@@ -305,7 +309,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   // ── Context-aware START button logic ─────────────────────────────
   // Is the game at the end of the last regulation period with scores not tied?
   const isLastRegulationPeriod = period === totalPeriods;
-  const scoresTied = (localGame.home_score || 0) === (localGame.away_score || 0);
+  const scoresTied = derivedHomeScore === derivedAwayScore;
   const showEndGame = timeExpired && !running && isLastRegulationPeriod && !scoresTied;
 
   // Next period label for the START button
@@ -419,7 +423,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             </div>
             <div className="min-w-0">
               <h3 className="font-bold text-white text-sm truncate drop-shadow">{homeTeam?.name}</h3>
-              <p className="text-3xl font-bold text-white leading-tight">{localGame.home_score || 0}</p>
+              <p className="text-3xl font-bold text-white leading-tight">{derivedHomeScore}</p>
             </div>
           </div>
 
@@ -460,7 +464,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           <div className="py-3 px-4 flex items-center justify-end gap-3">
             <div className="text-right min-w-0">
               <h3 className="font-bold text-white text-sm truncate drop-shadow">{awayTeam?.name}</h3>
-              <p className="text-3xl font-bold text-white leading-tight">{localGame.away_score || 0}</p>
+              <p className="text-3xl font-bold text-white leading-tight">{derivedAwayScore}</p>
             </div>
             <div
               className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-base shadow-lg"
@@ -488,7 +492,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
               </div>
               <div className="min-w-0">
                 <p className="text-white/80 font-semibold text-sm truncate">{homeTeam?.name}</p>
-                <p className="text-5xl font-black text-white leading-none tabular-nums">{localGame.home_score || 0}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{derivedHomeScore}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -588,7 +592,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                 {/* START / STOP buttons */}
                 {isInFinalReview ? (
                   <div className="flex gap-3">
-                    {(game.home_score || 0) === (game.away_score || 0) ? (
+                    {derivedHomeScore === derivedAwayScore ? (
                       <button
                         onClick={handlePlayPause}
                         className="flex items-center justify-center gap-2 px-5 rounded-xl font-bold text-sm bg-blue-500 hover:bg-blue-400 text-white transition-all shadow-lg"
@@ -658,7 +662,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             <div className="flex items-center gap-4 mb-2">
               <div className="text-right min-w-0">
                 <p className="text-white/80 font-semibold text-sm truncate">{awayTeam?.name}</p>
-                <p className="text-5xl font-black text-white leading-none tabular-nums">{localGame.away_score || 0}</p>
+                <p className="text-5xl font-black text-white leading-none tabular-nums">{derivedAwayScore}</p>
               </div>
               <div
                 className="w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg"
