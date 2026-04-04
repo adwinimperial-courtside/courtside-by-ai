@@ -134,6 +134,11 @@ export default function LiveBoxScorePage() {
   const homePlayerStats = allStats.filter(s => s.team_id === displayGame?.home_team_id);
   const awayPlayerStats = allStats.filter(s => s.team_id === displayGame?.away_team_id);
 
+  // Calculate scores from player stats for consistency
+  const calcScore = (stats) => stats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
+  const homeScore = calcScore(homePlayerStats);
+  const awayScore = calcScore(awayPlayerStats);
+
 
 
   const StatTable = ({ team, playerStats, game: tGame }) => {
@@ -305,7 +310,7 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={homeTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{homeTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{displayGame.home_score || 0}</p>
+                  <p className="text-4xl font-bold text-slate-900">{homeScore}</p>
                 </div>
               </div>
 
@@ -326,7 +331,7 @@ export default function LiveBoxScorePage() {
                 <TeamLogo team={awayTeam} size="lg" />
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{awayTeam?.name}</h3>
-                  <p className="text-4xl font-bold text-slate-900">{displayGame.away_score || 0}</p>
+                  <p className="text-4xl font-bold text-slate-900">{awayScore}</p>
                 </div>
               </div>
             </div>
