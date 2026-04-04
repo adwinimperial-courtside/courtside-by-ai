@@ -360,6 +360,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return false;
   };
 
+  // Derive score from player stats to avoid stale game.home_score / game.away_score
+  const calcTeamScore = (teamId, stats) => stats.reduce((acc, s) => {
+    if (s.team_id !== teamId) return acc;
+    return acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
+  }, 0);
+
   const getFoulResetKey = (period) => {
     const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
     if (period > totalPeriods) return String(period);
@@ -457,7 +463,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const currentValue = playerStat[statType.key] || 0;
       const updates = { [statType.key]: currentValue + 1 };
       
-      const oldScores = { home: game.home_score || 0, away: game.away_score || 0 };
+      const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
+      const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
+      const oldScores = { home: currentHomeScore, away: currentAwayScore };
 
       // Build game update payload (can combine multiple fields)
       const gameUpdates = {};
@@ -476,9 +484,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       // Add score if points were awarded
       if (statType.points > 0) {
         const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
-        const newScore = isHomeTeam 
-          ? (game.home_score || 0) + statType.points
-          : (game.away_score || 0) + statType.points;
+        const newScore = isHomeTeam
+          ? currentHomeScore + statType.points
+          : currentAwayScore + statType.points;
         gameUpdates[isHomeTeam ? 'home_score' : 'away_score'] = newScore;
       }
 
@@ -731,8 +739,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleEndGameFromModal = async () => {
-    const homeScore = game.home_score || 0;
-    const awayScore = game.away_score || 0;
+    const homeScore = calcTeamScore(game.home_team_id, existingStats);
+    const awayScore = calcTeamScore(game.away_team_id, existingStats);
     const homeWins = homeScore > awayScore;
 
     if (game.game_mode === 'timed' && game.clock_running) {
@@ -775,8 +783,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const gameUpdates = {};
     
     if (logEntry.statType.points > 0) {
-      gameUpdates.home_score = logEntry.oldScores.home;
-      gameUpdates.away_score = logEntry.oldScores.away;
+      const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
+      const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
+      const isHome = logEntry.teamId === game.home_team_id;
+      gameUpdates.home_score = isHome ? Math.max(0, currentHomeScore - logEntry.statType.points) : currentHomeScore;
+      gameUpdates.away_score = !isHome ? Math.max(0, currentAwayScore - logEntry.statType.points) : currentAwayScore;
     }
 
     if (statCountsAsTeamFoul(logEntry.statType.key)) {
@@ -857,8 +868,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
 
     try {
-      const homeScore = game.home_score || 0;
-      const awayScore = game.away_score || 0;
+      const homeScore = calcTeamScore(game.home_team_id, existingStats);
+      const awayScore = calcTeamScore(game.away_team_id, existingStats);
       const homeWins = homeScore > awayScore;
 
       if (game.game_mode === 'timed' && game.clock_running) {
