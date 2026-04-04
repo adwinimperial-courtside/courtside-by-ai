@@ -34,6 +34,15 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     }
   }, [game.id, game.status]);
 
+  // Fetch stats for in_progress games to show accurate live scores
+  const { data: livePlayerStats = [] } = useQuery({
+    queryKey: ['playerStats', liveGame.id, 'live'],
+    queryFn: () => base44.entities.PlayerStats.filter({ game_id: liveGame.id }),
+    enabled: liveGame.status === 'in_progress',
+    staleTime: 0,
+    refetchInterval: 5000,
+  });
+
   // Fetch stats for this game on-demand (only when expanded)
   const { data: gamePlayerStats = [] } = useQuery({
     queryKey: ['playerStats', liveGame.id],
@@ -95,8 +104,15 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
   const players = gamePlayers;
 
-  const displayHomeScore = liveGame.home_score || 0;
-  const displayAwayScore = liveGame.away_score || 0;
+  const calcLiveScore = (teamId, stats) =>
+    stats.reduce((acc, s) => s.team_id === teamId ? acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0) : acc, 0);
+
+  const displayHomeScore = liveGame.status === 'in_progress'
+    ? calcLiveScore(liveGame.home_team_id, livePlayerStats)
+    : (liveGame.home_score || 0);
+  const displayAwayScore = liveGame.status === 'in_progress'
+    ? calcLiveScore(liveGame.away_team_id, livePlayerStats)
+    : (liveGame.away_score || 0);
 
   const homeTeamStats = {
     rebounds: homePlayerStats.reduce((acc, s) => acc + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0),
