@@ -1,5 +1,18 @@
 import React, { useMemo } from "react";
 import { resolveSettings } from "@/utils/awardDefaults";
+
+/**
+ * Returns true only for games that were actually played.
+ * Default / forfeited / excluded games are never included in award calculations.
+ */
+function isActualPlayedGame(g) {
+  return (
+    g.status === 'completed' &&
+    !g.is_default_result &&
+    g.result_type !== 'default' &&
+    !g.exclude_from_awards
+  );
+}
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -24,29 +37,28 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
   const mvpCandidates = useMemo(() => {
     if (!league || !teams || !games || !players || !stats) return [];
 
-    // Filter for current league — exclude defaulted games from awards
+    // Filter for current league — only actually played games count for awards
     const leagueTeams = teams.filter(t => t.league_id === league.id);
     const leagueGames = games.filter(g => {
       const homeTeam = teams.find(t => t.id === g.home_team_id);
       const awayTeam = teams.find(t => t.id === g.away_team_id);
-      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id)
-        && g.status === "completed"
-        && !g.is_default_result
-        && !g.exclude_from_awards;
+      return (
+        (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id) &&
+        isActualPlayedGame(g)
+      );
     });
 
     if (leagueGames.length === 0) return [];
 
-    // Calculate team games and win percentages — only from actually played games
+    // Team win % and games played — only from actually played games (leagueGames already filtered)
     const teamStats = {};
     leagueTeams.forEach(team => {
       const teamGames = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id);
-      const wins = teamGames.filter(g => {
-        if (g.home_team_id === team.id) return g.home_score > g.away_score;
-        return g.away_score > g.home_score;
-      }).length;
+      const wins = teamGames.filter(g =>
+        g.home_team_id === team.id ? g.home_score > g.away_score : g.away_score > g.home_score
+      ).length;
       teamStats[team.id] = {
-        gamesPlayed: teamGames.length,
+        gamesPlayed: teamGames.length, // denominator for eligibility — defaults excluded
         wins,
         winPct: teamGames.length > 0 ? wins / teamGames.length : 0
       };
@@ -129,23 +141,22 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
     if (!league || !teams || !games || !players || !stats) return [];
 
     const leagueTeams = teams.filter(t => t.league_id === league.id);
-    // Exclude defaulted games from DPOY calculation
+    // Only actually played games count for DPOY
     const leagueGames = games.filter(g => {
       const homeTeam = teams.find(t => t.id === g.home_team_id);
       const awayTeam = teams.find(t => t.id === g.away_team_id);
-      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id)
-        && g.status === "completed"
-        && !g.is_default_result
-        && !g.exclude_from_awards;
+      return (
+        (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id) &&
+        isActualPlayedGame(g)
+      );
     });
 
     if (leagueGames.length === 0) return [];
 
-    // Calculate team games for eligibility (only actually played)
+    // Eligibility denominator — only actually played games per team
     const teamGames = {};
     leagueTeams.forEach(team => {
-      const count = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id).length;
-      teamGames[team.id] = count;
+      teamGames[team.id] = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id).length;
     });
 
     // Calculate DPOY scores (based on defensive stats)
