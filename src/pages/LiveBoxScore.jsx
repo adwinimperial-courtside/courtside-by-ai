@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -160,8 +160,8 @@ export default function LiveBoxScorePage() {
   };
 
   // Show all players who have played in the game (deduplicated)
-  const homePlayerStats = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id));
-  const awayPlayerStats = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id));
+  const homePlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)), [allStats, displayGame?.home_team_id]);
+  const awayPlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)), [allStats, displayGame?.away_team_id]);
 
   // Calculate scores from player stats for consistency
   const calcScore = (stats) => stats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
@@ -172,10 +172,12 @@ export default function LiveBoxScorePage() {
 
   const StatTable = ({ team, playerStats, game: tGame }) => {
     const game = tGame || displayGame;
-    const teamPlayers = playerStats.map(stat => ({
-      ...stat,
-      player: players.find(p => p.id === stat.player_id)
-    })).sort((a, b) => (a.player?.jersey_number || 0) - (b.player?.jersey_number || 0));
+    // Extra safety dedup by player_id in case of any upstream duplicates
+    const seen = new Set();
+    const teamPlayers = playerStats
+      .filter(stat => { if (seen.has(stat.player_id)) return false; seen.add(stat.player_id); return true; })
+      .map(stat => ({ ...stat, player: players.find(p => p.id === stat.player_id) }))
+      .sort((a, b) => (a.player?.jersey_number || 0) - (b.player?.jersey_number || 0));
 
     const teamScore = teamPlayers.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
     const team3PT = teamPlayers.reduce((acc, s) => acc + (s.points_3 || 0), 0);
