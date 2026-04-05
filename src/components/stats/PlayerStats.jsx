@@ -3,7 +3,21 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
+// Only games that were truly played on the court
+function isActualPlayedGame(g) {
+  return (
+    g.status === 'completed' &&
+    !g.is_default_result &&
+    g.result_type !== 'default' &&
+    !g.exclude_from_player_stats &&
+    !g.exclude_from_awards
+  );
+}
+
 export default function PlayerStats({ players, teams, stats, games = [] }) {
+  // Build a set of valid game IDs — defaults are never included
+  const validGameIds = new Set(games.filter(isActualPlayedGame).map(g => g.id));
+
   const calcPoints = (stat) => {
     const game = games.find(g => g.id === stat.game_id);
     const isDigital = game && game.entry_type === 'digital' && !game.edited;
@@ -25,7 +39,8 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
   };
 
   const playerAggregates = players.map(player => {
-    const playerStats = stats.filter(s => s.player_id === player.id);
+    // Only count stats from actual played games
+    const playerStats = stats.filter(s => s.player_id === player.id && validGameIds.has(s.game_id));
     const participatedStats = playerStats.filter(didPlayerParticipate);
     const team = teams.find(t => t.id === player.team_id);
     
