@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import DefaultWinnerDialog from "./DefaultWinnerDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings, AlertTriangle, RotateCcw } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -15,9 +16,13 @@ import EditGameSettingsDialog from "./EditGameSettingsDialog";
 
 export default function GameCard({ game, teams, leagues, onStartGame, currentUser, onGameUpdated }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [liveGame, setLiveGame] = useState(game);
   const [showEditSettings, setShowEditSettings] = useState(false);
+  const [showDefaultDialog, setShowDefaultDialog] = useState(false);
+  const [reopenConfirm, setReopenConfirm] = useState(false);
+  const [reopening, setReopening] = useState(false);
 
   useEffect(() => {
     setLiveGame(game);
@@ -72,6 +77,35 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const awayTeam = teams.find(t => t.id === liveGame.away_team_id);
   const league = leagues.find(l => l.id === liveGame.league_id);
 
+  const isAdmin = currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin';
+  const isDefaultResult = !!liveGame.is_default_result;
+  const defaultWinnerTeam = isDefaultResult ? teams.find(t => t.id === liveGame.default_winner_team_id) : null;
+
+  const handleReopen = async () => {
+    if (!reopenConfirm) { setReopenConfirm(true); return; }
+    setReopening(true);
+    try {
+      await base44.entities.Game.update(liveGame.id, {
+        status: "scheduled",
+        result_type: "scheduled",
+        is_default_result: false,
+        default_winner_team_id: null,
+        default_loser_team_id: null,
+        default_reason: null,
+        exclude_from_awards: false,
+        exclude_from_player_stats: false,
+        exclude_from_pog: false,
+        player_of_game: null,
+        result_updated_by: currentUser?.email || "",
+        result_updated_at: new Date().toISOString(),
+      });
+      onGameUpdated?.();
+      setReopenConfirm(false);
+    } finally {
+      setReopening(false);
+    }
+  };
+
   const statusColors = {
     scheduled: "bg-blue-100 text-blue-800",
     in_progress: "bg-orange-100 text-orange-800",
@@ -84,7 +118,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   };
 
   const editedBadgeColor = "bg-amber-100 text-amber-800";
-  
+  const defaultBadgeColor = "bg-red-100 text-red-800";
+
   const calcPoints = (stat) => {
     if (liveGame.entry_type === 'manual' || liveGame.edited) {
       return (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
@@ -151,6 +186,12 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                 {liveGame.edited && (
                   <Badge className={editedBadgeColor}>Edited</Badge>
                 )}
+                {isDefaultResult && (
+                  <Badge className={defaultBadgeColor}>
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    Default
+                  </Badge>
+                )}
               </div>
 
               <div className="space-y-2 mb-4">
@@ -187,7 +228,14 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                 )}
               </div>
 
-              {liveGame.status === 'completed' && liveGame.player_of_game && (
+              {isDefaultResult && defaultWinnerTeam && (
+                <div className="mt-2 pt-2 border-t border-slate-200">
+                  <p className="text-xs text-red-600 font-semibold">Won by default: {defaultWinnerTeam.name}</p>
+                  {liveGame.default_reason && <p className="text-xs text-slate-500">Reason: {liveGame.default_reason}</p>}
+                  <p className="text-xs text-slate-400 mt-0.5">Excluded from awards and player stats</p>
+                </div>
+              )}
+              {liveGame.status === 'completed' && liveGame.player_of_game && !isDefaultResult && (
                 <div className="mt-3 pt-3 border-t border-slate-200">
                   <div className="flex items-center gap-2 text-sm flex-wrap">
                     <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
@@ -198,9 +246,37 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   </div>
                 </div>
               )}
+              
             </div>
 
             <div className="flex gap-2 flex-wrap">
+              {/* Default game admin controls */}
+              {isAdmin && !isDefaultResult && (liveGame.status === 'scheduled' || liveGame.status === 'completed') && (
+                <Button
+                  onClick={() => setShowDefaultDialog(true)}
+                  variant="outline"
+                  className="w-full sm:w-auto border-amber-300 text-amber-700 hover:bg-amber-50"
+                >
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  Mark Default Winner
+                </Button>
+              )}
+              {isAdmin && isDefaultResult && (
+                <Button
+                  onClick={handleReopen}
+                  variant="outline"
+                  disabled={reopening}
+                  className={`w-full sm:w-auto ${
+                    reopenConfirm
+                      ? "border-red-400 text-red-600 hover:bg-red-50"
+                      : "border-slate-300 text-slate-600 hover:bg-slate-50"
+                  }`}
+                  onBlur={() => setReopenConfirm(false)}
+                >
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  {reopening ? "Reopening..." : reopenConfirm ? "Click again to confirm reopen" : "Reopen Result"}
+                </Button>
+              )}
               {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
                 <>
                   <Button
@@ -220,7 +296,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   </Button>
                 </>
               )}
-              {liveGame.status === 'in_progress' && (
+              {liveGame.status === 'in_progress' && !isDefaultResult && (
                 <>
                   <Button
                     onClick={() => navigate(createPageUrl('LiveBoxScore') + `?gameId=${liveGame.id}`)}
@@ -241,7 +317,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   )}
                 </>
               )}
-              {liveGame.status === 'completed' && (
+              {liveGame.status === 'completed' && !isDefaultResult && (
                 <Button
                   variant="outline"
                   onClick={() => setIsExpanded(!isExpanded)}
@@ -417,13 +493,23 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
         </CardContent>
       </Card>
       {showEditSettings && (
-        <EditGameSettingsDialog
-          open={showEditSettings}
-          onOpenChange={setShowEditSettings}
-          game={liveGame}
-          onSaved={() => { onGameUpdated && onGameUpdated(); }}
-        />
+      <EditGameSettingsDialog
+        open={showEditSettings}
+        onOpenChange={setShowEditSettings}
+        game={liveGame}
+        onSaved={() => { onGameUpdated && onGameUpdated(); }}
+      />
       )}
-    </motion.div>
+
+      <DefaultWinnerDialog
+      open={showDefaultDialog}
+      onOpenChange={setShowDefaultDialog}
+      game={liveGame}
+      homeTeam={homeTeam}
+      awayTeam={awayTeam}
+      currentUser={currentUser}
+      onSaved={() => { onGameUpdated?.(); queryClient.invalidateQueries({ queryKey: ['games'] }); }}
+      />
+      </motion.div>
   );
 }

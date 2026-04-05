@@ -24,17 +24,20 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
   const mvpCandidates = useMemo(() => {
     if (!league || !teams || !games || !players || !stats) return [];
 
-    // Filter for current league
+    // Filter for current league — exclude defaulted games from awards
     const leagueTeams = teams.filter(t => t.league_id === league.id);
     const leagueGames = games.filter(g => {
       const homeTeam = teams.find(t => t.id === g.home_team_id);
       const awayTeam = teams.find(t => t.id === g.away_team_id);
-      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id) && g.status === "completed";
+      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id)
+        && g.status === "completed"
+        && !g.is_default_result
+        && !g.exclude_from_awards;
     });
 
     if (leagueGames.length === 0) return [];
 
-    // Calculate team games and win percentages
+    // Calculate team games and win percentages — only from actually played games
     const teamStats = {};
     leagueTeams.forEach(team => {
       const teamGames = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id);
@@ -126,15 +129,19 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
     if (!league || !teams || !games || !players || !stats) return [];
 
     const leagueTeams = teams.filter(t => t.league_id === league.id);
+    // Exclude defaulted games from DPOY calculation
     const leagueGames = games.filter(g => {
       const homeTeam = teams.find(t => t.id === g.home_team_id);
       const awayTeam = teams.find(t => t.id === g.away_team_id);
-      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id) && g.status === "completed";
+      return (homeTeam?.league_id === league.id || awayTeam?.league_id === league.id)
+        && g.status === "completed"
+        && !g.is_default_result
+        && !g.exclude_from_awards;
     });
 
     if (leagueGames.length === 0) return [];
 
-    // Calculate team games for eligibility
+    // Calculate team games for eligibility (only actually played)
     const teamGames = {};
     leagueTeams.forEach(team => {
       const count = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id).length;

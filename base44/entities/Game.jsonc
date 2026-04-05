@@ -1,0 +1,189 @@
+{
+  "name": "Game",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "home_team_id": {
+      "type": "string",
+      "description": "Reference to home team"
+    },
+    "away_team_id": {
+      "type": "string",
+      "description": "Reference to away team"
+    },
+    "game_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of the game"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "in_progress",
+        "completed"
+      ],
+      "default": "scheduled"
+    },
+    "home_score": {
+      "type": "number",
+      "default": 0
+    },
+    "away_score": {
+      "type": "number",
+      "default": 0
+    },
+    "location": {
+      "type": "string"
+    },
+    "player_of_game": {
+      "type": "string"
+    },
+    "entry_type": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "digital"
+      ],
+      "default": "digital"
+    },
+    "edited": {
+      "type": "boolean",
+      "default": false
+    },
+    "game_mode": {
+      "type": "string",
+      "enum": [
+        "timed",
+        "untimed"
+      ],
+      "default": "timed"
+    },
+    "period_type": {
+      "type": "string",
+      "enum": [
+        "quarters",
+        "halves"
+      ]
+    },
+    "period_count": {
+      "type": "number"
+    },
+    "period_minutes": {
+      "type": "number"
+    },
+    "overtime_minutes": {
+      "type": "number"
+    },
+    "clock_period": {
+      "type": "number",
+      "default": 1
+    },
+    "clock_time_left": {
+      "type": "number"
+    },
+    "clock_running": {
+      "type": "boolean",
+      "default": false
+    },
+    "clock_started_at": {
+      "type": "string"
+    },
+    "period_status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "completed"
+      ],
+      "default": "active"
+    },
+    "home_timeouts": {
+      "type": "object",
+      "description": "Timeouts used per segment for home team"
+    },
+    "away_timeouts": {
+      "type": "object",
+      "description": "Timeouts used per segment for away team"
+    },
+    "possession": {
+      "type": "string",
+      "enum": [
+        "home",
+        "away"
+      ],
+      "description": "Which team has the alternating possession arrow"
+    },
+    "game_rules": {
+      "type": "object",
+      "description": "Configurable game rules snapshot"
+    },
+    "home_team_fouls": {
+      "type": "object",
+      "description": "Home team fouls per foul-reset period"
+    },
+    "away_team_fouls": {
+      "type": "object",
+      "description": "Away team fouls per foul-reset period"
+    },
+    "result_type": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "played",
+        "default"
+      ],
+      "default": "scheduled",
+      "description": "How the game result was determined"
+    },
+    "is_default_result": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this game was decided by default/forfeit/walkover"
+    },
+    "default_winner_team_id": {
+      "type": "string",
+      "description": "Team that won by default"
+    },
+    "default_loser_team_id": {
+      "type": "string",
+      "description": "Team that lost by default"
+    },
+    "default_reason": {
+      "type": "string",
+      "description": "Reason for the default result"
+    },
+    "exclude_from_awards": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exclude this game from all player award calculations"
+    },
+    "exclude_from_player_stats": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exclude this game from player statistics"
+    },
+    "exclude_from_pog": {
+      "type": "boolean",
+      "default": false,
+      "description": "Exclude this game from Player of the Game selection"
+    },
+    "result_updated_by": {
+      "type": "string",
+      "description": "Email of admin who last updated the result"
+    },
+    "result_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the result was last updated"
+    }
+  },
+  "required": [
+    "league_id",
+    "home_team_id",
+    "away_team_id",
+    "game_date"
+  ]
+}

@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, Filter } from "lucide-react";
+import { Plus, Calendar, Filter, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -14,6 +14,7 @@ export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("all");
+  const [gameTypeFilter, setGameTypeFilter] = useState("all");
   const [currentUser, setCurrentUser] = useState(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -99,7 +100,11 @@ export default function SchedulePage() {
     const leagueMatch = selectedLeague === "all" || game.league_id === selectedLeague;
     const teamMatch = selectedTeam === "all" || game.home_team_id === selectedTeam || game.away_team_id === selectedTeam;
     const assignedFilter = isAppAdmin || !hasAssignedLeagues || assignedLeagueIds.includes(game.league_id);
-    return leagueMatch && teamMatch && assignedFilter;
+    const typeMatch = gameTypeFilter === "all" ||
+      (gameTypeFilter === "default" && game.is_default_result) ||
+      (gameTypeFilter === "played" && game.status === "completed" && !game.is_default_result) ||
+      (gameTypeFilter === "scheduled" && game.status === "scheduled" && !game.is_default_result);
+    return leagueMatch && teamMatch && assignedFilter && typeMatch;
   });
 
   return (
@@ -154,6 +159,21 @@ export default function SchedulePage() {
                 {visibleTeams.map(team => (
                   <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 flex-1">
+            <AlertTriangle className="w-4 h-4 text-slate-500 flex-shrink-0" />
+            <Select value={gameTypeFilter} onValueChange={setGameTypeFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="All Games" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Games</SelectItem>
+                <SelectItem value="played">Played Games</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="default">Defaulted Games</SelectItem>
               </SelectContent>
             </Select>
           </div>

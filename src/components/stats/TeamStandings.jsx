@@ -6,13 +6,21 @@ import TeamLogo from "../teams/TeamLogo";
 
 export default function TeamStandings({ teams, games, leagues }) {
   const teamStandings = teams.map(team => {
-    const teamGames = games.filter(g => 
+    const completedGames = games.filter(g =>
       g.status === 'completed' && (g.home_team_id === team.id || g.away_team_id === team.id)
     );
-    
+
     let wins = 0;
     let losses = 0;
-    teamGames.forEach(game => {
+
+    completedGames.forEach(game => {
+      // Default games: use default_winner_team_id / default_loser_team_id for standings
+      if (game.is_default_result) {
+        if (game.default_winner_team_id === team.id) wins++;
+        else if (game.default_loser_team_id === team.id) losses++;
+        return;
+      }
+      // Normal played game
       const isHome = game.home_team_id === team.id;
       const teamScore = isHome ? (game.home_score || 0) : (game.away_score || 0);
       const oppScore = isHome ? (game.away_score || 0) : (game.home_score || 0);
@@ -22,10 +30,10 @@ export default function TeamStandings({ teams, games, leagues }) {
     const totalGames = wins + losses;
     const winPct = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0.0';
 
-    // Calculate points differential
+    // Points differential — only for actually played games (exclude defaults)
     let pointsFor = 0;
     let pointsAgainst = 0;
-    teamGames.forEach(game => {
+    completedGames.filter(g => !g.is_default_result).forEach(game => {
       if (game.home_team_id === team.id) {
         pointsFor += game.home_score || 0;
         pointsAgainst += game.away_score || 0;
