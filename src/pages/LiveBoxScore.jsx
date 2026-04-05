@@ -142,14 +142,35 @@ export default function LiveBoxScorePage() {
   const displayGame = liveGame || game;
 
   // Merge all rows per player; show all who played, highlight only active ones
-  const homePlayerStats = useMemo(
-    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)),
-    [allStats, displayGame?.home_team_id]
-  );
-  const awayPlayerStats = useMemo(
-    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)),
-    [allStats, displayGame?.away_team_id]
-  );
+  // Cap active highlight to 5 per team to handle legacy/inconsistent data
+  const capActiveHighlights = (mergedStats, teamName) => {
+    const active = mergedStats.filter(s => s.is_active);
+    if (active.length <= 5) return mergedStats;
+    console.warn(`[LiveBoxScore] ${teamName} has ${active.length} active players (expected ≤5). Capping to 5 most recently updated.`);
+    const top5Ids = new Set(
+      [...active]
+        .sort((a, b) => {
+          const da = a.updated_date || a.created_date || '';
+          const db = b.updated_date || b.created_date || '';
+          return db.localeCompare(da);
+        })
+        .slice(0, 5)
+        .map(s => s.player_id)
+    );
+    return mergedStats.map(s =>
+      s.is_active && !top5Ids.has(s.player_id) ? { ...s, is_active: false } : s
+    );
+  };
+
+  const homePlayerStats = useMemo(() => {
+    const merged = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id));
+    return capActiveHighlights(merged, homeTeam?.name || 'Home');
+  }, [allStats, displayGame?.home_team_id, homeTeam?.name]);
+
+  const awayPlayerStats = useMemo(() => {
+    const merged = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id));
+    return capActiveHighlights(merged, awayTeam?.name || 'Away');
+  }, [allStats, displayGame?.away_team_id, awayTeam?.name]);
 
   // — Early returns AFTER all hooks —
   if (!gameId) {
