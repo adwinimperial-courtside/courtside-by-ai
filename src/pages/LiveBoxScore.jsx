@@ -165,9 +165,9 @@ export default function LiveBoxScorePage() {
     return Object.values(map);
   };
 
-  // Show all players who have played in the game (deduplicated)
-  const homePlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)), [allStats, displayGame?.home_team_id]);
-  const awayPlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)), [allStats, displayGame?.away_team_id]);
+  // Merge all rows, then show only currently active players (on the court)
+  const homePlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)).filter(s => s.is_active), [allStats, displayGame?.home_team_id]);
+  const awayPlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)).filter(s => s.is_active), [allStats, displayGame?.away_team_id]);
 
   // Calculate scores from player stats for consistency
   const calcScore = (stats) => stats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
