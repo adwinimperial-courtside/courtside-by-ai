@@ -11,6 +11,40 @@ import TeamLogo from "@/components/teams/TeamLogo";
 import ClockDisplay from "@/components/live/ClockDisplay";
 import LatestActivity from "@/components/live/LatestActivity";
 
+function mergeStatsByPlayer(statRows) {
+  const map = {};
+  const latestDate = {};
+  statRows.forEach(s => {
+    if (!map[s.player_id]) {
+      map[s.player_id] = { ...s };
+      latestDate[s.player_id] = s.updated_date || s.created_date || '';
+    } else {
+      const m = map[s.player_id];
+      m.points_2 = (m.points_2 || 0) + (s.points_2 || 0);
+      m.points_3 = (m.points_3 || 0) + (s.points_3 || 0);
+      m.free_throws = (m.free_throws || 0) + (s.free_throws || 0);
+      m.free_throws_missed = (m.free_throws_missed || 0) + (s.free_throws_missed || 0);
+      m.offensive_rebounds = (m.offensive_rebounds || 0) + (s.offensive_rebounds || 0);
+      m.defensive_rebounds = (m.defensive_rebounds || 0) + (s.defensive_rebounds || 0);
+      m.assists = (m.assists || 0) + (s.assists || 0);
+      m.steals = (m.steals || 0) + (s.steals || 0);
+      m.blocks = (m.blocks || 0) + (s.blocks || 0);
+      m.turnovers = (m.turnovers || 0) + (s.turnovers || 0);
+      m.fouls = (m.fouls || 0) + (s.fouls || 0);
+      m.technical_fouls = (m.technical_fouls || 0) + (s.technical_fouls || 0);
+      m.unsportsmanlike_fouls = (m.unsportsmanlike_fouls || 0) + (s.unsportsmanlike_fouls || 0);
+      m.minutes_played = (m.minutes_played || 0) + (s.minutes_played || 0);
+      // Use is_active from the most recently updated row
+      const sDate = s.updated_date || s.created_date || '';
+      if (sDate > latestDate[s.player_id]) {
+        latestDate[s.player_id] = sDate;
+        m.is_active = s.is_active;
+      }
+    }
+  });
+  return Object.values(map);
+}
+
 export default function LiveBoxScorePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -27,7 +61,6 @@ export default function LiveBoxScorePage() {
     refetchOnWindowFocus: true
   });
 
-  // Sync liveGame from query data and real-time subscription
   useEffect(() => {
     if (game) setLiveGame(game);
   }, [game]);
@@ -41,7 +74,6 @@ export default function LiveBoxScorePage() {
     refetchOnWindowFocus: true
   });
 
-  // Subscribe to real-time updates
   useEffect(() => {
     if (!gameId) return;
 
@@ -53,7 +85,7 @@ export default function LiveBoxScorePage() {
 
     const unsubscribeGame = base44.entities.Game.subscribe((event) => {
       if (event.id === gameId) {
-        setLiveGame(event.data); // update immediately
+        setLiveGame(event.data);
         queryClient.invalidateQueries({ queryKey: ['game', gameId] });
       }
     });
@@ -70,8 +102,6 @@ export default function LiveBoxScorePage() {
       unsubscribeLogs();
     };
   }, [gameId, queryClient]);
-
-
 
   const { data: homeTeam } = useQuery({
     queryKey: ['team', game?.home_team_id],
@@ -107,6 +137,19 @@ export default function LiveBoxScorePage() {
   });
   const latestLog = latestLogs[0] || null;
 
+  const displayGame = liveGame || game;
+
+  // Merge all rows per player, then show only currently active (on-court) players
+  const homePlayerStats = useMemo(
+    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)).filter(s => s.is_active),
+    [allStats, displayGame?.home_team_id]
+  );
+  const awayPlayerStats = useMemo(
+    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)).filter(s => s.is_active),
+    [allStats, displayGame?.away_team_id]
+  );
+
+  // — Early returns AFTER all hooks —
   if (!gameId) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
@@ -118,8 +161,6 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  const displayGame = liveGame || game;
-
   if (!displayGame || !homeTeam || !awayTeam) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 flex items-center justify-center">
@@ -130,58 +171,12 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  // Deduplicate stats by player_id — sum all rows for the same player
-  const mergeStatsByPlayer = (statRows) => {
-    const map = {};
-    const latestDate = {};
-    statRows.forEach(s => {
-      if (!map[s.player_id]) {
-        map[s.player_id] = { ...s };
-        latestDate[s.player_id] = s.updated_date || s.created_date || '';
-      } else {
-        const m = map[s.player_id];
-        m.points_2 = (m.points_2 || 0) + (s.points_2 || 0);
-        m.points_3 = (m.points_3 || 0) + (s.points_3 || 0);
-        m.free_throws = (m.free_throws || 0) + (s.free_throws || 0);
-        m.free_throws_missed = (m.free_throws_missed || 0) + (s.free_throws_missed || 0);
-        m.offensive_rebounds = (m.offensive_rebounds || 0) + (s.offensive_rebounds || 0);
-        m.defensive_rebounds = (m.defensive_rebounds || 0) + (s.defensive_rebounds || 0);
-        m.assists = (m.assists || 0) + (s.assists || 0);
-        m.steals = (m.steals || 0) + (s.steals || 0);
-        m.blocks = (m.blocks || 0) + (s.blocks || 0);
-        m.turnovers = (m.turnovers || 0) + (s.turnovers || 0);
-        m.fouls = (m.fouls || 0) + (s.fouls || 0);
-        m.technical_fouls = (m.technical_fouls || 0) + (s.technical_fouls || 0);
-        m.unsportsmanlike_fouls = (m.unsportsmanlike_fouls || 0) + (s.unsportsmanlike_fouls || 0);
-        m.minutes_played = (m.minutes_played || 0) + (s.minutes_played || 0);
-        // Use is_active from the most recently updated row
-        const sDate = s.updated_date || s.created_date || '';
-        if (sDate > latestDate[s.player_id]) {
-          latestDate[s.player_id] = sDate;
-          m.is_active = s.is_active;
-        }
-      }
-    });
-    return Object.values(map);
-  };
-
-  // Merge all rows, then show only currently active players (on the court)
-  const homePlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)).filter(s => s.is_active), [allStats, displayGame?.home_team_id]);
-  const awayPlayerStats = useMemo(() => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)).filter(s => s.is_active), [allStats, displayGame?.away_team_id]);
-
-  // Calculate scores from player stats for consistency
   const calcScore = (stats) => stats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
   const homeScore = calcScore(homePlayerStats);
   const awayScore = calcScore(awayPlayerStats);
 
-
-
-  const StatTable = ({ team, playerStats, game: tGame }) => {
-    const game = tGame || displayGame;
-    // Extra safety dedup by player_id in case of any upstream duplicates
-    const seen = new Set();
+  const StatTable = ({ team, playerStats }) => {
     const teamPlayers = playerStats
-      .filter(stat => { if (seen.has(stat.player_id)) return false; seen.add(stat.player_id); return true; })
       .map(stat => ({ ...stat, player: players.find(p => p.id === stat.player_id) }))
       .sort((a, b) => (a.player?.jersey_number || 0) - (b.player?.jersey_number || 0));
 
@@ -208,13 +203,13 @@ export default function LiveBoxScorePage() {
             const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
             const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
             return (
-              <div key={stat.id} className="rounded-lg p-3" style={{ backgroundColor: stat.is_active ? 'rgba(34,197,94,0.08)' : '#f8fafc' }}>
+              <div key={stat.player_id} className="rounded-lg p-3 bg-green-50">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="relative">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: team?.color || '#f97316' }}>
                       {stat.player?.jersey_number}
                     </div>
-                    {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
+                    <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>
                   </div>
                   <span className="font-semibold text-sm text-slate-900 truncate">{stat.player?.name}</span>
                   <span className="ml-auto font-bold text-slate-900">{points} PTS</span>
@@ -268,21 +263,21 @@ export default function LiveBoxScorePage() {
             </TableHeader>
             <TableBody>
               {teamPlayers.map(stat => {
-              const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
-              const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
-              return (
-                <TableRow key={stat.id} style={{ backgroundColor: stat.is_active ? 'rgba(34,197,94,0.08)' : 'transparent' }}>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="relative">
-                        <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: team?.color || '#f97316' }}>
-                          {stat.player?.jersey_number}
+                const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
+                const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+                return (
+                  <TableRow key={stat.player_id} style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: team?.color || '#f97316' }}>
+                            {stat.player?.jersey_number}
+                          </div>
+                          <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>
                         </div>
-                        {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
+                        <span className="text-sm">{stat.player?.name}</span>
                       </div>
-                      <span className="text-sm">{stat.player?.name}</span>
-                    </div>
-                  </TableCell>
+                    </TableCell>
                     {displayGame.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
                     <TableCell className="text-center font-semibold">{points}</TableCell>
                     <TableCell className="text-center">{stat.points_3 || 0}</TableCell>
@@ -323,7 +318,6 @@ export default function LiveBoxScorePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="mb-6">
           <Button variant="ghost" onClick={() => navigate(createPageUrl('Schedule'))} className="mb-4 text-slate-600 hover:bg-slate-200/50">
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -340,9 +334,7 @@ export default function LiveBoxScorePage() {
               <Badge className="bg-orange-100 text-orange-800 mb-4">Live</Badge>
             )}
 
-            {/* Game info */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Home team */}
               <div className="flex flex-col items-center gap-2">
                 <TeamLogo team={homeTeam} size="lg" />
                 <div className="text-center">
@@ -351,7 +343,6 @@ export default function LiveBoxScorePage() {
                 </div>
               </div>
 
-              {/* Center info */}
               <div className="flex flex-col items-center">
                 <ClockDisplay game={displayGame} />
                 <LatestActivity
@@ -363,7 +354,6 @@ export default function LiveBoxScorePage() {
                 />
               </div>
 
-              {/* Away team */}
               <div className="flex flex-col items-center gap-2">
                 <TeamLogo team={awayTeam} size="lg" />
                 <div className="text-center">
@@ -375,14 +365,12 @@ export default function LiveBoxScorePage() {
           </div>
         </div>
 
-        {/* Stats Tables */}
         <div className="space-y-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={homeTeam} playerStats={homePlayerStats} game={displayGame} />
+            <StatTable team={homeTeam} playerStats={homePlayerStats} />
           </div>
-
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
-            <StatTable team={awayTeam} playerStats={awayPlayerStats} game={displayGame} />
+            <StatTable team={awayTeam} playerStats={awayPlayerStats} />
           </div>
         </div>
       </div>
