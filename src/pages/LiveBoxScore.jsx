@@ -205,13 +205,13 @@ export default function LiveBoxScorePage() {
             const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
             const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
             return (
-              <div key={stat.player_id} className="rounded-lg p-3 bg-green-50">
+              <div key={stat.player_id} className="rounded-lg p-3" style={{ backgroundColor: stat.is_active ? 'rgba(34,197,94,0.08)' : '#f8fafc' }}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="relative">
                     <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0" style={{ backgroundColor: team?.color || '#f97316' }}>
                       {stat.player?.jersey_number}
                     </div>
-                    <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>
+                    {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
                   </div>
                   <span className="font-semibold text-sm text-slate-900 truncate">{stat.player?.name}</span>
                   <span className="ml-auto font-bold text-slate-900">{points} PTS</span>
@@ -268,14 +268,14 @@ export default function LiveBoxScorePage() {
                 const points = (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
                 const rebounds = (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
                 return (
-                  <TableRow key={stat.player_id} style={{ backgroundColor: 'rgba(34,197,94,0.08)' }}>
+                  <TableRow key={stat.player_id} style={{ backgroundColor: stat.is_active ? 'rgba(34,197,94,0.08)' : 'transparent' }}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="relative">
                           <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold" style={{ backgroundColor: team?.color || '#f97316' }}>
                             {stat.player?.jersey_number}
                           </div>
-                          <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>
+                          {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
                         </div>
                         <span className="text-sm">{stat.player?.name}</span>
                       </div>
