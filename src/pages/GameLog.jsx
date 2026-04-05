@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
-import { FileText, User, Clock } from "lucide-react";
+import { FileText, User, Clock, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function GameLogPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
@@ -85,6 +86,58 @@ export default function GameLogPage() {
     return added ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-800";
   };
 
+  const buildRows = (logs) => logs.map((log) => {
+    const player = players.find(p => p.id === log.player_id);
+    const team = teams.find(t => t.id === log.team_id);
+    const added = log.new_value > log.old_value;
+    return {
+      Time: log.created_date ? format(new Date(log.created_date), "HH:mm:ss") : "",
+      Player: player?.name || "Unknown",
+      Jersey: player?.jersey_number ?? "",
+      Team: team?.name || "",
+      Action: added ? "Added" : "Removed",
+      Stat: log.stat_label || log.stat_type,
+      "Old Value": log.old_value ?? "",
+      "New Value": log.new_value ?? "",
+      "Home Score": log.old_home_score ?? "",
+      "Away Score": log.old_away_score ?? "",
+      "Logged By": log.logged_by || "",
+      "Device": log.device_name || "",
+    };
+  });
+
+  const downloadCSV = () => {
+    const rows = buildRows(gameLogs);
+    if (!rows.length) return;
+    const headers = Object.keys(rows[0]);
+    const csv = [headers.join(","), ...rows.map(r => headers.map(h => `"${String(r[h]).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `game-log-${selectedGameId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadExcel = () => {
+    const rows = buildRows(gameLogs);
+    if (!rows.length) return;
+    const headers = Object.keys(rows[0]);
+    const tableRows = [
+      `<tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr>`,
+      ...rows.map(r => `<tr>${headers.map(h => `<td>${r[h]}</td>`).join("")}</tr>`)
+    ].join("");
+    const html = `<html><head><meta charset="UTF-8"></head><body><table>${tableRows}</table></body></html>`;
+    const blob = new Blob([html], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `game-log-${selectedGameId}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const getScoreAtTime = (log) => {
     let homeScore = log.old_home_score ?? 0;
     let awayScore = log.old_away_score ?? 0;
@@ -155,7 +208,7 @@ export default function GameLogPage() {
                 <span className="text-slate-400">vs</span>
                 <span>{awayTeam?.name}</span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-slate-100 text-slate-700">
                   {format(new Date(selectedGame.game_date), "MMM d, yyyy • h:mm a")}
                 </Badge>
@@ -169,6 +222,16 @@ export default function GameLogPage() {
                 <Badge className="bg-slate-100 text-slate-600">
                   {gameLogs.length} actions
                 </Badge>
+                {gameLogs.length > 0 && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={downloadCSV} className="h-7 text-xs gap-1">
+                      <Download className="w-3 h-3" /> CSV
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={downloadExcel} className="h-7 text-xs gap-1">
+                      <Download className="w-3 h-3" /> Excel
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </CardContent>
