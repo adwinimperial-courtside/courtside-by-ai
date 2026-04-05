@@ -250,8 +250,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              {/* Default game admin controls */}
-              {isAdmin && !isDefaultResult && (liveGame.status === 'scheduled' || liveGame.status === 'completed') && (
+              {/* Default game admin controls — only for scheduled (not yet played) games */}
+              {isAdmin && !isDefaultResult && liveGame.status === 'scheduled' && (
                 <Button
                   onClick={() => setShowDefaultDialog(true)}
                   variant="outline"
@@ -261,6 +261,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   Mark Default Winner
                 </Button>
               )}
+              {/* Reopen only for games already marked as default */}
               {isAdmin && isDefaultResult && (
                 <Button
                   onClick={handleReopen}
