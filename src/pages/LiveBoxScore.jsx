@@ -133,9 +133,11 @@ export default function LiveBoxScorePage() {
   // Deduplicate stats by player_id — sum all rows for the same player
   const mergeStatsByPlayer = (statRows) => {
     const map = {};
+    const latestDate = {};
     statRows.forEach(s => {
       if (!map[s.player_id]) {
         map[s.player_id] = { ...s };
+        latestDate[s.player_id] = s.updated_date || s.created_date || '';
       } else {
         const m = map[s.player_id];
         m.points_2 = (m.points_2 || 0) + (s.points_2 || 0);
@@ -152,8 +154,12 @@ export default function LiveBoxScorePage() {
         m.technical_fouls = (m.technical_fouls || 0) + (s.technical_fouls || 0);
         m.unsportsmanlike_fouls = (m.unsportsmanlike_fouls || 0) + (s.unsportsmanlike_fouls || 0);
         m.minutes_played = (m.minutes_played || 0) + (s.minutes_played || 0);
-        // Keep is_active true if any row is active
-        if (s.is_active) m.is_active = true;
+        // Use is_active from the most recently updated row
+        const sDate = s.updated_date || s.created_date || '';
+        if (sDate > latestDate[s.player_id]) {
+          latestDate[s.player_id] = sDate;
+          m.is_active = s.is_active;
+        }
       }
     });
     return Object.values(map);
