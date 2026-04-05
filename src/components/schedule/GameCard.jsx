@@ -80,6 +80,13 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const isAdmin = currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin';
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
+
+  const stageBadgeConfig = {
+    quarterfinal: { label: 'Quarterfinal', className: 'bg-sky-100 text-sky-800' },
+    semifinal:    { label: 'Semifinal',    className: 'bg-violet-100 text-violet-800' },
+    championship: { label: 'Championship', className: 'bg-yellow-100 text-yellow-800' },
+  };
+  const stageBadge = liveGame.game_stage ? stageBadgeConfig[liveGame.game_stage] : null;
   const defaultWinnerTeam = isDefaultResult ? teams.find(t => t.id === liveGame.default_winner_team_id) : null;
 
   const handleReopen = async () => {
@@ -175,6 +182,9 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   <Badge variant="outline" className="text-xs truncate max-w-[160px]">
                     {league.name}
                   </Badge>
+                )}
+                {stageBadge && (
+                  <Badge className={stageBadge.className}>{stageBadge.label}</Badge>
                 )}
                 <Badge className={statusColors[liveGame.status]}>
                   {liveGame.status === 'in_progress' ? 'Live' : liveGame.status.replace('_', ' ')}
