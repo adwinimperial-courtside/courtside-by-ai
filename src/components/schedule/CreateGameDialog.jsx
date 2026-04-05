@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams }) {
   const [formData, setFormData] = useState({
@@ -19,10 +20,20 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     game_date: "",
     location: "",
     game_mode: "timed",
+    game_stage: "regular",
+    exclude_from_awards: false,
     period_type: "quarters",
     period_minutes: 10,
     overtime_minutes: 5,
   });
+
+  const handleStageChange = (value) => {
+    setFormData(prev => ({
+      ...prev,
+      game_stage: value,
+      exclude_from_awards: value === "championship" ? true : prev.exclude_from_awards,
+    }));
+  };
 
 
   const isTimed = formData.game_mode === "timed";
@@ -39,7 +50,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
       payload.overtime_minutes = null;
     }
     onSubmit(payload);
-    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", period_type: "quarters", period_minutes: 10, overtime_minutes: 5 });
+    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5 });
   };
 
   const leagueTeams = formData.league_id 
@@ -131,6 +142,41 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
               placeholder="e.g., Main Arena"
               className="mt-1.5"
             />
+          </div>
+
+          {/* Game Stage & Awards */}
+          <div className="border-t border-slate-200 pt-4 space-y-4">
+            <p className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Game Stage</p>
+            <div>
+              <Label>Stage</Label>
+              <Select value={formData.game_stage} onValueChange={handleStageChange}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="regular">Regular Season</SelectItem>
+                  <SelectItem value="quarterfinal">Quarterfinal</SelectItem>
+                  <SelectItem value="semifinal">Semifinal</SelectItem>
+                  <SelectItem value="championship">Championship</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <Checkbox
+                id="exclude_from_awards"
+                checked={formData.exclude_from_awards}
+                onCheckedChange={(checked) => setFormData(prev => ({ ...prev, exclude_from_awards: !!checked }))}
+                className="mt-0.5"
+              />
+              <div>
+                <label htmlFor="exclude_from_awards" className="text-sm font-semibold text-amber-900 cursor-pointer">
+                  Exclude this game from player awards
+                </label>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Stats will still appear in box scores and player profiles, but this game will not count toward season awards (MVP, DPOY, Mythical 5).
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* Game Mode Section */}

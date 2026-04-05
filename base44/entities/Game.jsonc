@@ -62,6 +62,17 @@
       ],
       "default": "timed"
     },
+    "game_stage": {
+      "type": "string",
+      "enum": [
+        "regular",
+        "quarterfinal",
+        "semifinal",
+        "championship"
+      ],
+      "default": "regular",
+      "description": "Stage of the game in the season"
+    },
     "period_type": {
       "type": "string",
       "enum": [

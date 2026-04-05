@@ -79,6 +79,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const isAdmin = currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin';
   const isDefaultResult = !!liveGame.is_default_result;
+  const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
   const defaultWinnerTeam = isDefaultResult ? teams.find(t => t.id === liveGame.default_winner_team_id) : null;
 
   const handleReopen = async () => {
@@ -190,6 +191,11 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   <Badge className={defaultBadgeColor}>
                     <AlertTriangle className="w-3 h-3 mr-1" />
                     Default
+                  </Badge>
+                )}
+                {isExcludedFromAwards && (
+                  <Badge className="bg-amber-100 text-amber-800">
+                    Excluded from Awards
                   </Badge>
                 )}
               </div>
