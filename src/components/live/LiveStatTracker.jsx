@@ -462,6 +462,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     try {
       const currentValue = playerStat[statType.key] || 0;
       const updates = { [statType.key]: currentValue + 1 };
+
+      // Diagnostic logging — remove when bug is resolved
+      console.log(`[LiveStat:click] game=${game.id} player=${selectedPlayer.name} stat=${statType.key} old=${currentValue} new=${currentValue + 1}`);
       
       const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
       const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
@@ -652,6 +655,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     };
 
+    // Diagnostic logging
+    console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
+
     await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
     await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
@@ -778,6 +784,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const handleUndo = async (logEntry) => {
     const updates = { [logEntry.statType.key]: logEntry.oldValue };
+
+    // Diagnostic logging — remove when bug is resolved
+    console.log(`[LiveStat:undo] game=${game.id} player=${logEntry.statId} stat=${logEntry.statType.key} restoring to old=${logEntry.oldValue}`);
     
     // Prepare game updates (can batch score + fouls)
     const gameUpdates = {};
@@ -893,6 +902,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
 
       await Promise.all(minuteUpdates);
+
+      // Diagnostic: log final stat snapshot at end-game
+      console.log('[LiveStat:endgame] Final PlayerStats snapshot:', existingStats.map(s => ({
+        player_id: s.player_id, pts2: s.points_2, pts3: s.points_3, ft: s.free_throws,
+        reb: (s.offensive_rebounds||0)+(s.defensive_rebounds||0),
+        ast: s.assists, stl: s.steals, blk: s.blocks, to: s.turnovers, f: s.fouls
+      })));
 
       await base44.entities.Game.update(game.id, { 
         status: 'completed',
