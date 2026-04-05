@@ -130,9 +130,38 @@ export default function LiveBoxScorePage() {
     );
   }
 
-  // Show all players who have played in the game
-  const homePlayerStats = allStats.filter(s => s.team_id === displayGame?.home_team_id);
-  const awayPlayerStats = allStats.filter(s => s.team_id === displayGame?.away_team_id);
+  // Deduplicate stats by player_id — sum all rows for the same player
+  const mergeStatsByPlayer = (statRows) => {
+    const map = {};
+    statRows.forEach(s => {
+      if (!map[s.player_id]) {
+        map[s.player_id] = { ...s };
+      } else {
+        const m = map[s.player_id];
+        m.points_2 = (m.points_2 || 0) + (s.points_2 || 0);
+        m.points_3 = (m.points_3 || 0) + (s.points_3 || 0);
+        m.free_throws = (m.free_throws || 0) + (s.free_throws || 0);
+        m.free_throws_missed = (m.free_throws_missed || 0) + (s.free_throws_missed || 0);
+        m.offensive_rebounds = (m.offensive_rebounds || 0) + (s.offensive_rebounds || 0);
+        m.defensive_rebounds = (m.defensive_rebounds || 0) + (s.defensive_rebounds || 0);
+        m.assists = (m.assists || 0) + (s.assists || 0);
+        m.steals = (m.steals || 0) + (s.steals || 0);
+        m.blocks = (m.blocks || 0) + (s.blocks || 0);
+        m.turnovers = (m.turnovers || 0) + (s.turnovers || 0);
+        m.fouls = (m.fouls || 0) + (s.fouls || 0);
+        m.technical_fouls = (m.technical_fouls || 0) + (s.technical_fouls || 0);
+        m.unsportsmanlike_fouls = (m.unsportsmanlike_fouls || 0) + (s.unsportsmanlike_fouls || 0);
+        m.minutes_played = (m.minutes_played || 0) + (s.minutes_played || 0);
+        // Keep is_active true if any row is active
+        if (s.is_active) m.is_active = true;
+      }
+    });
+    return Object.values(map);
+  };
+
+  // Show all players who have played in the game (deduplicated)
+  const homePlayerStats = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id));
+  const awayPlayerStats = mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id));
 
   // Calculate scores from player stats for consistency
   const calcScore = (stats) => stats.reduce((acc, s) => acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0), 0);
