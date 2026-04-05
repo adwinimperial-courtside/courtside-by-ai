@@ -108,27 +108,25 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   useEffect(() => {
     let timeoutStats, timeoutLogs;
-    
-    // Only invalidate PlayerStats when other sources change (external updates)
-    const unsubscribeStats = base44.entities.PlayerStats.subscribe((event) => {
-      // Only refetch if it's NOT from this current user's actions
-      // Since mutations already update cache, only refetch on external changes
-      if (event.type !== 'create' && event.type !== 'update') {
-        clearTimeout(timeoutStats);
-        timeoutStats = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-        }, 500); // Longer debounce to batch updates
-      }
+
+    // Invalidate PlayerStats on ALL external events (create, update, delete).
+    // This is critical for multi-device tracking: without this, Admin B's cache
+    // stays stale and never sees Admin A's stat changes, causing cross-device races.
+    // Each device's own mutation already calls invalidateQueries in onSuccess,
+    // so the extra debounced invalidation here is harmless but ensures sync.
+    const unsubscribeStats = base44.entities.PlayerStats.subscribe(() => {
+      clearTimeout(timeoutStats);
+      timeoutStats = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      }, 300); // Short debounce to batch rapid multi-device updates
     });
-    
-    // Only invalidate GameLogs when others modify (rare during live game)
-    const unsubscribeLogs = base44.entities.GameLog.subscribe((event) => {
-      if (event.type === 'delete') {
-        clearTimeout(timeoutLogs);
-        timeoutLogs = setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-        }, 500);
-      }
+
+    // Invalidate GameLogs on all events so the activity feed stays in sync
+    const unsubscribeLogs = base44.entities.GameLog.subscribe(() => {
+      clearTimeout(timeoutLogs);
+      timeoutLogs = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
+      }, 300);
     });
     
     return () => {
@@ -455,17 +453,33 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
 
-    const playerStat = existingStats.find(s => s.player_id === selectedPlayer.id);
-    if (!playerStat) return;
+    // Always use the local cached stat row to find the ID; we'll fetch fresh value below
+    const playerStatCached = existingStats.find(s => s.player_id === selectedPlayer.id);
+    if (!playerStatCached) return;
 
     isProcessingStatRef.current = true;
     try {
-      const currentValue = playerStat[statType.key] || 0;
+      // Fetch fresh PlayerStats row to avoid stale-cache overwrite in multi-device tracking.
+      // This ensures that if another device just updated a different field on the same row,
+      // we read the current value before incrementing.
+      let freshValue = playerStatCached[statType.key] || 0;
+      try {
+        const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: selectedPlayer.id });
+        const freshStat = freshStats?.[0];
+        if (freshStat) {
+          freshValue = freshStat[statType.key] || 0;
+        }
+      } catch {
+        // Fall back to cached value — still a partial update so no cross-field corruption
+      }
+
+      const playerStat = playerStatCached; // stat row ID comes from cache (stable)
+      const currentValue = freshValue;
       const updates = { [statType.key]: currentValue + 1 };
 
       // Diagnostic logging — remove when bug is resolved
-      console.log(`[LiveStat:click] game=${game.id} player=${selectedPlayer.name} stat=${statType.key} old=${currentValue} new=${currentValue + 1}`);
-      
+      console.log(`[LiveStat:click] game=${game.id} player=${selectedPlayer.name} stat=${statType.key} old=${currentValue} new=${currentValue + 1} device=${getDeviceName()}`);
+
       const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
       const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
       const oldScores = { home: currentHomeScore, away: currentAwayScore };
