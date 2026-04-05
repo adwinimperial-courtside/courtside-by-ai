@@ -141,13 +141,13 @@ export default function LiveBoxScorePage() {
 
   const displayGame = liveGame || game;
 
-  // Merge all rows per player, then show only currently active (on-court) players
+  // Merge all rows per player; show all who played, highlight only active ones
   const homePlayerStats = useMemo(
-    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)).filter(s => s.is_active),
+    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.home_team_id)),
     [allStats, displayGame?.home_team_id]
   );
   const awayPlayerStats = useMemo(
-    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)).filter(s => s.is_active),
+    () => mergeStatsByPlayer(allStats.filter(s => s.team_id === displayGame?.away_team_id)),
     [allStats, displayGame?.away_team_id]
   );
 
