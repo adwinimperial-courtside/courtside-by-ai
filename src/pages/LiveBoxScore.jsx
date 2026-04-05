@@ -12,37 +12,39 @@ import ClockDisplay from "@/components/live/ClockDisplay";
 import LatestActivity from "@/components/live/LatestActivity";
 
 function mergeStatsByPlayer(statRows) {
-  const map = {};
-  const latestDate = {};
+  const groups = {};
   statRows.forEach(s => {
-    if (!map[s.player_id]) {
-      map[s.player_id] = { ...s };
-      latestDate[s.player_id] = s.updated_date || s.created_date || '';
-    } else {
-      const m = map[s.player_id];
-      m.points_2 = (m.points_2 || 0) + (s.points_2 || 0);
-      m.points_3 = (m.points_3 || 0) + (s.points_3 || 0);
-      m.free_throws = (m.free_throws || 0) + (s.free_throws || 0);
-      m.free_throws_missed = (m.free_throws_missed || 0) + (s.free_throws_missed || 0);
-      m.offensive_rebounds = (m.offensive_rebounds || 0) + (s.offensive_rebounds || 0);
-      m.defensive_rebounds = (m.defensive_rebounds || 0) + (s.defensive_rebounds || 0);
-      m.assists = (m.assists || 0) + (s.assists || 0);
-      m.steals = (m.steals || 0) + (s.steals || 0);
-      m.blocks = (m.blocks || 0) + (s.blocks || 0);
-      m.turnovers = (m.turnovers || 0) + (s.turnovers || 0);
-      m.fouls = (m.fouls || 0) + (s.fouls || 0);
-      m.technical_fouls = (m.technical_fouls || 0) + (s.technical_fouls || 0);
-      m.unsportsmanlike_fouls = (m.unsportsmanlike_fouls || 0) + (s.unsportsmanlike_fouls || 0);
-      m.minutes_played = (m.minutes_played || 0) + (s.minutes_played || 0);
-      // Use is_active from the most recently updated row
-      const sDate = s.updated_date || s.created_date || '';
-      if (sDate > latestDate[s.player_id]) {
-        latestDate[s.player_id] = sDate;
-        m.is_active = s.is_active;
-      }
-    }
+    if (!groups[s.player_id]) groups[s.player_id] = [];
+    groups[s.player_id].push(s);
   });
-  return Object.values(map);
+
+  return Object.values(groups).map(rows => {
+    // Sort descending by updated_date to find the most recent row
+    const sorted = [...rows].sort((a, b) => {
+      const da = a.updated_date || a.created_date || '';
+      const db = b.updated_date || b.created_date || '';
+      return db.localeCompare(da);
+    });
+    const latest = sorted[0];
+    return {
+      ...latest,
+      points_2: rows.reduce((acc, s) => acc + (s.points_2 || 0), 0),
+      points_3: rows.reduce((acc, s) => acc + (s.points_3 || 0), 0),
+      free_throws: rows.reduce((acc, s) => acc + (s.free_throws || 0), 0),
+      free_throws_missed: rows.reduce((acc, s) => acc + (s.free_throws_missed || 0), 0),
+      offensive_rebounds: rows.reduce((acc, s) => acc + (s.offensive_rebounds || 0), 0),
+      defensive_rebounds: rows.reduce((acc, s) => acc + (s.defensive_rebounds || 0), 0),
+      assists: rows.reduce((acc, s) => acc + (s.assists || 0), 0),
+      steals: rows.reduce((acc, s) => acc + (s.steals || 0), 0),
+      blocks: rows.reduce((acc, s) => acc + (s.blocks || 0), 0),
+      turnovers: rows.reduce((acc, s) => acc + (s.turnovers || 0), 0),
+      fouls: rows.reduce((acc, s) => acc + (s.fouls || 0), 0),
+      technical_fouls: rows.reduce((acc, s) => acc + (s.technical_fouls || 0), 0),
+      unsportsmanlike_fouls: rows.reduce((acc, s) => acc + (s.unsportsmanlike_fouls || 0), 0),
+      minutes_played: rows.reduce((acc, s) => acc + (s.minutes_played || 0), 0),
+      is_active: latest.is_active, // from most recently updated row
+    };
+  });
 }
 
 export default function LiveBoxScorePage() {
