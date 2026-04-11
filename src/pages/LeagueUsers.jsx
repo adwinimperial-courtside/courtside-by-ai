@@ -99,7 +99,10 @@ export default function LeagueUsers() {
 
   const { data: allUsers = [], isLoading } = useQuery({
     queryKey: ['leagueUsersPage'],
-    queryFn: () => base44.entities.User.list('-created_date', 500),
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getLeagueUsers', {});
+      return res.data.users || [];
+    },
     enabled: isAppAdmin || isLeagueAdmin,
   });
 
