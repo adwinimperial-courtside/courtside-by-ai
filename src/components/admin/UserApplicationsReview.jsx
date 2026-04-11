@@ -143,6 +143,9 @@ export default function UserApplicationsReview() {
                     )}
                     {app.requested_role === "player" && (
                       <>
+                        {app.display_name && <div><span className="text-slate-500">Display Name:</span> <span className="font-medium">{app.display_name}</span></div>}
+                        {app.handle && <div><span className="text-slate-500">Nickname:</span> <span className="font-medium">{app.handle}</span></div>}
+                        {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
                         {app.league_team_pairs && app.league_team_pairs.length > 0 ? (
                           app.league_team_pairs.map((pair, i) => {
                             const pLeague = leagues.find(l => l.id === pair.league_id);
@@ -157,15 +160,13 @@ export default function UserApplicationsReview() {
                           })
                         ) : (
                           <>
-                            <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
+                            <div><span className="text-slate-500">League:</span> <span className="font-medium">{leagues.find(l => l.id === app.league_id)?.name || app.league_id || "N/A"}</span></div>
                             <div><span className="text-slate-500">Team:</span> <span className="font-medium">{teams.find(t => t.id === app.team_id)?.name || app.team_id || "N/A"}</span></div>
                           </>
                         )}
-                      </>
-                    )}
-                  </div>
+                      </div>
 
-                  {/* Actions */}
+                      {/* Actions */}
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleApprove(app)}
