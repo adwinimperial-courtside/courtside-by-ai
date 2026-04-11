@@ -67,7 +67,7 @@ export default function RegistrationGate({ user }) {
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
   });
 
   const { data: teams = [] } = useQuery({
