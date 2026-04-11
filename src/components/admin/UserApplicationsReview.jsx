@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import PlayerMatchModal from "./PlayerMatchModal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ const ROLE_BADGE_COLORS = {
 export default function UserApplicationsReview() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
+  const [matchingApp, setMatchingApp] = useState(null);
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['user_applications_pending'],
@@ -40,6 +42,12 @@ export default function UserApplicationsReview() {
   });
 
   const handleApprove = async (application) => {
+    // For player applications, open the match modal first
+    if (application.requested_role === 'player') {
+      setMatchingApp(application);
+      return;
+    }
+
     const roleName = ROLE_LABELS[application.requested_role];
     const userName = application.user_name || application.user_email;
     if (!confirm(`Approve ${userName}'s application for ${roleName}?`)) return;
@@ -78,6 +86,19 @@ export default function UserApplicationsReview() {
   };
 
   return (
+    <>
+    {matchingApp && (
+      <PlayerMatchModal
+        application={matchingApp}
+        leagues={leagues}
+        teams={teams}
+        onClose={() => setMatchingApp(null)}
+        onApproved={() => {
+          setMatchingApp(null);
+          alert('✅ Player matched and approved!');
+        }}
+      />
+    )}
     <Card className="border-slate-200 shadow-lg">
       <CardHeader className="border-b border-slate-200 bg-white">
         <div className="flex items-center justify-between">
@@ -197,5 +218,6 @@ export default function UserApplicationsReview() {
         )}
       </CardContent>
     </Card>
+    </>
   );
 }
