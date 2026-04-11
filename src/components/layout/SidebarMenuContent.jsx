@@ -106,11 +106,7 @@ const ownerItems = [
     url: createPageUrl("DataBackup"),
     icon: HardDrive
   },
-  {
-    title: "Fix Manual Stats",
-    url: createPageUrl("FixManualStats"),
-    icon: Wrench
-  },
+
   {
     title: "Roster User Matching",
     url: createPageUrl("RosterUserMatching"),
