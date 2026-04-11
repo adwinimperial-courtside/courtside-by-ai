@@ -66,8 +66,11 @@ export default function RegistrationGate({ user }) {
   const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
 
   const { data: leagues = [] } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list('-created_date', 200),
+    queryKey: ['publicLeagues'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getPublicLeagues', {});
+      return res.data.leagues || [];
+    },
   });
 
   const { data: teams = [] } = useQuery({
