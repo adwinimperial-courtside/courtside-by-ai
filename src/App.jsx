@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 import AllPlayersViewPage from './pages/AllPlayersView';
+import LeagueUsersPage from './pages/LeagueUsers';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -54,6 +55,7 @@ const AuthenticatedApp = () => {
           <Route key={path} path={`/${path}`} element={<Page />} handle={{ pageName: path }} />
         ))}
         <Route path="/AllPlayersView" element={<LayoutWrapper currentPageName="AllPlayersView"><AllPlayersViewPage /></LayoutWrapper>} />
+        <Route path="/LeagueUsers" element={<LayoutWrapper currentPageName="LeagueUsers"><LeagueUsersPage /></LayoutWrapper>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </LayoutWrapper>

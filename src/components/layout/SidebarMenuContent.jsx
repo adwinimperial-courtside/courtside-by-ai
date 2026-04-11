@@ -72,6 +72,11 @@ const leagueAdminItems = [
     title: "Game Log",
     url: createPageUrl("GameLog"),
     icon: ScrollText
+  },
+  {
+    title: "League Users",
+    url: createPageUrl("LeagueUsers"),
+    icon: Users
   }
 ];
 
