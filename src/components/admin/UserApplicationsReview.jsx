@@ -99,7 +99,6 @@ export default function UserApplicationsReview() {
           <div className="space-y-4">
             {applications.map((app) => {
               const league = leagues.find(l => l.id === app.league_id);
-              const team = teams.find(t => t.id === app.team_id);
               const isProcessing = processingId === app.id;
 
               return (
@@ -131,6 +130,7 @@ export default function UserApplicationsReview() {
                     )}
                     {(app.requested_role === "coach" || app.requested_role === "viewer") && (
                       <>
+                        {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
                         {app.league_ids && app.league_ids.length > 0 ? (
                           app.league_ids.map((lid, i) => {
                             const l = leagues.find(lg => lg.id === lid);
@@ -164,9 +164,11 @@ export default function UserApplicationsReview() {
                             <div><span className="text-slate-500">Team:</span> <span className="font-medium">{teams.find(t => t.id === app.team_id)?.name || app.team_id || "N/A"}</span></div>
                           </>
                         )}
-                      </div>
+                      </>
+                    )}
+                  </div>
 
-                      {/* Actions */}
+                  {/* Actions */}
                   <div className="flex gap-2">
                     <Button
                       onClick={() => handleApprove(app)}
