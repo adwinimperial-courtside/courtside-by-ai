@@ -116,6 +116,11 @@ const ownerItems = [
     title: "League Award Settings",
     url: createPageUrl("LeagueAwardSettings"),
     icon: SlidersHorizontal
+  },
+  {
+    title: "All Players",
+    url: createPageUrl("AllPlayersView"),
+    icon: Users
   }
 ];
 
