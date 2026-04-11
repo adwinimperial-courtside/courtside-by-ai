@@ -118,16 +118,20 @@ export default function RegistrationGate({ user }) {
           avg_players_per_team: parseInt(formData.avg_players_per_team),
         });
       } else {
-          applicationData.league_id = selectedLeagues[0];
-          applicationData.league_ids = selectedLeagues;
-          if (selectedRole === "player") {
-            applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
-            applicationData.league_team_pairs = selectedLeagues.map(lid => ({
-              league_id: lid,
-              team_id: leagueTeamMap[lid] || "",
-            }));
-          }
+        applicationData.country = formData.country;
+        applicationData.league_id = selectedLeagues[0];
+        applicationData.league_ids = selectedLeagues;
+        if (selectedRole === "player") {
+          applicationData.display_name = formData.display_name;
+          applicationData.handle = formData.handle || "";
+          applicationData.player_name_status = formData.display_name ? "completed" : "missing";
+          applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
+          applicationData.league_team_pairs = selectedLeagues.map(lid => ({
+            league_id: lid,
+            team_id: leagueTeamMap[lid] || "",
+          }));
         }
+      }
 
       await base44.entities.UserApplication.create(applicationData);
       await base44.auth.updateMe({ application_status: "Pending" });
@@ -247,35 +251,54 @@ export default function RegistrationGate({ user }) {
             )}
 
             {(selectedRole === "coach" || selectedRole === "viewer") && (
-              <div>
-                <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
-                <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
-                  {leagues.map(l => (
-                    <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
-                      <input
-                        type="checkbox"
-                        checked={selectedLeagues.includes(l.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedLeagues([...selectedLeagues, l.id]);
-                          } else {
-                            setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
-                          }
-                        }}
-                        className="w-4 h-4 accent-orange-500"
-                      />
-                      <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
-                    </label>
-                  ))}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
+                  <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
                 </div>
-                {selectedLeagues.length > 0 && (
-                  <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
-                )}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
+                    {leagues.map(l => (
+                      <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedLeagues.includes(l.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedLeagues([...selectedLeagues, l.id]);
+                            } else {
+                              setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
+                            }
+                          }}
+                          className="w-4 h-4 accent-orange-500"
+                        />
+                        <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                  {selectedLeagues.length > 0 && (
+                    <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
+                  )}
+                </div>
               </div>
             )}
 
             {selectedRole === "player" && (
                 <>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Player Display Name *</label>
+                    <Input value={formData.display_name || ""} onChange={e => setFormData({ ...formData, display_name: e.target.value })} placeholder="Your name as it appears on the roster" required />
+                    <p className="text-xs text-slate-400 mt-1">This is how your name will appear in stats, standings, and awards.</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Nickname / Handle <span className="font-normal text-slate-400">(optional)</span></label>
+                    <Input value={formData.handle || ""} onChange={e => setFormData({ ...formData, handle: e.target.value })} placeholder="e.g., The Flash" />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
+                    <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
                     <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
