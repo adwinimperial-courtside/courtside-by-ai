@@ -6,9 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, User, Pencil, Check, X, Link2 } from "lucide-react";
-import PlayerLeagueMatchModal from "@/components/admin/PlayerLeagueMatchModal";
+import { RefreshCw, User, ChevronRight } from "lucide-react";
 import BulkIdentityMatching from "@/components/admin/BulkIdentityMatching";
+import PlayerIdentityDetailPanel from "@/components/admin/PlayerIdentityDetailPanel";
 
 function looksLikeRealName(name) {
   if (!name || typeof name !== "string") return false;
@@ -25,9 +25,7 @@ export default function PlayerIdentityAdmin() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [nameSearch, setNameSearch] = useState("");
   const [isRepairing, setIsRepairing] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editValues, setEditValues] = useState({});
-  const [matchingPlayer, setMatchingPlayer] = useState(null);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: players = [], isLoading } = useQuery({
@@ -104,37 +102,7 @@ export default function PlayerIdentityAdmin() {
     return d && !isNaN(d) ? d.toLocaleDateString() : "";
   };
 
-  const startEdit = (player) => {
-    setEditingId(player.id);
-    setEditValues({ full_name: player.full_name || "", display_name: player.display_name || "", handle: player.handle || "" });
-  };
 
-  const cancelEdit = () => { setEditingId(null); setEditValues({}); };
-
-  const saveEdit = async (player) => {
-    const trimmedFullName = editValues.full_name.trim();
-    const trimmedDisplayName = editValues.display_name.trim();
-
-    // full_name is a built-in field — must use a service-role backend function
-    const promises = [
-      base44.entities.User.update(player.id, {
-        display_name: trimmedDisplayName,
-        handle: editValues.handle.trim(),
-        player_name_status: trimmedDisplayName ? "completed" : "missing",
-      }),
-    ];
-
-    if (trimmedFullName && trimmedFullName !== player.full_name) {
-      promises.push(
-        base44.functions.invoke('updateUserFullName', { userId: player.id, full_name: trimmedFullName })
-      );
-    }
-
-    await Promise.all(promises);
-    queryClient.invalidateQueries({ queryKey: ["player_users"] });
-    setEditingId(null);
-    setEditValues({});
-  };
 
   const handleRepair = async () => {
     const targets = players.filter(p => p.player_name_status !== "completed");
@@ -170,15 +138,18 @@ export default function PlayerIdentityAdmin() {
   return (
     <div>
       <BulkIdentityMatching leagues={leagues} allUsers={players} />
-      {matchingPlayer && (
-        <PlayerLeagueMatchModal
-          player={matchingPlayer}
-          onClose={() => {
-            setMatchingPlayer(null);
-            queryClient.invalidateQueries({ queryKey: ["userLeagueIdentities"] });
-          }}
+
+      {selectedPlayer && (
+        <PlayerIdentityDetailPanel
+          player={selectedPlayer}
+          leagues={leagues}
+          teams={teams}
+          identities={identities}
+          onClose={() => setSelectedPlayer(null)}
+          onSaved={() => setSelectedPlayer(null)}
         />
       )}
+
       <Card className="border-slate-200 shadow-lg">
         <CardHeader className="border-b border-slate-200 bg-white">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -233,116 +204,50 @@ export default function PlayerIdentityAdmin() {
           ) : filtered.length === 0 ? (
             <p className="text-center text-slate-500 py-10">No records match the current filters.</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
-                  <tr>
-                    {["Full Name", "Display Name", "Handle", "Email", "Joined", "League / Team", "Status", "Match", "", ""].map((h, i) => (
-                      <th key={i} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide whitespace-nowrap">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filtered.map(player => {
-                    const isEditing = editingId === player.id;
-                    return (
-                      <tr key={player.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.full_name}
-                              onChange={e => setEditValues(v => ({ ...v, full_name: e.target.value }))}
-                              className="h-7 text-sm w-36"
-                              placeholder="Full name"
-                            />
-                          ) : (
-                            player.full_name || <span className="text-slate-300 italic">none</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.display_name}
-                              onChange={e => setEditValues(v => ({ ...v, display_name: e.target.value }))}
-                              className="h-7 text-sm w-36"
-                              placeholder="Display name"
-                            />
-                          ) : player.display_name ? (
-                            <span className="text-slate-800">{player.display_name}</span>
-                          ) : (
-                            <span className="text-slate-300 italic">not set</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {isEditing ? (
-                            <Input
-                              value={editValues.handle}
-                              onChange={e => setEditValues(v => ({ ...v, handle: e.target.value }))}
-                              className="h-7 text-sm w-28"
-                              placeholder="Handle"
-                            />
-                          ) : player.handle ? (
-                            <span className="text-slate-500">@{player.handle}</span>
-                          ) : (
-                            <span className="text-slate-300">none</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
-                          {player.email || ""}
-                        </td>
-                        <td className="px-4 py-3 text-slate-500 whitespace-nowrap">
-                          {formatDate(player.created_date)}
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 max-w-xs">
-                          <span className="block truncate" title={getLeagueTeamLabel(player)}>
-                            {getLeagueTeamLabel(player)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <Badge className={STATUS_COLORS[player.player_name_status] || "bg-slate-100 text-slate-500"}>
-                            {player.player_name_status || "not set"}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <Badge className={getMatchStatus(player).color}>
-                            {getMatchStatus(player).label}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {isEditing ? (
-                            <div className="flex gap-1">
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600" onClick={() => saveEdit(player)}>
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400" onClick={cancelEdit}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-slate-400 hover:text-slate-700" onClick={() => startEdit(player)}>
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
-                            onClick={() => setMatchingPlayer(player)}
-                            disabled={isEditing}
-                          >
-                            <Link2 className="w-3 h-3" />
-                            Match Leagues
-                          </Button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            <div className="divide-y divide-slate-100">
+              {filtered.map(player => {
+                const matchStatus = getMatchStatus(player);
+                const hasDisplayName = !!player.display_name;
+                return (
+                  <button
+                    key={player.id}
+                    className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors text-left"
+                    onClick={() => setSelectedPlayer(player)}
+                  >
+                    {/* Avatar */}
+                    <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm flex-shrink-0">
+                      {(player.full_name || player.email || "?")[0].toUpperCase()}
+                    </div>
+
+                    {/* Name block */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-slate-900 text-sm truncate">
+                          {player.full_name || <span className="text-slate-400 italic">No name</span>}
+                        </span>
+                        {player.display_name && (
+                          <span className="text-xs text-slate-500 truncate">({player.display_name})</span>
+                        )}
+                        {player.handle && (
+                          <span className="text-xs text-slate-400">@{player.handle}</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 truncate mt-0.5">{player.email}</p>
+                    </div>
+
+                    {/* Badges */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Badge className={`text-xs ${STATUS_COLORS[player.player_name_status] || "bg-slate-100 text-slate-500"}`}>
+                        {player.player_name_status || "not set"}
+                      </Badge>
+                      <Badge className={`text-xs ${matchStatus.color}`}>
+                        {matchStatus.label}
+                      </Badge>
+                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           )}
         </CardContent>
