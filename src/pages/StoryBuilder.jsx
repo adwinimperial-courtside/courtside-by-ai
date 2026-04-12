@@ -17,6 +17,21 @@ export default function StoryBuilder() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
+  const MONTHLY_LIMIT = 20;
+  const currentMonthYear = format(new Date(), "yyyy-MM");
+  const userEmail = currentUser?.email;
+
+  const { data: usageCounters = [], refetch: refetchUsage } = useQuery({
+    queryKey: ["aiUsageCounter", userEmail, currentMonthYear],
+    queryFn: () => base44.entities.AIUsageCounter.filter({ created_by: userEmail, month_year: currentMonthYear }),
+    enabled: !!userEmail,
+  });
+
+  const usageCounter = usageCounters[0];
+  const briefingsUsed = usageCounter?.briefings_generated || 0;
+  const briefingsRemaining = MONTHLY_LIMIT - briefingsUsed;
+  const hasReachedLimit = currentUser?.user_type === "league_admin" && briefingsUsed >= MONTHLY_LIMIT;
+
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
@@ -86,6 +101,13 @@ export default function StoryBuilder() {
     setIsGenerating(true);
 
     try {
+      // --- Usage limit check ---
+      if (currentUser?.user_type === "league_admin" && briefingsUsed >= MONTHLY_LIMIT) {
+        setError(`Monthly limit of ${MONTHLY_LIMIT} story generations reached. Limit resets next month.`);
+        setIsGenerating(false);
+        return;
+      }
+
       // --- Eligibility checks ---
       if (!selectedGame) throw new Error("no_game");
       if (selectedGame.entry_type !== "digital") throw new Error("not_digital");
@@ -318,6 +340,23 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
       });
 
       setStory(typeof result === "string" ? result : JSON.stringify(result));
+
+      // --- Track usage ---
+      if (currentUser?.user_type === "league_admin" || currentUser?.user_type === "app_admin") {
+        if (usageCounter) {
+          await base44.entities.AIUsageCounter.update(usageCounter.id, {
+            briefings_generated: briefingsUsed + 1
+          });
+        } else {
+          await base44.entities.AIUsageCounter.create({
+            league_id: selectedLeagueId,
+            month_year: currentMonthYear,
+            briefings_generated: 1,
+            monthly_limit: MONTHLY_LIMIT
+          });
+        }
+        refetchUsage();
+      }
     } catch (err) {
       if (["not_digital", "not_completed", "no_logs", "no_stats", "default_result", "no_game"].includes(err.message)) {
         setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
@@ -354,11 +393,25 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
     <div className="p-4 sm:p-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Newspaper className="w-6 h-6 text-orange-500" />
-          Story Builder
-        </h1>
-        <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready post-game story powered by AI.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Newspaper className="w-6 h-6 text-orange-500" />
+              Story Builder
+            </h1>
+            <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready post-game story powered by AI.</p>
+          </div>
+          {currentUser && (currentUser.user_type === "league_admin" || currentUser.user_type === "app_admin") && (
+            <div className={`flex flex-col items-end gap-1 px-4 py-3 rounded-xl border-2 ${
+              hasReachedLimit ? "border-red-200 bg-red-50" : briefingsRemaining <= 5 ? "border-amber-200 bg-amber-50" : "border-green-200 bg-green-50"
+            }`}>
+              <p className={`text-2xl font-bold ${
+                hasReachedLimit ? "text-red-600" : briefingsRemaining <= 5 ? "text-amber-600" : "text-green-600"
+              }`}>{briefingsRemaining}</p>
+              <p className="text-xs font-semibold text-slate-500 whitespace-nowrap">of {MONTHLY_LIMIT} left this month</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Selectors */}
@@ -410,7 +463,7 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
       <div className="flex gap-3 mb-6">
         <Button
           onClick={handleGenerate}
-          disabled={!selectedGameId || isGenerating}
+          disabled={!selectedGameId || isGenerating || hasReachedLimit}
           className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
         >
           {isGenerating ? (
