@@ -102,7 +102,14 @@ export default function StoryBuilder() {
       // --- Build stats summary ---
       const buildPlayerStatsSummary = () => {
         return playerStats
-          .filter(ps => ps.did_play)
+          .filter(ps => {
+            // Include anyone who has any stats recorded, regardless of did_play flag
+            const pts = (ps.points_2 || 0) * 2 + (ps.points_3 || 0) * 3 + (ps.free_throws || 0);
+            const anyStats = pts > 0 || (ps.offensive_rebounds || 0) > 0 || (ps.defensive_rebounds || 0) > 0
+              || (ps.assists || 0) > 0 || (ps.steals || 0) > 0 || (ps.blocks || 0) > 0
+              || (ps.turnovers || 0) > 0 || (ps.fouls || 0) > 0;
+            return ps.did_play || anyStats;
+          })
           .map(ps => {
             const player = players.find(p => p.id === ps.player_id);
             const team = teams.find(t => t.id === ps.team_id);
