@@ -196,16 +196,34 @@ export default function StoryBuilder() {
 
       const formatPlayerLine = (p) => {
         const parts = [`${p.pts} pts`];
-        if (p.reb >= 5) parts.push(`${p.reb} reb`);
-        if (p.ast >= 3) parts.push(`${p.ast} ast`);
-        if (p.stl >= 2) parts.push(`${p.stl} stl`);
-        if (p.blk >= 2) parts.push(`${p.blk} blk`);
-        if (p.three >= 2) parts.push(`${p.three}x3PT`);
+        if (p.reb >= 3) parts.push(`${p.reb} reb`);
+        if (p.ast >= 2) parts.push(`${p.ast} ast`);
+        if (p.stl >= 1) parts.push(`${p.stl} stl`);
+        if (p.blk >= 1) parts.push(`${p.blk} blk`);
+        if (p.three >= 1) parts.push(`${p.three}x3PT`);
+        if (p.ft >= 2) parts.push(`${p.ft}/${p.ft + p.ftm} FT`);
+        if (p.to >= 3) parts.push(`${p.to} TO`);
+        if (p.fouls >= 4) parts.push(`${p.fouls} fouls`);
+        if (p.tech >= 1) parts.push(`${p.tech} tech`);
+        if (p.unsp >= 1) parts.push(`${p.unsp} unsp`);
         return `${p.name}: ${parts.join(", ")}`;
       };
 
-      const winnerTopPlayers = winnerStats.slice(0, 3).map(formatPlayerLine).join("\n");
-      const loserTopPlayers = loserStats.slice(0, 3).map(formatPlayerLine).join("\n");
+      // Score player impact to surface best performers
+      const scoreImpact = (p) => {
+        let score = p.pts * 1.0;
+        score += p.reb * 1.2;
+        score += p.ast * 1.5;
+        score += p.stl * 2.5;
+        score += p.blk * 2.0;
+        score -= p.to * 1.5;
+        return score;
+      };
+
+      const winnerSorted = [...winnerStats].sort((a, b) => scoreImpact(b) - scoreImpact(a));
+      const loserSorted = [...loserStats].sort((a, b) => scoreImpact(b) - scoreImpact(a));
+      const winnerTopPlayers = winnerSorted.slice(0, 4).map(formatPlayerLine).join("\n");
+      const loserTopPlayers = loserSorted.slice(0, 3).map(formatPlayerLine).join("\n");
 
       const winnerTeamTotals = {
         pts: winnerStats.reduce((s, p) => s + p.pts, 0),
@@ -233,7 +251,7 @@ export default function StoryBuilder() {
         unsp: loserStats.reduce((s, p) => s + p.unsp, 0),
       };
 
-      const prompt = `You are a lively, upbeat grassroots basketball reporter writing a Facebook post-game story for a local league page.
+      const prompt = `You are a lively grassroots basketball reporter writing a Facebook post-game story for a local league page.
 
 GAME DATA:
 League Game — ${format(new Date(selectedGame.game_date), "MMMM d, yyyy")}
@@ -241,40 +259,51 @@ Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserSc
 Winner: ${winnerTeam?.name}
 Loser: ${loserTeam?.name}
 
-ACTIVITY LOG INSIGHTS (from the live digital tracking):
+ACTIVITY LOG INSIGHTS (use only for game flow, momentum, and tone — NOT for player stats or score):
 - Total scoring events logged: ${logInsights.totalScoringEvents}
 - Lead changes detected: ${logInsights.leadChanges}
 - Three-point makes tracked: ${logInsights.totalThreesLogged}
 - Personal fouls logged: ${logInsights.totalFoulsLogged}
 - Technical fouls: ${logInsights.totalTechsLogged}
 - Unsportsmanlike fouls: ${logInsights.totalUnspLogged}
-- Game feel: ${logInsights.wasLopsided ? "Winner dominated — this was not close" : logInsights.wasClose ? "Back-and-forth tight contest, decided in the closing stretch" : "Winner pulled away and controlled the second half"}
+- Game feel: ${logInsights.wasLopsided ? "Winner dominated from start to finish — not a close game" : logInsights.wasClose ? "Back-and-forth contest, decided in the closing stretch" : "Winner pulled away in the second half"}
 
-OFFICIAL VERIFIED PLAYER STATS (source of truth — use these for all numbers):
-${winnerTeam?.name} TOP PERFORMERS:
+OFFICIAL VERIFIED PLAYER STATS — SOURCE OF TRUTH FOR ALL NUMBERS:
+${winnerTeam?.name} TOP PERFORMERS (sorted by impact):
 ${winnerTopPlayers}
 
-${loserTeam?.name} TOP PERFORMERS:
+${loserTeam?.name} TOP PERFORMERS (sorted by impact):
 ${loserTopPlayers}
 
 TEAM TOTALS:
 ${winnerTeam?.name}: ${winnerTeamTotals.pts} pts | ${winnerTeamTotals.reb} reb | ${winnerTeamTotals.ast} ast | ${winnerTeamTotals.stl} stl | ${winnerTeamTotals.blk} blk | ${winnerTeamTotals.three} 3PT | ${winnerTeamTotals.to} TO | ${winnerTeamTotals.fouls} fouls${winnerTeamTotals.techs > 0 ? ` | ${winnerTeamTotals.techs} tech fouls` : ""}${winnerTeamTotals.unsp > 0 ? ` | ${winnerTeamTotals.unsp} unsportsmanlike` : ""}
 ${loserTeam?.name}: ${loserTeamTotals.pts} pts | ${loserTeamTotals.reb} reb | ${loserTeamTotals.ast} ast | ${loserTeamTotals.stl} stl | ${loserTeamTotals.blk} blk | ${loserTeamTotals.three} 3PT | ${loserTeamTotals.to} TO | ${loserTeamTotals.fouls} fouls${loserTeamTotals.techs > 0 ? ` | ${loserTeamTotals.techs} tech fouls` : ""}${loserTeamTotals.unsp > 0 ? ` | ${loserTeamTotals.unsp} unsportsmanlike` : ""}
 
-INSTRUCTIONS:
-Write a Facebook post-game story that:
-1. Starts EXACTLY with this line: 🎙️ COURTSIDE BY AI REPORT
+INSTRUCTIONS — READ CAREFULLY:
+Write a Facebook post-game story following this exact structure:
+1. Start EXACTLY with: 🎙️ COURTSIDE BY AI REPORT
 2. Second line EXACTLY: 🏁 Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserScore}
-3. Then the story body (150–280 words) — exciting, natural, human, Facebook-ready with emojis
-4. Never invent exact stats — only use the numbers given above
-5. Never swap winner/loser or their scores
-6. Tell the story using the activity log insights to understand the game flow, but use the official stats for all numbers
-7. Mention key standout players naturally with their real stats
-8. Make it feel like a proud league organizer is sharing this on their Facebook page
-9. End EXACTLY with this line: 👉 Full box score & stats: https://courtside-by-ai.com/schedule
+3. Opening hook (1–2 sentences setting the game's feel)
+4. Winning team story — who led them, who supported, what stats defined their performance
+5. Losing team — who kept them competitive, their best performer(s) with real stats
+6. Any relevant non-scoring factors (rebounding edge, turnovers, foul trouble, defensive stops) if they helped decide the game
+7. Closing wrap — what sealed the win
+8. End EXACTLY with: 👉 Full box score & stats: https://courtside-by-ai.com/schedule
 
-DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI REPORT.
-Each generated story should feel fresh and unique — vary the language, phrasing, and story angle each time.`;
+MANDATORY RULES:
+- You MUST mention at least 2 players from the winning team by name with their real stats
+- You MUST mention at least 1 player from the losing team by name with their real stats
+- Select players based on actual impact (points, rebounds, assists, steals, double-doubles), not randomly
+- ONLY use numbers from the OFFICIAL VERIFIED PLAYER STATS above — never invent stats
+- NEVER swap winner and loser or reverse the score
+- NEVER write vague lines like "both teams fought hard" without also naming the players who drove it
+- NEVER write empty hype like "if you weren't there, you missed something special"
+- DO include rebounds, assists, steals, blocks, or other stats naturally when they explain the game
+- Make it sound specific, grounded, and believable to someone who saw the box score
+- Keep it Facebook-ready: upbeat, conversational, natural emojis, 150–280 words in the body
+- Vary the phrasing and story angle each time so it never feels like a template
+
+DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI REPORT.`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
