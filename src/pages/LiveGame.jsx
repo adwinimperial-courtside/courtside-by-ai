@@ -44,7 +44,7 @@ export default function LiveGamePage() {
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams', game?.home_team_id, game?.away_team_id],
+    queryKey: ['teams', game?.league_id, game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homeTeam, awayTeam] = await Promise.all([
@@ -54,11 +54,12 @@ export default function LiveGamePage() {
       return [...(homeTeam || []), ...(awayTeam || [])];
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 300000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players', game?.home_team_id, game?.away_team_id],
+    queryKey: ['players', game?.league_id, game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homePlayers, awayPlayers] = await Promise.all([
@@ -68,7 +69,8 @@ export default function LiveGamePage() {
       return [...(homePlayers || []), ...(awayPlayers || [])];
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 300000,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const { data: existingStats = [] } = useQuery({
