@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye, Mail } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye, Mail, MailCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +34,7 @@ export default function EnhancedUserManagement() {
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sendingEmailTo, setSendingEmailTo] = useState(null);
+  const [emailSentTo, setEmailSentTo] = useState(new Set());
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -427,6 +428,7 @@ export default function EnhancedUserManagement() {
                         setSendingEmailTo(user.id);
                         try {
                           await base44.functions.invoke('sendAccessApprovedEmail', { email: user.email, name: user.full_name });
+                          setEmailSentTo(prev => new Set([...prev, user.id]));
                           alert(`Email sent to ${user.email}`);
                         } catch (e) {
                           alert('Failed to send email: ' + e.message);
@@ -434,9 +436,9 @@ export default function EnhancedUserManagement() {
                           setSendingEmailTo(null);
                         }
                       }}
-                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                      className={emailSentTo.has(user.id) ? "text-blue-600 hover:text-blue-700 hover:bg-blue-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}
                     >
-                      <Mail className="w-4 h-4" />
+                      {emailSentTo.has(user.id) ? <MailCheck className="w-4 h-4" /> : <Mail className="w-4 h-4" />}
                     </Button>
                     <Button
                       variant="ghost"
