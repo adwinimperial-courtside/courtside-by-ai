@@ -94,6 +94,11 @@ export default function StoryBuilder() {
       if (gameLogs.length === 0) throw new Error("no_logs");
       if (playerStats.length === 0) throw new Error("no_stats");
 
+      // Validate we can determine winner from saved stats
+      const homeScore = selectedGame.home_score || 0;
+      const awayScore = selectedGame.away_score || 0;
+      if (homeScore === 0 && awayScore === 0) throw new Error("no_stats");
+
       // --- Build stats summary ---
       const buildPlayerStatsSummary = () => {
         return playerStats
@@ -126,26 +131,7 @@ export default function StoryBuilder() {
 
       const statsSummary = buildPlayerStatsSummary();
 
-      // --- Validate: game score vs summed player stats ---
-      const homeStatsPts = statsSummary
-        .filter(s => s.team_id === selectedGame.home_team_id)
-        .reduce((sum, s) => sum + s.pts, 0);
-      const awayStatsPts = statsSummary
-        .filter(s => s.team_id === selectedGame.away_team_id)
-        .reduce((sum, s) => sum + s.pts, 0);
-
-      const homeScore = selectedGame.home_score || 0;
-      const awayScore = selectedGame.away_score || 0;
-
-      // Tolerance check: allow small rounding diff
-      const homeDiff = Math.abs(homeStatsPts - homeScore);
-      const awayDiff = Math.abs(awayStatsPts - awayScore);
-
-      if (homeDiff > 5 || awayDiff > 5) {
-        throw new Error("stats_mismatch");
-      }
-
-      // Determine winner/loser
+      // Determine winner/loser using official saved stats only
       const homeWon = homeScore > awayScore;
       const winnerTeam = homeWon ? homeTeam : awayTeam;
       const loserTeam = homeWon ? awayTeam : homeTeam;
@@ -297,12 +283,10 @@ Each generated story should feel fresh and unique — vary the language, phrasin
 
       setStory(typeof result === "string" ? result : JSON.stringify(result));
     } catch (err) {
-      if (err.message === "stats_mismatch") {
-        setError("Story cannot be generated because the digital game log and saved stats do not align for this game.");
-      } else if (["not_digital", "not_completed", "no_logs", "no_stats", "default_result"].includes(err.message)) {
-        setError("Story cannot be generated because this game is not a completed digital game with a valid activity log and verified stats.");
+      if (["not_digital", "not_completed", "no_logs", "no_stats", "default_result", "no_game"].includes(err.message)) {
+        setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
       } else {
-        setError("Story cannot be generated because this game is not a completed digital game with a valid activity log and verified stats.");
+        setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
       }
     } finally {
       setIsGenerating(false);
