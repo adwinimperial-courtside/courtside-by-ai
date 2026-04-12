@@ -22,6 +22,11 @@ export default function FixManualStats() {
     queryFn: () => base44.entities.League.list(),
   });
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => base44.entities.Team.list(),
+  });
+
   if (currentUser && currentUser.user_type !== "app_admin") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
@@ -112,11 +117,6 @@ export default function FixManualStats() {
       setIsFixing(false);
     }
   };
-
-  const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
-  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">

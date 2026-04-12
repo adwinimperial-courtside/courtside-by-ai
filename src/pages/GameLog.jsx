@@ -17,14 +17,6 @@ export default function GameLogPage() {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
-  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-slate-500">You don't have permission to view this page.</p>
-      </div>
-    );
-  }
-
   const { data: leagues = [] } = useQuery({
     queryKey: ["leagues"],
     queryFn: () => base44.entities.League.list(),
@@ -53,6 +45,14 @@ export default function GameLogPage() {
     queryFn: () => base44.entities.GameLog.filter({ game_id: selectedGameId }, "created_date"),
     enabled: !!selectedGameId,
   });
+
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-slate-500">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
 
   const POINTS_STAT_TYPES = ["points_2", "points_3", "free_throws"];
 

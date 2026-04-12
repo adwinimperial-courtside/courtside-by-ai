@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -46,22 +46,11 @@ export default function CoachInsights() {
     queryFn: () => base44.entities.Player.list(),
   });
 
-  if (currentUser && currentUser.user_type === 'viewer') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
-        <div className="text-center">
-          <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-700 mb-2">Access Restricted</h2>
-          <p className="text-slate-500">Coach Insights is not available for viewers.</p>
-        </div>
-      </div>
-    );
-  }
-
   const filteredLeagues = currentUser?.user_type !== 'app_admin' && currentUser?.assigned_league_ids?.length
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
+  // Auto-select default league
   React.useEffect(() => {
     if (!selectedLeague && currentUser?.default_league_id) {
       setSelectedLeague(currentUser.default_league_id);
@@ -71,15 +60,15 @@ export default function CoachInsights() {
   // Whether turnovers should be excluded for the selected league
   const excludeTurnovers = LEAGUES_NO_TURNOVERS.includes(selectedLeague);
 
-  const leagueTeams = useMemo(() => 
+  const leagueTeams = useMemo(() =>
     teams.filter(t => t.league_id === selectedLeague),
     [teams, selectedLeague]
   );
 
   const teamGames = useMemo(() => {
     if (!selectedTeam) return [];
-    return games.filter(g => 
-      g.status === 'completed' && 
+    return games.filter(g =>
+      g.status === 'completed' &&
       (g.home_team_id === selectedTeam || g.away_team_id === selectedTeam)
     );
   }, [games, selectedTeam]);
@@ -88,12 +77,12 @@ export default function CoachInsights() {
   const winLossComparison = useMemo(() => {
     if (!selectedTeam || teamGames.length === 0) return null;
 
-    const wins = teamGames.filter(g => 
+    const wins = teamGames.filter(g =>
       (g.home_team_id === selectedTeam && g.home_score > g.away_score) ||
       (g.away_team_id === selectedTeam && g.away_score > g.home_score)
     );
 
-    const losses = teamGames.filter(g => 
+    const losses = teamGames.filter(g =>
       (g.home_team_id === selectedTeam && g.home_score < g.away_score) ||
       (g.away_team_id === selectedTeam && g.away_score < g.home_score)
     );
@@ -141,7 +130,7 @@ export default function CoachInsights() {
       const teamRebounds = playerStats
         .filter(s => s.game_id === game.id && s.team_id === selectedTeam)
         .reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
-      
+
       const oppRebounds = playerStats
         .filter(s => s.game_id === game.id && s.team_id !== selectedTeam)
         .reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
@@ -157,8 +146,8 @@ export default function CoachInsights() {
   const opponentSnapshot = useMemo(() => {
     if (!selectedOpponent) return null;
 
-    const oppGames = games.filter(g => 
-      g.status === 'completed' && 
+    const oppGames = games.filter(g =>
+      g.status === 'completed' &&
       (g.home_team_id === selectedOpponent || g.away_team_id === selectedOpponent)
     );
 
@@ -181,7 +170,7 @@ export default function CoachInsights() {
     const playerAverages = oppPlayers.map(player => {
       const pStats = playerStats.filter(s => s.player_id === player.id);
       const gamesPlayed = pStats.length;
-      
+
       if (gamesPlayed === 0) return null;
 
       const totalPts = pStats.reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
@@ -276,12 +265,12 @@ export default function CoachInsights() {
       const oppStats = playerStats.filter(s => s.game_id === game.id && s.team_id !== selectedTeam);
 
       totalAssists += teamStats.reduce((sum, s) => sum + (s.assists || 0), 0);
-      
+
       const teamReb = teamStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       const oppReb = oppStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       totalRebounds += teamReb;
       totalReboundMargin += (teamReb - oppReb);
-      
+
       if (!excludeTurnovers) {
         totalTurnovers += teamStats.reduce((sum, s) => sum + (s.turnovers || 0), 0);
       }
@@ -316,11 +305,11 @@ export default function CoachInsights() {
       const oppStats = playerStats.filter(s => s.game_id === game.id && s.team_id !== selectedTeam);
 
       totalAssists += teamStats.reduce((sum, s) => sum + (s.assists || 0), 0);
-      
+
       const teamReb = teamStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       const oppReb = oppStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       totalReboundMargin += (teamReb - oppReb);
-      
+
       if (!excludeTurnovers) {
         totalTurnovers += teamStats.reduce((sum, s) => sum + (s.turnovers || 0), 0);
       }
@@ -397,12 +386,12 @@ export default function CoachInsights() {
     };
 
     const maxDiff = Math.max(...Object.values(differences));
-    
+
     if (differences.points === maxDiff) return 'points';
     if (differences.assists === maxDiff) return 'assists';
     if (differences.reboundMargin === maxDiff) return 'reboundMargin';
     if (!excludeTurnovers && differences.turnovers === maxDiff) return 'turnovers';
-    
+
     return null;
   }, [winLossComparison, excludeTurnovers]);
 
@@ -418,7 +407,6 @@ export default function CoachInsights() {
       suggestions.push("Focus on defensive rebounding.");
     }
 
-    // Only suggest turnover-based pressure if turnovers are tracked
     if (!excludeTurnovers && opponentSnapshot.avgTurnovers !== null && parseFloat(opponentSnapshot.avgTurnovers) < 10) {
       suggestions.push("Increase defensive pressure.");
     }
@@ -431,7 +419,6 @@ export default function CoachInsights() {
       suggestions.push("Prioritize rebounding discipline.");
     }
 
-    // Only factor turnovers into suggestions if tracked
     if (!excludeTurnovers && wins.turnovers !== null && losses.turnovers !== null) {
       const turnoverGap = Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers));
       if (turnoverGap > 3 && parseFloat(losses.turnovers) > parseFloat(wins.turnovers)) {
@@ -444,6 +431,19 @@ export default function CoachInsights() {
 
   const selectedTeamName = teams.find(t => t.id === selectedTeam)?.name || "";
   const selectedOpponentName = teams.find(t => t.id === selectedOpponent)?.name || "";
+
+  // Early return for viewers — AFTER all hooks
+  if (currentUser && currentUser.user_type === 'viewer') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
+        <div className="text-center">
+          <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-700 mb-2">Access Restricted</h2>
+          <p className="text-slate-500">Coach Insights is not available for viewers.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">

@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye, Mail } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ export default function EnhancedUserManagement() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [sendingEmailTo, setSendingEmailTo] = useState(null);
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -417,6 +418,26 @@ export default function EnhancedUserManagement() {
                     </div>
                   </button>
                   <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="Send access approval email"
+                      disabled={sendingEmailTo === user.id}
+                      onClick={async () => {
+                        setSendingEmailTo(user.id);
+                        try {
+                          await base44.functions.invoke('sendAccessApprovedEmail', { email: user.email, name: user.full_name });
+                          alert(`Email sent to ${user.email}`);
+                        } catch (e) {
+                          alert('Failed to send email: ' + e.message);
+                        } finally {
+                          setSendingEmailTo(null);
+                        }
+                      }}
+                      className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
