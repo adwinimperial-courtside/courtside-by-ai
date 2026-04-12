@@ -79,17 +79,11 @@ export default function StoryBuilder() {
     return false;
   });
 
-  // Only completed digital games with logs
   const eligibleGames = allGames.filter(g =>
     g.status === "completed" &&
     g.entry_type === "digital" &&
     !g.is_default_result
   );
-
-  const gamesWithLogs = eligibleGames.filter(g => {
-    // We show all eligible but validate log presence at generation time
-    return true;
-  });
 
   const selectedGame = allGames.find(g => g.id === selectedGameId);
   const homeTeam = teams.find(t => t.id === selectedGame?.home_team_id);
@@ -101,7 +95,7 @@ export default function StoryBuilder() {
     setIsGenerating(true);
 
     try {
-      // --- Usage limit check ---
+      // --- Usage limit check (league_admin only) ---
       if (currentUser?.user_type === "league_admin" && briefingsUsed >= MONTHLY_LIMIT) {
         setError(`Monthly limit of ${MONTHLY_LIMIT} story generations reached. Limit resets next month.`);
         setIsGenerating(false);
@@ -116,7 +110,6 @@ export default function StoryBuilder() {
       if (gameLogs.length === 0) throw new Error("no_logs");
       if (playerStats.length === 0) throw new Error("no_stats");
 
-      // Validate we can determine winner from saved stats
       const homeScore = selectedGame.home_score || 0;
       const awayScore = selectedGame.away_score || 0;
       if (homeScore === 0 && awayScore === 0) throw new Error("no_stats");
@@ -125,7 +118,6 @@ export default function StoryBuilder() {
       const buildPlayerStatsSummary = () => {
         return playerStats
           .filter(ps => {
-            // Include anyone who has any stats recorded, regardless of did_play flag
             const pts = (ps.points_2 || 0) * 2 + (ps.points_3 || 0) * 3 + (ps.free_throws || 0);
             const anyStats = pts > 0 || (ps.offensive_rebounds || 0) > 0 || (ps.defensive_rebounds || 0) > 0
               || (ps.assists || 0) > 0 || (ps.steals || 0) > 0 || (ps.blocks || 0) > 0
@@ -160,7 +152,6 @@ export default function StoryBuilder() {
 
       const statsSummary = buildPlayerStatsSummary();
 
-      // Determine winner/loser using official saved stats only
       const homeWon = homeScore > awayScore;
       const winnerTeam = homeWon ? homeTeam : awayTeam;
       const loserTeam = homeWon ? awayTeam : homeTeam;
@@ -169,14 +160,13 @@ export default function StoryBuilder() {
       const winnerTeamId = homeWon ? selectedGame.home_team_id : selectedGame.away_team_id;
       const loserTeamId = homeWon ? selectedGame.away_team_id : selectedGame.home_team_id;
 
-      // --- Build activity log narrative text ---
+      // --- Build activity log narrative ---
       const buildLogNarrative = () => {
         const pointEvents = gameLogs.filter(l =>
           ["points_2", "points_3", "free_throws"].includes(l.stat_type) &&
           l.new_value > l.old_value
         );
 
-        // Score progression snapshots
         let homeRunning = 0;
         let awayRunning = 0;
         const snapshots = [];
@@ -190,7 +180,6 @@ export default function StoryBuilder() {
           snapshots.push({ home: homeRunning, away: awayRunning, team: l.team_id, stat: l.stat_type });
         });
 
-        // Detect lead changes
         let leadChanges = 0;
         let prevLead = null;
         snapshots.forEach(s => {
@@ -199,7 +188,6 @@ export default function StoryBuilder() {
           prevLead = lead;
         });
 
-        // Fouls & physicality
         const totalFouls = gameLogs.filter(l => l.stat_type === "fouls" && l.new_value > l.old_value).length;
         const totalTechs = gameLogs.filter(l => l.stat_type === "technical_fouls" && l.new_value > l.old_value).length;
         const totalUnsp = gameLogs.filter(l => l.stat_type === "unsportsmanlike_fouls" && l.new_value > l.old_value).length;
@@ -219,7 +207,6 @@ export default function StoryBuilder() {
 
       const logInsights = buildLogNarrative();
 
-      // --- Build top performers ---
       const winnerStats = statsSummary.filter(s => s.team_id === winnerTeamId).sort((a, b) => b.pts - a.pts);
       const loserStats = statsSummary.filter(s => s.team_id === loserTeamId).sort((a, b) => b.pts - a.pts);
 
@@ -238,7 +225,6 @@ export default function StoryBuilder() {
         return `${p.name}: ${parts.join(", ")}`;
       };
 
-      // Score player impact to surface best performers
       const scoreImpact = (p) => {
         let score = p.pts * 1.0;
         score += p.reb * 1.2;
@@ -341,8 +327,8 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
 
       setStory(typeof result === "string" ? result : JSON.stringify(result));
 
-      // --- Track usage ---
-      if (currentUser?.user_type === "league_admin" || currentUser?.user_type === "app_admin") {
+      // --- Track usage (league_admin only) ---
+      if (currentUser?.user_type === "league_admin") {
         if (usageCounter) {
           await base44.entities.AIUsageCounter.update(usageCounter.id, {
             briefings_generated: briefingsUsed + 1
@@ -358,11 +344,7 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
         refetchUsage();
       }
     } catch (err) {
-      if (["not_digital", "not_completed", "no_logs", "no_stats", "default_result", "no_game"].includes(err.message)) {
-        setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
-      } else {
-        setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
-      }
+      setError("Story cannot be generated because the required digital game log or verified saved stats are missing for this game.");
     } finally {
       setIsGenerating(false);
     }
@@ -401,7 +383,7 @@ DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI 
             </h1>
             <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready post-game story powered by AI.</p>
           </div>
-          {currentUser && (currentUser.user_type === "league_admin" || currentUser.user_type === "app_admin") && (
+          {currentUser?.user_type === "league_admin" && (
             <div className={`flex flex-col items-end gap-1 px-4 py-3 rounded-xl border-2 ${
               hasReachedLimit ? "border-red-200 bg-red-50" : briefingsRemaining <= 5 ? "border-amber-200 bg-amber-50" : "border-green-200 bg-green-50"
             }`}>
