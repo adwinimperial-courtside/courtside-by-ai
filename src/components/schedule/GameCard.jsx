@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
 import EditGameSettingsDialog from "./EditGameSettingsDialog";
+import POGSpotlightModal from "./POGSpotlightModal";
 
 export default function GameCard({ game, teams, leagues, onStartGame, currentUser, onGameUpdated }) {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const [liveGame, setLiveGame] = useState(game);
   const [showEditSettings, setShowEditSettings] = useState(false);
   const [showDefaultDialog, setShowDefaultDialog] = useState(false);
+  const [showPOGSpotlight, setShowPOGSpotlight] = useState(false);
   const [reopenConfirm, setReopenConfirm] = useState(false);
   const [reopening, setReopening] = useState(false);
 
@@ -256,9 +258,12 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   <div className="flex items-center gap-2 text-sm flex-wrap">
                     <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                     <span className="text-slate-600">Player of the Game:</span>
-                    <span className="font-semibold text-slate-900">
+                    <button
+                      onClick={() => setShowPOGSpotlight(true)}
+                      className="font-semibold text-amber-600 hover:text-amber-700 hover:underline transition-colors"
+                    >
                       {pogPlayer?.name || '...'}
-                    </span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -516,6 +521,17 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
         game={liveGame}
         onSaved={() => { onGameUpdated && onGameUpdated(); }}
       />
+      )}
+
+      {showPOGSpotlight && pogPlayer && (
+        <POGSpotlightModal
+          open={showPOGSpotlight}
+          onClose={() => setShowPOGSpotlight(false)}
+          pogPlayer={pogPlayer}
+          leagueId={liveGame.league_id}
+          game={liveGame}
+          teams={teams}
+        />
       )}
 
       <DefaultWinnerDialog
