@@ -249,6 +249,12 @@ export default function Layout({ children }) {
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
+                <p className="text-center text-xs text-slate-400 pt-1">
+                  Support:{" "}
+                  <a href="mailto:info@courtside-by-ai.com" className="text-slate-500 hover:text-orange-500 transition-colors">
+                    info@courtside-by-ai.com
+                  </a>
+                </p>
               </div>
             }
           </SidebarHeader>
