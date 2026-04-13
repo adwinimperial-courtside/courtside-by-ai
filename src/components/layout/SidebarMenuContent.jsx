@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -170,10 +170,14 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       const base = currentUser.user_type === "viewer"
         ? navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title))
         : navigationItems;
-      if (currentUser.user_type === "player" || currentUser.user_type === "coach") {
-        return [playerNavItem, ...base];
+      const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
+        ? [playerNavItem, ...base]
+        : base;
+      // Add "Request League Access" for all approved non-admin users
+      if (currentUser.user_type && currentUser.user_type !== "app_admin") {
+        return [...withRole, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }];
       }
-      return base;
+      return withRole;
     };
 
   const getVisibleAdminItems = () => {

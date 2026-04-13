@@ -18,43 +18,69 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'approve') {
-      let assignedLeagueIds = [];
 
-      if (application.requested_role === 'league_admin') {
-        const newLeague = await base44.asServiceRole.entities.League.create({
-          name: application.league_name,
-          season: application.season_start_date || 'TBD',
-        });
-        assignedLeagueIds = [newLeague.id];
-      } else if (application.league_ids && application.league_ids.length > 0) {
-        assignedLeagueIds = application.league_ids;
-      } else if (application.league_id) {
-        assignedLeagueIds = [application.league_id];
-      }
+      if (application.is_additional_request) {
+        // ADDITIONAL request: merge league access, do NOT overwrite user_type or application_status
+        let newLeagueIds = [];
+        if (application.league_ids && application.league_ids.length > 0) {
+          newLeagueIds = application.league_ids;
+        } else if (application.league_id) {
+          newLeagueIds = [application.league_id];
+        }
 
-      const userUpdate = {
-        user_type: application.requested_role,
-        application_status: 'Approved',
-        assigned_league_ids: assignedLeagueIds,
-      };
-      if (application.requested_role === 'player' && application.league_team_pairs) {
-        userUpdate.league_team_pairs = application.league_team_pairs;
-      } else if (application.requested_role === 'player' && application.team_id) {
-        userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
-      }
+        const currentUserData = await base44.asServiceRole.entities.User.get(application.user_id);
+        const existingLeagueIds = currentUserData?.assigned_league_ids || [];
+        const mergedLeagueIds = [...new Set([...existingLeagueIds, ...newLeagueIds])];
 
-      try {
-        // Try to update if user already exists
+        const userUpdate = { assigned_league_ids: mergedLeagueIds };
+
+        if (application.requested_role === 'player') {
+          const existingPairs = currentUserData?.league_team_pairs || [];
+          const newPairs = application.league_team_pairs ||
+            (application.team_id && newLeagueIds[0] ? [{ league_id: newLeagueIds[0], team_id: application.team_id }] : []);
+          const mergedPairs = [...existingPairs];
+          newPairs.forEach(np => {
+            if (!mergedPairs.find(ep => ep.league_id === np.league_id)) mergedPairs.push(np);
+          });
+          userUpdate.league_team_pairs = mergedPairs;
+        }
+
         await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
-      } catch (err) {
-        // User doesn't exist - just update the application status without updating user
-        // (the user will be fully set up when they first log in)
+
+      } else {
+        // ORIGINAL flow: new user first application
+        let assignedLeagueIds = [];
+        if (application.requested_role === 'league_admin') {
+          const newLeague = await base44.asServiceRole.entities.League.create({
+            name: application.league_name,
+            season: application.season_start_date || 'TBD',
+          });
+          assignedLeagueIds = [newLeague.id];
+        } else if (application.league_ids && application.league_ids.length > 0) {
+          assignedLeagueIds = application.league_ids;
+        } else if (application.league_id) {
+          assignedLeagueIds = [application.league_id];
+        }
+
+        const userUpdate = {
+          user_type: application.requested_role,
+          application_status: 'Approved',
+          assigned_league_ids: assignedLeagueIds,
+        };
+        if (application.requested_role === 'player' && application.league_team_pairs) {
+          userUpdate.league_team_pairs = application.league_team_pairs;
+        } else if (application.requested_role === 'player' && application.team_id) {
+          userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
+        }
+
+        try {
+          await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+        } catch (err) {
+          // User doesn't exist yet
+        }
       }
 
-      await base44.asServiceRole.entities.UserApplication.update(applicationId, {
-        status: 'Approved',
-      });
-
+      await base44.asServiceRole.entities.UserApplication.update(applicationId, { status: 'Approved' });
       return Response.json({ success: true, action: 'approved' });
 
     } else if (action === 'reject') {

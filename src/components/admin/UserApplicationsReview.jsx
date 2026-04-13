@@ -127,11 +127,24 @@ export default function UserApplicationsReview() {
                   {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <div className="font-semibold text-slate-900">{app.user_name || "N/A"}</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="font-semibold text-slate-900">{app.user_name || "N/A"}</div>
+                        {app.is_additional_request && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">+ Additional League</span>
+                        )}
+                      </div>
                       <div className="text-sm text-slate-600">{app.user_email}</div>
+                      {app.is_additional_request && app.current_user_type && (
+                        <div className="text-xs text-slate-400 mt-0.5">Current role: {app.current_user_type.replace('_', ' ')}</div>
+                      )}
                       <div className="text-xs text-slate-400 mt-1">
                         Applied: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : "N/A"}
                       </div>
+                    </div>
+                    <Badge variant="outline" className={ROLE_BADGE_COLORS[app.requested_role]}>
+                      {ROLE_LABELS[app.requested_role]}
+                    </Badge>
+                  </div>
                     </div>
                     <Badge variant="outline" className={ROLE_BADGE_COLORS[app.requested_role]}>
                       {ROLE_LABELS[app.requested_role]}

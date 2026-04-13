@@ -1,0 +1,107 @@
+{
+  "name": "UserApplication",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the applicant"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Name of the applicant as entered at signup \u2014 never overwrite this"
+    },
+    "requested_role": {
+      "type": "string",
+      "enum": [
+        "league_admin",
+        "coach",
+        "player",
+        "viewer"
+      ],
+      "description": "Role being requested"
+    },
+    "country": {
+      "type": "string"
+    },
+    "league_name": {
+      "type": "string"
+    },
+    "season_start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "number_of_teams": {
+      "type": "number"
+    },
+    "avg_players_per_team": {
+      "type": "number"
+    },
+    "league_id": {
+      "type": "string"
+    },
+    "league_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "All selected league IDs"
+    },
+    "team_id": {
+      "type": "string"
+    },
+    "league_team_pairs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Array of {league_id, team_id} pairs for players"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Pending",
+        "Approved",
+        "Rejected"
+      ],
+      "default": "Pending"
+    },
+    "applied_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Official basketball/player name. Players only."
+    },
+    "handle": {
+      "type": "string",
+      "description": "Nickname or player handle (optional). Players only."
+    },
+    "player_name_status": {
+      "type": "string",
+      "enum": [
+        "missing",
+        "completed"
+      ],
+      "description": "Status of player identity completion. Only set for requested_role = player."
+    },
+    "is_additional_request": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if this is an existing approved user requesting access to an additional league"
+    },
+    "current_user_type": {
+      "type": "string",
+      "description": "The user's current role at time of additional request submission"
+    }
+  },
+  "required": [
+    "user_id",
+    "requested_role"
+  ]
+}
