@@ -73,23 +73,24 @@ export default function TeamStandings({ teams, games, leagues }) {
     return { winPct: total > 0 ? wins / total : 0, diff: pf - pa };
   };
 
-  // Sort a group of tied teams using mini-table then overall pointsDiff
+  // Sort a group of tied teams
   const sortTiedGroup = (group) => {
     if (group.length === 1) return group;
-    const ids = group.map(t => t.id);
-    // Games only between these tied teams
-    const subGames = games.filter(g =>
-      g.status === 'completed' &&
-      ids.includes(g.home_team_id) &&
-      ids.includes(g.away_team_id)
-    );
-    return [...group].sort((a, b) => {
-      const sa = getMiniStats(a.id, subGames);
-      const sb = getMiniStats(b.id, subGames);
-      if (sb.winPct !== sa.winPct) return sb.winPct - sa.winPct;
-      if (sb.diff !== sa.diff) return sb.diff - sa.diff;
-      return b.pointsDiff - a.pointsDiff; // overall diff fallback
-    });
+    // 2-team tie: head-to-head first, then overall points diff
+    if (group.length === 2) {
+      const [a, b] = group;
+      const h2hGames = games.filter(g =>
+        g.status === 'completed' &&
+        ((g.home_team_id === a.id && g.away_team_id === b.id) ||
+         (g.home_team_id === b.id && g.away_team_id === a.id))
+      );
+      const sa = getMiniStats(a.id, h2hGames);
+      const sb = getMiniStats(b.id, h2hGames);
+      if (sb.winPct !== sa.winPct) return sb.winPct > sa.winPct ? [b, a] : [a, b];
+      return b.pointsDiff >= a.pointsDiff ? [b, a] : [a, b];
+    }
+    // 3+ team tie: just use overall points differential
+    return [...group].sort((a, b) => b.pointsDiff - a.pointsDiff);
   };
 
   // Group by winPct, sort within each group, then flatten
