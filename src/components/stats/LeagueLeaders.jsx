@@ -20,11 +20,19 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
     return false;
   };
 
+  // Count completed games per team
+  const teamGameCounts = {};
+  games.filter(g => g.status === 'completed').forEach(g => {
+    teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
+    teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
+  });
+
   const playerAggregates = players.map(player => {
     const playerStats = stats.filter(s => s.player_id === player.id);
     const participatedStats = playerStats.filter(didPlayerParticipate);
     const team = teams.find(t => t.id === player.team_id);
     const gamesPlayed = participatedStats.length;
+    const teamGames = teamGameCounts[player.team_id] || 0;
     
     const totals = participatedStats.reduce((acc, stat) => ({
       points: acc.points + calcPoints(stat),
@@ -46,7 +54,10 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
       steals: gamesPlayed > 0 ? (totals.steals / gamesPlayed) : 0,
       blocks: gamesPlayed > 0 ? (totals.blocks / gamesPlayed) : 0,
     };
-  }).filter(p => p.gamesPlayed >= 3);
+  }).filter(p => {
+    const teamGames = teamGameCounts[p.team_id] || 0;
+    return teamGames > 0 && (p.gamesPlayed / teamGames) >= 0.4;
+  });
 
   const categories = [
     { key: 'points', label: 'PPG Leaders', icon: '🏀' },

@@ -49,11 +49,20 @@ function calcPoints(stat, games) {
 }
 
 function calculateLeagueLeaderAverages(playerStats, players, games) {
+  // Count completed games per team (same logic as LeagueLeaders component)
+  const teamGameCounts = {};
+  games.forEach(g => {
+    teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
+    teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
+  });
+
   const aggregates = players.map(player => {
     const ps = playerStats.filter(s => s.player_id === player.id);
     const participated = ps.filter(didPlayerParticipate);
     const gp = participated.length;
     if (gp === 0) return null;
+    const teamGames = teamGameCounts[player.team_id] || 0;
+    if (teamGames === 0 || (gp / teamGames) < 0.4) return null;
     const totals = participated.reduce((acc, s) => ({
       pts: acc.pts + calcPoints(s, games),
       threes: acc.threes + (s.points_3 || 0),
@@ -62,7 +71,6 @@ function calculateLeagueLeaderAverages(playerStats, players, games) {
       stl: acc.stl + (s.steals || 0),
       blk: acc.blk + (s.blocks || 0),
     }), { pts: 0, threes: 0, reb: 0, ast: 0, stl: 0, blk: 0 });
-    if (gp < 3) return null;
     return {
       name: player.name,
       gp,
