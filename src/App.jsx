@@ -15,6 +15,7 @@ import AllPlayersViewPage from './pages/AllPlayersView';
 import ApplyForLeaguePage from './pages/ApplyForLeague';
 import StoryBuilderPage from './pages/StoryBuilder';
 import LeagueUsersPage from './pages/LeagueUsers';
+import RegularSeasonRecapPage from './pages/RegularSeasonRecap';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
         <Route path="/LeagueUsers" element={<LayoutWrapper currentPageName="LeagueUsers"><LeagueUsersPage /></LayoutWrapper>} />
         <Route path="/StoryBuilder" element={<LayoutWrapper currentPageName="StoryBuilder"><StoryBuilderPage /></LayoutWrapper>} />
         <Route path="/ApplyForLeague" element={<LayoutWrapper currentPageName="ApplyForLeague"><ApplyForLeaguePage /></LayoutWrapper>} />
+        <Route path="/RegularSeasonRecap" element={<LayoutWrapper currentPageName="RegularSeasonRecap"><RegularSeasonRecapPage /></LayoutWrapper>} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </LayoutWrapper>

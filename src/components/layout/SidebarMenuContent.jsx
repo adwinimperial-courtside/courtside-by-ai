@@ -131,6 +131,11 @@ const ownerItems = [
     title: "All Players",
     url: createPageUrl("AllPlayersView"),
     icon: Users
+  },
+  {
+    title: "Season Recap",
+    url: "/RegularSeasonRecap",
+    icon: Newspaper
   }
 ];
 
