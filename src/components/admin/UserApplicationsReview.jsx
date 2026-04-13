@@ -145,11 +145,6 @@ export default function UserApplicationsReview() {
                       {ROLE_LABELS[app.requested_role]}
                     </Badge>
                   </div>
-                    </div>
-                    <Badge variant="outline" className={ROLE_BADGE_COLORS[app.requested_role]}>
-                      {ROLE_LABELS[app.requested_role]}
-                    </Badge>
-                  </div>
 
                   {/* Application details */}
                   <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3 text-sm space-y-1">
