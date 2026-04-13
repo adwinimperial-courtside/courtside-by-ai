@@ -62,6 +62,7 @@ function calculateLeagueLeaderAverages(playerStats, players, games) {
       stl: acc.stl + (s.steals || 0),
       blk: acc.blk + (s.blocks || 0),
     }), { pts: 0, threes: 0, reb: 0, ast: 0, stl: 0, blk: 0 });
+    if (gp < 3) return null;
     return {
       name: player.name,
       gp,

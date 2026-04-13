@@ -37,7 +37,8 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
 
     return { 
       ...player, 
-      team, 
+      team,
+      gamesPlayed,
       points: gamesPlayed > 0 ? (totals.points / gamesPlayed) : 0,
       threes: gamesPlayed > 0 ? (totals.threes / gamesPlayed) : 0,
       rebounds: gamesPlayed > 0 ? (totals.rebounds / gamesPlayed) : 0,
@@ -45,7 +46,7 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
       steals: gamesPlayed > 0 ? (totals.steals / gamesPlayed) : 0,
       blocks: gamesPlayed > 0 ? (totals.blocks / gamesPlayed) : 0,
     };
-  }).filter(p => stats.some(s => s.player_id === p.id));
+  }).filter(p => p.gamesPlayed >= 3);
 
   const categories = [
     { key: 'points', label: 'PPG Leaders', icon: '🏀' },
