@@ -160,6 +160,22 @@ The recap must:
 6. Strong forward-looking close hinting at playoffs/championship
 7. End EXACTLY with: 👉 Full stats & standings: https://courtside-by-ai.com/schedule
 
+CLOSING SECTION RULES — COMPETITION FORMAT:
+The closing section must follow this exact bracket logic based on the final standings:
+- Rank 1 vs Rank 8 → Rank 1 has twice-to-beat advantage (must lose twice to be eliminated)
+- Rank 2 vs Rank 7 → Rank 2 has twice-to-beat advantage (must lose twice to be eliminated)
+- Rank 3 vs Rank 6 → do-or-die single game (immediate elimination)
+- Rank 4 vs Rank 5 → do-or-die single game (immediate elimination)
+- Quarterfinal winners advance to semifinals, semifinal winners advance to the final.
+
+The closing must:
+- Make it clear that NO team is eliminated yet — every team is still alive
+- Explain that the regular season determined seeding and matchup advantages, not survival
+- Highlight that the top two seeds earned a significant edge with their twice-to-beat advantage
+- Highlight that Ranks 3 vs 6 and Ranks 4 vs 5 face immediate knockout pressure — one game, one chance
+- Build excitement specifically for the quarterfinal stage without skipping ahead to semis or finals
+- Do NOT write as if any team is already out — the postseason has not started yet
+
 RULES:
 - ONLY use numbers from the data above — never invent stats
 - Do not use bullet points anywhere in the recap
