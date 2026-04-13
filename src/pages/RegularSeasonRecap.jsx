@@ -41,26 +41,49 @@ function calculateStandings(teams, games) {
     .sort((a, b) => parseFloat(b.winPct) - parseFloat(a.winPct));
 }
 
-function calculateLeaders(playerStats, players) {
-  const totals = {};
-  playerStats.forEach(ps => {
-    if (!didPlayerParticipate(ps)) return;
-    if (!totals[ps.player_id]) totals[ps.player_id] = { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, gp: 0 };
-    totals[ps.player_id].pts += ((ps.points_2 || 0) * 2) + ((ps.points_3 || 0) * 3) + (ps.free_throws || 0);
-    totals[ps.player_id].reb += (ps.offensive_rebounds || 0) + (ps.defensive_rebounds || 0);
-    totals[ps.player_id].ast += (ps.assists || 0);
-    totals[ps.player_id].stl += (ps.steals || 0);
-    totals[ps.player_id].blk += (ps.blocks || 0);
-    totals[ps.player_id].gp += 1;
-  });
+// Mirrors the exact League Leaders tab calculation logic (per-game averages)
+function calcPoints(stat, games) {
+  const game = games.find(g => g.id === stat.game_id);
+  const isDigital = game && game.entry_type === 'digital' && !game.edited;
+  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+}
 
-  const entries = Object.entries(totals).map(([id, d]) => {
-    const player = players.find(p => p.id === id);
-    return player ? { name: player.name, ...d } : null;
+function calculateLeagueLeaderAverages(playerStats, players, games) {
+  const aggregates = players.map(player => {
+    const ps = playerStats.filter(s => s.player_id === player.id);
+    const participated = ps.filter(didPlayerParticipate);
+    const gp = participated.length;
+    if (gp === 0) return null;
+    const totals = participated.reduce((acc, s) => ({
+      pts: acc.pts + calcPoints(s, games),
+      threes: acc.threes + (s.points_3 || 0),
+      reb: acc.reb + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0),
+      ast: acc.ast + (s.assists || 0),
+      stl: acc.stl + (s.steals || 0),
+      blk: acc.blk + (s.blocks || 0),
+    }), { pts: 0, threes: 0, reb: 0, ast: 0, stl: 0, blk: 0 });
+    return {
+      name: player.name,
+      gp,
+      ppg: totals.pts / gp,
+      tpm: totals.threes / gp,
+      rpg: totals.reb / gp,
+      apg: totals.ast / gp,
+      spg: totals.stl / gp,
+      bpg: totals.blk / gp,
+    };
   }).filter(Boolean);
 
-  const top = (cat) => [...entries].sort((a, b) => b[cat] - a[cat])[0];
-  return { pts: top("pts"), reb: top("reb"), ast: top("ast"), stl: top("stl"), blk: top("blk"), entries };
+  const top = (cat) => [...aggregates].sort((a, b) => b[cat] - a[cat])[0];
+  return {
+    ppg: top("ppg"),
+    tpm: top("tpm"),
+    rpg: top("rpg"),
+    apg: top("apg"),
+    spg: top("spg"),
+    bpg: top("bpg"),
+    entries: aggregates,
+  };
 }
 
 export default function RegularSeasonRecap() {
@@ -114,7 +137,7 @@ export default function RegularSeasonRecap() {
   }, [allPlayerStats, completedGames, leagueTeams]);
 
   const standings = useMemo(() => calculateStandings(leagueTeams, completedGames), [leagueTeams, completedGames]);
-  const leaders = useMemo(() => calculateLeaders(leaguePlayerStats, allPlayers), [leaguePlayerStats, allPlayers]);
+  const leaders = useMemo(() => calculateLeagueLeaderAverages(leaguePlayerStats, allPlayers, completedGames), [leaguePlayerStats, allPlayers, completedGames]);
 
   const handleGenerate = async () => {
     setError("");
@@ -124,10 +147,12 @@ export default function RegularSeasonRecap() {
       if (!selectedLeagueId) throw new Error("Please select a league.");
       if (completedGames.length < 3) throw new Error("not_enough_games");
 
+      const fmt = (v) => v != null ? v.toFixed(1) : "N/A";
+
       const topPlayers = [...(leaders.entries || [])]
-        .sort((a, b) => b.pts - a.pts)
+        .sort((a, b) => b.ppg - a.ppg)
         .slice(0, 10)
-        .map(p => `${p.name}: ${p.pts} pts, ${p.reb} reb, ${p.ast} ast, ${p.stl} stl, ${p.blk} blk (${p.gp} games)`)
+        .map(p => `${p.name} (${p.gp} GP): ${fmt(p.ppg)} PPG, ${fmt(p.tpm)} 3PM, ${fmt(p.rpg)} RPG, ${fmt(p.apg)} APG, ${fmt(p.spg)} SPG, ${fmt(p.bpg)} BPG`)
         .join("\n");
 
       const prompt = `You are a lively grassroots basketball reporter creating a Facebook-ready regular season recap for a local basketball league.
@@ -138,14 +163,15 @@ TOTAL COMPLETED GAMES: ${completedGames.length}
 STANDINGS:
 ${standings.map((s, i) => `${i + 1}. ${s.name}: ${s.wins}W-${s.losses}L (${s.winPct}% win rate, Diff: ${s.pointsDiff > 0 ? "+" : ""}${s.pointsDiff})`).join("\n")}
 
-LEAGUE LEADERS (totals from completed games):
-Points Leader: ${leaders.pts ? `${leaders.pts.name} — ${leaders.pts.pts} total points` : "N/A"}
-Rebounds Leader: ${leaders.reb ? `${leaders.reb.name} — ${leaders.reb.reb} total rebounds` : "N/A"}
-Assists Leader: ${leaders.ast ? `${leaders.ast.name} — ${leaders.ast.ast} total assists` : "N/A"}
-Steals Leader: ${leaders.stl ? `${leaders.stl.name} — ${leaders.stl.stl} total steals` : "N/A"}
-Blocks Leader: ${leaders.blk ? `${leaders.blk.name} — ${leaders.blk.blk} total blocks` : "N/A"}
+OFFICIAL LEAGUE LEADERS (per-game averages — same source as the Statistics page League Leaders tab — USE THESE AS THE AUTHORITATIVE SOURCE):
+PPG Leader: ${leaders.ppg ? `${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : "N/A"}
+3PM Leader: ${leaders.tpm ? `${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : "N/A"}
+RPG Leader: ${leaders.rpg ? `${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : "N/A"}
+APG Leader: ${leaders.apg ? `${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : "N/A"}
+SPG Leader: ${leaders.spg ? `${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : "N/A"}
+BPG Leader: ${leaders.bpg ? `${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : "N/A"}
 
-TOP PLAYERS (sorted by total points, all stats are season totals):
+TOP PLAYERS BY PER-GAME AVERAGES (use for identifying standout performers and all-around leaders):
 ${topPlayers || "No player stats available."}
 
 INSTRUCTIONS:
