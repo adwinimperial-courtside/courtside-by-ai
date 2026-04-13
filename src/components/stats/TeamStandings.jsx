@@ -5,7 +5,7 @@ import { Trophy } from "lucide-react";
 import TeamLogo from "../teams/TeamLogo";
 
 export default function TeamStandings({ teams, games, leagues }) {
-  const teamStandings = teams.map(team => {
+  const unsortedStandings = teams.map(team => {
     const completedGames = games.filter(g =>
       g.status === 'completed' && (g.home_team_id === team.id || g.away_team_id === team.id)
     );
@@ -51,10 +51,60 @@ export default function TeamStandings({ teams, games, leagues }) {
       winPct: parseFloat(winPct),
       pointsDiff
     };
-  }).sort((a, b) => {
-    if (b.winPct !== a.winPct) return b.winPct - a.winPct;
-    return b.pointsDiff - a.pointsDiff;
   });
+
+  // Helper: compute wins/losses/pointsDiff for a team within a specific set of games
+  const getMiniStats = (teamId, subGames) => {
+    let wins = 0, losses = 0, pf = 0, pa = 0;
+    subGames.forEach(g => {
+      if (g.home_team_id !== teamId && g.away_team_id !== teamId) return;
+      if (g.is_default_result) {
+        if (g.default_winner_team_id === teamId) wins++;
+        else if (g.default_loser_team_id === teamId) losses++;
+        return;
+      }
+      const isHome = g.home_team_id === teamId;
+      const ts = isHome ? (g.home_score || 0) : (g.away_score || 0);
+      const os = isHome ? (g.away_score || 0) : (g.home_score || 0);
+      if (ts > os) wins++; else losses++;
+      pf += ts; pa += os;
+    });
+    const total = wins + losses;
+    return { winPct: total > 0 ? wins / total : 0, diff: pf - pa };
+  };
+
+  // Sort a group of tied teams using mini-table then overall pointsDiff
+  const sortTiedGroup = (group) => {
+    if (group.length === 1) return group;
+    const ids = group.map(t => t.id);
+    // Games only between these tied teams
+    const subGames = games.filter(g =>
+      g.status === 'completed' &&
+      ids.includes(g.home_team_id) &&
+      ids.includes(g.away_team_id)
+    );
+    return [...group].sort((a, b) => {
+      const sa = getMiniStats(a.id, subGames);
+      const sb = getMiniStats(b.id, subGames);
+      if (sb.winPct !== sa.winPct) return sb.winPct - sa.winPct;
+      if (sb.diff !== sa.diff) return sb.diff - sa.diff;
+      return b.pointsDiff - a.pointsDiff; // overall diff fallback
+    });
+  };
+
+  // Group by winPct, sort within each group, then flatten
+  const sortedStandings = [];
+  const byWinPct = [];
+  const seen = new Set();
+  const sortedByWinPct = [...unsortedStandings].sort((a, b) => b.winPct - a.winPct);
+  sortedByWinPct.forEach(team => {
+    if (seen.has(team.id)) return;
+    const group = sortedByWinPct.filter(t => t.winPct === team.winPct);
+    group.forEach(t => seen.add(t.id));
+    sortTiedGroup(group).forEach(t => sortedStandings.push(t));
+  });
+
+  const teamStandings = sortedStandings;
 
   return (
     <Card className="border-slate-200 w-full overflow-hidden">
