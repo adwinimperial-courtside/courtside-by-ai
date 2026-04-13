@@ -148,7 +148,7 @@ function getHotStreak(stats, games) {
 }
 
 export default function PlayerDashboardCard({
-  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueId, leagueName, onPhotoUpdate
+  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueId, leagueName, onPhotoUpdate, readOnly = false
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -242,35 +242,47 @@ export default function PlayerDashboardCard({
       {/* ── 2. Player Identity ── */}
       <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
         {/* Avatar */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="relative flex-shrink-0 group cursor-pointer">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
-                {uploading ? (
-                  <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-                ) : photoUrl ? (
-                  <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-4xl font-bold text-indigo-600">{initials}</span>
-                )}
-              </div>
-              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-              <Upload className="w-4 h-4 mr-2" /> Upload Photo
-            </DropdownMenuItem>
-            {photoUrl && (
-              <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
-                <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
+        {readOnly ? (
+          <div className="relative flex-shrink-0">
+            <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
+              {photoUrl ? (
+                <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-4xl font-bold text-indigo-600">{initials}</span>
+              )}
+            </div>
+          </div>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="relative flex-shrink-0 group cursor-pointer">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
+                  {uploading ? (
+                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+                  ) : photoUrl ? (
+                    <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl font-bold text-indigo-600">{initials}</span>
+                  )}
+                </div>
+                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <Upload className="w-4 h-4 mr-2" /> Upload Photo
               </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
+              {photoUrl && (
+                <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
+                  <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {!readOnly && <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />}
 
         {/* Name / team / position */}
         <div className="flex-1 min-w-0">
