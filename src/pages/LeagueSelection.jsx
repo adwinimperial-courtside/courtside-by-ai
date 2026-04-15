@@ -1,173 +1,142 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Trophy, Clock, CheckCircle } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { createPageUrl } from "../utils";
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/lib/AuthContext';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function LeagueSelection() {
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [selectedLeagues, setSelectedLeagues] = useState([]);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [isCheckingApproval, setIsCheckingApproval] = useState(false);
-  const [notApprovedMessage, setNotApprovedMessage] = useState("");
+  const { t } = useTranslation();
+  const [leagues, setLeagues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const { data: currentUser } = useQuery({
-    queryKey: ['user'],
-    queryFn: () => base44.auth.me(),
-  });
+  useEffect(() => {
+    if (!currentUser) return;
+    loadLeagues();
+  }, [currentUser]);
 
-  const { data: leagues = [] } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
-  });
-
-  const createRequestMutation = useMutation({
-    mutationFn: async (leagueIds) => {
-      await base44.entities.LeagueAccessRequest.create({
-        user_id: currentUser.id,
-        user_email: currentUser.email,
-        user_name: currentUser.full_name,
-        requested_league_ids: leagueIds,
-        status: "pending"
-      });
-    },
-    onSuccess: () => {
-      setShowSuccessModal(true);
-    },
-    onError: (error) => {
-      alert('Failed to submit request: ' + error.message);
-    }
-  });
-
-  const handleToggleLeague = (leagueId) => {
-    setSelectedLeagues(prev => 
-      prev.includes(leagueId)
-        ? prev.filter(id => id !== leagueId)
-        : [...prev, leagueId]
-    );
-  };
-
-  const handleSubmit = () => {
-    if (selectedLeagues.length === 0) {
-      alert('Please select at least one league');
-      return;
-    }
-    createRequestMutation.mutate(selectedLeagues);
-  };
-
-  const handleRefresh = async () => {
-    setIsCheckingApproval(true);
-    setNotApprovedMessage("");
-    
+  async function loadLeagues() {
+    setLoading(true);
+    setError(null);
     try {
-      const updatedUser = await base44.auth.me();
-      
-      if (updatedUser.assigned_league_ids && updatedUser.assigned_league_ids.length > 0) {
-        navigate(createPageUrl('Leagues'));
-      } else {
-        setNotApprovedMessage("Request has not yet been approved.");
+      // Get all leagues this user is a member of
+      const { data: memberships, error: memErr } = await supabase
+        .from('user_league_memberships')
+        .select('league_id, role, leagues(id, name, logo_url, is_active)')
+        .eq('user_id', currentUser.id)
+        .eq('is_active', true);
+
+      if (memErr) throw memErr;
+
+      const activeLeagues = memberships
+        .map(m => ({ ...m.leagues, role: m.role }))
+        .filter(l => l && l.is_active);
+
+      // If only one league, auto-set it and go straight to Schedule
+      if (activeLeagues.length === 1) {
+        await setDefaultAndNavigate(activeLeagues[0].id);
+        return;
       }
-    } catch (error) {
-      setNotApprovedMessage("Error checking approval status. Please try again.");
+
+      // Check if user already has a default set
+      const { data: profile, error: profErr } = await supabase
+        .from('profiles')
+        .select('default_league_id')
+        .eq('id', currentUser.id)
+        .single();
+
+      if (profErr) throw profErr;
+
+      if (profile.default_league_id) {
+        navigate('/Schedule', { replace: true });
+        return;
+      }
+
+      setLeagues(activeLeagues);
+    } catch (err) {
+      setError(t('leagueSelection.errorLoading', 'Failed to load your leagues. Please try again.'));
+      console.error(err);
     } finally {
-      setIsCheckingApproval(false);
+      setLoading(false);
     }
-  };
+  }
+
+  async function setDefaultAndNavigate(leagueId) {
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ default_league_id: leagueId })
+        .eq('id', currentUser.id);
+
+      if (error) throw error;
+      navigate('/Schedule', { replace: true });
+    } catch (err) {
+      setError(t('leagueSelection.errorSaving', 'Failed to save your selection. Please try again.'));
+      console.error(err);
+      setSaving(false);
+    }
+  }
+
+  if (loading || saving) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div style={{ width: 32, height: 32, border: '4px solid #e5e7eb', borderTopColor: '#1E2A5E', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
-      <Card className="max-w-2xl w-full border-slate-200 shadow-2xl">
-        <CardHeader className="border-b border-slate-200 bg-gradient-to-r from-orange-50 to-amber-50">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center">
-              <Trophy className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <CardTitle className="text-2xl">Welcome to Courtside by AI!</CardTitle>
-              <p className="text-sm text-slate-600 mt-1">Select the leagues you'd like to access</p>
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', background: '#f9fafb' }}>
+      <div style={{ width: '100%', maxWidth: 480 }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ width: 48, height: 48, background: '#F97316', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+            <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="white" strokeWidth="1.5"/>
+              <path d="M1 10h18M10 1v18M4 4l12 12M16 4L4 16" stroke="white" strokeWidth="1"/>
+            </svg>
           </div>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="mb-6">
-            <p className="text-slate-700 mb-4">
-              To get started, please select the leagues you want to follow. Your request will be reviewed by an administrator and approved within 10 minutes.
-            </p>
+          <h1 style={{ fontSize: 24, fontWeight: 500, color: '#111827', marginBottom: 8 }}>
+            {t('leagueSelection.title', 'Choose your league')}
+          </h1>
+          <p style={{ fontSize: 15, color: '#6b7280' }}>
+            {t('leagueSelection.subtitle', 'Select which league to open by default.')}
+          </p>
+        </div>
+
+        {error && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: '12px 16px', color: '#dc2626', fontSize: 14, marginBottom: '1rem' }}>
+            {error}
           </div>
+        )}
 
-          <div className="space-y-3 mb-6">
-            {leagues.map(league => (
-              <div
-                key={league.id}
-                className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer border-2 border-transparent hover:border-orange-200"
-                onClick={() => handleToggleLeague(league.id)}
-              >
-                <Checkbox
-                  checked={selectedLeagues.includes(league.id)}
-                  onCheckedChange={() => handleToggleLeague(league.id)}
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-slate-900">{league.name}</div>
-                  <div className="text-sm text-slate-600">{league.season}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <Button
-            onClick={handleSubmit}
-            disabled={selectedLeagues.length === 0 || createRequestMutation.isPending}
-            className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800"
-          >
-            {createRequestMutation.isPending ? 'Submitting...' : 'Submit Request'}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <AlertDialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle className="w-10 h-10 text-green-600" />
-              </div>
-            </div>
-            <AlertDialogTitle className="text-center text-xl">Request Submitted Successfully!</AlertDialogTitle>
-            <AlertDialogDescription className="text-center space-y-4 pt-4">
-              <div className="flex items-center justify-center gap-2 text-slate-700">
-                <Clock className="w-5 h-5 text-orange-600" />
-                <p>Your request will be reviewed within 10 minutes.</p>
-              </div>
-              <p className="text-slate-600">
-                Click the button below to check if your request has been approved.
-              </p>
-              {notApprovedMessage && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-yellow-800 text-sm font-medium">{notApprovedMessage}</p>
-                </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {leagues.map(league => (
+            <button
+              key={league.id}
+              onClick={() => setDefaultAndNavigate(league.id)}
+              style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '1rem 1.25rem', cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'border-color 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#1E2A5E'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e7eb'}
+            >
+              {league.logo_url ? (
+                <img src={league.logo_url} alt={league.name} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 40, height: 40, background: '#EEF1FA', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🏀</div>
               )}
-              <Button
-                onClick={handleRefresh}
-                disabled={isCheckingApproval}
-                className="w-full mt-4 bg-orange-600 hover:bg-orange-700"
-              >
-                {isCheckingApproval ? 'Checking...' : 'Refresh Page'}
-              </Button>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-        </AlertDialogContent>
-      </AlertDialog>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: '#111827' }}>{league.name}</div>
+                <div style={{ fontSize: 13, color: '#6b7280', textTransform: 'capitalize' }}>{league.role.replace('_', ' ')}</div>
+              </div>
+              <div style={{ marginLeft: 'auto', color: '#9ca3af' }}>→</div>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

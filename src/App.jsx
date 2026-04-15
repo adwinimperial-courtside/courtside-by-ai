@@ -10,6 +10,7 @@ import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import LoginPage from '@/components/auth/LoginPage';
+import LandingPage from '@/pages/Landing';
 
 import AllPlayersViewPage from './pages/AllPlayersView';
 import ApplyForLeaguePage from './pages/ApplyForLeague';
@@ -40,7 +41,12 @@ const AuthenticatedApp = () => {
 
   // Show login page when not authenticated
   if (!isAuthenticated) {
-    return <LoginPage />;
+    return (
+      <Routes>
+        <Route path="/Landing" element={<LandingPage />} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    );
   }
 
   // Render the main app
