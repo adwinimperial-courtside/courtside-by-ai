@@ -1,103 +1,74 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, User, Upload } from "lucide-react";
+import { ArrowLeft, Users, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-import PlayerManagement from "./PlayerManagement";
-import TeamLogo from "./TeamLogo";
-
+/**
+ * TeamDetailView — stub
+ *
+ * Full player management will be built in the Players.jsx phase.
+ * For now this shows the team header and a placeholder.
+ */
 export default function TeamDetailView({ team, onBack }) {
-  const [uploadingLogo, setUploadingLogo] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-  const queryClient = useQueryClient();
-
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingLogo(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      await base44.entities.Team.update(team.id, { logo_url: file_url });
-      queryClient.invalidateQueries({ queryKey: ['teams'] });
-    } catch (error) {
-      alert("Failed to upload logo: " + error.message);
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
+  const { t } = useTranslation();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
         <Button
           variant="ghost"
           onClick={onBack}
           className="mb-6 hover:bg-slate-100"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Teams
+          {t("teams.backToTeams", "Back to Teams")}
         </Button>
 
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
+        {/* Team header */}
+        <div className="flex items-center gap-4 mb-10">
+          {team.logo_url ? (
+            <img
+              src={team.logo_url}
+              alt={team.name}
+              className="w-16 h-16 rounded-xl object-cover border-2"
+              style={{ borderColor: team.color || "#f97316" }}
+            />
+          ) : (
+            <div
+              className="w-16 h-16 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${team.color || "#f97316"}20` }}
+            >
+              <Users
+                className="w-8 h-8"
+                style={{ color: team.color || "#f97316" }}
+              />
+            </div>
+          )}
           <div>
-            <div className="flex items-center gap-4 mb-2">
-              <div className="relative group">
-                <TeamLogo team={team} size="lg" />
-                 {(currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin') && (
-                    <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                      <Upload className="w-6 h-6 text-white" />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleLogoUpload}
-                        disabled={uploadingLogo}
-                      />
-                    </label>
-                  )}
-                {uploadingLogo && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg">
-                    <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent" />
-                  </div>
-                )}
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-slate-900">{team.name}</h1>
-                <p className="text-slate-600">Team Roster</p>
-                <div className="flex flex-wrap gap-4 mt-3">
-                  {team.head_coach && (
-                    <div className="text-sm">
-                      <span className="text-slate-600">Head Coach:</span>
-                      <span className="font-semibold text-slate-900 ml-2">{team.head_coach}</span>
-                    </div>
-                  )}
-                  {team.manager && (
-                    <div className="text-sm">
-                      <span className="text-slate-600">Manager:</span>
-                      <span className="font-semibold text-slate-900 ml-2">{team.manager}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            </div>
-            </div>
+            <h1 className="text-3xl font-bold text-slate-900">{team.name}</h1>
+            {team.short_name && (
+              <p className="text-slate-500 text-sm">{team.short_name}</p>
+            )}
+          </div>
+        </div>
 
-            <PlayerManagement teamId={team.id} team={team} userType={currentUser?.user_type} />
+        {/* Placeholder */}
+        <div className="flex flex-col items-center justify-center py-20 px-4 bg-white rounded-2xl border border-slate-200">
+          <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+            <Clock className="w-8 h-8 text-blue-400" />
+          </div>
+          <h3 className="text-xl font-bold text-slate-800 mb-2">
+            {t("teams.rosterComingSoon", "Player Roster Coming Soon")}
+          </h3>
+          <p className="text-slate-500 text-center max-w-sm">
+            {t(
+              "teams.rosterDescription",
+              "Full player management will be available once the Players page is rebuilt. Check back after Phase 2 is complete."
+            )}
+          </p>
+        </div>
+
       </div>
     </div>
   );

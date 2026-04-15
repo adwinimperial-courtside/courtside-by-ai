@@ -9,37 +9,42 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { base44 } from "@/api/base44Client";
-import { Upload } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 const TEAM_COLORS = [
-  { name: "Orange", value: "#f97316" },
-  { name: "Blue", value: "#3b82f6" },
-  { name: "Red", value: "#ef4444" },
-  { name: "Green", value: "#22c55e" },
-  { name: "Purple", value: "#a855f7" },
-  { name: "Yellow", value: "#eab308" },
+  { name: "Orange",   value: "#f97316" },
+  { name: "Blue",     value: "#3b82f6" },
+  { name: "Red",      value: "#ef4444" },
+  { name: "Green",    value: "#22c55e" },
+  { name: "Purple",   value: "#a855f7" },
+  { name: "Yellow",   value: "#eab308" },
+  { name: "Dark Blue",value: "#1d4ed8" },
+  { name: "Teal",     value: "#0d9488" },
 ];
 
-export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isLoading }) {
+export default function EditTeamDialog({
+  open,
+  onOpenChange,
+  team,
+  onSubmit,
+  isLoading,
+}) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
+    short_name: "",
     color: "#f97316",
     logo_url: "",
-    head_coach: "",
-    manager: ""
   });
-  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     if (team) {
       setFormData({
-        name: team.name,
+        name: team.name || "",
+        short_name: team.short_name || "",
         color: team.color || "#f97316",
         logo_url: team.logo_url || "",
-        head_coach: team.head_coach || "",
-        manager: team.manager || ""
       });
     }
   }, [team, open]);
@@ -49,115 +54,60 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
     onSubmit(formData);
   };
 
-  const handleLogoUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingLogo(true);
-    try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, logo_url: file_url });
-    } catch (error) {
-      alert("Failed to upload logo: " + error.message);
-    } finally {
-      setUploadingLogo(false);
-    }
-  };
-
   if (!team) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Edit Team</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {t("teams.editTeam", "Edit Team")}
+          </DialogTitle>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Team name */}
           <div>
-            <Label htmlFor="name">Team Name</Label>
+            <Label htmlFor="name">{t("teams.teamName", "Team Name")}</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Warriors"
+              placeholder="e.g., Helsinki Hawks"
               required
               className="mt-1.5"
             />
           </div>
 
+          {/* Short name */}
           <div>
-            <Label htmlFor="head_coach">Head Coach (Optional)</Label>
+            <Label htmlFor="short_name">
+              {t("teams.shortName", "Short Name (Optional)")}
+            </Label>
             <Input
-              id="head_coach"
-              value={formData.head_coach}
-              onChange={(e) => setFormData({ ...formData, head_coach: e.target.value })}
-              placeholder="e.g., John Smith"
+              id="short_name"
+              value={formData.short_name}
+              onChange={(e) =>
+                setFormData({ ...formData, short_name: e.target.value })
+              }
+              placeholder="e.g., HHK"
+              maxLength={5}
               className="mt-1.5"
             />
           </div>
 
+          {/* Team colour */}
           <div>
-            <Label htmlFor="manager">Manager (Optional)</Label>
-            <Input
-              id="manager"
-              value={formData.manager}
-              onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-              placeholder="e.g., Jane Doe"
-              className="mt-1.5"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="logo">Team Logo (Optional)</Label>
-            <div className="mt-1.5">
-              {formData.logo_url ? (
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={formData.logo_url} 
-                    alt="Team logo" 
-                    className="w-16 h-16 object-cover rounded-lg border-2 border-slate-200"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setFormData({ ...formData, logo_url: "" })}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <label className="flex items-center justify-center w-full h-24 border-2 border-dashed border-slate-300 rounded-lg cursor-pointer hover:border-slate-400 transition-colors">
-                  <div className="flex flex-col items-center gap-2">
-                    <Upload className="w-6 h-6 text-slate-400" />
-                    <span className="text-sm text-slate-600">
-                      {uploadingLogo ? "Uploading..." : "Click to upload logo"}
-                    </span>
-                  </div>
-                  <input
-                    id="logo"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
-                    disabled={uploadingLogo}
-                  />
-                </label>
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label>Team Color</Label>
-            <div className="grid grid-cols-6 gap-2 mt-1.5">
-              {TEAM_COLORS.map(color => (
+            <Label>{t("teams.teamColor", "Team Color")}</Label>
+            <div className="grid grid-cols-8 gap-2 mt-1.5">
+              {TEAM_COLORS.map((color) => (
                 <button
                   key={color.value}
                   type="button"
-                  className={`w-10 h-10 rounded-lg transition-all ${
-                    formData.color === color.value 
-                      ? 'ring-2 ring-offset-2 ring-slate-400 scale-110' 
-                      : 'hover:scale-105'
+                  className={`w-9 h-9 rounded-lg transition-all ${
+                    formData.color === color.value
+                      ? "ring-2 ring-offset-2 ring-slate-400 scale-110"
+                      : "hover:scale-105"
                   }`}
                   style={{ backgroundColor: color.value }}
                   onClick={() => setFormData({ ...formData, color: color.value })}
@@ -167,6 +117,17 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
             </div>
           </div>
 
+          {/* Logo upload — coming soon */}
+          <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+            <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+            <p className="text-xs text-amber-700">
+              {t(
+                "teams.logoUploadComingSoon",
+                "Logo upload will be available once Supabase Storage is configured."
+              )}
+            </p>
+          </div>
+
           <DialogFooter>
             <Button
               type="button"
@@ -174,14 +135,16 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {t("common.cancel", "Cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading
+                ? t("common.saving", "Saving...")
+                : t("common.save", "Save Changes")}
             </Button>
           </DialogFooter>
         </form>
