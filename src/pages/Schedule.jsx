@@ -1,238 +1,311 @@
-import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Calendar, Filter, AlertTriangle } from "lucide-react";
+import { Plus, Calendar, Filter } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { useTranslation } from "react-i18next";
+import { supabase } from "@/lib/supabaseClient";
 
 import CreateGameDialog from "../components/schedule/CreateGameDialog";
 import GameCard from "../components/schedule/GameCard";
 
 export default function SchedulePage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState(null);
   const [selectedTeam, setSelectedTeam] = useState("all");
-  const [gameTypeFilter, setGameTypeFilter] = useState("all");
-  const [currentUser, setCurrentUser] = useState(null);
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState("all");
 
+  // Session
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    },
+  });
+
+  const userId = session?.user?.id;
+  const isAppAdmin = session?.user?.user_metadata?.app_admin === true;
+
+  // Memberships
+  const { data: memberships = [] } = useQuery({
+    queryKey: ["league-memberships", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_league_memberships")
+        .select("role, league:leagues(id, name)")
+        .eq("user_id", userId)
+        .eq("is_active", true);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Profile for default league
+  const { data: profile } = useQuery({
+    queryKey: ["profile", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("default_league_id")
+        .eq("id", userId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const accessibleLeagues = memberships.map((m) => m.league);
+
+  // Auto-select league
   React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-        if (user?.default_league_id) {
-          setSelectedLeague(user.default_league_id);
-        } else if (user?.assigned_league_ids?.length === 1) {
-          setSelectedLeague(user.assigned_league_ids[0]);
-        } else {
-          setSelectedLeague("all");
-        }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
+    if (selectedLeague) return;
+    if (profile?.default_league_id) {
+      setSelectedLeague(profile.default_league_id);
+    } else if (accessibleLeagues.length === 1) {
+      setSelectedLeague(accessibleLeagues[0].id);
+    }
+  }, [memberships, profile]);
 
-  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
-  const isAppAdmin = currentUser?.user_type === 'app_admin';
-  const assignedLeagueIds = currentUser?.assigned_league_ids || [];
-  const hasAssignedLeagues = assignedLeagueIds.length > 0;
+  const currentMembership = memberships.find((m) => m.league.id === selectedLeague);
+  const canManage = isAppAdmin || currentMembership?.role === "league_admin";
 
-  const { data: leagues = [] } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
-    staleTime: 300000,
-  });
-
-  const visibleLeagues = isAppAdmin
-    ? leagues
-    : hasAssignedLeagues
-      ? leagues.filter(league => assignedLeagueIds.includes(league.id))
-      : leagues;
-
+  // Teams for selected league
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams', selectedLeague],
-    queryFn: async ({ queryKey }) => {
-      const leagueId = queryKey[1];
-      if (!leagueId || leagueId === 'all') return [];
-      return base44.entities.Team.filter({ league_id: leagueId });
+    queryKey: ["teams", selectedLeague],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("teams")
+        .select("id, name, short_name, color, logo_url, league_id")
+        .eq("league_id", selectedLeague)
+        .eq("is_active", true)
+        .order("name");
+      if (error) throw error;
+      return data;
     },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 300000,
+    enabled: !!selectedLeague,
   });
 
+  // Games for selected league
   const { data: games = [], isLoading } = useQuery({
-    queryKey: ['games', selectedLeague],
-    queryFn: async ({ queryKey }) => {
-      const leagueId = queryKey[1];
-      if (!leagueId || leagueId === 'all') return [];
-      return base44.entities.Game.filter({ league_id: leagueId }, '-game_date') || [];
+    queryKey: ["games", selectedLeague],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("games")
+        .select("*")
+        .eq("league_id", selectedLeague)
+        .order("scheduled_at", { ascending: false });
+      if (error) throw error;
+      return data;
     },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
+    enabled: !!selectedLeague,
     staleTime: 0,
   });
 
-
-
+  // Create game
   const createGameMutation = useMutation({
-    mutationFn: (gameData) => base44.entities.Game.create(gameData),
+    mutationFn: async (gameData) => {
+      const { error } = await supabase.from("games").insert({
+        league_id: gameData.league_id,
+        home_team_id: gameData.home_team_id,
+        away_team_id: gameData.away_team_id,
+        scheduled_at: gameData.scheduled_at || null,
+        venue: gameData.venue || null,
+        status: "scheduled",
+        home_score: 0,
+        away_score: 0,
+        game_stage: gameData.game_stage || "regular",
+        exclude_from_awards: gameData.exclude_from_awards || false,
+        game_mode: gameData.game_mode || "timed",
+        period_type: gameData.period_type || null,
+        period_count: gameData.period_count || null,
+        period_minutes: gameData.period_minutes || null,
+        overtime_minutes: gameData.overtime_minutes || null,
+      });
+      if (error) throw error;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['games'] });
+      queryClient.invalidateQueries({ queryKey: ["games"] });
       setShowCreateDialog(false);
     },
   });
 
-  const startGame = (game) => {
-    const baseUrl = createPageUrl("LiveGame");
-    navigate(`${baseUrl}?gameId=${game.id}`);
-  };
-
-  const visibleTeams = (hasAssignedLeagues && !isAppAdmin)
-    ? teams.filter(t => assignedLeagueIds.includes(t.league_id))
-    : teams;
-
-  const filteredGames = games.filter(game => {
-    const leagueMatch = selectedLeague === "all" || game.league_id === selectedLeague;
-    const teamMatch = selectedTeam === "all" || game.home_team_id === selectedTeam || game.away_team_id === selectedTeam;
-    const assignedFilter = isAppAdmin || !hasAssignedLeagues || assignedLeagueIds.includes(game.league_id);
-    const typeMatch = gameTypeFilter === "all" ||
-      (gameTypeFilter === "default" && game.is_default_result) ||
-      (gameTypeFilter === "played" && game.status === "completed" && !game.is_default_result) ||
-      (gameTypeFilter === "scheduled" && game.status === "scheduled" && !game.is_default_result);
-    return leagueMatch && teamMatch && assignedFilter && typeMatch;
+  // Filter games
+  const filteredGames = games.filter((game) => {
+    const teamMatch =
+      selectedTeam === "all" ||
+      game.home_team_id === selectedTeam ||
+      game.away_team_id === selectedTeam;
+    const statusMatch =
+      statusFilter === "all" ||
+      (statusFilter === "scheduled" && game.status === "scheduled") ||
+      (statusFilter === "live" && game.status === "live") ||
+      (statusFilter === "final" && game.status === "final") ||
+      (statusFilter === "default" && game.is_default_result);
+    return teamMatch && statusMatch;
   });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+
+        {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Schedule</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">
+                {t("schedule.title", "Schedule")}
+              </h1>
             </div>
-            <p className="text-slate-600 ml-15">Manage game schedules and matchups</p>
+            <p className="text-slate-600 ml-15">
+              {t("schedule.subtitle", "Manage game schedules and matchups")}
+            </p>
           </div>
-          {(isLeagueAdmin || isAppAdmin) && (
-            <Button 
+
+          {canManage && (
+            <Button
               onClick={() => setShowCreateDialog(true)}
               className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg shadow-green-500/30 h-12 px-6"
               disabled={teams.length < 2}
             >
               <Plus className="w-5 h-5 mr-2" />
-              Schedule Game
+              {t("schedule.scheduleGame", "Schedule Game")}
             </Button>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 mb-6">
-          <div className="flex items-center gap-2 flex-1">
-            <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
-            <Select value={selectedLeague} onValueChange={(val) => { setSelectedLeague(val); setSelectedTeam("all"); }}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All Leagues" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leagues</SelectItem>
-                {visibleLeagues.map(league => (
-                  <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3 mb-8">
+          {/* League selector */}
+          {accessibleLeagues.length > 1 && (
+            <div className="flex items-center gap-2 flex-1">
+              <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+              <Select
+                value={selectedLeague}
+                onValueChange={(val) => {
+                  setSelectedLeague(val);
+                  setSelectedTeam("all");
+                }}
+              >
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder={t("schedule.selectLeague", "Select League")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accessibleLeagues.map((league) => (
+                    <SelectItem key={league.id} value={league.id}>
+                      {league.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
+          {/* Team filter */}
           <div className="flex items-center gap-2 flex-1">
-            <Filter className="w-4 h-4 text-slate-500 flex-shrink-0" />
+            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All Teams" />
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder={t("schedule.allTeams", "All Teams")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Teams</SelectItem>
-                {visibleTeams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                <SelectItem value="all">{t("schedule.allTeams", "All Teams")}</SelectItem>
+                {teams.map((team) => (
+                  <SelectItem key={team.id} value={team.id}>
+                    {team.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Status filter */}
           <div className="flex items-center gap-2 flex-1">
-            <AlertTriangle className="w-4 h-4 text-slate-500 flex-shrink-0" />
-            <Select value={gameTypeFilter} onValueChange={setGameTypeFilter}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="All Games" />
+            <Filter className="w-4 h-4 text-slate-500 shrink-0" />
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full bg-white">
+                <SelectValue placeholder={t("schedule.allGames", "All Games")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Games</SelectItem>
-                <SelectItem value="played">Played Games</SelectItem>
-                <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="default">Defaulted Games</SelectItem>
+                <SelectItem value="all">{t("schedule.allGames", "All Games")}</SelectItem>
+                <SelectItem value="scheduled">{t("schedule.scheduled", "Scheduled")}</SelectItem>
+                <SelectItem value="live">{t("schedule.live", "Live")}</SelectItem>
+                <SelectItem value="final">{t("schedule.final", "Final")}</SelectItem>
+                <SelectItem value="default">{t("schedule.defaulted", "Defaulted")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {selectedLeague === "all" ? (
+        {/* Content */}
+        {!selectedLeague ? (
           <div className="flex flex-col items-center justify-center py-20 px-4">
             <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-12 h-12 text-blue-600" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">Select a League</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">
+              {t("schedule.selectLeague", "Select a League")}
+            </h3>
             <p className="text-slate-600 text-center max-w-md">
-              Please select a league from the filter above to view and manage games.
+              {t("schedule.selectLeagueDescription", "Select a league to view and manage games.")}
             </p>
           </div>
         ) : isLoading ? (
-          <div className="w-full space-y-4">
+          <div className="space-y-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-40 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : filteredGames.length === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center py-20 px-4">
+          <div className="flex flex-col items-center justify-center py-20 px-4">
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-12 h-12 text-slate-400" />
             </div>
             <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {teams.length < 2 ? "Need More Teams" : "No Games Scheduled"}
+              {teams.length < 2
+                ? t("schedule.needMoreTeams", "Need More Teams")
+                : t("schedule.noGames", "No Games Scheduled")}
             </h3>
-            <p className="text-slate-600 text-center mb-8 max-w-md">
-              {teams.length < 2 
-                ? "You need at least 2 teams to schedule a game"
-                : "Start scheduling games for your league"}
+            <p className="text-slate-600 text-center max-w-md">
+              {teams.length < 2
+                ? t("schedule.needMoreTeamsDescription", "You need at least 2 teams to schedule a game.")
+                : t("schedule.noGamesDescription", "Start scheduling games for your league.")}
             </p>
           </div>
         ) : (
-          <div className="w-full space-y-4">
+          <div className="space-y-4">
             {filteredGames.map((game) => (
               <GameCard
-              key={game.id}
-              game={game}
-              teams={teams}
-              leagues={leagues}
-              onStartGame={() => startGame(game)}
-              currentUser={currentUser}
-              onGameUpdated={() => queryClient.invalidateQueries({ queryKey: ['games'] })}
+                key={game.id}
+                game={game}
+                teams={teams}
+                canManage={canManage}
+                onGameUpdated={() => queryClient.invalidateQueries({ queryKey: ["games"] })}
+                onStartGame={() => navigate(`/LiveGame?gameId=${game.id}`)}
               />
             ))}
           </div>
         )}
 
         <CreateGameDialog
-           open={showCreateDialog}
-           onOpenChange={setShowCreateDialog}
-           onSubmit={(data) => createGameMutation.mutate(data)}
-           isLoading={createGameMutation.isPending}
-           leagues={visibleLeagues}
-           teams={visibleTeams}
-         />
+          open={showCreateDialog}
+          onOpenChange={setShowCreateDialog}
+          onSubmit={(data) => createGameMutation.mutate(data)}
+          isLoading={createGameMutation.isPending}
+          leagues={accessibleLeagues}
+          teams={teams}
+          defaultLeagueId={selectedLeague}
+        />
       </div>
     </div>
   );

@@ -1,149 +1,59 @@
-import React, { useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+import React from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Trophy, Star, X } from "lucide-react";
-import { Loader2 } from "lucide-react";
-import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
-import PlayerAchievements from "@/components/player/PlayerAchievements";
-import PlayerTrendCard from "@/components/player/PlayerTrendCard";
-import PlayerLastGame from "@/components/player/PlayerLastGame";
+import { Trophy, Clock, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, game, teams }) {
-  const teamId = pogPlayer?.team_id;
-
-  const { data: leagueGames = [] } = useQuery({
-    queryKey: ["pogLeagueGames", leagueId],
-    queryFn: () => base44.entities.Game.filter({ league_id: leagueId }),
-    enabled: open && !!leagueId,
-    staleTime: 300000,
-  });
-
-  const { data: allLeagueStats = [], isLoading: statsLoading } = useQuery({
-    queryKey: ["pogAllLeagueStats", leagueId],
-    queryFn: () => base44.entities.PlayerStats.list(),
-    enabled: open && !!leagueId,
-    staleTime: 300000,
-  });
-
-  const { data: allTeams = [] } = useQuery({
-    queryKey: ["allTeams"],
-    queryFn: () => base44.entities.Team.list(),
-    enabled: open,
-    staleTime: 300000,
-  });
-
-  const team = allTeams.find(t => t.id === teamId) || teams?.find(t => t.id === teamId) || null;
-
-  const completedGameIds = useMemo(
-    () => new Set(leagueGames.filter(g => g.status === "completed").map(g => g.id)),
-    [leagueGames]
-  );
-
-  const didParticipate = (stat) => {
-    const total =
-      (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
-      (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
-      (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
-      (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0);
-    return stat.did_play || (stat.minutes_played || 0) > 0 || total > 0;
-  };
-
-  const myStats = useMemo(
-    () => pogPlayer
-      ? allLeagueStats.filter(
-          s => s.player_id === pogPlayer.id && completedGameIds.has(s.game_id) && didParticipate(s)
-        )
-      : [],
-    [allLeagueStats, pogPlayer, completedGameIds]
-  );
-
-  const allCompletedStats = useMemo(
-    () => allLeagueStats.filter(s => completedGameIds.has(s.game_id) && didParticipate(s)),
-    [allLeagueStats, completedGameIds]
-  );
-
-  // Build a mock user object shaped like what the profile components expect
-  const mockUser = pogPlayer
-    ? {
-        full_name: pogPlayer.name,
-        display_name: pogPlayer.name,
-        user_type: "player",
-      }
-    : null;
-
-  const isLoading = statsLoading || !pogPlayer;
+/**
+ * POGSpotlightModal — stub
+ *
+ * Full player profile spotlight will be rebuilt in the Player Profile phase.
+ * Requires PlayerDashboardCard, PlayerAchievements, PlayerTrendCard, PlayerLastGame
+ * — all of which have Base44 dependencies.
+ */
+export default function POGSpotlightModal({ open, onClose, pogPlayer }) {
+  const { t } = useTranslation();
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 gap-0">
-        {/* Header banner */}
+      <DialogContent className="max-w-md w-full p-0 gap-0">
+        {/* Header */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center shrink-0">
             <Trophy className="w-5 h-5 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white/80 text-xs font-semibold uppercase tracking-wider">Player of the Game</p>
-            <h2 className="text-white font-bold text-lg truncate">{pogPlayer?.name || "..."}</h2>
+            <p className="text-white/80 text-xs font-semibold uppercase tracking-wider">
+              {t("schedule.playerOfGame", "Player of the Game")}
+            </p>
+            <h2 className="text-white font-bold text-lg truncate">
+              {pogPlayer
+                ? `${pogPlayer.first_name} ${pogPlayer.last_name}`
+                : "—"}
+            </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-white/70 hover:text-white transition-colors flex-shrink-0"
+            className="text-white/70 hover:text-white transition-colors shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+        {/* Placeholder */}
+        <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+          <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mb-4">
+            <Clock className="w-7 h-7 text-amber-400" />
           </div>
-        ) : (
-          <div className="bg-white p-4 space-y-6">
-            {/* Spotlight notice */}
-            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm text-amber-800">
-              <Star className="w-4 h-4 text-amber-500 flex-shrink-0" />
-              <span>This is a <strong>full player profile spotlight</strong>. Register and claim yours to unlock this view for yourself.</span>
-            </div>
-
-            {/* Player Dashboard Card */}
-            <PlayerDashboardCard
-              currentUser={mockUser}
-              team={team}
-              playerRecord={pogPlayer}
-              myStats={myStats}
-              allStats={allCompletedStats}
-              games={leagueGames}
-              teamId={teamId}
-              leagueId={leagueId}
-              onPhotoUpdate={() => {}}
-              readOnly={true}
-            />
-
-            {/* Achievements */}
-            <PlayerAchievements
-              myStats={myStats}
-              games={leagueGames}
-              teamId={teamId}
-              playerRecord={pogPlayer}
-            />
-
-            {/* Trend */}
-            <PlayerTrendCard
-              myStats={myStats}
-              games={leagueGames}
-              teamId={teamId}
-            />
-
-            {/* Last Game */}
-            <PlayerLastGame
-              games={leagueGames}
-              myStats={myStats}
-              teams={allTeams.length ? allTeams : teams}
-              teamId={teamId}
-            />
-          </div>
-        )}
+          <h3 className="font-semibold text-slate-800 mb-2">
+            {t("schedule.pogComingSoon", "Full Profile Coming Soon")}
+          </h3>
+          <p className="text-sm text-slate-500 max-w-xs">
+            {t(
+              "schedule.pogDescription",
+              "The full Player of the Game spotlight will be available once the Player Profile phase is complete."
+            )}
+          </p>
+        </div>
       </DialogContent>
     </Dialog>
   );
