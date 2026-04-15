@@ -20,14 +20,14 @@ import { AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const TEAM_COLORS = [
-  { name: "Orange", value: "#f97316" },
-  { name: "Blue",   value: "#3b82f6" },
-  { name: "Red",    value: "#ef4444" },
-  { name: "Green",  value: "#22c55e" },
-  { name: "Purple", value: "#a855f7" },
-  { name: "Yellow", value: "#eab308" },
+  { name: "Orange",    value: "#f97316" },
+  { name: "Blue",      value: "#3b82f6" },
+  { name: "Red",       value: "#ef4444" },
+  { name: "Green",     value: "#22c55e" },
+  { name: "Purple",    value: "#a855f7" },
+  { name: "Yellow",    value: "#eab308" },
   { name: "Dark Blue", value: "#1d4ed8" },
-  { name: "Teal",   value: "#0d9488" },
+  { name: "Teal",      value: "#0d9488" },
 ];
 
 export default function CreateTeamDialog({
@@ -45,9 +45,10 @@ export default function CreateTeamDialog({
     league_id: defaultLeagueId || "",
     color: "#f97316",
     logo_url: "",
+    head_coach: "",
+    manager: "",
   });
 
-  // Keep league_id in sync if defaultLeagueId changes
   React.useEffect(() => {
     if (defaultLeagueId) {
       setFormData((prev) => ({ ...prev, league_id: defaultLeagueId }));
@@ -63,6 +64,8 @@ export default function CreateTeamDialog({
       league_id: defaultLeagueId || "",
       color: "#f97316",
       logo_url: "",
+      head_coach: "",
+      manager: "",
     });
   };
 
@@ -76,7 +79,6 @@ export default function CreateTeamDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Team name */}
           <div>
             <Label htmlFor="name">{t("teams.teamName", "Team Name")}</Label>
             <Input
@@ -89,32 +91,46 @@ export default function CreateTeamDialog({
             />
           </div>
 
-          {/* Short name */}
           <div>
-            <Label htmlFor="short_name">
-              {t("teams.shortName", "Short Name (Optional)")}
-            </Label>
+            <Label htmlFor="short_name">{t("teams.shortName", "Short Name (Optional)")}</Label>
             <Input
               id="short_name"
               value={formData.short_name}
-              onChange={(e) =>
-                setFormData({ ...formData, short_name: e.target.value })
-              }
+              onChange={(e) => setFormData({ ...formData, short_name: e.target.value })}
               placeholder="e.g., HHK"
               maxLength={5}
               className="mt-1.5"
             />
           </div>
 
-          {/* League selector — only shown when user has multiple leagues */}
+          <div>
+            <Label htmlFor="head_coach">{t("teams.headCoach", "Head Coach (Optional)")}</Label>
+            <Input
+              id="head_coach"
+              value={formData.head_coach}
+              onChange={(e) => setFormData({ ...formData, head_coach: e.target.value })}
+              placeholder="e.g., Matti Korhonen"
+              className="mt-1.5"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="manager">{t("teams.manager", "Manager (Optional)")}</Label>
+            <Input
+              id="manager"
+              value={formData.manager}
+              onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
+              placeholder="e.g., Sari Virtanen"
+              className="mt-1.5"
+            />
+          </div>
+
           {leagues.length > 1 && (
             <div>
               <Label htmlFor="league">{t("teams.league", "League")}</Label>
               <Select
                 value={formData.league_id}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, league_id: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, league_id: value })}
                 required
               >
                 <SelectTrigger className="mt-1.5">
@@ -131,7 +147,6 @@ export default function CreateTeamDialog({
             </div>
           )}
 
-          {/* Team colour */}
           <div>
             <Label>{t("teams.teamColor", "Team Color")}</Label>
             <div className="grid grid-cols-8 gap-2 mt-1.5">
@@ -152,14 +167,10 @@ export default function CreateTeamDialog({
             </div>
           </div>
 
-          {/* Logo upload — coming soon */}
           <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
             <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-xs text-amber-700">
-              {t(
-                "teams.logoUploadComingSoon",
-                "Logo upload will be available once Supabase Storage is configured."
-              )}
+              {t("teams.logoUploadComingSoon", "Logo upload will be available once Supabase Storage is configured.")}
             </p>
           </div>
 
@@ -177,9 +188,7 @@ export default function CreateTeamDialog({
               disabled={isLoading || !formData.league_id}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
-              {isLoading
-                ? t("teams.adding", "Adding...")
-                : t("teams.addTeam", "Add Team")}
+              {isLoading ? t("teams.adding", "Adding...") : t("teams.addTeam", "Add Team")}
             </Button>
           </DialogFooter>
         </form>

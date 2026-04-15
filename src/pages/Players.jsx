@@ -1,49 +1,37 @@
-import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { Users, Key } from "lucide-react";
-import PlayersView from "../components/admin/PlayersView";
+import React from "react";
+import { Link } from "react-router-dom";
+import { Users, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
-export default function Players() {
-  const [currentUser, setCurrentUser] = useState(null);
-
-  React.useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await base44.auth.me();
-        setCurrentUser(user);
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  if (currentUser && currentUser.user_type !== "app_admin") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl border border-red-200 p-8 text-center">
-            <Key className="w-12 h-12 text-red-600 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h1>
-            <p className="text-slate-600">You don't have permission to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+/**
+ * Players page — player management happens inside the Teams page (TeamDetailView).
+ * This page redirects users there.
+ */
+export default function PlayersPage() {
+  const { t } = useTranslation();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="w-8 h-8 text-indigo-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Players</h1>
-          </div>
-          <p className="text-slate-600">View users with Player access</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center px-4">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Users className="w-8 h-8 text-green-600" />
         </div>
-
-        <PlayersView />
+        <h1 className="text-2xl font-bold text-slate-900 mb-2">
+          {t("players.title", "Players")}
+        </h1>
+        <p className="text-slate-500 mb-6">
+          {t(
+            "players.redirectMessage",
+            "Player rosters are managed inside each team. Go to Teams, click a team, and manage players from there."
+          )}
+        </p>
+        <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+          <Link to="/Teams">
+            {t("players.goToTeams", "Go to Teams")}
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
+        </Button>
       </div>
     </div>
   );

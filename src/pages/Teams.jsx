@@ -52,13 +52,7 @@ export default function TeamsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_league_memberships")
-        .select(`
-          role,
-          league:leagues (
-            id,
-            name
-          )
-        `)
+        .select("role, league:leagues(id, name)")
         .eq("user_id", userId)
         .eq("is_active", true);
       if (error) throw error;
@@ -80,14 +74,8 @@ export default function TeamsPage() {
       return data;
     },
     enabled: !!userId,
-    onSuccess: (data) => {
-      if (!selectedLeague && data?.default_league_id) {
-        setSelectedLeague(data.default_league_id);
-      }
-    },
   });
 
-  // Derive accessible leagues from memberships
   const accessibleLeagues = memberships.map((m) => m.league);
 
   // Set default league selection once memberships load
@@ -101,14 +89,9 @@ export default function TeamsPage() {
   }, [memberships, profile]);
 
   // Role for the currently selected league
-  const currentMembership = memberships.find(
-    (m) => m.league.id === selectedLeague
-  );
+  const currentMembership = memberships.find((m) => m.league.id === selectedLeague);
   const currentRole = currentMembership?.role;
-  const canManageTeams =
-    isAppAdmin ||
-    currentRole === "league_admin" ||
-    currentRole === "coach";
+  const canManageTeams = isAppAdmin || currentRole === "league_admin";
 
   // Fetch teams for selected league
   const { data: teams = [], isLoading } = useQuery({
@@ -135,6 +118,8 @@ export default function TeamsPage() {
         short_name: teamData.short_name || null,
         color: teamData.color || "#f97316",
         logo_url: teamData.logo_url || null,
+        head_coach: teamData.head_coach || null,
+        manager: teamData.manager || null,
         is_active: true,
       });
       if (error) throw error;
@@ -155,6 +140,8 @@ export default function TeamsPage() {
           short_name: teamData.short_name || null,
           color: teamData.color || "#f97316",
           logo_url: teamData.logo_url || null,
+          head_coach: teamData.head_coach || null,
+          manager: teamData.manager || null,
         })
         .eq("id", teamToEdit.id);
       if (error) throw error;
@@ -166,9 +153,7 @@ export default function TeamsPage() {
     },
   });
 
-  // Delete team — sets is_active = false (soft delete)
-  // Hard delete of players/games is handled by DB cascade on actual delete
-  // For now we soft-delete the team only; full cascade delete is a future admin tool
+  // Soft-delete team
   const deleteTeamMutation = useMutation({
     mutationFn: async (teamId) => {
       const { error } = await supabase
@@ -189,6 +174,7 @@ export default function TeamsPage() {
       <TeamDetailView
         team={selectedTeam}
         onBack={() => setSelectedTeam(null)}
+        canManage={canManageTeams}
       />
     );
   }
@@ -331,14 +317,9 @@ export default function TeamsPage() {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>
-                {t("teams.deleteTitle", "Delete Team")}
-              </AlertDialogTitle>
+              <AlertDialogTitle>{t("teams.deleteTitle", "Delete Team")}</AlertDialogTitle>
               <AlertDialogDescription>
-                {t(
-                  "teams.deleteDescription",
-                  `Are you sure you want to delete "${teamToDelete?.name}"? The team will be deactivated. This cannot be undone.`
-                )}
+                {t("teams.deleteDescription", `Are you sure you want to delete "${teamToDelete?.name}"? The team will be deactivated.`)}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="flex justify-end gap-3">
@@ -350,9 +331,7 @@ export default function TeamsPage() {
                 disabled={deleteTeamMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {deleteTeamMutation.isPending
-                  ? t("common.deleting", "Deleting...")
-                  : t("common.delete", "Delete")}
+                {deleteTeamMutation.isPending ? t("common.deleting", "Deleting...") : t("common.delete", "Delete")}
               </AlertDialogAction>
             </div>
           </AlertDialogContent>
