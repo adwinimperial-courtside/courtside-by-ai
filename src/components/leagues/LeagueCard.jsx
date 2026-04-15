@@ -1,71 +1,89 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Calendar, Star } from "lucide-react";
+import { Trophy, Users, Star, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
-export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues }) {
-  const isViewer = userType === "viewer";
+export default function LeagueCard({ league, role, isDefault, onSetDefault, multipleLeagues }) {
+  const { t } = useTranslation();
+  const isViewer = role === "viewer";
+
+  // Role badge colour
+  const roleBadgeClass = {
+    league_admin: "bg-orange-100 text-orange-700",
+    coach:        "bg-blue-100 text-blue-700",
+    player:       "bg-green-100 text-green-700",
+    viewer:       "bg-slate-100 text-slate-600",
+  }[role] ?? "bg-slate-100 text-slate-600";
+
+  const roleLabel = {
+    league_admin: t("roles.leagueAdmin", "League Admin"),
+    coach:        t("roles.coach", "Coach"),
+    player:       t("roles.player", "Player"),
+    viewer:       t("roles.viewer", "Viewer"),
+  }[role] ?? role;
 
   const cardContent = (
     <Card className="group hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden cursor-pointer bg-gradient-to-br from-indigo-50 to-blue-50">
       <div className="h-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600" />
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
-           <div className="flex-1">
-             <CardTitle className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-1 group-hover:from-indigo-700 group-hover:to-blue-700 transition-all">
-               {league.name}
-             </CardTitle>
-             <div className="flex items-center gap-2 text-sm text-slate-600">
-               <Calendar className="w-4 h-4 text-indigo-500" />
-               <span>{league.season}</span>
-             </div>
-           </div>
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg">
+          <div className="flex-1">
+            <CardTitle className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-2 group-hover:from-indigo-700 group-hover:to-blue-700 transition-all">
+              {league.name}
+            </CardTitle>
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Role badge */}
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${roleBadgeClass}`}>
+                {roleLabel}
+              </span>
+              {/* Country */}
+              {league.country && (
+                <span className="flex items-center gap-1 text-xs text-slate-500">
+                  <Globe className="w-3 h-3" />
+                  {league.country}
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg ml-3 shrink-0">
             <Trophy className="w-6 h-6 text-white" />
           </div>
         </div>
       </CardHeader>
+
       <CardContent>
-        {league.description && (
-          <p className="text-slate-700 text-sm line-clamp-2 mb-4">
-            {league.description}
-          </p>
-        )}
-        {userType === 'app_admin' && (
-          <div className="mb-4 p-3 bg-slate-50 rounded-lg text-sm space-y-1 border border-slate-200">
-            <p className="text-slate-600">
-              <span className="font-medium">Created by:</span> {league.created_by}
-            </p>
-            <p className="text-slate-600">
-              <span className="font-medium">Created:</span> {new Date(league.created_date).toLocaleString()}
-            </p>
-            <p className="text-slate-500 text-xs font-mono mt-1 break-all">
-              ID: {league.id}
-            </p>
-          </div>
-        )}
         <div className="space-y-3">
           {!isViewer && (
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Users className="w-4 h-4 text-indigo-500" />
-              <span className="font-medium">Manage teams and schedule</span>
+              <span className="font-medium">
+                {t("leagues.manageTeams", "Manage teams and schedule")}
+              </span>
             </div>
           )}
+
+          {/* Set default button — only shown when user has multiple leagues */}
           {onSetDefault && (
             <Button
               onClick={(e) => {
                 e.preventDefault();
-                onSetDefault(league.id);
+                onSetDefault();
               }}
               variant={isDefault ? "default" : "outline"}
               size="sm"
-              className={`w-full ${isDefault ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}
+              className={`w-full ${
+                isDefault
+                  ? "bg-amber-500 hover:bg-amber-600 text-white border-0"
+                  : ""
+              }`}
             >
               <Star className={`w-4 h-4 mr-2 ${isDefault ? "fill-white" : ""}`} />
-              {isDefault ? "Default League" : "Set as Default"}
+              {isDefault
+                ? t("leagues.defaultLeague", "Default League")
+                : t("leagues.setDefault", "Set as Default")}
             </Button>
           )}
         </div>
@@ -83,10 +101,11 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
     </motion.div>
   );
 
+  // Viewers don't navigate into the league
   return isViewer ? (
     wrappedContent
   ) : (
-    <Link to={`${createPageUrl("Teams")}?league=${league.id}`}>
+    <Link to={`/Teams?league=${league.id}`}>
       {wrappedContent}
     </Link>
   );

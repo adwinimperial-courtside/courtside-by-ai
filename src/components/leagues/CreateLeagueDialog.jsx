@@ -1,86 +1,50 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-export default function CreateLeagueDialog({ open, onOpenChange, onSubmit, isLoading }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    season: new Date().getFullYear().toString(),
-    description: ""
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onSubmit(formData);
-    setFormData({ name: "", season: new Date().getFullYear().toString(), description: "" });
-  };
+/**
+ * CreateLeagueDialog
+ *
+ * NOTE: League creation requires a Supabase Edge Function because the `leagues`
+ * table has no direct INSERT policy for client users — inserts must go through
+ * the service role. This dialog is a placeholder until that Edge Function is built.
+ *
+ * TODO: Wire up to POST /functions/v1/create-league once Edge Function exists.
+ */
+export default function CreateLeagueDialog({ open, onOpenChange }) {
+  const { t } = useTranslation();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">Create New League</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">
+            {t("leagues.createLeague", "Create League")}
+          </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">League Name</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., City Championship League"
-              required
-              className="mt-1.5"
-            />
+
+        <div className="flex flex-col items-center gap-4 py-6 text-center">
+          <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center">
+            <AlertTriangle className="w-7 h-7 text-amber-500" />
           </div>
           <div>
-            <Label htmlFor="season">Season</Label>
-            <Input
-              id="season"
-              value={formData.season}
-              onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-              placeholder="e.g., 2024-2025"
-              required
-              className="mt-1.5"
-            />
+            <p className="font-semibold text-slate-800 mb-1">
+              {t("leagues.createComingSoon", "Coming Soon")}
+            </p>
+            <p className="text-sm text-slate-500 max-w-xs">
+              {t(
+                "leagues.createDescription",
+                "League creation requires a server-side function that hasn't been built yet. This will be available in a future phase."
+              )}
+            </p>
           </div>
-          <div>
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Brief description of the league"
-              className="mt-1.5 h-24"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={isLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
-            >
-              {isLoading ? "Creating..." : "Create League"}
-            </Button>
-          </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
