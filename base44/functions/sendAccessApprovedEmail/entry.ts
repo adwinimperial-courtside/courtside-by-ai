@@ -19,8 +19,8 @@ function buildEmailHtml(firstName) {
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#1a2340;padding:36px 40px;text-align:center;">
-              <img src="${LOGO_URL}" alt="Courtside by AI" width="140" style="display:block;margin:0 auto 0 auto;" />
+            <td style="background-color:#ffffff;padding:36px 40px;text-align:center;border-bottom:3px solid #f97316;">
+              <img src="${LOGO_URL}" alt="Courtside by AI" width="140" style="display:block;margin:0 auto;" />
             </td>
           </tr>
 
