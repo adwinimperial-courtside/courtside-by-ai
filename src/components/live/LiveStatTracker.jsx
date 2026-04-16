@@ -113,6 +113,10 @@ export default function LiveStatTracker({
   const lastValidLineupsRef   = useRef({});
   const isSubmittingSubRef    = useRef(false);
   const isProcessingStatRef   = useRef(false);
+  // Set true synchronously before the first await in the ejection block so the
+  // lineup validity useEffect never sees the temporarily-invalid roster before
+  // the admin has a chance to open the substitution dialog.
+  const ejectionInProgressRef = useRef(false);
   const lastStatClickTimeRef  = useRef(0);
   const playerMinutesRef      = useRef({});
   const playerClockStateRef   = useRef({});
@@ -272,7 +276,7 @@ export default function LiveStatTracker({
   const getGameRules = () => ({
     foul_limit: 5,
     technicalFoulLimit: 2,
-    unsportsmanlikeFoulLimit: 1,  // eject on first UNSP per spec
+    unsportsmanlikeFoulLimit: 2,  // eject on 2nd UNSP foul
     countPersonalFoulsAsTeamFoul: true,
     countPlayerTechnicalAsTeamFoul: true,
     countUnsportsmanlikeAsTeamFoul: true,
@@ -292,7 +296,7 @@ export default function LiveStatTracker({
     return {
       personalFoulLimit:         r.foul_limit           ?? 5,
       technicalFoulLimit:        r.technicalFoulLimit    ?? 2,
-      unsportsmanlikeFoulLimit:  r.unsportsmanlikeFoulLimit ?? 1,
+      unsportsmanlikeFoulLimit:  r.unsportsmanlikeFoulLimit ?? 2,
     };
   };
 
@@ -360,12 +364,23 @@ export default function LiveStatTracker({
     return teamsNeedingRepair.length === 0;
   };
 
+  // Run on every player_stats load and Realtime-triggered refetch, not just when
+  // the derived count changes. Using existingStats as the dep fires on every new
+  // query result reference — initial load, background refetch, setQueryData call.
+  // is_starter is the on-court flag (player_stats has no is_active column).
   useEffect(() => {
     if (existingStats.length === 0) return;
     if (isSubmittingSubRef.current) return;
+    // Ejection in progress — substitution dialog is handling the lineup restoration.
+    // This ref is set before the first await in the ejection block so it blocks
+    // the check even before ejectedPlayer state has been committed to React.
+    if (ejectionInProgressRef.current) return;
+    // Secondary state-based guards (belt-and-suspenders for non-ejection paths).
+    if (ejectedPlayer) return;
+    if (showSubDialog) return;
     checkAndTriggerRepair(existingStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeActiveCount, awayActiveCount]);
+  }, [existingStats, ejectedPlayer, showSubDialog]);
 
   // ─── Minutes tracking ─────────────────────────────────────────────────────
 
@@ -505,25 +520,31 @@ export default function LiveStatTracker({
 
       if (statType.key === 'fouls' && newValue >= (rules.foul_limit ?? 5)) {
         ejectionLog = {
-          reason: `${rules.foul_limit ?? 5} Personal Fouls`,
+          reason: `${rules.foul_limit ?? 5} fouls — fouled out`,
           label:  `FOUL OUT — ${selectedPlayer.name} has ${newValue} fouls`,
           color:  'bg-red-700',
         };
       } else if (statType.key === 'technical_fouls' && newValue >= (rules.technicalFoulLimit ?? 2)) {
         ejectionLog = {
-          reason: `${newValue} Technical Foul${newValue > 1 ? 's' : ''}`,
+          reason: `${newValue} technical fouls — ejected`,
           label:  `EJECTION — ${selectedPlayer.name} received ${newValue} technical fouls`,
           color:  'bg-pink-700',
         };
-      } else if (statType.key === 'unsportsmanlike_fouls' && newValue >= (rules.unsportsmanlikeFoulLimit ?? 1)) {
+      } else if (statType.key === 'unsportsmanlike_fouls' && newValue >= (rules.unsportsmanlikeFoulLimit ?? 2)) {
         ejectionLog = {
-          reason: 'Unsportsmanlike Foul',
-          label:  `EJECTION — ${selectedPlayer.name} received an unsportsmanlike foul`,
+          reason: '2 unsportsmanlike fouls — ejected',
+          label:  `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
           color:  'bg-rose-700',
         };
       }
 
       if (ejectionLog) {
+        // Flag the ejection flow before the first await so the lineup validity
+        // useEffect ignores the temporarily-invalid roster while the substitution
+        // dialog handles restoration. Cleared in handleConfirmSubstitution or
+        // when the ejection modal is dismissed without a substitution.
+        ejectionInProgressRef.current = true;
+
         // Mark is_starter = false server-side (player_stats has no is_active column)
         await supabase
           .from('player_stats')
@@ -885,7 +906,8 @@ export default function LiveStatTracker({
       }
       console.error('[LiveStatTracker:handleConfirmSubstitution]', err);
     } finally {
-      isSubmittingSubRef.current = false;
+      isSubmittingSubRef.current    = false;
+      ejectionInProgressRef.current = false; // ejection flow complete (sub confirmed or failed)
     }
   };
 
@@ -1453,41 +1475,52 @@ export default function LiveStatTracker({
       </Dialog>
 
       {/* ── Ejection Alert ── */}
-      <Dialog open={!!ejectedPlayer} onOpenChange={(open) => { if (!open) setEjectedPlayer(null); }}>
-        <DialogContent className="bg-white border-red-200 w-[95vw] max-w-md text-center">
-          <DialogHeader>
+      <Dialog open={!!ejectedPlayer} onOpenChange={(open) => { if (!open) { setEjectedPlayer(null); ejectionInProgressRef.current = false; } }}>
+        <DialogContent className="bg-white border-red-300 w-[95vw] max-w-md text-center p-0 overflow-hidden">
+          {/* Red header band */}
+          <div className="bg-red-600 px-6 pt-6 pb-5">
             <div className="flex justify-center mb-3">
-              <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="w-9 h-9 text-red-600" />
+              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+                <AlertTriangle className="w-9 h-9 text-white" />
               </div>
             </div>
-            <DialogTitle className="text-xl text-red-700 text-center">Player Ejected</DialogTitle>
-          </DialogHeader>
-          <div className="py-2">
+            <DialogTitle className="text-xl font-bold text-white text-center">Player Ejected</DialogTitle>
+            {ejectedPlayer && (() => {
+              const ejectedTeam = ejectedPlayer.team_id === game?.home_team_id ? homeTeam : awayTeam;
+              return (
+                <p className="text-red-100 text-sm mt-1 text-center">{ejectedTeam?.name || 'Unknown Team'}</p>
+              );
+            })()}
+          </div>
+          {/* Body */}
+          <div className="px-6 py-5">
             {ejectedPlayer && (
-              <p className="text-slate-700 text-base font-semibold">
+              <p className="text-slate-900 text-lg font-bold">
                 #{ejectedPlayer.jersey_number} {ejectedPlayer.name}
               </p>
             )}
-            <p className="text-slate-500 text-sm mt-2">
-              Ejected for <span className="font-bold text-red-600">{ejectionReason}</span>. A substitution is required.
+            <p className="text-red-600 font-semibold text-sm mt-1">{ejectionReason}</p>
+            <p className="text-slate-400 text-xs mt-3">
+              This player cannot return to the game. A substitution is required to continue.
             </p>
           </div>
-          <Button
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white mt-2"
-            onClick={() => {
-              if (ejectedPlayer) {
-                resetSubDialog();
-                if (ejectedPlayer.team_id === game?.home_team_id) setHomePlayersOut([ejectedPlayer]);
-                else setAwayPlayersOut([ejectedPlayer]);
-                setSubStep('select_in');
-                setShowSubDialog(true);
-              }
-              setEjectedPlayer(null);
-            }}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />Proceed to Substitution
-          </Button>
+          <div className="px-6 pb-6">
+            <Button
+              className="w-full h-11 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-bold shadow"
+              onClick={() => {
+                if (ejectedPlayer) {
+                  resetSubDialog();
+                  if (ejectedPlayer.team_id === game?.home_team_id) setHomePlayersOut([ejectedPlayer]);
+                  else setAwayPlayersOut([ejectedPlayer]);
+                  setSubStep('select_in');
+                  setShowSubDialog(true);
+                }
+                setEjectedPlayer(null);
+              }}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />Substitute Player
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

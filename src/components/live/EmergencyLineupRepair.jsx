@@ -1,11 +1,34 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, CheckCircle2, RotateCcw, UserMinus, UserPlus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RotateCcw, UserMinus, UserPlus, Lock } from "lucide-react";
+
+const LOCK_TIMEOUT_MS = 60_000; // 60 seconds — stale lock threshold
 
 export default function EmergencyLineupRepair({ repairData, existingStats, players, game, lastValidLineups, onComplete }) {
   const queryClient = useQueryClient();
+  const gameId = game.id;
+
+  // ─── Lock state ─────────────────────────────────────────────────────────────
+  // 'loading' → checking/claiming lock
+  // 'locked'  → another admin holds a fresh lock; show waiting UI
+  // 'mine'    → this instance holds the lock; show repair UI
+  const [lockStatus, setLockStatus] = useState('loading');
+  const [lockedByEmail, setLockedByEmail] = useState(null);
+
+  // Stable per-tab identity, generated ONCE at component initialisation time.
+  // useRef guarantees the value is fixed before any async work runs — critical
+  // so the DB claim write and the Realtime comparison use the same string.
+  // If auth is unavailable, the random suffix distinguishes tabs during testing.
+  const tabIdentityRef = useRef(null);
+  if (!tabIdentityRef.current) {
+    tabIdentityRef.current = `admin-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  const currentUserEmailRef = useRef(null);
+  const holdsLockRef = useRef(false); // true when this instance has written a claim to the DB
+
+  // ─── Repair state ────────────────────────────────────────────────────────────
   const [workingActive, setWorkingActive] = useState(() => {
     const map = {};
     repairData.teams.forEach(t => {
@@ -15,9 +38,154 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
   });
   const [error, setError] = useState('');
 
+  // ─── Lock helpers ─────────────────────────────────────────────────────────
+  const claimLock = async (userEmail) => {
+    await supabase.from('games').update({
+      lineup_repair_locked_by: userEmail,
+      lineup_repair_locked_at: new Date().toISOString(),
+    }).eq('id', gameId);
+    holdsLockRef.current = true;
+  };
+
+  const releaseLock = () => {
+    holdsLockRef.current = false;
+    return supabase.from('games')
+      .update({ lineup_repair_locked_by: null, lineup_repair_locked_at: null })
+      .eq('id', gameId);
+  };
+
+  // ─── Lock claim on mount + Realtime watch ─────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+
+    // Subscribe first so we never miss a lock-cleared event while init is running
+    const uid = Math.random().toString(36).slice(2, 8);
+    const channel = supabase
+      .channel(`repair-lock-${gameId}-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'games', filter: `id=eq.${gameId}` },
+        (payload) => {
+          console.log('[EmergencyLineupRepair] Realtime UPDATE games:', {
+            locked_by: payload.new?.lineup_repair_locked_by,
+            locked_at: payload.new?.lineup_repair_locked_at,
+            myIdentity: currentUserEmailRef.current,
+            holdsLock: holdsLockRef.current,
+          });
+          if (!isMounted) return;
+          const newLockedBy = payload.new?.lineup_repair_locked_by;
+          const newLockedAt = payload.new?.lineup_repair_locked_at
+            ? new Date(payload.new.lineup_repair_locked_at)
+            : null;
+          const isFresh = newLockedAt && (Date.now() - newLockedAt.getTime() <= LOCK_TIMEOUT_MS);
+
+          if (newLockedBy && isFresh && newLockedBy !== currentUserEmailRef.current) {
+            // Someone else claimed — show waiting UI if we don't hold it
+            if (!holdsLockRef.current) {
+              setLockedByEmail(newLockedBy);
+              setLockStatus('locked');
+            }
+          } else if (!newLockedBy || !isFresh) {
+            // Lock was released or went stale — if we were waiting, try to claim.
+            // Include the 200ms wait + verify so this path is race-safe too.
+            if (!holdsLockRef.current && currentUserEmailRef.current) {
+              const identity = currentUserEmailRef.current;
+              claimLock(identity)
+                .then(() => new Promise(r => setTimeout(r, 200)))
+                .then(() => supabase.from('games').select('lineup_repair_locked_by').eq('id', gameId).single())
+                .then(({ data: v }) => {
+                  if (!isMounted) return;
+                  if (v?.lineup_repair_locked_by === identity) {
+                    setLockedByEmail(null);
+                    setLockStatus('mine');
+                  } else {
+                    holdsLockRef.current = false;
+                    setLockedByEmail(v?.lineup_repair_locked_by ?? null);
+                    setLockStatus('locked');
+                  }
+                });
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    // Check DB state and claim or wait
+    const init = async () => {
+      // Resolve identity: prefer real auth email, fall back to the stable per-tab
+      // random value frozen in tabIdentityRef before any async work started.
+      const { data: { user } } = await supabase.auth.getUser();
+      const userEmail = user?.email || tabIdentityRef.current;
+      currentUserEmailRef.current = userEmail;
+
+      if (!isMounted) return;
+
+      const { data: gameRow } = await supabase
+        .from('games')
+        .select('lineup_repair_locked_by, lineup_repair_locked_at')
+        .eq('id', gameId)
+        .single();
+
+      if (!isMounted) return;
+
+      const lockedBy = gameRow?.lineup_repair_locked_by;
+      const lockedAt = gameRow?.lineup_repair_locked_at
+        ? new Date(gameRow.lineup_repair_locked_at)
+        : null;
+      const isStale = !lockedAt || (Date.now() - lockedAt.getTime() > LOCK_TIMEOUT_MS);
+      const isMine = lockedBy === userEmail;
+
+      if (lockedBy && !isStale && !isMine) {
+        // Fresh lock held by someone else — wait
+        setLockedByEmail(lockedBy);
+        setLockStatus('locked');
+      } else {
+        // No lock, stale lock, or already ours — claim it
+        await claimLock(userEmail);
+        if (!isMounted) return;
+
+        // Wait 200ms so any concurrent tab's claim write has time to propagate
+        // through Postgres before we re-read. Without this delay, both tabs may
+        // each see their own write and both report 'mine'.
+        await new Promise(r => setTimeout(r, 200));
+        if (!isMounted) return;
+
+        const { data: verify } = await supabase
+          .from('games')
+          .select('lineup_repair_locked_by')
+          .eq('id', gameId)
+          .single();
+
+        if (!isMounted) return;
+
+        if (verify?.lineup_repair_locked_by === userEmail) {
+          setLockStatus('mine');
+        } else {
+          // Lost the race — show as waiting; Realtime will unblock us when lock clears
+          holdsLockRef.current = false;
+          setLockedByEmail(verify?.lineup_repair_locked_by ?? null);
+          setLockStatus('locked');
+        }
+      }
+    };
+
+    init();
+
+    return () => {
+      isMounted = false;
+      channel.unsubscribe();
+      supabase.removeChannel(channel);
+      // Release lock on unmount if this instance holds it
+      if (holdsLockRef.current) {
+        releaseLock();
+      }
+    };
+  }, [gameId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ─── Foul eligibility ────────────────────────────────────────────────────
   const limits = {
-    personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
-    technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
+    personalFoulLimit:        game.game_rules?.personalFoulLimit        ?? 5,
+    technicalFoulLimit:       game.game_rules?.technicalFoulLimit       ?? 2,
     unsportsmanlikeFoulLimit: game.game_rules?.unsportsmanlikeFoulLimit ?? 2,
   };
 
@@ -25,8 +193,8 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
     const s = existingStats.find(st => st.player_id === playerId);
     if (!s) return true;
     return (
-      (s.fouls || 0) < limits.personalFoulLimit &&
-      (s.technical_fouls || 0) < limits.technicalFoulLimit &&
+      (s.fouls || 0)                 < limits.personalFoulLimit &&
+      (s.technical_fouls || 0)       < limits.technicalFoulLimit &&
       (s.unsportsmanlike_fouls || 0) < limits.unsportsmanlikeFoulLimit
     );
   };
@@ -37,9 +205,9 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
   };
 
   const isTeamValid = (teamId) => {
-    const activeSet = workingActive[teamId] || new Set();
+    const activeSet  = workingActive[teamId] || new Set();
     const activeCount = getActiveCount(teamId);
-    const teamPls = players.filter(p => p.team_id === teamId);
+    const teamPls    = players.filter(p => p.team_id === teamId);
     const eligibleBench = teamPls.filter(p => !activeSet.has(p.id) && isEligible(p.id));
     return activeCount === 5 || (activeCount < 5 && eligibleBench.length === 0);
   };
@@ -69,12 +237,16 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
     setWorkingActive(prev => ({ ...prev, [teamId]: new Set(snapshot.playerIds) }));
   };
 
+  // ─── Confirm repair ──────────────────────────────────────────────────────
   const { mutate: confirmRepair, isPending: saving } = useMutation({
     mutationFn: async () => {
+      // Clear lock first so other admins are unblocked immediately
+      await releaseLock();
+
       for (const teamData of repairData.teams) {
         const { teamId } = teamData;
-        const activeSet = workingActive[teamId] || new Set();
-        const teamStats = existingStats.filter(s => s.team_id === teamId);
+        const activeSet  = workingActive[teamId] || new Set();
+        const teamStats  = existingStats.filter(s => s.team_id === teamId);
 
         // Update is_starter for rows whose status changed
         for (const stat of teamStats) {
@@ -93,10 +265,10 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
         const newRecords = [...activeSet]
           .filter(playerId => !existingPlayerIds.includes(playerId))
           .map(playerId => ({
-            game_id: game.id,
-            league_id: game.league_id,
-            player_id: playerId,
-            team_id: teamId,
+            game_id:    game.id,
+            league_id:  game.league_id,
+            player_id:  playerId,
+            team_id:    teamId,
             is_starter: true,
             minutes_played: 0,
           }));
@@ -116,6 +288,45 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
     },
   });
 
+  // ─── Loading ─────────────────────────────────────────────────────────────
+  if (lockStatus === 'loading') {
+    return (
+      <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl border-2 border-slate-200 p-8 flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500" />
+          <p className="text-slate-600 font-medium">Checking repair status…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Locked by another admin ──────────────────────────────────────────────
+  if (lockStatus === 'locked') {
+    return (
+      <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl border-2 border-amber-300 w-full max-w-md p-8 flex flex-col items-center gap-5">
+          <div className="w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+            <Lock className="w-7 h-7 text-amber-600" />
+          </div>
+          <div className="text-center">
+            <h2 className="text-lg font-bold text-amber-800 mb-1">Lineup Repair In Progress</h2>
+            <p className="text-sm text-amber-700">
+              <span className="font-semibold">{lockedByEmail}</span> is handling this repair.
+            </p>
+            <p className="text-xs text-slate-500 mt-2">
+              This screen will update automatically when the repair is complete.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-amber-600">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500" />
+            <span className="text-sm font-medium">Waiting…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Repair UI (lockStatus === 'mine') ────────────────────────────────────
   return (
     <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl border-2 border-red-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -137,15 +348,15 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
           {repairData.teams.map(teamData => {
             const { teamId, teamName, team } = teamData;
-            const activeSet = workingActive[teamId] || new Set();
-            const teamPls = players.filter(p => p.team_id === teamId);
-            const activePls = teamPls.filter(p => activeSet.has(p.id));
-            const activeCount = activePls.length;
-            const benchPls = teamPls.filter(p => !activeSet.has(p.id));
+            const activeSet     = workingActive[teamId] || new Set();
+            const teamPls       = players.filter(p => p.team_id === teamId);
+            const activePls     = teamPls.filter(p => activeSet.has(p.id));
+            const activeCount   = activePls.length;
+            const benchPls      = teamPls.filter(p => !activeSet.has(p.id));
             const eligibleBench = benchPls.filter(p => isEligible(p.id));
-            const isValid = isTeamValid(teamId);
-            const snapshot = lastValidLineups[teamId];
-            const tooMany = activeCount > 5;
+            const isValid       = isTeamValid(teamId);
+            const snapshot      = lastValidLineups[teamId];
+            const tooMany       = activeCount > 5;
 
             return (
               <div key={teamId} className={`rounded-xl border-2 p-4 transition-all ${isValid ? 'border-green-400 bg-green-50' : 'border-red-300 bg-red-50/30'}`}>
@@ -272,7 +483,7 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
             disabled={!allValid || saving}
             className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-base shadow disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            {saving ? 'Saving Lineup...' : allValid ? 'Confirm Repaired Lineup' : 'Fix Lineup to Continue'}
+            {saving ? 'Saving Lineup…' : allValid ? 'Confirm Repaired Lineup' : 'Fix Lineup to Continue'}
           </Button>
         </div>
       </div>
