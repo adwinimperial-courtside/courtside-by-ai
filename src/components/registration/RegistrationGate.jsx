@@ -121,8 +121,10 @@ export default function RegistrationGate({ user }) {
         applicationData.country = formData.country;
         applicationData.league_id = selectedLeagues[0];
         applicationData.league_ids = selectedLeagues;
-        if (selectedRole === "coach") {
+        if (selectedRole === "coach" || selectedRole === "viewer") {
           if (formData.full_name) applicationData.user_name = formData.full_name;
+        }
+        if (selectedRole === "coach") {
           applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
           applicationData.league_team_pairs = selectedLeagues.map(lid => ({
             league_id: lid,
@@ -260,7 +262,7 @@ export default function RegistrationGate({ user }) {
 
             {(selectedRole === "coach" || selectedRole === "viewer") && (
               <div className="space-y-4">
-                {selectedRole === "coach" && (
+                {(selectedRole === "coach" || selectedRole === "viewer") && (
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
                     <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
