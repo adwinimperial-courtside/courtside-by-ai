@@ -131,9 +131,8 @@ Deno.serve(async (req) => {
         from_name: "Courtside by AI",
       });
 
-      // Mark email as sent and update status to Approved
+      // Mark email as sent — do NOT change status, admin still needs to approve role/league in app
       await base44.asServiceRole.entities.UserApplication.update(app.id, {
-        status: 'Approved',
         approval_email_sent: true,
       });
 
