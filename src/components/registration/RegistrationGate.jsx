@@ -110,6 +110,7 @@ export default function RegistrationGate({ user }) {
       };
 
       if (selectedRole === "league_admin") {
+        if (formData.full_name) applicationData.user_name = formData.full_name;
         Object.assign(applicationData, {
           country: formData.country,
           league_name: formData.league_name,
@@ -235,6 +236,10 @@ export default function RegistrationGate({ user }) {
           <form onSubmit={handleSubmit} className="space-y-4">
             {selectedRole === "league_admin" && (
               <>
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
+                  <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
                   <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
