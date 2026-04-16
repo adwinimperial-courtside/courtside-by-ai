@@ -108,13 +108,19 @@ Deno.serve(async (req) => {
     const application = payload.data || payload.application;
     const eventType = payload.event?.type;
 
-    // Only proceed on update events where status just became Approved
+    // On create: send immediately (user was already approved via Base44 dashboard)
+    // On update: only send when status transitions TO Approved
     if (eventType === 'update') {
       const newStatus = payload.data?.status;
       const oldStatus = payload.old_data?.status;
       if (newStatus !== 'Approved' || oldStatus === 'Approved') {
         return Response.json({ skipped: true, reason: 'Not a new approval' });
       }
+    }
+
+    // Skip if email already sent (prevent double-send)
+    if (application?.approval_email_sent) {
+      return Response.json({ skipped: true, reason: 'Approval email already sent' });
     }
 
     if (!application?.user_email) {
@@ -130,6 +136,13 @@ Deno.serve(async (req) => {
       body: htmlBody,
       from_name: "Courtside by AI",
     });
+
+    // Mark email as sent to prevent double-sending
+    if (application?.id) {
+      await base44.asServiceRole.entities.UserApplication.update(application.id, {
+        approval_email_sent: true,
+      });
+    }
 
     return Response.json({ success: true, sent_to: application.user_email });
   } catch (error) {
