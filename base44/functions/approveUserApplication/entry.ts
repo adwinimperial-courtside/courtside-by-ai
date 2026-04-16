@@ -80,7 +80,10 @@ Deno.serve(async (req) => {
         }
       }
 
-      await base44.asServiceRole.entities.UserApplication.update(applicationId, { status: 'Approved' });
+      await base44.asServiceRole.entities.UserApplication.update(applicationId, {
+        status: 'Approved',
+        approval_email_sent: true,
+      });
 
       // Send approval email directly (automation won't fire on service role updates)
       try {

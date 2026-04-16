@@ -98,6 +98,11 @@
     "current_user_type": {
       "type": "string",
       "description": "The user's current role at time of additional request submission"
+    },
+    "approval_email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if the approval email has been sent to the user"
     }
   },
   "required": [
