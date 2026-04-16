@@ -73,7 +73,7 @@ export default function RegistrationGate({ user }) {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    enabled: selectedRole === "player",
+    enabled: selectedRole === "player" || selectedRole === "coach",
   });
 
   const selectedLeague = selectedLeagues[0] || ""; // kept for backwards compat reference
@@ -92,7 +92,7 @@ export default function RegistrationGate({ user }) {
 
     if (selectedRole !== "league_admin") {
         if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
-        if (selectedRole === "player") {
+        if (selectedRole === "player" || selectedRole === "coach") {
           const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
           if (missingTeam) { alert("Please select a team for each selected league."); return; }
         }
@@ -121,6 +121,14 @@ export default function RegistrationGate({ user }) {
         applicationData.country = formData.country;
         applicationData.league_id = selectedLeagues[0];
         applicationData.league_ids = selectedLeagues;
+        if (selectedRole === "coach") {
+          if (formData.full_name) applicationData.user_name = formData.full_name;
+          applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
+          applicationData.league_team_pairs = selectedLeagues.map(lid => ({
+            league_id: lid,
+            team_id: leagueTeamMap[lid] || "",
+          }));
+        }
         if (selectedRole === "player") {
           applicationData.display_name = formData.display_name;
           applicationData.handle = formData.handle || "";
@@ -252,6 +260,12 @@ export default function RegistrationGate({ user }) {
 
             {(selectedRole === "coach" || selectedRole === "viewer") && (
               <div className="space-y-4">
+                {selectedRole === "coach" && (
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
+                    <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
+                  </div>
+                )}
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
                   <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
@@ -269,6 +283,7 @@ export default function RegistrationGate({ user }) {
                               setSelectedLeagues([...selectedLeagues, l.id]);
                             } else {
                               setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
+                              setLeagueTeamMap(prev => { const next = { ...prev }; delete next[l.id]; return next; });
                             }
                           }}
                           className="w-4 h-4 accent-orange-500"
@@ -281,6 +296,31 @@ export default function RegistrationGate({ user }) {
                     <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
                   )}
                 </div>
+                {selectedRole === "coach" && selectedLeagues.length > 0 && (
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-slate-700 block">Select Team per League *</label>
+                    {selectedLeagues.map(lid => {
+                      const league = leagues.find(l => l.id === lid);
+                      const leagueTeams = teams.filter(t => t.league_id === lid);
+                      return (
+                        <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
+                          <p className="text-xs font-semibold text-slate-600 mb-2">{league?.name} <span className="text-slate-400">({league?.season})</span></p>
+                          <Select
+                            value={leagueTeamMap[lid] || ""}
+                            onValueChange={(val) => setLeagueTeamMap(prev => ({ ...prev, [lid]: val }))}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Choose a team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {leagueTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
