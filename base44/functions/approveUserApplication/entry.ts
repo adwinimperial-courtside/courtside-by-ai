@@ -81,6 +81,21 @@ Deno.serve(async (req) => {
       }
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, { status: 'Approved' });
+
+      // Send approval email directly (automation won't fire on service role updates)
+      try {
+        await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
+          application: {
+            user_email: application.user_email,
+            user_name: application.user_name,
+            status: 'Approved',
+          }
+        });
+      } catch (emailErr) {
+        // Don't fail the approval if email fails
+        console.error('Failed to send approval email:', emailErr.message);
+      }
+
       return Response.json({ success: true, action: 'approved' });
 
     } else if (action === 'reject') {
