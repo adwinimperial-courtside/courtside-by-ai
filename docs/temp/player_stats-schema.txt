@@ -1,0 +1,43 @@
+player_stats TABLE SCHEMA
+=========================
+Source: supabase/migrations/20260415000000_initial_schema.sql (lines 322–349)
+
+create table player_stats (
+  id              uuid primary key default gen_random_uuid(),
+  league_id       uuid not null references leagues(id) on delete cascade,
+  game_id         uuid not null references games(id) on delete cascade,
+  player_id       uuid not null references players(id) on delete cascade,
+  team_id         uuid not null references teams(id),
+  -- scoring
+  points          integer not null default 0,
+  field_goals_made      integer not null default 0,
+  field_goals_attempted integer not null default 0,
+  three_pointers_made      integer not null default 0,
+  three_pointers_attempted integer not null default 0,
+  free_throws_made      integer not null default 0,
+  free_throws_attempted integer not null default 0,
+  -- rebounds
+  offensive_rebounds  integer not null default 0,
+  defensive_rebounds  integer not null default 0,
+  -- other
+  assists         integer not null default 0,
+  steals          integer not null default 0,
+  blocks          integer not null default 0,
+  turnovers       integer not null default 0,
+  fouls           integer not null default 0,
+  minutes_played  numeric(5,2),
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  unique (game_id, player_id)
+);
+
+NOTES
+-----
+- No is_starter column (used by LiveStatTracker and StartingLineup — needs migration)
+- No technical_fouls column (used by LiveStatTracker and EmergencyLineupRepair — needs migration)
+- No unsportsmanlike_fouls column (used by LiveStatTracker and EmergencyLineupRepair — needs migration)
+- No points_2 / points_3 / free_throws columns (used by ScoreHeader score calc — needs migration)
+  (ScoreHeader derives score from: points_2*2 + points_3*3 + free_throws)
+- Column naming mismatch: schema uses field_goals_made/three_pointers_made/free_throws_made
+  but live components reference points_2, points_3, free_throws (Base44 naming)
+- unique constraint on (game_id, player_id) — one row per player per game

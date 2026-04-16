@@ -1,0 +1,27 @@
+MIGRATION 007 RESULT
+====================
+Date: 2026-04-15
+Command: npx supabase db push
+Working directory: /Users/macm5pro/Projects/courtside
+
+OUTPUT:
+-------
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20260415000007_player_stats_live_fields.sql
+
+ [Y/n]
+Applying migration 20260415000007_player_stats_live_fields.sql...
+Finished supabase db push.
+
+RESULT: SUCCESS
+---------------
+Columns added to player_stats:
+  - is_starter            boolean not null default false
+  - points_2              integer not null default 0
+  - points_3              integer not null default 0
+  - free_throws           integer not null default 0
+  - free_throws_missed    integer not null default 0
+  - technical_fouls       integer not null default 0
+  - unsportsmanlike_fouls integer not null default 0

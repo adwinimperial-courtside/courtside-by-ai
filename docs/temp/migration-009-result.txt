@@ -1,0 +1,38 @@
+MIGRATION 009 RESULT
+====================
+Date: 2026-04-16
+Command: npx supabase db push
+Working directory: /Users/macm5pro/Projects/courtside
+
+FIRST ATTEMPT — FAILED
+-----------------------
+ERROR: column "user_type" does not exist (SQLSTATE 42703)
+
+The original RLS policy referenced profiles.user_type and profiles.league_id,
+neither of which exist in the schema. The schema uses get_my_league_role() and
+is_app_admin() helper functions for RLS — consistent with games, player_stats,
+teams, and players tables.
+
+FIX APPLIED
+-----------
+Replaced the single broken policy with 4 correct policies matching the codebase pattern:
+  - game_logs: members can read         (get_my_league_role is not null)
+  - game_logs: league_admin and coach can insert
+  - game_logs: league_admin and coach can update
+  - game_logs: app_admin full access    (is_app_admin())
+Also added: alter table game_logs replica identity full (for Realtime undo support)
+
+SECOND ATTEMPT — SUCCESS
+------------------------
+Applying migration 20260415000009_game_logs_table.sql...
+Finished supabase db push.
+
+TABLE CREATED: game_logs
+Columns: id, game_id, league_id, player_id, team_id, player_stat_id,
+         stat_type, stat_label, stat_points, stat_color,
+         old_value, new_value, old_home_score, old_away_score, undone,
+         clock_time, period, logged_by, device_name,
+         created_at, updated_at
+Indexes:  idx_game_logs_game_id_created, idx_game_logs_undone
+RLS: enabled with 4 policies
+Replica identity: FULL

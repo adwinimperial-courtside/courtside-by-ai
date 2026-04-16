@@ -1,0 +1,93 @@
+GAME_LOGS TABLE SCHEMA CHECK
+=============================
+Date: 2026-04-16
+Search: all files in supabase/migrations/
+
+RESULT: TABLE DOES NOT EXIST
+------------------------------
+There is no CREATE TABLE statement for game_logs (or game_log) in any migration file.
+The table exists only as a Base44 entity (base44.entities.GameLog).
+A new migration is required to create it.
+
+
+COLUMNS REQUESTED — STATUS
+----------------------------
+Column           Requested?   Exists?   Notes
+---------------  ----------   -------   -----
+action_type      YES          NO        Does not exist — see stat_type below (same concept)
+value            YES          NO        Does not exist — see stat_points below (same concept)
+clock_time       YES          NO        Does not exist — needs adding
+period           YES          NO        Does not exist — needs adding
+created_by       YES          NO        Does not exist — see logged_by below (same concept)
+undone           YES          NO        Does not exist — needs adding
+
+
+COLUMNS USED BY LIVE COMPONENTS (from source audit)
+-----------------------------------------------------
+Columns written via base44.entities.GameLog.create() calls in LiveStatTracker.jsx + ScoreHeader.jsx:
+
+  game_id          uuid        -- which game
+  player_id        text/uuid   -- player who caused the event (empty string '' for team events)
+  team_id          uuid        -- which team
+  stat_type        text        -- event type key: '2PT', '3PT', 'FOUL', 'SUB', 'ejection',
+                               --   'timeout', 'substitution', 'technical_foul',
+                               --   'unsportsmanlike_foul', etc.
+  stat_label       text        -- human-readable label (e.g. "2PT — Arto Mäenpää")
+                               --   for substitutions: JSON string with display/out_ids/in_ids
+  stat_points      integer     -- point value of the action (0 for non-scoring events)
+  stat_color       text        -- Tailwind CSS class for activity feed colour coding
+  player_stat_id   uuid        -- references the player_stats row that was updated
+  old_value        integer     -- stat value before this action (for undo)
+  new_value        integer     -- stat value after this action (for undo)
+  old_home_score   integer     -- home score before this action (for undo)
+  old_away_score   integer     -- away score before this action (for undo)
+  logged_by        text        -- email of the admin who entered the action
+  device_name      text        -- device identifier for multi-device tracking
+
+
+MAPPING — REQUESTED vs ACTUAL COLUMN NAMES
+--------------------------------------------
+Requested name    Actual name in components   Notes
+--------------    -------------------------   -----
+action_type       stat_type                   Same concept, different name
+value             stat_points                 Same concept, different name
+clock_time        (missing)                   Not currently stored — needs adding
+period            (missing)                   Not currently stored — needs adding
+created_by        logged_by                   Same concept, different name
+undone            (missing)                   Not currently stored — needs adding
+
+
+RECOMMENDED CREATE TABLE FOR NEW MIGRATION
+-------------------------------------------
+create table game_logs (
+  id               uuid primary key default gen_random_uuid(),
+  game_id          uuid not null references games(id) on delete cascade,
+  league_id        uuid not null references leagues(id) on delete cascade,
+  player_id        uuid references players(id) on delete set null,
+  team_id          uuid references teams(id) on delete set null,
+  player_stat_id   uuid references player_stats(id) on delete set null,
+
+  -- Event type and display
+  stat_type        text not null,         -- '2PT','3PT','FT','FOUL','TECHNICAL','UNSPORTSMANLIKE',
+                                          --   'EJECTION','SUBSTITUTION','TIMEOUT','PERIOD_END'
+  stat_label       text,                  -- human-readable label / JSON for substitutions
+  stat_points      integer not null default 0,
+  stat_color       text,                  -- Tailwind class for activity feed UI
+
+  -- Undo support
+  old_value        integer,               -- stat value before this action
+  new_value        integer,               -- stat value after this action
+  old_home_score   integer,
+  old_away_score   integer,
+  undone           boolean not null default false,
+
+  -- Game context at time of action
+  clock_time       numeric,               -- seconds remaining on clock when action occurred
+  period           integer,               -- which quarter/half
+
+  -- Audit
+  logged_by        text,                  -- email of admin who entered it
+  device_name      text,                  -- device identifier
+
+  created_at       timestamptz not null default now()
+);

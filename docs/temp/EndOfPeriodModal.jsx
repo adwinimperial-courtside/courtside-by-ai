@@ -50,7 +50,7 @@ export default function EndOfPeriodModal({
               Scores are tied <span className="font-bold">{homeScore} – {awayScore}</span>
             </p>
           )}
-
+          
           {isFinalRegulation && !isTied && (
             <p className="text-slate-600 text-base">
               Game Final: <span className="font-bold">{homeScore} – {awayScore}</span>

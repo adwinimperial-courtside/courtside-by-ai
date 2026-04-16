@@ -321,17 +321,6 @@ export default function GameCard({ game, teams, canManage, onStartGame, onGameUp
                   </div>
                 )}
 
-                {game.status === "live" && (
-                  <Button
-                    size="sm"
-                    onClick={onStartGame}
-                    className="bg-orange-500 hover:bg-orange-600 text-white h-8 shadow-orange-500/40 shadow-md"
-                  >
-                    <Play className="w-3.5 h-3.5 mr-1" />
-                    View Live
-                  </Button>
-                )}
-
                 {canManage && (game.status === "final" || game.is_default_result) && (
                   <Button
                     size="sm"

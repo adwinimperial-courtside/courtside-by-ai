@@ -1,11 +1,9 @@
 import React, { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabaseClient";
+import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2, RotateCcw, UserMinus, UserPlus } from "lucide-react";
 
 export default function EmergencyLineupRepair({ repairData, existingStats, players, game, lastValidLineups, onComplete }) {
-  const queryClient = useQueryClient();
   const [workingActive, setWorkingActive] = useState(() => {
     const map = {};
     repairData.teams.forEach(t => {
@@ -13,6 +11,7 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
     });
     return map;
   });
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const limits = {
@@ -69,52 +68,41 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
     setWorkingActive(prev => ({ ...prev, [teamId]: new Set(snapshot.playerIds) }));
   };
 
-  const { mutate: confirmRepair, isPending: saving } = useMutation({
-    mutationFn: async () => {
+  const handleConfirm = async () => {
+    setSaving(true);
+    setError('');
+    try {
       for (const teamData of repairData.teams) {
         const { teamId } = teamData;
         const activeSet = workingActive[teamId] || new Set();
         const teamStats = existingStats.filter(s => s.team_id === teamId);
 
-        // Update is_starter for rows whose status changed
         for (const stat of teamStats) {
           const shouldBeActive = activeSet.has(stat.player_id);
           if (stat.is_starter !== shouldBeActive) {
-            const { error } = await supabase
-              .from('player_stats')
-              .update({ is_starter: shouldBeActive })
-              .eq('id', stat.id);
-            if (error) throw error;
+            await base44.entities.PlayerStats.update(stat.id, { is_starter: shouldBeActive });
           }
         }
 
-        // Insert new player_stats for players in activeSet with no existing row
         const existingPlayerIds = teamStats.map(s => s.player_id);
-        const newRecords = [...activeSet]
-          .filter(playerId => !existingPlayerIds.includes(playerId))
-          .map(playerId => ({
-            game_id: game.id,
-            league_id: game.league_id,
-            player_id: playerId,
-            team_id: teamId,
-            is_starter: true,
-            minutes_played: 0,
-          }));
-
-        if (newRecords.length > 0) {
-          const { error } = await supabase.from('player_stats').insert(newRecords);
-          if (error) throw error;
+        for (const playerId of [...activeSet]) {
+          if (!existingPlayerIds.includes(playerId)) {
+            await base44.entities.PlayerStats.create({
+              game_id: game.id,
+              player_id: playerId,
+              team_id: teamId,
+              is_starter: true,
+              minutes_played: 0,
+            });
+          }
         }
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['player_stats', game.id] });
       onComplete();
-    },
-    onError: () => {
+    } catch(e) {
       setError('Failed to save lineup. Please try again.');
-    },
-  });
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
@@ -268,7 +256,7 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
         {/* Footer */}
         <div className="px-4 pb-4 pt-3 border-t border-slate-100 flex-shrink-0">
           <Button
-            onClick={() => confirmRepair()}
+            onClick={handleConfirm}
             disabled={!allValid || saving}
             className="w-full h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-base shadow disabled:opacity-40 disabled:cursor-not-allowed"
           >

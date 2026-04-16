@@ -1,0 +1,25 @@
+MIGRATION 008 RESULT
+====================
+Date: 2026-04-15
+Command: npx supabase db push
+Working directory: /Users/macm5pro/Projects/courtside
+
+OUTPUT:
+-------
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20260415000008_players_name_column.sql
+
+ [Y/n]
+Applying migration 20260415000008_players_name_column.sql...
+Finished supabase db push.
+
+RESULT: SUCCESS
+---------------
+Added to players table:
+  - name  text  generated always as (first_name || ' ' || last_name) stored
+  - idx_players_name index created
+
+player.name is now available for all live game components.
+Existing rows populated automatically from existing first_name/last_name data.

@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Play, Pause, Trophy } from "lucide-react";
-import { supabase } from "@/lib/supabaseClient";
+import { base44 } from "@/api/base44Client";
 
 function getPeriodLabel(period, periodType) {
   const totalRegulation = periodType === "halves" ? 2 : 4;
@@ -50,8 +49,6 @@ function getFoulResetPeriodKey(period, periodType, totalPeriods) {
 }
 
 export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, onEndGame, lineupBlocked = false, playerStats = [] }) {
-  const queryClient = useQueryClient();
-
   const calcScore = (teamId) => playerStats.reduce((acc, s) =>
     s.team_id === teamId ? acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0) : acc, 0);
   const derivedHomeScore = playerStats.length > 0 ? calcScore(game.home_team_id) : (game.home_score || 0);
@@ -65,60 +62,22 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     setPossession(game.possession || null);
   }, [game.possession, game.clock_running, game.clock_started_at, game.clock_time_left, game.clock_period, game.home_score, game.away_score, game.home_team_fouls, game.away_team_fouls]);
 
-  // Each ScoreHeader instance gets a stable random ID so its Supabase channel
-  // name is unique even when multiple instances share the same game.id (e.g.
-  // the mobile and desktop layouts both mounted at the same time in
-  // LiveStatTracker). Without this, both instances call supabase.channel() with
-  // the identical topic string; Supabase's registry deduplicates by topic and
-  // returns the already-SUBSCRIBED channel to the second instance, causing
-  // "cannot add postgres_changes callbacks after subscribe()".
-  //
-  // The channelRef guard stops React StrictMode's cleanup → re-run cycle from
-  // calling .on() a second time on the same object. The guard works here because
-  // the cleanup only nulls the ref AFTER the channel has been fully torn down;
-  // on the StrictMode re-run the unique name guarantees supabase.channel()
-  // returns a fresh CLOSED object anyway, so .on() succeeds regardless.
-  const scoreHeaderInstanceId = useRef(
-    `${Math.random().toString(36).slice(2, 8)}`
-  );
-  const scoreHeaderChannelRef = useRef(null);
+  // Subscribe to real-time game updates
   useEffect(() => {
     if (!game?.id) return;
-    if (scoreHeaderChannelRef.current) return; // guard: already subscribed this instance
-
-    const channel = supabase
-      .channel(`score-header-game-${game.id}-${scoreHeaderInstanceId.current}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'games', filter: `id=eq.${game.id}` },
-        (payload) => {
-          if (payload.new) {
-            setLocalGame(payload.new);
-            queryClient.setQueryData(['game', game.id], payload.new);
-          }
-        }
-      )
-      .subscribe();
-
-    scoreHeaderChannelRef.current = channel;
-
-    return () => {
-      if (scoreHeaderChannelRef.current) {
-        scoreHeaderChannelRef.current.unsubscribe();
-        supabase.removeChannel(scoreHeaderChannelRef.current);
-        scoreHeaderChannelRef.current = null;
+    const unsubscribe = base44.entities.Game.subscribe((event) => {
+      if (event.id === game.id) {
+        setLocalGame(event.data);
       }
-    };
+    });
+    return () => unsubscribe();
   }, [game?.id]);
 
   const handleSetPossession = async (team) => {
     setPossession(team);
     setShowPossessionPicker(false);
-    const { error } = await supabase
-      .from('games')
-      .update({ possession: team })
-      .eq('id', localGame.id);
-    if (!error && onGameUpdate) onGameUpdate({ ...localGame, possession: team });
+    await base44.entities.Game.update(localGame.id, { possession: team });
+    if (onGameUpdate) onGameUpdate({ ...localGame, possession: team });
   };
 
   const handleSwitchPossession = async () => {
@@ -128,13 +87,9 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     }
     const next = possession === 'home' ? 'away' : 'home';
     setPossession(next);
-    const { error } = await supabase
-      .from('games')
-      .update({ possession: next })
-      .eq('id', localGame.id);
-    if (!error && onGameUpdate) onGameUpdate({ ...localGame, possession: next });
+    await base44.entities.Game.update(localGame.id, { possession: next });
+    if (onGameUpdate) onGameUpdate({ ...localGame, possession: next });
   };
-
   // ── Team Fouls state ─────────────────────────────────────────────
   const gameRules = { ...DEFAULT_GAME_RULES, ...(localGame.game_rules || {}) };
   const [homeTeamFouls, setHomeTeamFouls] = useState(() => localGame.home_team_fouls || {});
@@ -209,11 +164,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
               clock_started_at: null,
               period_status: 'completed',
             };
-            const { error } = await supabase
-              .from('games')
-              .update(updates)
-              .eq('id', localGame.id);
-            if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+            await base44.entities.Game.update(localGame.id, updates);
+            if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
           } finally {
             isSaving.current = false;
           }
@@ -246,11 +198,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: null,
           period_status: 'active',
         };
-        const { error } = await supabase
-          .from('games')
-          .update(updates)
-          .eq('id', localGame.id);
-        if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+        await base44.entities.Game.update(localGame.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
       } finally {
         isSaving.current = false;
       }
@@ -272,11 +221,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
           clock_started_at: new Date().toISOString(),
           period_status: 'active',
         };
-        const { error } = await supabase
-          .from('games')
-          .update(updates)
-          .eq('id', localGame.id);
-        if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+        await base44.entities.Game.update(localGame.id, updates);
+        if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
       } finally {
         isSaving.current = false;
       }
@@ -309,11 +255,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
       }
       // Optimistically update local state immediately so mobile UI responds instantly
       setLocalGame(prev => ({ ...prev, ...updates }));
-      const { error } = await supabase
-        .from('games')
-        .update(updates)
-        .eq('id', localGame.id);
-      if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       clearTimeout(safetyTimeout);
       isSaving.current = false;
@@ -334,11 +277,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         clock_running: false,
         clock_started_at: null,
       };
-      const { error } = await supabase
-        .from('games')
-        .update(updates)
-        .eq('id', localGame.id);
-      if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       isSaving.current = false;
     }
@@ -357,11 +297,8 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
         clock_running: false,
         clock_started_at: null,
       };
-      const { error } = await supabase
-        .from('games')
-        .update(updates)
-        .eq('id', localGame.id);
-      if (!error && onGameUpdate) onGameUpdate({ ...localGame, ...updates });
+      await base44.entities.Game.update(localGame.id, updates);
+      if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
     } finally {
       isSaving.current = false;
     }
@@ -435,35 +372,27 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
       const currentTimeLeft = computeTimeLeft(localGame);
       const newSegMap = { ...(localGame[timeoutsKey] || {}), [segmentKey]: usedCount + 1 };
       const updates = { [timeoutsKey]: newSegMap };
-      // Stop clock on timeout
+      // Reuse existing stop-clock logic
       if (running) {
         updates.clock_running = false;
         updates.clock_time_left = Math.max(0, Math.round(currentTimeLeft));
         updates.clock_started_at = null;
       }
       setLocalGame(prev => ({ ...prev, ...updates }));
-      const { error: gameError } = await supabase
-        .from('games')
-        .update(updates)
-        .eq('id', localGame.id);
-      if (gameError) throw gameError;
+      await base44.entities.Game.update(localGame.id, updates);
       setUsed(newSegMap);
       if (onGameUpdate) onGameUpdate({ ...localGame, ...updates });
-      // Log the timeout event
-      await supabase
-        .from('game_logs')
-        .insert({
-          game_id: localGame.id,
-          league_id: localGame.league_id,
-          player_id: null,
-          team_id: teamId,
-          stat_type: 'timeout',
-          stat_label: `Timeout – ${teamName}`,
-          stat_points: 0,
-          stat_color: 'bg-amber-500',
-          old_home_score: localGame.home_score || 0,
-          old_away_score: localGame.away_score || 0,
-        });
+      await base44.entities.GameLog.create({
+        game_id: localGame.id,
+        player_id: '',
+        team_id: teamId,
+        stat_type: 'timeout',
+        stat_label: `Timeout – ${teamName}`,
+        stat_points: 0,
+        stat_color: 'bg-amber-500',
+        old_home_score: localGame.home_score || 0,
+        old_away_score: localGame.away_score || 0,
+      });
     } finally {
       isSaving.current = false;
     }
@@ -609,7 +538,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                        {running ? 'LIVE' : 'DEAD BALL'}
                      </span>
                    </div>
-                 )}
+                 )} 
 
                 {/* Clock + period */}
                 <div className="flex items-baseline gap-3 mb-3">

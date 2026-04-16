@@ -1,0 +1,53 @@
+PLAYERS CHECK — Jyväskylä Jets & Turku Lynx
+============================================
+Date: 2026-04-15
+Query: select id, first_name, last_name, jersey_number, position, team_id
+       from players where team_id in (select id from teams where name in ('Jyväskylä Jets', 'Turku Lynx'))
+       order by team_id, jersey_number limit 30;
+
+NOTE: players table uses first_name + last_name (no single name column)
+
+─────────────────────────────────────────────────────────
+TEAM: team_id = b1000000-0000-0000-0000-000000000004  (Jyväskylä Jets — 12 players)
+─────────────────────────────────────────────────────────
+#  4  Arto Mäenpää       PG  id: 17ccb29a-f551-4fb8-ad3d-0ec76bbc1712
+# 10  Jukka Toivola      SG  id: 7c85bae7-05dd-485e-8ac5-43be0e8fba98
+# 16  Pertti Lappalainen SF  id: 093ed3af-cdb6-4f89-9fc9-5f5297e697ed
+# 17  Ossi Kangas        PF  id: 56711c21-8169-4020-be96-29f9df2507d4
+# 28  Unto Hietala       C   id: 1ef1763a-65ca-4d2b-8ff2-f923a1133a3d
+# 30  Aarne Salminen     PG  id: 0ff95634-faa2-4902-8a67-59e7ec8a9977
+# 36  Niilo Kärkkäinen   SG  id: 9a57e9f6-9ab7-4261-9331-e0428bc03288
+# 37  Kalevi Isotalo     PF  id: 04424ad9-1bbd-4a67-8dfc-e9c2baa477ed
+# 43  Marko Uusitalo     C   id: 3574e435-dac6-4858-92d3-5ed07ccfc76e
+# 46  Brandon Hayes      SF  id: 68af6d74-5037-41fc-b16d-309fdf7adbb8
+# 48  Tuomas Jaakkola    PG  id: fbda85e0-f6f9-4833-bc2b-aba66a0f14a5
+# 56  Pentti Hyppönen    C   id: 2fb257c9-c0fa-4bf6-b616-3f8e61246c94
+
+─────────────────────────────────────────────────────────
+TEAM: team_id = b1000000-0000-0000-0000-000000000006  (Turku Lynx — 12 players)
+─────────────────────────────────────────────────────────
+#  1  Topias Heikkinen   PG  id: 8b1779f1-59ef-470a-b29b-10af3b650062
+#  6  Matias Korhonen    SG  id: 62ba42c9-a41d-447b-966b-25c78ad46ae3
+# 10  Rasmus Niemi       SF  id: 0d5f55fb-fb29-4558-8e4c-58ba75f9f81a
+# 19  Onni Mäkinen       PF  id: 6316208d-a769-4584-9cfa-0915bf789d70
+# 26  Santeri Koskela    C   id: 4fd7d02b-34e6-4f76-9ce8-efc5fc504cd1
+# 32  Elias Seppälä      PG  id: 675b56ba-be1f-4906-8606-1240ca8f3b7a
+# 35  Valtteri Laine     SG  id: fa071454-078e-4e7e-b611-ebd42591fa66
+# 41  Iiro Hakkarainen   SF  id: c3c42497-8a02-4ac3-a606-d1accc37ed21
+# 43  Otto Pesonen       PF  id: 4ff1144f-96b5-43a1-bb95-57105eea142d
+# 50  Kevon Thomas       C   id: f1d697a4-83c2-4ddc-8907-317351cfd3b2
+# 53  Juuso Mikkola      SF  id: f2c4c786-68b3-4cd2-9704-38a129aaf525
+# 58  Mikael Björk       PG  id: f500ff19-4d25-48e6-9e51-0cbd3bfb7a4c
+
+─────────────────────────────────────────────────────────
+SCHEMA NOTE
+─────────────────────────────────────────────────────────
+The players table has NO single 'name' column.
+Columns are: first_name + last_name (separate).
+
+The live components (StartingLineup, EmergencyLineupRepair, LiveStatTracker)
+reference player.name — this will need to be addressed.
+Options:
+  A) Add a generated column: name text generated always as (first_name || ' ' || last_name) stored
+  B) Update all live components to use `${player.first_name} ${player.last_name}`
+  C) Add a migration: alter table players add column name text generated always as (first_name || ' ' || last_name) stored;

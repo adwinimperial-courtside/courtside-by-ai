@@ -1,0 +1,22 @@
+MIGRATION 006 RESULT
+====================
+Date: 2026-04-15
+Command: npx supabase db push
+Working directory: /Users/macm5pro/Projects/courtside
+
+OUTPUT:
+-------
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20260415000006_replica_identity_full.sql
+
+ [Y/n]
+Applying migration 20260415000006_replica_identity_full.sql...
+Finished supabase db push.
+
+RESULT: SUCCESS
+---------------
+REPLICA IDENTITY FULL enabled on:
+  - games        (UPDATE/DELETE payload.old now includes full row)
+  - player_stats (UPDATE/DELETE payload.old now includes full row — undo system ready)

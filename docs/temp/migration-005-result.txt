@@ -1,0 +1,21 @@
+MIGRATION 005 RESULT
+====================
+Date: 2026-04-15
+Command: npx supabase db push
+Working directory: /Users/macm5pro/Projects/courtside
+
+OUTPUT:
+-------
+Initialising login role...
+Connecting to remote database...
+Do you want to push these migrations to the remote database?
+ • 20260415000005_game_live_fields.sql
+
+ [Y/n]
+Applying migration 20260415000005_game_live_fields.sql...
+Finished supabase db push.
+
+RESULT: SUCCESS
+---------------
+Migration 20260415000005_game_live_fields.sql applied successfully.
+All 13 live game state columns are now present on the games table.

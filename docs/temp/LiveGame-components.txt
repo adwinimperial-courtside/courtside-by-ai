@@ -1,0 +1,13 @@
+Components imported by src/pages/LiveGame.jsx
+==============================================
+
+Local component imports:
+  ../components/live/StartingLineup
+  ../components/live/LiveStatTracker
+
+UI/library imports:
+  @/components/ui/button
+  @tanstack/react-query
+  react-router-dom
+  @/api/base44Client
+  @/utils
