@@ -89,9 +89,11 @@ Deno.serve(async (req) => {
       try {
         await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
           application: {
+            id: application.id,
             user_email: application.user_email,
             user_name: application.user_name,
             status: 'Approved',
+            approval_email_sent: false,
           }
         });
       } catch (emailErr) {

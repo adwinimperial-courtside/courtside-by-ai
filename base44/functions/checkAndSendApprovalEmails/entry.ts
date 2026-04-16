@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
 
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: emailTo,
-        subject: "Your Courtside by AI access has been approved 🎉",
+        subject: "Welcome to Courtside by AI — built for everyone in the game 🏀",
         body: buildEmailHtml(firstName),
         from_name: "Courtside by AI",
       });

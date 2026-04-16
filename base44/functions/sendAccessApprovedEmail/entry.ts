@@ -9,7 +9,7 @@ function buildEmailHtml(firstName) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Your Courtside by AI Access Has Been Approved</title>
+  <title>Welcome to Courtside by AI</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 0;">
@@ -24,10 +24,10 @@ function buildEmailHtml(firstName) {
             </td>
           </tr>
 
-          <!-- Green approved banner -->
+          <!-- Banner -->
           <tr>
             <td style="background-color:#f97316;padding:18px 40px;text-align:center;">
-              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px;">🎉 Your access has been approved!</p>
+              <p style="margin:0;color:#ffffff;font-size:18px;font-weight:700;letter-spacing:0.5px;">Welcome to Courtside by AI 🏀</p>
             </td>
           </tr>
 
@@ -37,34 +37,66 @@ function buildEmailHtml(firstName) {
               <p style="margin:0 0 20px 0;font-size:16px;color:#1a2340;font-weight:600;">${greeting}</p>
 
               <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
-                Great news — your access request for <strong>Courtside by AI</strong> has been approved.
+                Your access to <strong>Courtside by AI</strong> has been approved, and you can now log in at <a href="https://www.courtside-by-ai.com" style="color:#f97316;font-weight:600;text-decoration:none;">www.courtside-by-ai.com</a> using your approved account.
               </p>
 
-              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
-                Welcome to the platform. We're excited to have you join a growing basketball community that uses Courtside by AI for <strong>live stats</strong>, <strong>league management</strong>, <strong>automated awards</strong>, and a more professional game experience.
+              <p style="margin:0 0 24px 0;font-size:15px;color:#444;line-height:1.7;">
+                Welcome to a smarter basketball league experience.
               </p>
 
-              <!-- Next step box -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0;">
+              <p style="margin:0 0 20px 0;font-size:15px;color:#444;line-height:1.7;">
+                Courtside by AI is built to help leagues run more professionally, make games more engaging, and give every type of user a better experience — from organizers and coaches to players and viewers.
+              </p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#1a2340;font-weight:700;">Here's what Courtside by AI brings to the game:</p>
+
+              <!-- Role sections -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
                 <tr>
-                  <td style="background-color:#f8f9fc;border-left:4px solid #f97316;border-radius:6px;padding:20px 24px;">
-                    <p style="margin:0 0 12px 0;font-size:15px;font-weight:700;color:#1a2340;">Your next step</p>
-                    <p style="margin:0 0 12px 0;font-size:14px;color:#444;line-height:1.6;">
-                      Please log in now at <a href="https://www.courtside-by-ai.com" style="color:#f97316;font-weight:600;text-decoration:none;">www.courtside-by-ai.com</a> and complete your setup by selecting:
-                    </p>
-                    <ul style="margin:0;padding-left:20px;font-size:14px;color:#444;line-height:2;">
-                      <li>Your <strong>role</strong></li>
-                      <li>Your <strong>league</strong></li>
-                    </ul>
-                    <p style="margin:12px 0 0 0;font-size:14px;color:#444;line-height:1.6;">
-                      Once that is done, you'll be ready to access the right features for your account.
-                    </p>
+                  <td style="background-color:#f8f9fc;border-left:4px solid #f97316;border-radius:6px;padding:16px 20px;margin-bottom:12px;">
+                    <p style="margin:0 0 6px 0;font-size:15px;font-weight:700;color:#1a2340;">🏆 For League Organizers</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">Run your league with more structure through live stats, schedules, standings, game management, and automated awards that help bring more credibility and excitement to the competition.</p>
                   </td>
                 </tr>
               </table>
 
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td style="background-color:#f8f9fc;border-left:4px solid #1a2340;border-radius:6px;padding:16px 20px;">
+                    <p style="margin:0 0 6px 0;font-size:15px;font-weight:700;color:#1a2340;">🧠 For Coaches</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">Use Coach Insights and coaching tools to better understand team performance, study trends, and prepare more effectively for every game.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td style="background-color:#f8f9fc;border-left:4px solid #f97316;border-radius:6px;padding:16px 20px;">
+                    <p style="margin:0 0 6px 0;font-size:15px;font-weight:700;color:#1a2340;">🔥 For Players</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">Build your presence through player profiles, track your performance through live stats, and earn badges and recognition that highlight your impact on the court.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
+                <tr>
+                  <td style="background-color:#f8f9fc;border-left:4px solid #1a2340;border-radius:6px;padding:16px 20px;">
+                    <p style="margin:0 0 6px 0;font-size:15px;font-weight:700;color:#1a2340;">👀 For Viewers</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.6;">Follow the action more closely with access to schedules, standings, game results, and live stats that make every league feel more connected and professional.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                Courtside by AI is more than a scoreboard. It is a platform designed to elevate the entire basketball experience.
+              </p>
+
+              <p style="margin:0 0 28px 0;font-size:15px;color:#444;line-height:1.7;">
+                Your access is now ready, and we're excited for you to explore what the platform can do.
+              </p>
+
               <!-- CTA Button -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 28px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px 0;">
                 <tr>
                   <td align="center">
                     <a href="https://www.courtside-by-ai.com" style="display:inline-block;background-color:#f97316;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;padding:14px 36px;border-radius:8px;letter-spacing:0.3px;">
@@ -74,8 +106,11 @@ function buildEmailHtml(firstName) {
                 </tr>
               </table>
 
-              <p style="margin:0 0 4px 0;font-size:15px;color:#444;line-height:1.7;">
-                We're glad to have you on board and can't wait for you to experience what Courtside by AI can do for your league.
+              <p style="margin:0 0 4px 0;font-size:15px;color:#444;line-height:1.7;">Welcome to Courtside by AI.</p>
+              <p style="margin:16px 0 0 0;font-size:14px;color:#444;line-height:1.7;">
+                Best,<br/>
+                <strong>Courtside by AI</strong><br/>
+                <span style="color:#888;">Basketball League Intelligence</span>
               </p>
             </td>
           </tr>
@@ -132,7 +167,7 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: application.user_email,
-      subject: "Your Courtside by AI access has been approved 🎉",
+      subject: "Welcome to Courtside by AI — built for everyone in the game 🏀",
       body: htmlBody,
       from_name: "Courtside by AI",
     });
