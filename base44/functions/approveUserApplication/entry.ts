@@ -104,9 +104,14 @@ Deno.serve(async (req) => {
       return Response.json({ success: true, action: 'approved' });
 
     } else if (action === 'reject') {
-      await base44.asServiceRole.entities.User.update(application.user_id, {
-        application_status: 'Rejected',
-      });
+      try {
+        await base44.asServiceRole.entities.User.update(application.user_id, {
+          application_status: 'Rejected',
+        });
+      } catch (err) {
+        // User may not exist yet in the system — that's fine, just update the application
+        console.warn('Could not update user record on reject (user may not exist yet):', err.message);
+      }
 
       await base44.asServiceRole.entities.UserApplication.update(applicationId, {
         status: 'Rejected',
