@@ -38,15 +38,12 @@ const ROLE_OPTIONS = [
 ];
 
 const AppLogo = () => (
-  <div className="flex items-center justify-center gap-3 mb-2">
-    <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
-      <img
-        src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/e9055e629_Courtside_by_AI_upper_right_logo.png"
-        alt="Courtside by AI"
-        className="w-full h-full object-cover"
-      />
-    </div>
-    <span className="text-2xl font-bold text-slate-900">Courtside by AI</span>
+  <div className="flex items-center justify-center mb-2">
+    <img
+      src="https://media.base44.com/images/public/68fa0e7f8bbf24ed563563de/a6f36183f_CourtSidebyAILOGOTransparent.png"
+      alt="Courtside by AI"
+      className="h-24 w-auto"
+    />
   </div>
 );
 
