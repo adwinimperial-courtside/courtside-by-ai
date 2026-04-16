@@ -427,7 +427,7 @@ export default function EnhancedUserManagement() {
                       onClick={async () => {
                         setSendingEmailTo(user.id);
                         try {
-                          await base44.functions.invoke('sendAccessApprovedEmail', { email: user.email, name: user.full_name });
+                          await base44.functions.invoke('sendAccessApprovedEmail', { application: { user_email: user.email, user_name: user.full_name } });
                           setEmailSentTo(prev => new Set([...prev, user.id]));
                           alert(`Email sent to ${user.email}`);
                         } catch (e) {
