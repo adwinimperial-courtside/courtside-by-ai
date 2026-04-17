@@ -147,15 +147,13 @@ export default function EnhancedUserManagement() {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
 
-    // Build per-league role map from approved applications
+    // Build per-league role map: applications first, then ULI overrides (reflects admin edits)
     const approvedApps = userApplications.filter(a => a.user_id === user.id && a.status === "Approved");
     const leagueRoleMap = {};
     approvedApps.forEach(app => {
       const leagueIds = app.league_ids?.length > 0 ? app.league_ids : app.league_id ? [app.league_id] : [];
       leagueIds.forEach(lid => { leagueRoleMap[lid] = app.requested_role; });
     });
-
-    // Also pull from UserLeagueIdentity records if they have a role set
     userLeagueIdentities.filter(uli => uli.user_id === user.id && uli.role).forEach(uli => {
       leagueRoleMap[uli.league_id] = uli.role;
     });
@@ -465,23 +463,18 @@ export default function EnhancedUserManagement() {
           </div>
           <div className="space-y-2">
             {filteredUsers.map((user) => {
-              // Get approved applications for this user — each may have a different role + league(s)
-              const approvedApps = userApplications.filter(
-                a => a.user_id === user.id && a.status === "Approved"
-              );
-
-              // Build a map of leagueId -> role from approved applications
+              // Build leagueId -> role map: start from approved applications, then override with UserLeagueIdentity (which reflects admin edits)
+              const approvedApps = userApplications.filter(a => a.user_id === user.id && a.status === "Approved");
               const leagueRoleMap = {};
               approvedApps.forEach(app => {
-                const leagueIds = app.league_ids?.length > 0
-                  ? app.league_ids
-                  : app.league_id ? [app.league_id] : [];
-                leagueIds.forEach(lid => {
-                  leagueRoleMap[lid] = app.requested_role;
-                });
+                const leagueIds = app.league_ids?.length > 0 ? app.league_ids : app.league_id ? [app.league_id] : [];
+                leagueIds.forEach(lid => { leagueRoleMap[lid] = app.requested_role; });
+              });
+              // UserLeagueIdentity roles override application roles (set by admin)
+              userLeagueIdentities.filter(uli => uli.user_id === user.id && uli.role).forEach(uli => {
+                leagueRoleMap[uli.league_id] = uli.role;
               });
 
-              // Build per-league role entries
               const assignedLeagueIds = user.assigned_league_ids || [];
               const leagueRoleEntries = assignedLeagueIds.map(id => ({
                 league: leagues.find(l => l.id === id),
