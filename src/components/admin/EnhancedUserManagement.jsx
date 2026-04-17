@@ -64,6 +64,11 @@ export default function EnhancedUserManagement() {
     queryFn: () => base44.entities.UserApplication.list(),
   });
 
+  const { data: teams = [] } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => base44.entities.Team.list(),
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async (data) => {
       // Update core user fields
@@ -476,10 +481,16 @@ export default function EnhancedUserManagement() {
               });
 
               const assignedLeagueIds = user.assigned_league_ids || [];
-              const leagueRoleEntries = assignedLeagueIds.map(id => ({
-                league: leagues.find(l => l.id === id),
-                role: leagueRoleMap[id] || user.user_type,
-              })).filter(e => e.league);
+              const leagueRoleEntries = assignedLeagueIds.map(id => {
+                const uli = userLeagueIdentities.find(u => u.user_id === user.id && u.league_id === id);
+                const teamId = uli?.team_id || (user.league_team_pairs?.find(p => p.league_id === id)?.team_id);
+                return {
+                  league: leagues.find(l => l.id === id),
+                  role: leagueRoleMap[id] || user.user_type,
+                  playerName: uli?.matched_player_name || null,
+                  team: teams.find(t => t.id === teamId) || null,
+                };
+              }).filter(e => e.league);
 
               return (<div
                   key={user.id}
@@ -513,6 +524,14 @@ export default function EnhancedUserManagement() {
                               {entry.league.name}
                               {entry.league.season ? ` (${entry.league.season})` : ""}
                             </span>
+                            {entry.role === "player" && entry.playerName && (
+                              <span className="text-xs text-slate-500">· {entry.playerName}</span>
+                            )}
+                            {entry.role === "player" && entry.team && (
+                              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium">
+                                {entry.team.name}
+                              </span>
+                            )}
                           </div>
                         )) : (
                           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
