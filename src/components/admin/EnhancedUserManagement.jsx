@@ -54,6 +54,16 @@ export default function EnhancedUserManagement() {
     queryFn: () => base44.entities.League.list(),
   });
 
+  const { data: userLeagueIdentities = [] } = useQuery({
+    queryKey: ["userLeagueIdentities"],
+    queryFn: () => base44.entities.UserLeagueIdentity.list(),
+  });
+
+  const { data: userApplications = [] } = useQuery({
+    queryKey: ["allUserApplications"],
+    queryFn: () => base44.entities.UserApplication.list(),
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: (data) =>
       base44.entities.User.update(selectedUser.id, {
@@ -388,12 +398,30 @@ export default function EnhancedUserManagement() {
           </div>
           <div className="space-y-2">
             {filteredUsers.map((user) => {
-              const assignedLeagueNames = (user.assigned_league_ids || [])
-                .map(id => leagues.find(l => l.id === id)?.name)
-                .filter(Boolean);
-              const defaultLeague = leagues.find(l => l.id === user.default_league_id);
-              return (
-                <div
+              // Get approved applications for this user — each may have a different role + league(s)
+              const approvedApps = userApplications.filter(
+                a => a.user_id === user.id && a.status === "Approved"
+              );
+
+              // Build a map of leagueId -> role from approved applications
+              const leagueRoleMap = {};
+              approvedApps.forEach(app => {
+                const leagueIds = app.league_ids?.length > 0
+                  ? app.league_ids
+                  : app.league_id ? [app.league_id] : [];
+                leagueIds.forEach(lid => {
+                  leagueRoleMap[lid] = app.requested_role;
+                });
+              });
+
+              // Build per-league role entries
+              const assignedLeagueIds = user.assigned_league_ids || [];
+              const leagueRoleEntries = assignedLeagueIds.map(id => ({
+                league: leagues.find(l => l.id === id),
+                role: leagueRoleMap[id] || user.user_type,
+              })).filter(e => e.league);
+
+              return (<div
                   key={user.id}
                   className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors gap-3"
                 >
@@ -401,22 +429,38 @@ export default function EnhancedUserManagement() {
                     <div className="font-semibold text-slate-900 truncate">{user.full_name || "—"}</div>
                     <div className="text-sm text-slate-500 truncate">{user.email}</div>
                     <div className="text-xs text-slate-400 mt-1">Created {format(new Date(user.created_date), "MMM dd, yyyy 'at' h:mm a")}</div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
-                        {userTypeIcon(user.user_type)}
-                        {user.user_type || "viewer"}
-                      </span>
-                      {assignedLeagueNames.length > 0 && (
-                        <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
-                          {assignedLeagueNames.length === 1 ? assignedLeagueNames[0] : `${assignedLeagueNames.length} leagues`}
+
+                    {/* Global role badge for app_admin / league_admin */}
+                    {(user.user_type === "app_admin" || user.user_type === "league_admin") && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
+                          {userTypeIcon(user.user_type)}
+                          {user.user_type}
                         </span>
-                      )}
-                      {defaultLeague && (
-                        <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 font-medium">
-                          Default: {defaultLeague.name}
-                        </span>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {/* Per-league role badges for players/coaches/viewers */}
+                    {user.user_type !== "app_admin" && user.user_type !== "league_admin" && (
+                      <div className="flex flex-col gap-1 mt-2">
+                        {leagueRoleEntries.length > 0 ? leagueRoleEntries.map((entry, i) => (
+                          <div key={i} className="flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(entry.role)}`}>
+                              {entry.role || "viewer"}
+                            </span>
+                            <span className="text-xs text-slate-500">@</span>
+                            <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                              {entry.league.name}
+                              {entry.league.season ? ` (${entry.league.season})` : ""}
+                            </span>
+                          </div>
+                        )) : (
+                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
+                            {user.user_type || "viewer"} · no league assigned
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </button>
                   <div className="flex gap-1 shrink-0">
                     <Button
