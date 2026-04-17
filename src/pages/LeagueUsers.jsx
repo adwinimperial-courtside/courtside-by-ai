@@ -20,7 +20,7 @@ const ROLE_LABELS = {
   viewer: "Viewer",
 };
 
-function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [] }) {
+function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [], selectedLeague }) {
   const [expanded, setExpanded] = useState(false);
 
   // Get this user's league identities filtered to leagues the admin manages
@@ -32,8 +32,25 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
     return { league, leagueId: lid };
   });
 
+  // Determine the effective role: use per-league role from ULI when a specific league is selected,
+  // otherwise use the most "specific" role across all relevant leagues (prefer player/coach over viewer)
+  const getEffectiveRole = () => {
+    if (selectedLeague && selectedLeague !== "all") {
+      const uli = userLeagueIdentities.find(u => u.league_id === selectedLeague && u.role);
+      return uli?.role || user.user_type;
+    }
+    // No league filter: find most specific role across all identities
+    const rolePriority = ["league_admin", "coach", "player", "viewer"];
+    const roles = userLeagueIdentities.filter(u => u.role).map(u => u.role);
+    for (const r of rolePriority) {
+      if (roles.includes(r)) return r;
+    }
+    return user.user_type;
+  };
+  const effectiveRole = getEffectiveRole();
+
   // For players: find their primary matched player name and team
-  const isPlayer = user.user_type === "player";
+  const isPlayer = effectiveRole === "player";
   const primaryIdentity = userLeagueIdentities.find(uli => uli.matched_player_name);
   const playerDisplayName = primaryIdentity?.matched_player_name || user.display_name || null;
   const playerTeamId = primaryIdentity?.team_id || (user.league_team_pairs?.[0]?.team_id);
@@ -59,8 +76,8 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
             </span>
           )}
         </div>
-        <Badge className={`${ROLE_COLORS[user.user_type] || "bg-slate-100 text-slate-600"} text-xs flex-shrink-0`}>
-          {ROLE_LABELS[user.user_type] || user.user_type}
+        <Badge className={`${ROLE_COLORS[effectiveRole] || "bg-slate-100 text-slate-600"} text-xs flex-shrink-0`}>
+          {ROLE_LABELS[effectiveRole] || effectiveRole}
         </Badge>
         <div className="text-slate-400 flex-shrink-0">
           {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -169,7 +186,15 @@ export default function LeagueUsers() {
       u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase());
 
-    const matchRole = selectedRole === "all" || u.user_type === selectedRole;
+    const userULIs = userLeagueIdentities.filter(uli => uli.user_id === u.id);
+
+    const matchRole = selectedRole === "all" || (() => {
+      if (selectedLeague && selectedLeague !== "all") {
+        const uli = userULIs.find(x => x.league_id === selectedLeague && x.role);
+        return (uli?.role || u.user_type) === selectedRole;
+      }
+      return userULIs.some(x => x.role === selectedRole) || u.user_type === selectedRole;
+    })();
 
     const matchLeague = selectedLeague === "all" ||
       (u.assigned_league_ids || []).includes(selectedLeague);
@@ -270,6 +295,7 @@ export default function LeagueUsers() {
                 leagues={leagues}
                 adminLeagueIds={isAppAdmin ? leagues.map(l => l.id) : adminLeagueIds}
                 userLeagueIdentities={userLeagueIdentities.filter(uli => uli.user_id === user.id)}
+                selectedLeague={selectedLeague}
               />
             ))}
             <div className="px-4 py-2 text-xs text-slate-400 border-t border-slate-100">
