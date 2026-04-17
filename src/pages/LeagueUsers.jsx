@@ -20,7 +20,7 @@ const ROLE_LABELS = {
   viewer: "Viewer",
 };
 
-function UserRow({ user, teams, leagues, adminLeagueIds }) {
+function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [] }) {
   const [expanded, setExpanded] = useState(false);
 
   // Get this user's league identities filtered to leagues the admin manages
@@ -32,6 +32,13 @@ function UserRow({ user, teams, leagues, adminLeagueIds }) {
     return { league, leagueId: lid };
   });
 
+  // For players: find their primary matched player name and team
+  const isPlayer = user.user_type === "player";
+  const primaryIdentity = userLeagueIdentities.find(uli => uli.matched_player_name);
+  const playerDisplayName = primaryIdentity?.matched_player_name || user.display_name || null;
+  const playerTeamId = primaryIdentity?.team_id || (user.league_team_pairs?.[0]?.team_id);
+  const playerTeam = playerTeamId ? teams.find(t => t.id === playerTeamId) : null;
+
   return (
     <div className="border-b border-slate-100 last:border-0">
       <div
@@ -39,11 +46,18 @@ function UserRow({ user, teams, leagues, adminLeagueIds }) {
         onClick={() => setExpanded(e => !e)}
       >
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-semibold text-sm flex-shrink-0">
-          {user.full_name?.charAt(0)?.toUpperCase() || "?"}
+          {(isPlayer && playerDisplayName ? playerDisplayName : user.full_name)?.charAt(0)?.toUpperCase() || "?"}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-900 truncate">{user.full_name || "—"}</p>
+          <p className="font-semibold text-slate-900 truncate">
+            {isPlayer && playerDisplayName ? playerDisplayName : (user.full_name || "—")}
+          </p>
           <p className="text-xs text-slate-500 truncate">{user.email}</p>
+          {isPlayer && playerTeam && (
+            <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium mt-0.5">
+              {playerTeam.name}
+            </span>
+          )}
         </div>
         <Badge className={`${ROLE_COLORS[user.user_type] || "bg-slate-100 text-slate-600"} text-xs flex-shrink-0`}>
           {ROLE_LABELS[user.user_type] || user.user_type}
@@ -115,6 +129,12 @@ export default function LeagueUsers() {
   const { data: teams = [] } = useQuery({
     queryKey: ['allTeams'],
     queryFn: () => base44.entities.Team.list(),
+    enabled: isAppAdmin || isLeagueAdmin,
+  });
+
+  const { data: userLeagueIdentities = [] } = useQuery({
+    queryKey: ['allUserLeagueIdentities'],
+    queryFn: () => base44.entities.UserLeagueIdentity.list(),
     enabled: isAppAdmin || isLeagueAdmin,
   });
 
@@ -249,6 +269,7 @@ export default function LeagueUsers() {
                 teams={teams}
                 leagues={leagues}
                 adminLeagueIds={isAppAdmin ? leagues.map(l => l.id) : adminLeagueIds}
+                userLeagueIdentities={userLeagueIdentities.filter(uli => uli.user_id === user.id)}
               />
             ))}
             <div className="px-4 py-2 text-xs text-slate-400 border-t border-slate-100">
