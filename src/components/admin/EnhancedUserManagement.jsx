@@ -65,14 +65,36 @@ export default function EnhancedUserManagement() {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: (data) =>
-      base44.entities.User.update(selectedUser.id, {
+    mutationFn: async (data) => {
+      // Update core user fields
+      await base44.entities.User.update(selectedUser.id, {
         user_type: data.user_type,
         assigned_league_ids: data.assigned_league_ids,
         default_league_id: data.default_league_id || null,
-      }),
+      });
+
+      // Update or create UserLeagueIdentity records with per-league roles
+      const leagueRoleMap = data.league_role_map || {};
+      for (const leagueId of data.assigned_league_ids) {
+        const role = leagueRoleMap[leagueId];
+        if (!role) continue;
+        const existing = userLeagueIdentities.find(
+          uli => uli.user_id === selectedUser.id && uli.league_id === leagueId
+        );
+        if (existing) {
+          await base44.entities.UserLeagueIdentity.update(existing.id, { role });
+        } else {
+          await base44.entities.UserLeagueIdentity.create({
+            user_id: selectedUser.id,
+            league_id: leagueId,
+            role,
+          });
+        }
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["userLeagueIdentities"] });
       setSelectedUser(null);
       resetForm();
     },
@@ -118,17 +140,33 @@ export default function EnhancedUserManagement() {
       user_type: "viewer",
       assigned_league_ids: [],
       default_league_id: "",
+      league_role_map: {},
     });
   };
 
   const handleUserSelect = (user) => {
     setSelectedUser(user);
+
+    // Build per-league role map from approved applications
+    const approvedApps = userApplications.filter(a => a.user_id === user.id && a.status === "Approved");
+    const leagueRoleMap = {};
+    approvedApps.forEach(app => {
+      const leagueIds = app.league_ids?.length > 0 ? app.league_ids : app.league_id ? [app.league_id] : [];
+      leagueIds.forEach(lid => { leagueRoleMap[lid] = app.requested_role; });
+    });
+
+    // Also pull from UserLeagueIdentity records if they have a role set
+    userLeagueIdentities.filter(uli => uli.user_id === user.id && uli.role).forEach(uli => {
+      leagueRoleMap[uli.league_id] = uli.role;
+    });
+
     setFormData({
       email: user.email,
       full_name: user.full_name,
       user_type: user.user_type || "viewer",
       assigned_league_ids: user.assigned_league_ids || [],
       default_league_id: user.default_league_id || "",
+      league_role_map: leagueRoleMap,
     });
   };
 
@@ -276,7 +314,7 @@ export default function EnhancedUserManagement() {
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
           <div>
-            <Label className="text-sm font-semibold text-slate-700 mb-2 block">User Type</Label>
+            <Label className="text-sm font-semibold text-slate-700 mb-2 block">Global User Type</Label>
             <Select value={formData.user_type} onValueChange={(val) => setFormData({ ...formData, user_type: val })}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select user type..." />
@@ -289,25 +327,54 @@ export default function EnhancedUserManagement() {
                 <SelectItem value="viewer">Viewer</SelectItem>
               </SelectContent>
             </Select>
+            <p className="text-xs text-slate-400 mt-1">Global fallback role. Set per-league roles below for more granular control.</p>
           </div>
 
           <div>
-            <Label className="text-sm font-semibold text-slate-700 mb-3 block">Assigned Leagues</Label>
-            <div className="space-y-2 bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <Label className="text-sm font-semibold text-slate-700 mb-3 block">Assigned Leagues & Roles</Label>
+            <div className="space-y-3 bg-slate-50 p-4 rounded-lg border border-slate-200">
               {leagues.length === 0 && <p className="text-sm text-slate-500">No leagues available</p>}
-              {leagues.map((league) => (
-                <div key={league.id} className="flex items-center gap-3">
-                  <Checkbox
-                    id={`edit-${league.id}`}
-                    checked={formData.assigned_league_ids.includes(league.id)}
-                    onCheckedChange={() => toggleLeague(league.id)}
-                  />
-                  <Label htmlFor={`edit-${league.id}`} className="font-normal cursor-pointer flex-1">
-                    <span className="font-medium text-slate-900">{league.name}</span>
-                    <span className="text-slate-500 text-sm ml-2">({league.season})</span>
-                  </Label>
-                </div>
-              ))}
+              {leagues.map((league) => {
+                const isAssigned = formData.assigned_league_ids.includes(league.id);
+                return (
+                  <div key={league.id} className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id={`edit-${league.id}`}
+                        checked={isAssigned}
+                        onCheckedChange={() => toggleLeague(league.id)}
+                      />
+                      <Label htmlFor={`edit-${league.id}`} className="font-normal cursor-pointer flex-1">
+                        <span className="font-medium text-slate-900">{league.name}</span>
+                        <span className="text-slate-500 text-sm ml-2">({league.season})</span>
+                      </Label>
+                    </div>
+                    {isAssigned && (
+                      <div className="ml-7">
+                        <Select
+                          value={formData.league_role_map?.[league.id] || formData.user_type || "viewer"}
+                          onValueChange={(val) =>
+                            setFormData(prev => ({
+                              ...prev,
+                              league_role_map: { ...prev.league_role_map, [league.id]: val },
+                            }))
+                          }
+                        >
+                          <SelectTrigger className="w-48 h-7 text-xs bg-white">
+                            <SelectValue placeholder="Role in this league..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="league_admin">League Admin</SelectItem>
+                            <SelectItem value="coach">Coach</SelectItem>
+                            <SelectItem value="player">Player</SelectItem>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -1,0 +1,104 @@
+{
+  "name": "UserLeagueIdentity",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the User record"
+    },
+    "user_application_id": {
+      "type": "string",
+      "description": "Legacy: Reference to the UserApplication record"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "player",
+        "coach",
+        "viewer",
+        "league_admin",
+        "app_admin"
+      ],
+      "description": "User's role within this specific league"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team the player is on"
+    },
+    "matched_player_name": {
+      "type": "string",
+      "description": "Player's name as matched on the team roster"
+    },
+    "matched_player_id": {
+      "type": "string",
+      "description": "Reference to the Player entity record"
+    },
+    "match_status": {
+      "type": "string",
+      "enum": [
+        "matched",
+        "needs_review",
+        "unmatched"
+      ],
+      "default": "unmatched",
+      "description": "Current match status for this league"
+    },
+    "match_confidence": {
+      "type": "string",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "description": "Confidence level of the match"
+    },
+    "match_method": {
+      "type": "string",
+      "enum": [
+        "exact_name",
+        "normalized_name",
+        "handle_to_name",
+        "manual_admin",
+        "manual_user",
+        "none"
+      ],
+      "description": "How the match was determined"
+    },
+    "matched_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the match was made"
+    },
+    "matched_by": {
+      "type": "string",
+      "description": "Who made the match (system_auto, admin email, etc.)"
+    },
+    "roster_match_status": {
+      "type": "string",
+      "enum": [
+        "matched",
+        "unmatched",
+        "manual_review"
+      ],
+      "description": "Legacy match status"
+    },
+    "identity_status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "needs_review",
+        "pending"
+      ],
+      "default": "pending",
+      "description": "Legacy identity status"
+    }
+  },
+  "required": [
+    "user_id",
+    "league_id"
+  ]
+}
