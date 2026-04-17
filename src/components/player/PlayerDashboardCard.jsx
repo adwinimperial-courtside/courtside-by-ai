@@ -26,13 +26,19 @@ function didPlayerParticipate(stat) {
   return hasStats;
 }
 
-function computeStats(stats) {
+function calcPoints(stat, games) {
+  const game = games.find(g => g.id === stat.game_id);
+  const isDigital = game && game.entry_type === 'digital' && !game.edited;
+  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+}
+
+function computeStats(stats, games) {
   const participatedStats = stats.filter(didPlayerParticipate);
   const gp = participatedStats.length;
   if (gp === 0) return { gp: 0, ppg: null, rpg: null, apg: null };
   
   const totals = participatedStats.reduce((acc, s) => ({
-    points: acc.points + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0),
+    points: acc.points + calcPoints(s, games),
     rebounds: acc.rebounds + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0),
     assists: acc.assists + (s.assists || 0)
   }), { points: 0, rebounds: 0, assists: 0 });
@@ -158,7 +164,7 @@ export default function PlayerDashboardCard({
   const photoUrl = currentUser?.profile_photo_url;
   const initials = displayName.charAt(0).toUpperCase();
 
-  const stats = useMemo(() => computeStats(myStats), [myStats]);
+  const stats = useMemo(() => computeStats(myStats, games), [myStats, games]);
   const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
   const primaryRank = useMemo(() => getPrimaryRank(playerRecord?.id, allStats, myStats), [playerRecord?.id, allStats, myStats]);
   const rankMovement = useMemo(() => {
