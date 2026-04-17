@@ -93,8 +93,15 @@ export default function PlayerProfile() {
     return teamPlayers.find(p => p.name?.trim().toLowerCase() === dn) || null;
   }, [teamPlayers, matchedPlayerId, currentUser]);
 
+  // Match the exact same game filter used in PlayerStats.jsx
   const completedGameIds = useMemo(
-    () => new Set(leagueGames.filter(g => g.status === 'completed').map(g => g.id)),
+    () => new Set(leagueGames.filter(g =>
+      g.status === 'completed' &&
+      !g.is_default_result &&
+      g.result_type !== 'default' &&
+      !g.exclude_from_player_stats &&
+      !g.exclude_from_awards
+    ).map(g => g.id)),
     [leagueGames]
   );
 
