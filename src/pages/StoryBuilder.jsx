@@ -266,7 +266,7 @@ export default function StoryBuilder() {
         unsp: loserStats.reduce((s, p) => s + p.unsp, 0),
       };
 
-      const prompt = `You are a lively grassroots basketball reporter writing a Facebook post-game story for a local league page.
+      const prompt = `You are a lively grassroots basketball reporter writing a Facebook post-game story for a local league page. You write with energy, drama, and narrative flair — like a sportswriter who watched every possession and wants the reader to feel like they were courtside.
 
 GAME DATA:
 League Game — ${format(new Date(selectedGame.game_date), "MMMM d, yyyy")}
@@ -274,7 +274,7 @@ Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserSc
 Winner: ${winnerTeam?.name}
 Loser: ${loserTeam?.name}
 
-ACTIVITY LOG INSIGHTS (use only for game flow, momentum, and tone — NOT for player stats or score):
+ACTIVITY LOG INSIGHTS (use for game flow, momentum, deciding moments, and tone — NOT for player stats or score):
 - Total scoring events logged: ${logInsights.totalScoringEvents}
 - Lead changes detected: ${logInsights.leadChanges}
 - Three-point makes tracked: ${logInsights.totalThreesLogged}
@@ -295,30 +295,40 @@ ${winnerTeam?.name}: ${winnerTeamTotals.pts} pts | ${winnerTeamTotals.reb} reb |
 ${loserTeam?.name}: ${loserTeamTotals.pts} pts | ${loserTeamTotals.reb} reb | ${loserTeamTotals.ast} ast | ${loserTeamTotals.stl} stl | ${loserTeamTotals.blk} blk | ${loserTeamTotals.three} 3PT | ${loserTeamTotals.to} TO | ${loserTeamTotals.fouls} fouls${loserTeamTotals.techs > 0 ? ` | ${loserTeamTotals.techs} tech fouls` : ""}${loserTeamTotals.unsp > 0 ? ` | ${loserTeamTotals.unsp} unsportsmanlike` : ""}
 
 INSTRUCTIONS — READ CAREFULLY:
-Write a Facebook post-game story following this exact structure:
+
+Write a Facebook post-game story following this structure:
+
 1. Start EXACTLY with: 🎙️ COURTSIDE BY AI REPORT
-2. Second line EXACTLY: 🏁 Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserScore}
-3. Opening hook (1–2 sentences setting the game's feel)
-4. Winning team story — who led them, who supported, what stats defined their performance
-5. Losing team — who kept them competitive, their best performer(s) with real stats
-6. Any relevant non-scoring factors (rebounding edge, turnovers, foul trouble, defensive stops) if they helped decide the game
-7. Closing wrap — what sealed the win
-8. End EXACTLY with: 👉 Full box score & stats: https://courtside-by-ai.com/schedule
+2. Second line: a bold one-line headline summarizing the game's story (e.g. "Mercado's 27-Point Masterclass Survives a Furious NewGen Comeback")
+3. Third line EXACTLY: 🏁 Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserScore}
+4. The story (3–5 paragraphs):
+   - Open with a compelling hook that drops the reader into the game's narrative — set the scene, the tension, or the turning point. Never open with a generic summary.
+   - Tell the game as a STORY with momentum shifts. Use the activity log insights (lead changes, game feel) to build drama. Describe runs, swings, and sequences — not just final stat lines.
+   - Name the winning team's top performers (at least 2) with their real stats woven naturally into the narrative. Don't just list stats — describe HOW they scored, WHEN their plays mattered, and what role they played in the story.
+   - Name the losing team's best performer(s) (at least 1) with real stats. Give them credit — describe what they did to keep their team in it and make the game competitive.
+   - Identify the deciding moment or stretch — the run, the stop, the individual play that tilted the outcome. Make the reader feel the pressure.
+   - If relevant, weave in non-scoring factors (rebounding edge, steals creating transition, foul trouble, turnovers) as part of the story, not as a separate section.
+   - Close with a punchy final line — something that captures the emotion of the result and sticks with the reader.
+5. After the story, add: 🏆 PLAYER OF THE GAME: [Name] (#[Jersey], [Team]) — [Key stats in format: PTS · REB · AST or whatever stats define their impact]
+6. End EXACTLY with: 👉 Full box score & stats: https://courtside-by-ai.com/schedule
+
+WRITING STYLE:
+- Write like a sportswriter, not a stats bot. Use vivid, active language: "drilled," "ripped away," "erupted," "buried the dagger."
+- Use metaphors and energy: "turned sniper," "heart of a lion," "the script got torn up."
+- Vary sentence length — short punchy lines for impact, longer flowing ones for narrative buildup.
+- Emojis should feel natural and sparing (2–4 total in the body, not on every line).
+- Tone: upbeat, exciting, and respectful of both teams. Grassroots basketball deserves big-stage storytelling.
+- 200–350 words in the body (between the final score line and the Player of the Game).
+- NEVER use filler phrases like "if you weren't there, you missed something special" or "both teams fought hard" without specifics backing it up.
+- Vary the story angle, phrasing, and structure every time so no two recaps feel like templates.
 
 MANDATORY RULES:
-- You MUST mention at least 2 players from the winning team by name with their real stats
-- You MUST mention at least 1 player from the losing team by name with their real stats
-- Select players based on actual impact (points, rebounds, assists, steals, double-doubles), not randomly
-- ONLY use numbers from the OFFICIAL VERIFIED PLAYER STATS above — never invent stats
+- ONLY use numbers from the OFFICIAL VERIFIED PLAYER STATS above — never invent or estimate stats
 - NEVER swap winner and loser or reverse the score
-- NEVER write vague lines like "both teams fought hard" without also naming the players who drove it
-- NEVER write empty hype like "if you weren't there, you missed something special"
-- DO include rebounds, assists, steals, blocks, or other stats naturally when they explain the game
-- Make it sound specific, grounded, and believable to someone who saw the box score
-- Keep it Facebook-ready: upbeat, conversational, natural emojis, 150–280 words in the body
-- Vary the phrasing and story angle each time so it never feels like a template
-
-DO NOT include any meta-commentary. Start directly with 🎙️ COURTSIDE BY AI REPORT.`;
+- Mention at least 2 winning team players and at least 1 losing team player BY NAME with REAL stats
+- Select players based on actual impact (points, rebounds, assists, steals, double-doubles, or clutch context)
+- When a player has a notable double-double or near-double-double, call it out
+- DO NOT include any meta-commentary, preamble, or explanation — start directly with 🎙️ COURTSIDE BY AI REPORT`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
