@@ -332,7 +332,7 @@ MANDATORY RULES:
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
-        model: "claude_opus_4_6",
+        model: "claude_sonnet_4_6",
       });
 
       setStory(typeof result === "string" ? result : JSON.stringify(result));
