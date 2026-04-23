@@ -20,6 +20,7 @@ export default function GameLogPage() {
   const { data: allLeagues = [] } = useQuery({
     queryKey: ["leagues"],
     queryFn: () => base44.entities.League.list(),
+    enabled: !!currentUser,
   });
 
   const leagues = currentUser?.assigned_league_ids?.length > 0
