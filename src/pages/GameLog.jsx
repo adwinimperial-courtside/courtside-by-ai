@@ -17,10 +17,14 @@ export default function GameLogPage() {
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
-  const { data: leagues = [] } = useQuery({
+  const { data: allLeagues = [] } = useQuery({
     queryKey: ["leagues"],
     queryFn: () => base44.entities.League.list(),
   });
+
+  const leagues = currentUser?.assigned_league_ids?.length > 0
+    ? allLeagues.filter(l => currentUser.assigned_league_ids.includes(l.id))
+    : allLeagues;
 
   const { data: games = [] } = useQuery({
     queryKey: ["games", selectedLeagueId],
