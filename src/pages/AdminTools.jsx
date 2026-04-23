@@ -33,7 +33,7 @@ export default function AdminTools() {
     queryFn: () => base44.entities.League.list(),
   });
 
-  const filteredLeagues = currentUser?.user_type === 'league_admin' && currentUser?.assigned_league_ids
+  const filteredLeagues = currentUser?.assigned_league_ids?.length > 0
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
