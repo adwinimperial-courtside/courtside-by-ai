@@ -20,7 +20,7 @@ const ROLE_LABELS = {
   viewer: "Viewer",
 };
 
-function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [], selectedLeague }) {
+function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [], selectedLeague, userApplications = [] }) {
   const [expanded, setExpanded] = useState(false);
 
   // Get this user's league identities filtered to leagues the admin manages
@@ -62,20 +62,34 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
         className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer transition-colors"
         onClick={() => setExpanded(e => !e)}
       >
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-semibold text-sm flex-shrink-0">
-          {(isPlayer && playerDisplayName ? playerDisplayName : user.full_name)?.charAt(0)?.toUpperCase() || "?"}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-900 truncate">
-            {isPlayer && playerDisplayName ? playerDisplayName : (user.full_name || "—")}
-          </p>
-          <p className="text-xs text-slate-500 truncate">{user.email}</p>
+        {(() => {
+          const app = userApplications.find(a => a.user_id === user.id && a.user_name);
+          const fullNameLooksReal = user.full_name && user.full_name.includes(" ");
+          const primaryName = fullNameLooksReal ? user.full_name : (app?.user_name || user.full_name || "—");
+          const secondaryName = user.display_name && user.display_name !== primaryName ? user.display_name : null;
+          const avatarLetter = (isPlayer && playerDisplayName ? playerDisplayName : primaryName)?.charAt(0)?.toUpperCase() || "?";
+          return (
+            <>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-slate-600 font-semibold text-sm flex-shrink-0">
+                {avatarLetter}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-900 truncate">
+                  {isPlayer && playerDisplayName ? playerDisplayName : primaryName}
+                </p>
+                {secondaryName && (
+                  <p className="text-xs text-slate-400 truncate">{secondaryName}</p>
+                )}
+                <p className="text-xs text-slate-500 truncate">{user.email}</p>
           {isPlayer && playerTeam && (
             <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium mt-0.5">
               {playerTeam.name}
             </span>
           )}
-        </div>
+              </div>
+            </>
+          );
+        })()}
         <Badge className={`${ROLE_COLORS[effectiveRole] || "bg-slate-100 text-slate-600"} text-xs flex-shrink-0`}>
           {ROLE_LABELS[effectiveRole] || effectiveRole}
         </Badge>
@@ -152,6 +166,12 @@ export default function LeagueUsers() {
   const { data: userLeagueIdentities = [] } = useQuery({
     queryKey: ['allUserLeagueIdentities'],
     queryFn: () => base44.entities.UserLeagueIdentity.list(),
+    enabled: isAppAdmin || isLeagueAdmin,
+  });
+
+  const { data: userApplications = [] } = useQuery({
+    queryKey: ['allUserApplications'],
+    queryFn: () => base44.entities.UserApplication.list(),
     enabled: isAppAdmin || isLeagueAdmin,
   });
 
@@ -296,6 +316,7 @@ export default function LeagueUsers() {
                 adminLeagueIds={isAppAdmin ? leagues.map(l => l.id) : adminLeagueIds}
                 userLeagueIdentities={userLeagueIdentities.filter(uli => uli.user_id === user.id)}
                 selectedLeague={selectedLeague}
+                userApplications={userApplications.filter(a => a.user_id === user.id)}
               />
             ))}
             <div className="px-4 py-2 text-xs text-slate-400 border-t border-slate-100">
