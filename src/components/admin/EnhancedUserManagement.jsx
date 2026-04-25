@@ -499,12 +499,16 @@ export default function EnhancedUserManagement() {
                   <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
                     {(() => {
                       const app = userApplications.find(a => a.user_id === user.id && a.user_name);
-                      const realName = user.display_name || app?.user_name;
+                      // realName: prefer application user_name if full_name looks auto-generated (no spaces)
+                      const fullNameLooksReal = user.full_name && user.full_name.includes(" ");
+                      const primaryName = fullNameLooksReal ? user.full_name : (app?.user_name || user.full_name || "—");
+                      // secondaryName: show display_name as nickname if it differs from primaryName
+                      const secondaryName = user.display_name && user.display_name !== primaryName ? user.display_name : null;
                       return (
                         <>
-                          <div className="font-semibold text-slate-900 truncate">{realName || user.full_name || "—"}</div>
-                          {realName && realName !== user.full_name && (
-                            <div className="text-xs text-slate-400 truncate">{user.full_name}</div>
+                          <div className="font-semibold text-slate-900 truncate">{primaryName}</div>
+                          {secondaryName && (
+                            <div className="text-xs text-slate-400 truncate">{secondaryName}</div>
                           )}
                         </>
                       );
