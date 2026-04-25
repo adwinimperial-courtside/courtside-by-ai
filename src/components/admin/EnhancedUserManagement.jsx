@@ -497,7 +497,10 @@ export default function EnhancedUserManagement() {
                   className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors gap-3"
                 >
                   <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
-                    <div className="font-semibold text-slate-900 truncate">{user.full_name || "—"}</div>
+                    <div className="font-semibold text-slate-900 truncate">{user.display_name || user.full_name || "—"}</div>
+                    {user.display_name && (
+                      <div className="text-sm text-slate-600 truncate">{user.full_name}</div>
+                    )}
                     <div className="text-sm text-slate-500 truncate">{user.email}</div>
                     <div className="text-xs text-slate-400 mt-1">Created {format(new Date(user.created_date), "MMM dd, yyyy 'at' h:mm a")}</div>
 
