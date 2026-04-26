@@ -217,7 +217,7 @@ export default function StoryBuilder() {
         if (p.stl >= 1) parts.push(`${p.stl} stl`);
         if (p.blk >= 1) parts.push(`${p.blk} blk`);
         if (p.three >= 1) parts.push(`${p.three}x3PT`);
-        if (p.ft >= 2) parts.push(`${p.ft}/${p.ft + p.ftm} FT`);
+        // FT percentage intentionally omitted — most leagues don't track free throws missed
         if (p.to >= 3) parts.push(`${p.to} TO`);
         if (p.fouls >= 4) parts.push(`${p.fouls} fouls`);
         if (p.tech >= 1) parts.push(`${p.tech} tech`);
@@ -324,6 +324,7 @@ WRITING STYLE:
 
 MANDATORY RULES:
 - ONLY use numbers from the OFFICIAL VERIFIED PLAYER STATS above — never invent or estimate stats
+- NEVER mention free throw percentage, free throw accuracy, or "perfect from the line" — free throw misses are not tracked in this league
 - NEVER swap winner and loser or reverse the score
 - Mention at least 2 winning team players and at least 1 losing team player BY NAME with REAL stats
 - Select players based on actual impact (points, rebounds, assists, steals, double-doubles, or clutch context)
@@ -416,7 +417,7 @@ MANDATORY RULES:
                 <SelectValue placeholder="Select a league…" />
               </SelectTrigger>
               <SelectContent>
-                {visibleLeagues.map(l => (
+                {[...visibleLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(l => (
                   <SelectItem key={l.id} value={l.id}>{l.name} — {l.season}</SelectItem>
                 ))}
               </SelectContent>
