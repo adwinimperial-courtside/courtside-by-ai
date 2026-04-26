@@ -11,7 +11,6 @@ import ScoreHeader from "./ScoreHeader";
 import EndOfPeriodModal from "./EndOfPeriodModal";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 import EmergencyLineupRepair from "./EmergencyLineupRepair";
-import SubstitutionPicker from "./SubstitutionPicker";
 
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
@@ -51,8 +50,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [homePlayersIn, setHomePlayersIn] = useState([]);
   const [awayPlayersIn, setAwayPlayersIn] = useState([]);
   const [subStep, setSubStep] = useState('select_out');
-  // Inline floating picker state: { playerOut, teamId } or null
-  const [inlineSub, setInlineSub] = useState(null);
   const [ejectedPlayer, setEjectedPlayer] = useState(null);
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -81,10 +78,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: liveGame = game } = useQuery({
     queryKey: ['game', game.id],
     queryFn: () => base44.entities.Game.get(game.id),
-    staleTime: 0,
+    staleTime: 0, // Always fresh to catch clock updates immediately
     refetchInterval: (data) => {
       const isRunning = data?.clock_running ?? game.clock_running;
-      return isRunning ? 3000 : false; // Poll every 3s if running (was 500ms — caused rate limits)
+      return isRunning ? 500 : false; // Poll every 500ms if running, else off
     },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -94,7 +91,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
     initialData: initialStats,
-    staleTime: 10000,
+    staleTime: 5000, // Keep data fresh for 5 seconds, reduce refetch spam
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -104,7 +101,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
-    staleTime: 10000,
+    staleTime: 5000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -121,7 +118,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 1500); // Increased debounce to reduce refetch flood
+      }, 300); // Short debounce to batch rapid multi-device updates
     });
 
     // Invalidate GameLogs on all events so the activity feed stays in sync
@@ -129,7 +126,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 1500);
+      }, 300);
     });
     
     return () => {
@@ -283,10 +280,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     const interval = setInterval(() => {
       const currentComputedTimeLeft = computeTimeLeft(game);
-
-      // Update all active players' clock state but batch into a single sequential write per player
-      // to avoid flooding the API (was 10s interval causing rate limits)
       const updates = [];
+
       activePlayers.forEach(stat => {
         const clockState = playerGameClockStateRef.current[stat.player_id];
         if (clockState && clockState.period === game.clock_period) {
@@ -302,10 +297,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
 
       if (updates.length > 0) {
-        // Run sequentially to avoid parallel write flood
-        updates.reduce((p, fn) => p.then(() => fn).catch(() => {}), Promise.resolve());
+        Promise.all(updates).catch(() => {});
       }
-    }, 30000); // Update every 30 seconds (was 10s — too frequent, caused rate limits)
+    }, 10000); // Update every 10 seconds
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.game_mode, game.clock_started_at, game.clock_time_left, game.clock_period, activePlayers, updateStatMutation]);
@@ -600,100 +594,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setHomePlayersIn([]);
     setAwayPlayersIn([]);
     setSubStep('select_out');
-  };
-
-  // Fires when the inline floating picker confirms a 1-for-1 sub
-  const handleInlineSubConfirm = (playerOut, playerInId) => {
-    resetSubDialog();
-    if (playerOut.team_id === game.home_team_id) {
-      setHomePlayersOut([playerOut]);
-      setHomePlayersIn([playerInId]);
-    } else {
-      setAwayPlayersOut([playerOut]);
-      setAwayPlayersIn([playerInId]);
-    }
-    setInlineSub(null);
-    // Use a tiny timeout so state is flushed before the confirm runs
-    setTimeout(() => {
-      handleConfirmSubstitutionWith([playerOut], [playerInId], playerOut.team_id);
-    }, 0);
-  };
-
-  const handleConfirmSubstitutionWith = async (playersOut, playersIn, teamId) => {
-    if (isSubmittingSubRef.current) return;
-    isSubmittingSubRef.current = true;
-
-    setShowSubDialog(false);
-    resetSubDialog();
-
-    const currentComputedTimeLeft = computeTimeLeft(game);
-    const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-
-    const processTeamSub = async (pOut, pIn, tId) => {
-      if (pOut.length === 0) return;
-      const team = tId === game.home_team_id ? homeTeam : awayTeam;
-
-      for (const playerOut of pOut) {
-        if (game.game_mode === 'timed' && game.clock_running) {
-          const clockState = playerGameClockStateRef.current[playerOut.id];
-          if (clockState && clockState.period === game.clock_period) {
-            const elapsed = clockState.timeLeft - currentComputedTimeLeft;
-            playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + elapsed;
-          }
-        }
-        playerGameClockStateRef.current[playerOut.id] = null;
-        const outStat = freshStats.find(s => s.player_id === playerOut.id);
-        if (outStat) {
-          const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
-          const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
-          await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
-        }
-        if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
-      }
-
-      for (const playerInId of pIn) {
-        const inStat = freshStats.find(s => s.player_id === playerInId);
-        if (inStat) {
-          await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
-        } else {
-          await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: tId, is_starter: true, is_active: true, minutes_played: 0 });
-        }
-        playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
-        if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
-      }
-
-      const outNames = pOut.map(p => p.name).join(', ');
-      const inNames = pIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
-      const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
-      const logData = JSON.stringify({
-        display: logLabel,
-        out_ids: pOut.map(p => p.id),
-        in_ids: pIn,
-        team_id: tId
-      });
-      await createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: pOut[0].id,
-        team_id: tId,
-        stat_type: 'substitution',
-        stat_label: logData,
-        stat_points: 0,
-        stat_color: tId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      });
-    };
-
-    console.log(`[LiveStat:inlineSub] game=${game.id} out=${playersOut.map(p=>p.name)} in=${playersIn}`);
-
-    await processTeamSub(playersOut, playersIn, teamId);
-
-    const postSubStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-    checkAndTriggerRepair(postSubStats);
-
-    isSubmittingSubRef.current = false;
   };
 
   const handleConfirmSubstitution = async () => {
@@ -1164,29 +1064,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
         : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
 
-    const thisTeamId = isHome ? game.home_team_id : game.away_team_id;
-    const showInlinePicker = side !== undefined && inlineSub && inlineSub.teamId === thisTeamId;
-    const benchForThisTeam = players.filter(p =>
-      p.team_id === thisTeamId && !activePlayerIds.includes(p.id) && isEligibleReplacement(p.id)
-    );
-
-    // When inline picker is active for this column, show the picker in place of player cards
-    if (showInlinePicker) {
-      return (
-        <div className="backdrop-blur border border-slate-200 rounded-2xl flex flex-col h-full overflow-hidden" style={borderStyle}>
-          <SubstitutionPicker
-            playerOut={inlineSub.playerOut}
-            benchPlayers={benchForThisTeam}
-            teamId={thisTeamId}
-            game={game}
-            existingStats={existingStats}
-            onConfirm={(playerOut, playerInId) => handleInlineSubConfirm(playerOut, playerInId)}
-            onCancel={() => setInlineSub(null)}
-          />
-        </div>
-      );
-    }
-
     return (
       <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
@@ -1208,7 +1085,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 isDesktop: side !== undefined,
                 side,
                 onSubClick: (p) => {
-                  setInlineSub({ playerOut: p, teamId: p.team_id });
+                  resetSubDialog();
+                  if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                  else setAwayPlayersOut([p]);
+                  setSubStep('select_in');
+                  setShowSubDialog(true);
                 }
               })}
             </div>
@@ -1376,7 +1257,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
         <div className="mt-3 space-y-3">
           {/* Mobile uses side=undefined so isDesktop=false → no R/A */}
-          {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600", side: undefined })}
+          {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
@@ -1424,33 +1305,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
             {/* Make Substitution button hidden — use SUB buttons on player cards */}
           </div>
-          {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600", side: undefined })}
+          {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             {ActivityLog({ compact: false })}
           </div>
         </div>
       </div>
-
-      {/* ── MOBILE inline sub picker overlay ── */}
-      {inlineSub && (
-        <div className="min-[900px]:hidden fixed inset-0 z-50 flex items-end justify-center p-4 bg-black/40">
-          <div className="w-full max-w-sm">
-            <SubstitutionPicker
-              playerOut={inlineSub.playerOut}
-              benchPlayers={players.filter(p =>
-                p.team_id === inlineSub.teamId &&
-                !activePlayerIds.includes(p.id) &&
-                isEligibleReplacement(p.id)
-              )}
-              teamId={inlineSub.teamId}
-              game={game}
-              existingStats={existingStats}
-              onConfirm={(playerOut, playerInId) => handleInlineSubConfirm(playerOut, playerInId)}
-              onCancel={() => setInlineSub(null)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* ── LARGE SCREEN LAYOUT (≥ 900px) ── */}
       <div className="hidden min-[900px]:flex flex-col h-screen overflow-hidden px-4 py-3">
@@ -1551,7 +1411,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white mt-2"
             onClick={() => {
               if (ejectedPlayer) {
-                setInlineSub({ playerOut: ejectedPlayer, teamId: ejectedPlayer.team_id });
+                resetSubDialog();
+                if (ejectedPlayer.team_id === game.home_team_id) setHomePlayersOut([ejectedPlayer]);
+                else setAwayPlayersOut([ejectedPlayer]);
+                setSubStep('select_in');
+                setShowSubDialog(true);
               }
               setEjectedPlayer(null);
             }}
