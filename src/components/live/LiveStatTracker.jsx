@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock, ArrowLeftRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 
@@ -976,10 +976,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   // ── Player Card ──
   // isDesktop=true → show R & A; isDesktop=false (mobile) → show only F & T
-  const PlayerButton = ({ player, teamColor, onSubClick, isDesktop }) => {
+  // side='home' → blue SUB pill; side='away' → red SUB pill
+  const PlayerButton = ({ player, teamColor, onSubClick, isDesktop, side }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
+
+    const isHome = side === 'home';
+    const subColor = isHome
+      ? 'border-blue-400 text-blue-600 hover:bg-blue-50'
+      : 'border-red-400 text-red-600 hover:bg-red-50';
 
     const desktopStyle = isDesktop
       ? isSelected
@@ -1000,49 +1006,48 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           : { borderColor: '#e2e8f0' };
 
     return (
-      <div className="relative">
-        <motion.button
-          whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
-          onClick={() => setSelectedPlayer(player)}
-          className={`w-full rounded-xl border-2 ${isDesktop ? 'p-2 hover:shadow-md' : 'p-1.5'} ${!isDesktop && (isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100')}`}
-          style={desktopStyle}
-        >
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md bg-slate-600">
+      <motion.button
+        whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
+        onClick={() => setSelectedPlayer(player)}
+        className={`w-full rounded-xl border-2 ${isDesktop ? 'p-2 hover:shadow-md' : 'p-1.5'} ${!isDesktop && (isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100')}`}
+        style={desktopStyle}
+      >
+        <div className="flex flex-col items-center gap-0.5">
+          {/* Top row: jersey + SUB pill */}
+          <div className="flex items-center justify-between w-full gap-0.5">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md bg-slate-600 flex-shrink-0">
               {player.jersey_number}
             </div>
-            <p className="font-semibold text-slate-900 text-[10px] truncate leading-tight w-full text-center">{player.name}</p>
-            {playerStats && (
-              <div className="w-full pt-0.5 border-t border-slate-200">
-                <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
-                <div className="flex justify-around mt-0.5">
-                  {/* R and A only shown on desktop/tablet */}
-                  {isDesktop && (
-                    <>
-                      <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
-                      <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
-                    </>
-                  )}
-                  <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
-                  <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
-                </div>
-              </div>
-            )}
+            <button
+              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border bg-white text-[8px] font-bold leading-none flex-shrink-0 transition-colors ${subColor}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onSubClick(player);
+              }}
+            >
+              <ArrowLeftRight className="w-2 h-2" />
+              SUB
+            </button>
           </div>
-        </motion.button>
-        <button
-          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full p-0 shadow-lg flex items-center justify-center transition-colors"
-          style={{ backgroundColor: '#E5E7EB' }}
-          onMouseEnter={e => e.currentTarget.style.backgroundColor = '#D1D5DB'}
-          onMouseLeave={e => e.currentTarget.style.backgroundColor = '#E5E7EB'}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSubClick(player);
-          }}
-        >
-          <RefreshCw className="w-2.5 h-2.5 text-slate-600" />
-        </button>
-      </div>
+          <p className="font-semibold text-slate-900 text-[10px] truncate leading-tight w-full text-center">{player.name}</p>
+          {playerStats && (
+            <div className="w-full pt-0.5 border-t border-slate-200">
+              <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
+              <div className="flex justify-around mt-0.5">
+                {/* R and A only shown on desktop/tablet */}
+                {isDesktop && (
+                  <>
+                    <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
+                    <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
+                  </>
+                )}
+                <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
+                <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.button>
     );
   };
 
@@ -1078,6 +1083,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 player,
                 teamColor: team?.color,
                 isDesktop: side !== undefined,
+                side,
                 onSubClick: (p) => {
                   resetSubDialog();
                   if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
