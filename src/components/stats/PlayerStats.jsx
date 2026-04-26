@@ -38,6 +38,14 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
     return false;
   };
 
+  // Compute each team's actual completed games (matches standings logic)
+  const teamGameCounts = {};
+  teams.forEach(team => {
+    teamGameCounts[team.id] = games.filter(g =>
+      isActualPlayedGame(g) && (g.home_team_id === team.id || g.away_team_id === team.id)
+    ).length;
+  });
+
   const playerAggregates = players.map(player => {
     // Only count stats from actual played games
     const playerStats = stats.filter(s => s.player_id === player.id && validGameIds.has(s.game_id));
@@ -60,22 +68,27 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
       games: acc.games + 1
     }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0, games: 0 });
 
+    // Cap GP by team's actual game count (consistent with standings)
+    const teamMaxGames = teamGameCounts[player.team_id] || totals.games;
+    const gp = Math.min(totals.games, teamMaxGames);
+
     return {
       ...player,
       team,
       ...totals,
-      ppg: totals.games > 0 ? (totals.points / totals.games).toFixed(1) : '0.0',
-      twopm: totals.games > 0 ? (totals.points_2 / totals.games).toFixed(1) : '0.0',
-      threepm: totals.games > 0 ? (totals.points_3 / totals.games).toFixed(1) : '0.0',
-      ftm: totals.games > 0 ? (totals.freeThrows / totals.games).toFixed(1) : '0.0',
-      orebpg: totals.games > 0 ? (totals.offensiveRebounds / totals.games).toFixed(1) : '0.0',
-      drebpg: totals.games > 0 ? (totals.defensiveRebounds / totals.games).toFixed(1) : '0.0',
-      rpg: totals.games > 0 ? (totals.rebounds / totals.games).toFixed(1) : '0.0',
-      apg: totals.games > 0 ? (totals.assists / totals.games).toFixed(1) : '0.0',
-      spg: totals.games > 0 ? (totals.steals / totals.games).toFixed(1) : '0.0',
-      bpg: totals.games > 0 ? (totals.blocks / totals.games).toFixed(1) : '0.0',
-      tpg: totals.games > 0 ? (totals.turnovers / totals.games).toFixed(1) : '0.0',
-      fpg: totals.games > 0 ? (totals.fouls / totals.games).toFixed(1) : '0.0'
+      games: gp,
+      ppg: gp > 0 ? (totals.points / gp).toFixed(1) : '0.0',
+      twopm: gp > 0 ? (totals.points_2 / gp).toFixed(1) : '0.0',
+      threepm: gp > 0 ? (totals.points_3 / gp).toFixed(1) : '0.0',
+      ftm: gp > 0 ? (totals.freeThrows / gp).toFixed(1) : '0.0',
+      orebpg: gp > 0 ? (totals.offensiveRebounds / gp).toFixed(1) : '0.0',
+      drebpg: gp > 0 ? (totals.defensiveRebounds / gp).toFixed(1) : '0.0',
+      rpg: gp > 0 ? (totals.rebounds / gp).toFixed(1) : '0.0',
+      apg: gp > 0 ? (totals.assists / gp).toFixed(1) : '0.0',
+      spg: gp > 0 ? (totals.steals / gp).toFixed(1) : '0.0',
+      bpg: gp > 0 ? (totals.blocks / gp).toFixed(1) : '0.0',
+      tpg: gp > 0 ? (totals.turnovers / gp).toFixed(1) : '0.0',
+      fpg: gp > 0 ? (totals.fouls / gp).toFixed(1) : '0.0'
     };
   }).filter(p => p.games > 0);
 

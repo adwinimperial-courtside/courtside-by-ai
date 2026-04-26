@@ -19,10 +19,30 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
     return false;
   };
 
+  // Only actually played games — matches standings logic
+  function isActualPlayedGame(g) {
+    return (
+      g.status === 'completed' &&
+      !g.is_default_result &&
+      g.result_type !== 'default' &&
+      !g.exclude_from_player_stats &&
+      !g.exclude_from_awards
+    );
+  }
+  const validGameIds = new Set(games.filter(isActualPlayedGame).map(g => g.id));
+
+  // Count completed games per team (consistent with standings)
+  const teamGameCounts = {};
+  games.filter(isActualPlayedGame).forEach(g => {
+    teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
+    teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
+  });
+
   const playerAggregates = players.map(player => {
-    const playerStats = stats.filter(s => s.player_id === player.id).filter(didPlayerParticipate);
+    const playerStats = stats.filter(s => s.player_id === player.id && validGameIds.has(s.game_id)).filter(didPlayerParticipate);
     const team = teams.find(t => t.id === player.team_id);
-    const gamesPlayed = playerStats.length;
+    const teamMaxGames = teamGameCounts[player.team_id] || 0;
+    const gamesPlayed = Math.min(playerStats.length, teamMaxGames);
 
     const totals = playerStats.reduce((acc, stat) => ({
       points: acc.points + calcPoints(stat),
@@ -36,6 +56,7 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
     return {
       ...player,
       team,
+      gamesPlayed,
       points: gamesPlayed > 0 ? totals.points / gamesPlayed : 0,
       threes: gamesPlayed > 0 ? totals.threes / gamesPlayed : 0,
       rebounds: gamesPlayed > 0 ? totals.rebounds / gamesPlayed : 0,
@@ -43,7 +64,10 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
       steals: gamesPlayed > 0 ? totals.steals / gamesPlayed : 0,
       blocks: gamesPlayed > 0 ? totals.blocks / gamesPlayed : 0,
     };
-  }).filter(p => stats.some(s => s.player_id === p.id));
+  }).filter(p => {
+    const teamGames = teamGameCounts[p.team_id] || 0;
+    return teamGames > 0 && p.gamesPlayed > 0;
+  });
 
   const categories = [
     { key: 'points', label: 'PPG Leaders', icon: '🏀' },

@@ -20,19 +20,33 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
     return false;
   };
 
-  // Count completed games per team
+  // Only actually played games — matches standings logic
+  function isActualPlayedGame(g) {
+    return (
+      g.status === 'completed' &&
+      !g.is_default_result &&
+      g.result_type !== 'default' &&
+      !g.exclude_from_player_stats &&
+      !g.exclude_from_awards
+    );
+  }
+  const validGameIds = new Set(games.filter(isActualPlayedGame).map(g => g.id));
+
+  // Count completed games per team (consistent with standings)
   const teamGameCounts = {};
-  games.filter(g => g.status === 'completed').forEach(g => {
+  games.filter(isActualPlayedGame).forEach(g => {
     teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
     teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
   });
 
   const playerAggregates = players.map(player => {
-    const playerStats = stats.filter(s => s.player_id === player.id);
+    const playerStats = stats.filter(s => s.player_id === player.id && validGameIds.has(s.game_id));
     const participatedStats = playerStats.filter(didPlayerParticipate);
+    // Cap GP by team's actual game count
+    const teamMaxGames = teamGameCounts[player.team_id] || 0;
     const team = teams.find(t => t.id === player.team_id);
-    const gamesPlayed = participatedStats.length;
-    const teamGames = teamGameCounts[player.team_id] || 0;
+    const gamesPlayed = Math.min(participatedStats.length, teamMaxGames);
+    const teamGames = teamMaxGames;
     
     const totals = participatedStats.reduce((acc, stat) => ({
       points: acc.points + calcPoints(stat),

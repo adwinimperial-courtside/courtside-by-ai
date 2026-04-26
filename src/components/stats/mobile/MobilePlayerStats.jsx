@@ -36,6 +36,14 @@ export default function MobilePlayerStats({ players, teams, stats, games = [] })
 
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
+  // Compute each team's actual completed games (consistent with standings)
+  const teamGameCounts = {};
+  teams.forEach(team => {
+    teamGameCounts[team.id] = games.filter(g =>
+      isActualPlayedGame(g) && (g.home_team_id === team.id || g.away_team_id === team.id)
+    ).length;
+  });
+
   const playerAggregates = players.map(player => {
     // Only count stats from actual played games
     const playerStats = stats
@@ -58,7 +66,9 @@ export default function MobilePlayerStats({ players, teams, stats, games = [] })
       games: acc.games + 1
     }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, games: 0 });
 
-    const gp = totals.games;
+    // Cap GP by team's actual game count (consistent with standings)
+    const teamMaxGames = teamGameCounts[player.team_id] || totals.games;
+    const gp = Math.min(totals.games, teamMaxGames);
     return {
       ...player,
       team,
