@@ -141,9 +141,9 @@ export default function SchedulePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Leagues</SelectItem>
-                {visibleLeagues.map(league => (
-                  <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
-                ))}
+                 {[...visibleLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(league => (
+                   <SelectItem key={league.id} value={league.id}>{league.name}</SelectItem>
+                 ))}
               </SelectContent>
             </Select>
           </div>
@@ -156,9 +156,9 @@ export default function SchedulePage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Teams</SelectItem>
-                {visibleTeams.map(team => (
-                  <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                ))}
+                 {[...visibleTeams].sort((a, b) => a.name.localeCompare(b.name)).map(team => (
+                   <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+                 ))}
               </SelectContent>
             </Select>
           </div>

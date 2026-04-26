@@ -102,7 +102,7 @@ export default function AwardLeadersPage() {
               </SelectTrigger>
               <SelectContent>
                  <SelectItem value="all">All Leagues</SelectItem>
-                 {visibleLeagues.map(league => (
+                 {[...visibleLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(league => (
                    <SelectItem key={league.id} value={league.id}>
                      {league.name} ({league.season})
                    </SelectItem>

@@ -274,7 +274,7 @@ export default function LeagueUsers() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Leagues</SelectItem>
-              {visibleLeagues.map(l => (
+              {[...visibleLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(l => (
                 <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
               ))}
             </SelectContent>

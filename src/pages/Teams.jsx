@@ -237,7 +237,7 @@ export default function TeamsPage() {
                </SelectTrigger>
                <SelectContent>
                  <SelectItem value="all">All Leagues</SelectItem>
-                 {assignedLeagues.map(league => (
+                 {[...assignedLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(league => (
                    <SelectItem key={league.id} value={league.id}>
                      {league.name}
                    </SelectItem>
