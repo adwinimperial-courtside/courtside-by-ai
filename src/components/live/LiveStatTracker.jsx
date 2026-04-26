@@ -1430,64 +1430,48 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         if (!open) resetSubDialog();
         setShowSubDialog(open);
       }}>
-        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Header */}
-          <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-xl text-slate-900 font-bold">
-              {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
+          <div className="px-4 pt-4 pb-2.5 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-base text-slate-900 font-bold">
+              {subStep === 'select_out' ? 'Select Player OUT' : (
+                <span>
+                  {homePlayersOut.length > 0 && <span className="text-blue-700">#{homePlayersOut[0]?.jersey_number} {homePlayersOut[0]?.name} <span className="text-red-500 font-black">OUT</span></span>}
+                  {awayPlayersOut.length > 0 && homePlayersOut.length === 0 && <span className="text-red-700">#{awayPlayersOut[0]?.jersey_number} {awayPlayersOut[0]?.name} <span className="text-red-500 font-black">OUT</span></span>}
+                  {homePlayersOut.length > 1 && <span className="text-slate-500 text-xs font-normal ml-1">+{homePlayersOut.length - 1} more</span>}
+                  {awayPlayersOut.length > 1 && homePlayersOut.length === 0 && <span className="text-slate-500 text-xs font-normal ml-1">+{awayPlayersOut.length - 1} more</span>}
+                </span>
+              )}
             </DialogTitle>
-            {subStep === 'select_out' ? (
-              <div className="flex items-center gap-4 mt-1.5">
-                {homePlayersOut.length > 0 && (
-                  <span className="text-sm font-semibold text-blue-600">Home: {homePlayersOut.length} out</span>
-                )}
-                {awayPlayersOut.length > 0 && (
-                  <span className="text-sm font-semibold text-red-600">Away: {awayPlayersOut.length} out</span>
-                )}
-                {homePlayersOut.length === 0 && awayPlayersOut.length === 0 && (
-                  <span className="text-sm text-slate-400">Tap on-court players from either or both teams</span>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 mt-1.5">
-                {homePlayersOut.length > 0 && (
-                  <span className={`text-sm font-semibold ${homePlayersIn.length === homePlayersOut.length ? 'text-green-600' : 'text-blue-600'}`}>
-                    Home: {homePlayersIn.length}/{homePlayersOut.length}
-                  </span>
-                )}
-                {awayPlayersOut.length > 0 && (
-                  <span className={`text-sm font-semibold ${awayPlayersIn.length === awayPlayersOut.length ? 'text-green-600' : 'text-red-600'}`}>
-                    Away: {awayPlayersIn.length}/{awayPlayersOut.length}
-                  </span>
-                )}
-              </div>
-            )}
+            <p className="text-xs text-slate-500 mt-0.5">
+              {subStep === 'select_out' ? 'Tap a player on the court to sub out' : 'Select player IN'}
+            </p>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
             {subStep === 'select_out' ? (
               <>
                 {/* HOME team — blue accent */}
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
-                    <span className="font-bold text-blue-700 text-sm">{homeTeam?.name}</span>
-                    <span className="ml-auto text-xs text-blue-500 font-semibold">{homePlayersOut.length} selected</span>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
+                    <span className="font-bold text-blue-700 text-xs">{homeTeam?.name}</span>
+                    {homePlayersOut.length > 0 && <span className="ml-auto text-xs text-blue-500 font-semibold">{homePlayersOut.length} selected</span>}
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {homeActivePlayers.map(player => {
                       const isSelected = homePlayersOut.some(p => p.id === player.id);
                       return (
                         <button key={player.id} onClick={() => togglePlayerOut(player, game.home_team_id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                            ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                            <p className="text-xs text-slate-500">{player.position}</p>
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border-2 transition-all text-left
+                            ${isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-300 ring-offset-1' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${isSelected ? 'bg-blue-600' : 'bg-slate-500'}`}>{player.jersey_number}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900 text-xs leading-tight truncate">{player.name}</p>
+                            {player.position && <p className="text-[10px] text-slate-400">{player.position}</p>}
                           </div>
-                          {isSelected && <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
+                          {isSelected && <span className="text-blue-500 text-sm font-black flex-shrink-0">✓</span>}
                         </button>
                       );
                     })}
@@ -1496,24 +1480,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
                 {/* AWAY team — red accent */}
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
-                    <span className="font-bold text-red-700 text-sm">{awayTeam?.name}</span>
-                    <span className="ml-auto text-xs text-red-500 font-semibold">{awayPlayersOut.length} selected</span>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
+                    <span className="font-bold text-red-700 text-xs">{awayTeam?.name}</span>
+                    {awayPlayersOut.length > 0 && <span className="ml-auto text-xs text-red-500 font-semibold">{awayPlayersOut.length} selected</span>}
                   </div>
-                  <div className="space-y-1.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                     {awayActivePlayers.map(player => {
                       const isSelected = awayPlayersOut.some(p => p.id === player.id);
                       return (
                         <button key={player.id} onClick={() => togglePlayerOut(player, game.away_team_id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                            ${isSelected ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                            <p className="text-xs text-slate-500">{player.position}</p>
+                          className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border-2 transition-all text-left
+                            ${isSelected ? 'border-red-500 bg-red-50 ring-2 ring-red-300 ring-offset-1' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${isSelected ? 'bg-red-600' : 'bg-slate-500'}`}>{player.jersey_number}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900 text-xs leading-tight truncate">{player.name}</p>
+                            {player.position && <p className="text-[10px] text-slate-400">{player.position}</p>}
                           </div>
-                          {isSelected && <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
+                          {isSelected && <span className="text-red-500 text-sm font-black flex-shrink-0">✓</span>}
                         </button>
                       );
                     })}
@@ -1522,25 +1506,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </>
             ) : (
               <>
-                {/* HOME replacements — compact 2-col grid */}
+                {/* HOME replacements — compact chip grid */}
                 {homePlayersOut.length > 0 && (
                   <div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-2">
-                      <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1.5">Home — Coming Out</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {homePlayersOut.map(p => (
-                          <div key={p.id} className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-blue-600">{p.jersey_number}</div>
-                            <span className="text-xs font-semibold text-slate-800">{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
+                      <span className="font-bold text-blue-700 text-xs">{homeTeam?.name}</span>
+                      <span className={`ml-auto text-xs font-bold ${homePlayersIn.length === homePlayersOut.length ? 'text-green-600' : 'text-blue-500'}`}>
+                        {homePlayersIn.length}/{homePlayersOut.length} selected
+                      </span>
                     </div>
-                    <p className="text-xs font-bold text-blue-700 mb-2 px-1">Select {homePlayersOut.length} replacement{homePlayersOut.length > 1 ? 's' : ''} ({homePlayersIn.length}/{homePlayersOut.length})</p>
                     {homeBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
-                      <p className="text-center text-red-500 py-3 text-xs font-semibold">No eligible home bench players.</p>
+                      <p className="text-center text-red-500 py-2 text-xs font-semibold">No eligible home bench players.</p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {[...homeBenchPlayers].sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0)).map(player => {
                           if (!isEligibleReplacement(player.id)) return null;
                           const isSelected = homePlayersIn.includes(player.id);
@@ -1549,15 +1528,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                           return (
                             <button key={player.id} disabled={limitReached}
                               onClick={() => togglePlayerIn(player.id, game.home_team_id)}
-                              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left w-full
-                                ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
-                                  isSelected ? 'border-blue-500 bg-blue-100 ring-2 ring-blue-400 ring-offset-1' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/60'}`}>
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${isSelected ? 'bg-blue-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
-                              <div className="flex-1 min-w-0">
+                              className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border-2 transition-all text-left
+                                ${limitReached ? 'opacity-35 cursor-not-allowed border-slate-200 bg-white' :
+                                  isSelected ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-400 ring-offset-1' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/60'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${isSelected ? 'bg-blue-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
+                              <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-slate-900 text-xs leading-tight truncate">{player.name}</p>
-                                <p className="text-[10px] text-slate-500 truncate">{player.position}{pStats ? ` · ${pStats.fouls||0}F` : ''}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{player.position || ''}{pStats ? `${player.position ? ' · ' : ''}${pStats.fouls||0}F` : ''}</p>
                               </div>
-                              {isSelected && <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">✓</div>}
+                              {isSelected && <span className="text-blue-500 text-sm font-black flex-shrink-0">✓</span>}
                             </button>
                           );
                         })}
@@ -1566,25 +1545,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   </div>
                 )}
 
-                {/* AWAY replacements — compact 2-col grid */}
+                {/* AWAY replacements — compact chip grid */}
                 {awayPlayersOut.length > 0 && (
                   <div>
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-2">
-                      <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-1.5">Away — Coming Out</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {awayPlayersOut.map(p => (
-                          <div key={p.id} className="flex items-center gap-1 bg-white border border-red-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-red-600">{p.jersey_number}</div>
-                            <span className="text-xs font-semibold text-slate-800">{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded flex items-center justify-center text-[10px] text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
+                      <span className="font-bold text-red-700 text-xs">{awayTeam?.name}</span>
+                      <span className={`ml-auto text-xs font-bold ${awayPlayersIn.length === awayPlayersOut.length ? 'text-green-600' : 'text-red-500'}`}>
+                        {awayPlayersIn.length}/{awayPlayersOut.length} selected
+                      </span>
                     </div>
-                    <p className="text-xs font-bold text-red-700 mb-2 px-1">Select {awayPlayersOut.length} replacement{awayPlayersOut.length > 1 ? 's' : ''} ({awayPlayersIn.length}/{awayPlayersOut.length})</p>
                     {awayBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
-                      <p className="text-center text-red-500 py-3 text-xs font-semibold">No eligible away bench players.</p>
+                      <p className="text-center text-red-500 py-2 text-xs font-semibold">No eligible away bench players.</p>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {[...awayBenchPlayers].sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0)).map(player => {
                           if (!isEligibleReplacement(player.id)) return null;
                           const isSelected = awayPlayersIn.includes(player.id);
@@ -1593,15 +1567,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                           return (
                             <button key={player.id} disabled={limitReached}
                               onClick={() => togglePlayerIn(player.id, game.away_team_id)}
-                              className={`flex items-center gap-2 p-2.5 rounded-xl border-2 transition-all text-left w-full
-                                ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
-                                  isSelected ? 'border-red-500 bg-red-100 ring-2 ring-red-400 ring-offset-1' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/60'}`}>
-                              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${isSelected ? 'bg-red-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
-                              <div className="flex-1 min-w-0">
+                              className={`flex items-center gap-2 px-2.5 py-2 rounded-xl border-2 transition-all text-left
+                                ${limitReached ? 'opacity-35 cursor-not-allowed border-slate-200 bg-white' :
+                                  isSelected ? 'border-red-500 bg-red-50 ring-2 ring-red-400 ring-offset-1' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/60'}`}>
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm flex-shrink-0 ${isSelected ? 'bg-red-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
+                              <div className="min-w-0 flex-1">
                                 <p className="font-semibold text-slate-900 text-xs leading-tight truncate">{player.name}</p>
-                                <p className="text-[10px] text-slate-500 truncate">{player.position}{pStats ? ` · ${pStats.fouls||0}F` : ''}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{player.position || ''}{pStats ? `${player.position ? ' · ' : ''}${pStats.fouls||0}F` : ''}</p>
                               </div>
-                              {isSelected && <div className="w-5 h-5 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0">✓</div>}
+                              {isSelected && <span className="text-red-500 text-sm font-black flex-shrink-0">✓</span>}
                             </button>
                           );
                         })}
@@ -1614,10 +1588,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           {/* Sticky footer */}
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 flex-shrink-0">
+          <div className="px-3 pb-3 pt-2 border-t border-slate-100 flex-shrink-0">
             {subStep === 'select_out' ? (
               <Button
-                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow"
+                className="w-full h-11 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow"
                 disabled={homePlayersOut.length === 0 && awayPlayersOut.length === 0}
                 onClick={() => setSubStep('select_in')}
               >
@@ -1625,16 +1599,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               </Button>
             ) : (
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 h-12 border-slate-300"
+                <Button variant="outline" className="flex-1 h-11 border-slate-300 text-sm"
                   onClick={() => { setSubStep('select_out'); setHomePlayersIn([]); setAwayPlayersIn([]); }}>
                   Back
                 </Button>
                 <Button
-                  className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
+                  className="flex-1 h-11 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-sm"
                   disabled={!isSubConfirmReady()}
                   onClick={handleConfirmSubstitution}
                 >
-                  Confirm Substitution
+                  Confirm Sub
                 </Button>
               </div>
             )}
