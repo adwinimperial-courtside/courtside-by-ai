@@ -1303,9 +1303,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 </motion.div>
               ); })}
             </div>
-            <Button onClick={() => { resetSubDialog(); setShowSubDialog(true); }} className="w-full h-10 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg">
-              <RefreshCw className="w-4 h-4 mr-2" />Make Substitution
-            </Button>
+            {/* Make Substitution button hidden — use SUB buttons on player cards */}
           </div>
           {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
@@ -1339,19 +1337,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <div className="flex-shrink-0">
               {StatPanel({ large: true, showSub: false })}
             </div>
-            {/* Substitution strip — compact, attached to stat buttons */}
-            <div className="flex-shrink-0 mt-1.5 mb-2">
-              <Button
-                onClick={() => { if (repairMode || isInFinalReview) return; resetSubDialog(); setShowSubDialog(true); }}
-                disabled={!!repairMode || isInFinalReview}
-                className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
-                style={{ height: '36px' }}
-                title={isInFinalReview ? 'Substitutions are locked during final review' : undefined}
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                {isInFinalReview ? 'Substitutions Locked (Review Mode)' : 'Make Substitution'}
-              </Button>
-            </div>
+            {/* Substitution strip — hidden, use SUB buttons on player cards instead */}
             {/* Activity log — all remaining space */}
             <div className="flex-1 min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
               {ActivityLog({ compact: true })}
