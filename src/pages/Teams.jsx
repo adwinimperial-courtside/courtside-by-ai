@@ -70,7 +70,7 @@ export default function TeamsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams, isLoading } = useQuery({
+  const { data: teams = [], isLoading } = useQuery({
     queryKey: ['teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague) return [];
@@ -80,7 +80,7 @@ export default function TeamsPage() {
       return base44.entities.Team.filter({ league_id: selectedLeague });
     },
     enabled: !!selectedLeague,
-    placeholderData: [],
+    initialData: [],
   });
 
   const { data: games = [] } = useQuery({
