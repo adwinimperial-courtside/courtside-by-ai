@@ -110,8 +110,9 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
         
         if (!player || !team || !teamData) return null;
 
-        const avgGis = data.gp > 0 ? data.sumGis / data.gp : 0;
-        const gpPct = teamData.gamesPlayed > 0 ? data.gp / teamData.gamesPlayed : 0;
+        const effectiveGp = Math.min(data.gp, teamData.gamesPlayed);
+        const avgGis = effectiveGp > 0 ? data.sumGis / effectiveGp : 0;
+        const gpPct = teamData.gamesPlayed > 0 ? effectiveGp / teamData.gamesPlayed : 0;
         const eligible = gpPct >= cfg.mvp_min_games_percent / 100;
 
         if (!eligible) return null;
@@ -123,7 +124,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
           playerId,
           player,
           team,
-          gp: data.gp,
+          gp: effectiveGp,
           avgGis: avgGis.toFixed(1),
           gpPct: (gpPct * 100).toFixed(1),
           mvpScore: mvpScore.toFixed(1),
@@ -200,19 +201,20 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
 
         if (!player || !team || tg === undefined || data.gp === 0 || tg === 0) return null;
 
-        const gpPct = data.gp / tg;
+        const effectiveGp = Math.min(data.gp, tg);
+        const gpPct = effectiveGp / tg;
         const eligible = gpPct >= cfg.dpoy_min_games_percent / 100;
 
         if (!eligible) return null;
 
-        const avgDefGis = data.sumDefGis / data.gp;
+        const avgDefGis = data.sumDefGis / effectiveGp;
         const dpoyScore = avgDefGis + cfg.dpoy_gp_percent_weight * gpPct - cfg.dpoy_tech_final_penalty * data.sumTech - cfg.dpoy_unsp_final_penalty * data.sumUnsp;
 
         return {
           playerId,
           player,
           team,
-          gp: data.gp,
+          gp: effectiveGp,
           avgDefGis: avgDefGis.toFixed(1),
           gpPct: (gpPct * 100).toFixed(1),
           sumTech: data.sumTech,
