@@ -310,6 +310,7 @@ Write a Facebook post-game story following this structure:
    - If relevant, weave in non-scoring factors (rebounding edge, steals creating transition, foul trouble, turnovers) as part of the story, not as a separate section.
    - Close with a punchy final line — something that captures the emotion of the result and sticks with the reader.
 5. After the story, add: 🏆 PLAYER OF THE GAME: [Name] (#[Jersey], [Team]) — [Key stats in format: PTS · REB · AST or whatever stats define their impact]
+   IMPORTANT: The Player of the Game has already been officially designated. You MUST use: ${(() => { const pogPlayer = players.find(p => p.id === selectedGame.player_of_game); const pogStat = statsSummary.find(s => s.name === pogPlayer?.name); const pogTeam = teams.find(t => t.id === pogPlayer?.team_id); return pogPlayer ? `${pogPlayer.name} (#${pogPlayer.jersey_number}, ${pogTeam?.name})${pogStat ? ` — ${pogStat.pts} pts${pogStat.reb >= 1 ? ` · ${pogStat.reb} reb` : ""}${pogStat.ast >= 1 ? ` · ${pogStat.ast} ast` : ""}${pogStat.stl >= 1 ? ` · ${pogStat.stl} stl` : ""}${pogStat.blk >= 1 ? ` · ${pogStat.blk} blk` : ""}` : ""}` : "Not designated"; })()}. Do NOT choose a different player.
 6. End EXACTLY with: 👉 Full box score & stats: https://courtside-by-ai.com/schedule
 
 WRITING STYLE:
