@@ -83,6 +83,40 @@ export default function TeamsPage() {
     placeholderData: [],
   });
 
+  const { data: games = [] } = useQuery({
+    queryKey: ['games', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' });
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 0,
+  });
+
+  // Compute wins/losses dynamically from completed games (same logic as Standings page)
+  const computedStandings = React.useMemo(() => {
+    const map = {};
+    (teams || []).forEach(t => { map[t.id] = { wins: 0, losses: 0 }; });
+    games.forEach(game => {
+      if (game.is_default_result) {
+        if (map[game.default_winner_team_id]) map[game.default_winner_team_id].wins++;
+        if (map[game.default_loser_team_id]) map[game.default_loser_team_id].losses++;
+      } else {
+        const homeScore = game.home_score || 0;
+        const awayScore = game.away_score || 0;
+        if (map[game.home_team_id]) {
+          if (homeScore > awayScore) map[game.home_team_id].wins++;
+          else map[game.home_team_id].losses++;
+        }
+        if (map[game.away_team_id]) {
+          if (awayScore > homeScore) map[game.away_team_id].wins++;
+          else map[game.away_team_id].losses++;
+        }
+      }
+    });
+    return map;
+  }, [teams, games]);
+
   const createTeamMutation = useMutation({
     mutationFn: async (teamData) => {
       const { captain, ...teamInfo } = teamData;
@@ -273,7 +307,7 @@ export default function TeamsPage() {
               {filteredTeams.map((team) => (
                 <div key={team.id} className="group relative">
                   <TeamCard 
-                    team={team} 
+                    team={{ ...team, wins: computedStandings[team.id]?.wins ?? team.wins ?? 0, losses: computedStandings[team.id]?.losses ?? team.losses ?? 0 }}
                     league={leagues.find(l => l.id === team.league_id)}
                     onClick={() => setSelectedTeam(team)}
                   />
