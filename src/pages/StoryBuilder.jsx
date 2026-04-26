@@ -74,7 +74,8 @@ export default function StoryBuilder() {
     if (!currentUser) return false;
     if (currentUser.user_type === "app_admin") return true;
     if (currentUser.user_type === "league_admin") {
-      return l.created_by === currentUser.email;
+      const assignedIds = currentUser.assigned_league_ids || [];
+      return assignedIds.includes(l.id) || l.created_by === currentUser.email;
     }
     return false;
   });
