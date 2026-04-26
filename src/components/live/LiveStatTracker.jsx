@@ -81,10 +81,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: liveGame = game } = useQuery({
     queryKey: ['game', game.id],
     queryFn: () => base44.entities.Game.get(game.id),
-    staleTime: 0, // Always fresh to catch clock updates immediately
+    staleTime: 0,
     refetchInterval: (data) => {
       const isRunning = data?.clock_running ?? game.clock_running;
-      return isRunning ? 500 : false; // Poll every 500ms if running, else off
+      return isRunning ? 3000 : false; // Poll every 3s if running (was 500ms — caused rate limits)
     },
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -94,7 +94,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
     initialData: initialStats,
-    staleTime: 5000, // Keep data fresh for 5 seconds, reduce refetch spam
+    staleTime: 10000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -104,7 +104,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
-    staleTime: 5000,
+    staleTime: 10000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -121,7 +121,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 300); // Short debounce to batch rapid multi-device updates
+      }, 1500); // Increased debounce to reduce refetch flood
     });
 
     // Invalidate GameLogs on all events so the activity feed stays in sync
@@ -129,7 +129,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 300);
+      }, 1500);
     });
     
     return () => {
@@ -283,8 +283,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     const interval = setInterval(() => {
       const currentComputedTimeLeft = computeTimeLeft(game);
-      const updates = [];
 
+      // Update all active players' clock state but batch into a single sequential write per player
+      // to avoid flooding the API (was 10s interval causing rate limits)
+      const updates = [];
       activePlayers.forEach(stat => {
         const clockState = playerGameClockStateRef.current[stat.player_id];
         if (clockState && clockState.period === game.clock_period) {
@@ -300,9 +302,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
 
       if (updates.length > 0) {
-        Promise.all(updates).catch(() => {});
+        // Run sequentially to avoid parallel write flood
+        updates.reduce((p, fn) => p.then(() => fn).catch(() => {}), Promise.resolve());
       }
-    }, 10000); // Update every 10 seconds
+    }, 30000); // Update every 30 seconds (was 10s — too frequent, caused rate limits)
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.game_mode, game.clock_started_at, game.clock_time_left, game.clock_period, activePlayers, updateStatMutation]);
