@@ -1051,6 +1051,193 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
+  // ── Inline substitution picker content (reused in both desktop inline and mobile dialog) ──
+  const SubPickerContent = () => (
+    <>
+      {/* Header */}
+      <div className="px-3 pt-3 pb-2 border-b border-slate-100 flex-shrink-0">
+        <p className="text-sm font-bold text-slate-900">
+          {subStep === 'select_out' ? 'Select Player OUT' : (
+            <>
+              {homePlayersOut.length > 0 && <span className="text-blue-700">#{homePlayersOut[0]?.jersey_number} {homePlayersOut[0]?.name} <span className="text-red-500">OUT</span></span>}
+              {awayPlayersOut.length > 0 && homePlayersOut.length === 0 && <span className="text-red-700">#{awayPlayersOut[0]?.jersey_number} {awayPlayersOut[0]?.name} <span className="text-red-500">OUT</span></span>}
+            </>
+          )}
+        </p>
+        <p className="text-[11px] text-slate-500 mt-0.5">
+          {subStep === 'select_out' ? 'Tap a player to sub out' : 'Select player IN'}
+        </p>
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-3 min-h-0">
+        {subStep === 'select_out' ? (
+          <>
+            {/* HOME on-court */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-4 h-4 rounded flex items-center justify-center text-[9px] text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
+                <span className="font-bold text-blue-700 text-xs">{homeTeam?.name}</span>
+                {homePlayersOut.length > 0 && <span className="ml-auto text-xs text-blue-500 font-semibold">{homePlayersOut.length} ✓</span>}
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {homeActivePlayers.map(player => {
+                  const isSelected = homePlayersOut.some(p => p.id === player.id);
+                  return (
+                    <button key={player.id} onClick={() => togglePlayerOut(player, game.home_team_id)}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border-2 transition-all text-left
+                        ${isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-300' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${isSelected ? 'bg-blue-600' : 'bg-slate-500'}`}>{player.jersey_number}</div>
+                      <p className="font-semibold text-slate-900 text-xs truncate flex-1">{player.name}</p>
+                      {isSelected && <span className="text-blue-500 font-black text-xs flex-shrink-0">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {/* AWAY on-court */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-4 h-4 rounded flex items-center justify-center text-[9px] text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
+                <span className="font-bold text-red-700 text-xs">{awayTeam?.name}</span>
+                {awayPlayersOut.length > 0 && <span className="ml-auto text-xs text-red-500 font-semibold">{awayPlayersOut.length} ✓</span>}
+              </div>
+              <div className="grid grid-cols-1 gap-1">
+                {awayActivePlayers.map(player => {
+                  const isSelected = awayPlayersOut.some(p => p.id === player.id);
+                  return (
+                    <button key={player.id} onClick={() => togglePlayerOut(player, game.away_team_id)}
+                      className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border-2 transition-all text-left
+                        ${isSelected ? 'border-red-500 bg-red-50 ring-1 ring-red-300' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${isSelected ? 'bg-red-600' : 'bg-slate-500'}`}>{player.jersey_number}</div>
+                      <p className="font-semibold text-slate-900 text-xs truncate flex-1">{player.name}</p>
+                      {isSelected && <span className="text-red-500 font-black text-xs flex-shrink-0">✓</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* HOME bench replacements */}
+            {homePlayersOut.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="font-bold text-blue-700 text-xs">Pick IN</span>
+                  <span className={`ml-auto text-xs font-bold ${homePlayersIn.length === homePlayersOut.length ? 'text-green-600' : 'text-blue-500'}`}>
+                    {homePlayersIn.length}/{homePlayersOut.length}
+                  </span>
+                </div>
+                {homeBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
+                  <p className="text-center text-red-500 py-1 text-xs font-semibold">No eligible bench players.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-1">
+                    {[...homeBenchPlayers].sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0)).map(player => {
+                      if (!isEligibleReplacement(player.id)) return null;
+                      const isSelected = homePlayersIn.includes(player.id);
+                      const limitReached = !isSelected && homePlayersIn.length >= homePlayersOut.length;
+                      const pStats = existingStats.find(s => s.player_id === player.id);
+                      return (
+                        <button key={player.id} disabled={limitReached}
+                          onClick={() => togglePlayerIn(player.id, game.home_team_id)}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border-2 transition-all text-left
+                            ${limitReached ? 'opacity-35 cursor-not-allowed border-slate-200 bg-white' :
+                              isSelected ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-400' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/60'}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${isSelected ? 'bg-blue-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900 text-xs truncate">{player.name}</p>
+                            {pStats && <p className="text-[10px] text-slate-400">{pStats.fouls||0}F</p>}
+                          </div>
+                          {isSelected && <span className="text-blue-500 font-black text-xs flex-shrink-0">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            {/* AWAY bench replacements */}
+            {awayPlayersOut.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="font-bold text-red-700 text-xs">Pick IN</span>
+                  <span className={`ml-auto text-xs font-bold ${awayPlayersIn.length === awayPlayersOut.length ? 'text-green-600' : 'text-red-500'}`}>
+                    {awayPlayersIn.length}/{awayPlayersOut.length}
+                  </span>
+                </div>
+                {awayBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
+                  <p className="text-center text-red-500 py-1 text-xs font-semibold">No eligible bench players.</p>
+                ) : (
+                  <div className="grid grid-cols-1 gap-1">
+                    {[...awayBenchPlayers].sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0)).map(player => {
+                      if (!isEligibleReplacement(player.id)) return null;
+                      const isSelected = awayPlayersIn.includes(player.id);
+                      const limitReached = !isSelected && awayPlayersIn.length >= awayPlayersOut.length;
+                      const pStats = existingStats.find(s => s.player_id === player.id);
+                      return (
+                        <button key={player.id} disabled={limitReached}
+                          onClick={() => togglePlayerIn(player.id, game.away_team_id)}
+                          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border-2 transition-all text-left
+                            ${limitReached ? 'opacity-35 cursor-not-allowed border-slate-200 bg-white' :
+                              isSelected ? 'border-red-500 bg-red-50 ring-1 ring-red-400' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/60'}`}>
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-xs flex-shrink-0 ${isSelected ? 'bg-red-600' : 'bg-slate-400'}`}>{player.jersey_number}</div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-slate-900 text-xs truncate">{player.name}</p>
+                            {pStats && <p className="text-[10px] text-slate-400">{pStats.fouls||0}F</p>}
+                          </div>
+                          {isSelected && <span className="text-red-500 font-black text-xs flex-shrink-0">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="px-3 pb-3 pt-2 border-t border-slate-100 flex-shrink-0">
+        {subStep === 'select_out' ? (
+          <Button
+            className="w-full h-9 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-xs shadow"
+            disabled={homePlayersOut.length === 0 && awayPlayersOut.length === 0}
+            onClick={() => setSubStep('select_in')}
+          >
+            Next ({homePlayersOut.length + awayPlayersOut.length} out)
+          </Button>
+        ) : (
+          <div className="flex gap-1.5">
+            <Button variant="outline" className="flex-1 h-9 border-slate-300 text-xs"
+              onClick={() => { setSubStep('select_out'); setHomePlayersIn([]); setAwayPlayersIn([]); }}>
+              Back
+            </Button>
+            <Button
+              className="flex-1 h-9 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-xs"
+              disabled={!isSubConfirmReady()}
+              onClick={handleConfirmSubstitution}
+            >
+              Confirm Sub
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  // ── Desktop inline substitution picker — which team column to show in ──
+  // For select_out: show in home column (since both teams shown)
+  // For select_in: show in the column matching the outgoing player's team
+  const desktopSubSide = showSubDialog
+    ? subStep === 'select_out'
+      ? 'home' // show in home column for select_out (both teams listed)
+      : homePlayersOut.length > 0
+        ? 'home'
+        : 'away'
+    : null;
+
   // ── Team panel ──
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
@@ -1064,8 +1251,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
         : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
 
+    // Desktop inline picker: show if this column matches the active substitution side
+    const showInlinePicker = side !== undefined && showSubDialog && desktopSubSide === side;
+
     return (
-      <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden" style={borderStyle}>
+      <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden relative" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0"
@@ -1095,6 +1285,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           )}
         </div>
+
+        {/* Desktop inline substitution picker overlay */}
+        {showInlinePicker && (
+          <div className="absolute inset-0 z-20 bg-white/97 backdrop-blur-sm rounded-2xl flex flex-col shadow-xl border-2 border-slate-300 overflow-hidden">
+            <SubPickerContent />
+          </div>
+        )}
       </div>
     );
   };
@@ -1425,12 +1622,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </DialogContent>
       </Dialog>
 
-      {/* Substitution Dialog */}
+      {/* Substitution Dialog — mobile only (desktop uses inline column picker above) */}
       <Dialog open={showSubDialog} onOpenChange={(open) => {
         if (!open) resetSubDialog();
         setShowSubDialog(open);
       }}>
-        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
+        <DialogContent className="min-[900px]:hidden bg-white text-slate-900 border-slate-200 w-[95vw] max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden">
           {/* Header */}
           <div className="px-4 pt-4 pb-2.5 border-b border-slate-100 flex-shrink-0">
             <DialogTitle className="text-base text-slate-900 font-bold">
