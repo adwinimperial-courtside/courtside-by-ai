@@ -36,11 +36,11 @@ export default function LiveGamePage() {
     queryKey: ['game', gameId],
     queryFn: async () => {
       if (!gameId) return null;
-      const result = await base44.entities.Game.filter({ id: gameId });
-      return result?.[0] || null;
+      return await base44.entities.Game.get(gameId);
     },
     enabled: !!gameId,
     staleTime: 2000,
+    retry: 3,
   });
 
   const { data: teams = [] } = useQuery({
@@ -48,10 +48,10 @@ export default function LiveGamePage() {
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homeTeam, awayTeam] = await Promise.all([
-        base44.entities.Team.filter({ id: game.home_team_id }),
-        base44.entities.Team.filter({ id: game.away_team_id })
+        base44.entities.Team.get(game.home_team_id),
+        base44.entities.Team.get(game.away_team_id)
       ]);
-      return [...(homeTeam || []), ...(awayTeam || [])];
+      return [homeTeam, awayTeam].filter(Boolean);
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
     staleTime: 0,
