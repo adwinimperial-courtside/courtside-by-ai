@@ -523,6 +523,15 @@ export default function EnhancedUserManagement() {
                           {userTypeIcon(user.user_type)}
                           {user.user_type}
                         </span>
+                        {user.user_type === "league_admin" && (user.assigned_league_ids || []).map(lid => {
+                          const league = leagues.find(l => l.id === lid);
+                          if (!league) return null;
+                          return (
+                            <span key={lid} className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                              {league.name}{league.season ? ` (${league.season})` : ""}
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
 
