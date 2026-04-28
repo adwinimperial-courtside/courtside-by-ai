@@ -5,7 +5,12 @@ export const queryClientInstance = new QueryClient({
 	defaultOptions: {
 		queries: {
 			refetchOnWindowFocus: false,
-			retry: 1,
+			staleTime: 30000,
+			retry: (failureCount, error) => {
+				// Never retry rate limit errors
+				if (error?.message?.includes('429') || error?.status === 429) return false;
+				return failureCount < 1;
+			},
 		},
 	},
 });
