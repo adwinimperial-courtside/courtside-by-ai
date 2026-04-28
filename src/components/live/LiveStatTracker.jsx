@@ -1002,7 +1002,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <div className="flex flex-col items-center gap-0.5">
           {/* Top row: jersey + SUB pill */}
           <div className="flex items-center justify-between w-full gap-0.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md bg-slate-600 flex-shrink-0">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0" style={{ backgroundColor: teamColor || '#64748b' }}>
               {player.jersey_number}
             </div>
             <button
@@ -1055,10 +1055,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
           <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0"
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0 overflow-hidden"
             style={{ backgroundColor: team?.color || '#64748b' }}
           >
-            {team?.name?.[0]}
+            {team?.logo_url ? (
+              <img src={team.logo_url} alt={team.name} className="w-full h-full object-cover" />
+            ) : team?.name?.[0]}
           </div>
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>

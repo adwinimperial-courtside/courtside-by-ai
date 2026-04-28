@@ -19,6 +19,14 @@ export default function SchedulePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  // Refresh schedule when any game changes (e.g. status goes live/completed)
+  React.useEffect(() => {
+    const unsubscribe = base44.entities.Game.subscribe(() => {
+      queryClient.invalidateQueries({ queryKey: ['schedule_games'] });
+    });
+    return unsubscribe;
+  }, [queryClient]);
+
   React.useEffect(() => {
     const fetchUser = async () => {
       try {
