@@ -36,8 +36,7 @@ export default function LiveGamePage() {
     queryKey: ['game', gameId],
     queryFn: async () => {
       if (!gameId) return null;
-      const result = await base44.entities.Game.filter({ id: gameId });
-      return result?.[0] || null;
+      return base44.entities.Game.get(gameId);
     },
     enabled: !!gameId,
     staleTime: 2000,
