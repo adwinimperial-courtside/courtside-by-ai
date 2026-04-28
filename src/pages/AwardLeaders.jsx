@@ -46,25 +46,25 @@ export default function AwardLeadersPage() {
 
   const { data: teams } = useQuery({
     queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
+    queryFn: () => base44.entities.Team.list('-created_date', 500),
     initialData: [],
   });
 
   const { data: players } = useQuery({
     queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryFn: () => base44.entities.Player.list('-created_date', 1000),
     initialData: [],
   });
 
   const { data: games } = useQuery({
     queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list(),
+    queryFn: () => base44.entities.Game.list('-game_date', 1000),
     initialData: [],
   });
 
   const { data: allStats } = useQuery({
     queryKey: ['allPlayerStats'],
-    queryFn: () => base44.entities.PlayerStats.list(),
+    queryFn: () => base44.entities.PlayerStats.list('-created_date', 5000),
     initialData: [],
   });
 
