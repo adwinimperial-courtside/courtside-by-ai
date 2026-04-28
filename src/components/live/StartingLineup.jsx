@@ -59,7 +59,8 @@ export default function StartingLineup({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-900 flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold bg-green-600"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: homeTeam?.color || '#16a34a' }}
                   >
                     {homeTeam?.name?.[0]}
                   </div>
@@ -87,7 +88,8 @@ export default function StartingLineup({
                       className="border-slate-400"
                     />
                     <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-green-600"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: homeTeam?.color || '#16a34a' }}
                     >
                       {player.jersey_number}
                     </div>
@@ -106,7 +108,8 @@ export default function StartingLineup({
               <div className="flex items-center justify-between">
                 <CardTitle className="text-slate-900 flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold bg-blue-600"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: awayTeam?.color || '#2563eb' }}
                   >
                     {awayTeam?.name?.[0]}
                   </div>
@@ -134,7 +137,8 @@ export default function StartingLineup({
                       className="border-slate-400"
                     />
                     <div 
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold bg-blue-600"
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: awayTeam?.color || '#2563eb' }}
                     >
                       {player.jersey_number}
                     </div>
