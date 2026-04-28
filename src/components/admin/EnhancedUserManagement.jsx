@@ -51,10 +51,7 @@ export default function EnhancedUserManagement() {
 
   const { data: leagues = [] } = useQuery({
     queryKey: ["allLeaguesAdmin"],
-    queryFn: async () => {
-      const res = await base44.functions.invoke('getPublicLeagues', {});
-      return res.data.leagues || [];
-    },
+    queryFn: () => base44.entities.League.list('-created_date', 200),
   });
 
   const { data: userLeagueIdentities = [] } = useQuery({
