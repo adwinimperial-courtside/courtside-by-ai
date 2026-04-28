@@ -31,15 +31,13 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   }, [game]);
 
   useEffect(() => {
-    if (game.status === 'in_progress') {
-      const unsubscribe = base44.entities.Game.subscribe((event) => {
-        if (event.id === game.id && event.type === 'update') {
-          setLiveGame(event.data);
-        }
-      });
-      return unsubscribe;
-    }
-  }, [game.id, game.status]);
+    const unsubscribe = base44.entities.Game.subscribe((event) => {
+      if (event.id === game.id && event.type === 'update') {
+        setLiveGame(event.data);
+      }
+    });
+    return unsubscribe;
+  }, [game.id]);
 
   // Fetch stats for in_progress games to show accurate live scores
   const { data: livePlayerStats = [] } = useQuery({
