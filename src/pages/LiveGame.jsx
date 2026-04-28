@@ -39,11 +39,12 @@ export default function LiveGamePage() {
       return base44.entities.Game.get(gameId);
     },
     enabled: !!gameId,
-    staleTime: 2000,
+    staleTime: 10000,
+    refetchOnWindowFocus: false,
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams', game?.league_id, game?.home_team_id, game?.away_team_id],
+    queryKey: ['teams', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homeTeam, awayTeam] = await Promise.all([
@@ -53,12 +54,11 @@ export default function LiveGamePage() {
       return [homeTeam, awayTeam].filter(Boolean);
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 300000, // Teams don't change during a game
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players', game?.league_id, game?.home_team_id, game?.away_team_id],
+    queryKey: ['players', game?.home_team_id, game?.away_team_id],
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homePlayers, awayPlayers] = await Promise.all([
@@ -68,8 +68,7 @@ export default function LiveGamePage() {
       return [...(homePlayers || []), ...(awayPlayers || [])];
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 300000, // Rosters don't change during a game
   });
 
   const { data: existingStats = [] } = useQuery({
@@ -79,7 +78,8 @@ export default function LiveGamePage() {
       return base44.entities.PlayerStats.filter({ game_id: gameId });
     },
     enabled: !!gameId,
-    staleTime: 2000,
+    staleTime: 5000,
+    refetchOnWindowFocus: false,
   });
 
   const updateGameMutation = useMutation({
