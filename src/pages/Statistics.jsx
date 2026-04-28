@@ -68,17 +68,17 @@ export default function StatisticsPage() {
       : leagues;
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams', selectedLeague],
+    queryKey: ['stats_teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 300000,
+    staleTime: 60000,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players', selectedLeague],
+    queryKey: ['stats_players', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
@@ -87,21 +87,21 @@ export default function StatisticsPage() {
       return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 300000,
+    staleTime: 60000,
   });
 
   const { data: games = [] } = useQuery({
-    queryKey: ['games', selectedLeague],
+    queryKey: ['stats_games', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 5000,
+    staleTime: 30000,
   });
 
   const { data: allStats = [] } = useQuery({
-    queryKey: ['allPlayerStats', selectedLeague],
+    queryKey: ['stats_playerStats', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague }, null, 1000);
@@ -110,7 +110,7 @@ export default function StatisticsPage() {
       return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 5000,
+    staleTime: 30000,
   });
 
   // Already league-filtered from queries above

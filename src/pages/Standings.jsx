@@ -45,23 +45,23 @@ export default function StandingsPage() {
       : leagues;
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams', selectedLeague],
+    queryKey: ['standings_teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 0,
+    staleTime: 60000,
   });
 
   const { data: games = [] } = useQuery({
-    queryKey: ['games', selectedLeague],
+    queryKey: ['standings_games', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
       return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 0,
+    staleTime: 30000,
   });
 
   // Data is already league-filtered from queries above

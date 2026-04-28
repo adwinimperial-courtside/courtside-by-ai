@@ -44,28 +44,50 @@ export default function AwardLeadersPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list('-created_date', 500),
-    initialData: [],
+  const { data: teams = [] } = useQuery({
+    queryKey: ['awards_teams', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 60000,
   });
 
-  const { data: players } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list('-created_date', 1000),
-    initialData: [],
+  const { data: players = [] } = useQuery({
+    queryKey: ['awards_players', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
+      const teamIds = leagueTeams.map(t => t.id);
+      if (teamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 60000,
   });
 
-  const { data: games } = useQuery({
-    queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list('-game_date', 1000),
-    initialData: [],
+  const { data: games = [] } = useQuery({
+    queryKey: ['awards_games', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 30000,
   });
 
-  const { data: allStats } = useQuery({
-    queryKey: ['allPlayerStats'],
-    queryFn: () => base44.entities.PlayerStats.list('-created_date', 5000),
-    initialData: [],
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['awards_playerStats', selectedLeague],
+    queryFn: async () => {
+      if (!selectedLeague || selectedLeague === 'all') return [];
+      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague }, null, 1000);
+      const gameIds = leagueGames.map(g => g.id);
+      if (gameIds.length === 0) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 30000,
   });
 
   const { data: allAwardSettings = [] } = useQuery({
@@ -119,9 +141,9 @@ export default function AwardLeadersPage() {
         ) : (
           <AwardLeadersComponent
             league={leagues.find(l => l.id === selectedLeague)}
-            teams={teams.filter(t => t.league_id === selectedLeague)}
-            games={games.filter(g => g.league_id === selectedLeague)}
-            players={players.filter(p => teams.find(t => t.id === p.team_id)?.league_id === selectedLeague)}
+            teams={teams}
+            games={games}
+            players={players}
             stats={allStats}
             awardSettings={leagueAwardSettings}
           />

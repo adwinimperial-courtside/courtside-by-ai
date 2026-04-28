@@ -56,7 +56,7 @@ export default function SchedulePage() {
       : leagues;
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
-    queryKey: ['teams', selectedLeague],
+    queryKey: ['schedule_teams', selectedLeague],
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
       if (!leagueId || leagueId === 'all') return [];
@@ -67,7 +67,7 @@ export default function SchedulePage() {
   });
 
   const { data: games = [], isLoading: gamesLoading } = useQuery({
-    queryKey: ['games', selectedLeague],
+    queryKey: ['schedule_games', selectedLeague],
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
       if (!leagueId || leagueId === 'all') return [];
