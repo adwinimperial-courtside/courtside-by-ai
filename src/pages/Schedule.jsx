@@ -82,7 +82,8 @@ export default function SchedulePage() {
       return base44.entities.Game.filter({ league_id: leagueId }, '-game_date', 1000) || [];
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 30000,
+    staleTime: 0,
+    refetchInterval: 15000,
   });
 
   const isLoading = teamsLoading || gamesLoading;
@@ -225,7 +226,7 @@ export default function SchedulePage() {
               leagues={leagues}
               onStartGame={() => startGame(game)}
               currentUser={currentUser}
-              onGameUpdated={() => queryClient.invalidateQueries({ queryKey: ['games'] })}
+              onGameUpdated={() => queryClient.invalidateQueries({ queryKey: ['schedule_games'] })}
               />
             ))}
           </div>
