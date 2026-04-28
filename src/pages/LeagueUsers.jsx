@@ -193,8 +193,10 @@ export default function LeagueUsers() {
     : leagues.filter(l => adminLeagueIds.includes(l.id));
 
   // Filter users: only those assigned to at least one of the admin's leagues, exclude app_admins
+  // For league_admin viewers: also exclude other league_admins (they manage different leagues)
   const relevantUsers = allUsers.filter(u => {
     if (u.user_type === 'app_admin') return false;
+    if (!isAppAdmin && u.user_type === 'league_admin') return false;
     const userLeagues = u.assigned_league_ids || [];
     const targetIds = isAppAdmin ? leagues.map(l => l.id) : adminLeagueIds;
     return userLeagues.some(id => targetIds.includes(id));
