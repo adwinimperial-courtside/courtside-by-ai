@@ -13,6 +13,7 @@ import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 import RegistrationGate from "@/components/registration/RegistrationGate";
 import PlayerIdentityModal from "@/components/registration/PlayerIdentityModal";
+import ConsentReminderModal from "@/components/registration/ConsentReminderModal";
 import { createPageUrl } from "./utils";
 
 
@@ -22,6 +23,7 @@ export default function Layout({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayerIdentity, setShowPlayerIdentity] = useState(false);
+  const [showConsentReminder, setShowConsentReminder] = useState(false);
   const sessionStartTimeRef = useRef(null);
   const hasLoggedLoginEventRef = useRef(false);
 
@@ -69,6 +71,12 @@ export default function Layout({ children }) {
         // Check if player needs to complete identity
         if (user && user.user_type === "player" && user.application_status === "Approved" && !user.display_name) {
           setShowPlayerIdentity(true);
+        }
+
+        // Show consent reminder for existing users who haven't accepted yet
+        const CONSENT_VERSION = "2026-04-privacy-consent-v1";
+        if (user && user.user_type !== "app_admin" && user.application_status === "Approved" && user.consent_version !== CONSENT_VERSION) {
+          setShowConsentReminder(true);
         }
 
 
@@ -211,6 +219,12 @@ export default function Layout({ children }) {
         <PlayerIdentityModal
           user={currentUser}
           onComplete={() => setShowPlayerIdentity(false)}
+        />
+      )}
+      {showConsentReminder && (
+        <ConsentReminderModal
+          user={currentUser}
+          onDismiss={() => setShowConsentReminder(false)}
         />
       )}
       <style>{`

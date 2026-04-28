@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, Users, Eye, User, Clock, XCircle, ChevronLeft } from "lucide-react";
+import PrivacyConsentStep from "./PrivacyConsentStep";
 
 const ROLE_OPTIONS = [
   {
@@ -61,6 +62,7 @@ export default function RegistrationGate({ user }) {
   const [selectedLeagues, setSelectedLeagues] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState("");
   const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
+  const [consentData, setConsentData] = useState(null);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -84,7 +86,7 @@ export default function RegistrationGate({ user }) {
     setSelectedLeagues([]);
     setSelectedTeam("");
     setLeagueTeamMap({});
-    setStep("fill_form");
+    setStep("privacy_consent");
   };
 
   const handleSubmit = async (e) => {
@@ -145,7 +147,10 @@ export default function RegistrationGate({ user }) {
       }
 
       await base44.entities.UserApplication.create(applicationData);
-      await base44.auth.updateMe({ application_status: "Pending" });
+      await base44.auth.updateMe({
+        application_status: "Pending",
+        ...(consentData || {}),
+      });
       setStep("pending");
     } catch (error) {
       alert("Failed to submit application: " + error.message);
@@ -208,6 +213,15 @@ export default function RegistrationGate({ user }) {
           </Button>
         </div>
       </div>
+    );
+  }
+
+  if (step === "privacy_consent") {
+    return (
+      <PrivacyConsentStep
+        onAccept={(data) => { setConsentData(data); setStep("fill_form"); }}
+        onBack={() => { setSelectedRole(null); setStep("select_role"); }}
+      />
     );
   }
 
