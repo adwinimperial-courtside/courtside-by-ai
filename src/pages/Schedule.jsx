@@ -55,7 +55,7 @@ export default function SchedulePage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams = [] } = useQuery({
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['teams', selectedLeague],
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
@@ -63,10 +63,10 @@ export default function SchedulePage() {
       return base44.entities.Team.filter({ league_id: leagueId }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 300000,
+    staleTime: 60000,
   });
 
-  const { data: games = [], isLoading } = useQuery({
+  const { data: games = [], isLoading: gamesLoading } = useQuery({
     queryKey: ['games', selectedLeague],
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
@@ -76,6 +76,8 @@ export default function SchedulePage() {
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 0,
   });
+
+  const isLoading = teamsLoading || gamesLoading;
 
 
 
@@ -200,13 +202,9 @@ export default function SchedulePage() {
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
               <Calendar className="w-12 h-12 text-slate-400" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-2">
-              {teams.length < 2 ? "Need More Teams" : "No Games Scheduled"}
-            </h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">No Games Scheduled</h3>
             <p className="text-slate-600 text-center mb-8 max-w-md">
-              {teams.length < 2 
-                ? "You need at least 2 teams to schedule a game"
-                : "Start scheduling games for your league"}
+              Start scheduling games for your league
             </p>
           </div>
         ) : (
