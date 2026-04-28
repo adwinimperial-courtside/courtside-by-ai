@@ -17,7 +17,7 @@ export default function StoryBuilder() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const MONTHLY_LIMIT = 20;
+  const MONTHLY_LIMIT = 10;
   const currentMonthYear = format(new Date(), "yyyy-MM");
   const userEmail = currentUser?.email;
 
