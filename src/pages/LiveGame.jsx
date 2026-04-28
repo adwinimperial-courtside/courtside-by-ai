@@ -47,10 +47,10 @@ export default function LiveGamePage() {
     queryFn: async () => {
       if (!game?.home_team_id || !game?.away_team_id) return [];
       const [homeTeam, awayTeam] = await Promise.all([
-        base44.entities.Team.filter({ id: game.home_team_id }),
-        base44.entities.Team.filter({ id: game.away_team_id })
+        base44.entities.Team.get(game.home_team_id),
+        base44.entities.Team.get(game.away_team_id)
       ]);
-      return [...(homeTeam || []), ...(awayTeam || [])];
+      return [homeTeam, awayTeam].filter(Boolean);
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
     staleTime: 0,
