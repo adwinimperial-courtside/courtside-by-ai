@@ -80,7 +80,7 @@ export default function TeamsPage() {
       return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
     },
     enabled: !!selectedLeague,
-    placeholderData: [],
+    initialData: [],
   });
 
   const { data: games = [] } = useQuery({
@@ -229,10 +229,13 @@ export default function TeamsPage() {
     ? baseTeams
     : baseTeams.filter(team => team.league_id === selectedLeague);
 
-  if (selectedTeam) {
+  // Keep selectedTeam fresh from the latest teams data
+  const liveSelectedTeam = selectedTeam ? (teams?.find(t => t.id === selectedTeam.id) || selectedTeam) : null;
+
+  if (liveSelectedTeam) {
     return (
       <TeamDetailView 
-        team={selectedTeam} 
+        team={liveSelectedTeam} 
         onBack={() => setSelectedTeam(null)} 
       />
     );
