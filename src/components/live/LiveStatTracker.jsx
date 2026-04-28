@@ -93,7 +93,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
     initialData: initialStats,
-    staleTime: 1000,
+    staleTime: 30000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });

@@ -46,8 +46,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     queryKey: ['playerStats', liveGame.id, 'live'],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: liveGame.id }),
     enabled: liveGame.status === 'in_progress',
-    staleTime: 0,
-    refetchInterval: 5000,
+    staleTime: 15000,
+    refetchInterval: 30000,
   });
 
   // Fetch stats for this game on-demand (only when expanded)

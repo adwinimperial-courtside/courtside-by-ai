@@ -74,7 +74,7 @@ export default function SchedulePage() {
       return base44.entities.Game.filter({ league_id: leagueId }, '-game_date', 1000) || [];
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 0,
+    staleTime: 30000,
   });
 
   const isLoading = teamsLoading || gamesLoading;
