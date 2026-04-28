@@ -63,11 +63,16 @@ export default function LeaguesPage() {
   const isLeagueAdmin = currentUser?.user_type === 'league_admin';
   const isAppAdmin = currentUser?.user_type === 'app_admin';
 
+  // For league_admin, only show their assigned leagues
+  const visibleLeagues = isLeagueAdmin
+    ? leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id))
+    : leagues;
+
   React.useEffect(() => {
-    if (currentUser && leagues.length === 1 && !currentUser.default_league_id) {
-      setDefaultLeagueMutation.mutate(leagues[0].id);
+    if (currentUser && visibleLeagues.length === 1 && !currentUser.default_league_id) {
+      setDefaultLeagueMutation.mutate(visibleLeagues[0].id);
     }
-  }, [leagues, currentUser, setDefaultLeagueMutation]);
+  }, [visibleLeagues, currentUser, setDefaultLeagueMutation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -99,7 +104,7 @@ export default function LeaguesPage() {
               <div key={i} className="h-64 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
-        ) : leagues.length === 0 ? (
+        ) : visibleLeagues.length === 0 ? (
            <div className="flex flex-col items-center justify-center py-20 px-4">
              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                <Trophy className="w-12 h-12 text-slate-400" />
@@ -111,14 +116,14 @@ export default function LeaguesPage() {
            </div>
          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {leagues.map((league) => (
+              {visibleLeagues.map((league) => (
                 <LeagueCard 
                   key={league.id} 
                   league={league} 
                   userType={currentUser?.user_type}
                   isDefault={currentUser?.default_league_id === league.id}
-                  onSetDefault={isLeagueAdmin || leagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
-                  multipleLeagues={leagues.length > 1}
+                  onSetDefault={isLeagueAdmin || visibleLeagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
+                  multipleLeagues={visibleLeagues.length > 1}
                 />
               ))}
             </div>
