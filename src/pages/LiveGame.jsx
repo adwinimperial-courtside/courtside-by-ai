@@ -32,7 +32,7 @@ export default function LiveGamePage() {
     fetchUser();
   }, []);
 
-  const { data: game = null, isLoading: gamesLoading } = useQuery({
+  const { data: game = null, isLoading: gamesLoading, isError: gameError } = useQuery({
     queryKey: ['game', gameId],
     queryFn: async () => {
       if (!gameId) return null;
@@ -41,6 +41,8 @@ export default function LiveGamePage() {
     enabled: !!gameId,
     staleTime: 10000,
     refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
   const { data: teams = [] } = useQuery({
@@ -54,7 +56,9 @@ export default function LiveGamePage() {
       return [homeTeam, awayTeam].filter(Boolean);
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 300000, // Teams don't change during a game
+    staleTime: 300000,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
   const { data: players = [] } = useQuery({
@@ -68,7 +72,9 @@ export default function LiveGamePage() {
       return [...(homePlayers || []), ...(awayPlayers || [])];
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 300000, // Rosters don't change during a game
+    staleTime: 300000,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
   const { data: existingStats = [] } = useQuery({
@@ -80,6 +86,8 @@ export default function LiveGamePage() {
     enabled: !!gameId,
     staleTime: 5000,
     refetchOnWindowFocus: false,
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
   const updateGameMutation = useMutation({
@@ -146,7 +154,8 @@ export default function LiveGamePage() {
     );
   }
 
-  if (gamesLoading) {
+  // Show loading while fetching, or while retrying after rate limit errors
+  if (gamesLoading || (!mergedGame && !gameError)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center">
@@ -157,6 +166,7 @@ export default function LiveGamePage() {
     );
   }
 
+  // Only show "not found" after all retries have been exhausted
   if (!mergedGame) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
