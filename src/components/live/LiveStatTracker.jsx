@@ -91,7 +91,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     queryKey: ['playerStats', game.id],
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: game.id }),
     initialData: initialStats,
-    staleTime: 5000, // Keep data fresh for 5 seconds, reduce refetch spam
+    staleTime: 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -118,7 +118,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 300); // Short debounce to batch rapid multi-device updates
+      }, 50); // Minimal debounce — just enough to batch rapid bursts
     });
 
     // Invalidate GameLogs on all events so the activity feed stays in sync
@@ -126,7 +126,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 300);
+      }, 50);
     });
     
     return () => {
@@ -453,32 +453,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
 
-    // Always use the local cached stat row to find the ID; we'll fetch fresh value below
+    // Use cached stat row — kept fresh by real-time subscription. No network fetch on click.
     const playerStatCached = existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStatCached) return;
 
     isProcessingStatRef.current = true;
     try {
-      // Fetch fresh PlayerStats row to avoid stale-cache overwrite in multi-device tracking.
-      // This ensures that if another device just updated a different field on the same row,
-      // we read the current value before incrementing.
-      let freshValue = playerStatCached[statType.key] || 0;
-      try {
-        const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: selectedPlayer.id });
-        const freshStat = freshStats?.[0];
-        if (freshStat) {
-          freshValue = freshStat[statType.key] || 0;
-        }
-      } catch {
-        // Fall back to cached value — still a partial update so no cross-field corruption
-      }
-
-      const playerStat = playerStatCached; // stat row ID comes from cache (stable)
-      const currentValue = freshValue;
+      const playerStat = playerStatCached;
+      const currentValue = playerStat[statType.key] || 0;
       const updates = { [statType.key]: currentValue + 1 };
 
-      // Diagnostic logging — remove when bug is resolved
-      console.log(`[LiveStat:click] game=${game.id} player=${selectedPlayer.name} stat=${statType.key} old=${currentValue} new=${currentValue + 1} device=${getDeviceName()}`);
+
 
       const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
       const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
