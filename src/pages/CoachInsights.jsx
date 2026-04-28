@@ -22,28 +22,46 @@ export default function CoachInsights() {
   });
 
   const { data: leagues = [] } = useQuery({
-    queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryKey: ['coach_leagues'],
+    queryFn: () => base44.entities.League.list('-created_date', 200),
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ['teams'],
-    queryFn: () => base44.entities.Team.list(),
+    queryKey: ['coach_teams', selectedLeague],
+    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeague }, null, 500),
+    enabled: !!selectedLeague,
+    staleTime: 60000,
   });
 
   const { data: games = [] } = useQuery({
-    queryKey: ['games'],
-    queryFn: () => base44.entities.Game.list(),
+    queryKey: ['coach_games', selectedLeague],
+    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' }, '-game_date', 1000),
+    enabled: !!selectedLeague,
+    staleTime: 30000,
   });
 
   const { data: playerStats = [] } = useQuery({
-    queryKey: ['playerStats'],
-    queryFn: () => base44.entities.PlayerStats.list(),
+    queryKey: ['coach_playerStats', selectedLeague],
+    queryFn: async () => {
+      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' }, null, 1000);
+      const gameIds = leagueGames.map(g => g.id);
+      if (gameIds.length === 0) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
+    },
+    enabled: !!selectedLeague,
+    staleTime: 30000,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ['players'],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ['coach_players', selectedLeague],
+    queryFn: async () => {
+      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
+      const teamIds = leagueTeams.map(t => t.id);
+      if (teamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
+    },
+    enabled: !!selectedLeague,
+    staleTime: 60000,
   });
 
   const filteredLeagues = currentUser?.user_type !== 'app_admin' && currentUser?.assigned_league_ids?.length

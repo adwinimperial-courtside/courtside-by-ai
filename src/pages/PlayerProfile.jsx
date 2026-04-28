@@ -59,9 +59,10 @@ export default function PlayerProfile() {
   const matchedPlayerId = currentIdentity?.matched_player_id;
 
   const { data: allTeams = [] } = useQuery({
-    queryKey: ['allTeams'],
-    queryFn: () => base44.entities.Team.list(),
+    queryKey: ['profile_teams', selectedLeagueId],
+    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeagueId }, null, 500),
     enabled: !!selectedLeagueId,
+    staleTime: 60000,
   });
 
   const { data: teamPlayers = [] } = useQuery({
@@ -78,8 +79,13 @@ export default function PlayerProfile() {
 
   const { data: allLeagueStats = [] } = useQuery({
     queryKey: ['allLeagueStats', selectedLeagueId],
-    queryFn: () => base44.entities.PlayerStats.list(),
-    enabled: !!selectedLeagueId,
+    queryFn: async () => {
+      const gameIds = leagueGames.filter(g => g.status === 'completed').map(g => g.id);
+      if (gameIds.length === 0) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
+    },
+    enabled: !!selectedLeagueId && leagueGames.length > 0,
+    staleTime: 30000,
   });
 
   const currentTeam = useMemo(() => allTeams.find(t => t.id === teamId) || null, [allTeams, teamId]);

@@ -43,8 +43,8 @@ export default function StoryBuilder() {
   });
 
   const { data: allGames = [] } = useQuery({
-    queryKey: ["games", selectedLeagueId],
-    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, "-game_date"),
+    queryKey: ["story_games", selectedLeagueId],
+    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, "-game_date", 500),
     enabled: !!selectedLeagueId,
   });
 
@@ -61,13 +61,22 @@ export default function StoryBuilder() {
   });
 
   const { data: teams = [] } = useQuery({
-    queryKey: ["teams"],
-    queryFn: () => base44.entities.Team.list(),
+    queryKey: ["story_teams", selectedLeagueId],
+    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeagueId }, null, 500),
+    enabled: !!selectedLeagueId,
+    staleTime: 60000,
   });
 
   const { data: players = [] } = useQuery({
-    queryKey: ["players"],
-    queryFn: () => base44.entities.Player.list(),
+    queryKey: ["story_players", selectedLeagueId],
+    queryFn: async () => {
+      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeagueId }, null, 500);
+      const teamIds = leagueTeams.map(t => t.id);
+      if (teamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
+    },
+    enabled: !!selectedLeagueId,
+    staleTime: 60000,
   });
 
   const visibleLeagues = leagues.filter(l => {

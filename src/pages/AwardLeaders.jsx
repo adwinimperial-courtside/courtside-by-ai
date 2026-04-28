@@ -31,7 +31,7 @@ export default function AwardLeadersPage() {
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
     initialData: [],
   });
 
