@@ -28,7 +28,7 @@ export default function LeaguesPage() {
 
   const { data: leagues, isLoading } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list('-created_date'),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
     initialData: [],
   });
 

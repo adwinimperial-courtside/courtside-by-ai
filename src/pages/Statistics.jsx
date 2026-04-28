@@ -54,7 +54,7 @@ export default function StatisticsPage() {
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
     initialData: [],
   });
 
@@ -71,7 +71,7 @@ export default function StatisticsPage() {
     queryKey: ['teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Team.filter({ league_id: selectedLeague });
+      return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 300000,
@@ -81,10 +81,10 @@ export default function StatisticsPage() {
     queryKey: ['players', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague });
+      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
       const teamIds = leagueTeams.map(t => t.id);
       if (teamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } });
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 300000,
@@ -94,7 +94,7 @@ export default function StatisticsPage() {
     queryKey: ['games', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Game.filter({ league_id: selectedLeague });
+      return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 5000,
@@ -104,10 +104,10 @@ export default function StatisticsPage() {
     queryKey: ['allPlayerStats', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague });
+      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague }, null, 1000);
       const gameIds = leagueGames.map(g => g.id);
       if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } });
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 5000,

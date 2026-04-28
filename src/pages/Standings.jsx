@@ -31,7 +31,7 @@ export default function StandingsPage() {
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
     initialData: [],
   });
 
@@ -48,7 +48,7 @@ export default function StandingsPage() {
     queryKey: ['teams', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Team.filter({ league_id: selectedLeague });
+      return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 0,
@@ -58,7 +58,7 @@ export default function StandingsPage() {
     queryKey: ['games', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Game.filter({ league_id: selectedLeague });
+      return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 0,

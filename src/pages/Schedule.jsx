@@ -45,7 +45,7 @@ export default function SchedulePage() {
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
-    queryFn: () => base44.entities.League.list(),
+    queryFn: () => base44.entities.League.list('-created_date', 200),
     staleTime: 300000,
   });
 
@@ -60,7 +60,7 @@ export default function SchedulePage() {
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
       if (!leagueId || leagueId === 'all') return [];
-      return base44.entities.Team.filter({ league_id: leagueId });
+      return base44.entities.Team.filter({ league_id: leagueId }, null, 500);
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 300000,
@@ -71,7 +71,7 @@ export default function SchedulePage() {
     queryFn: async ({ queryKey }) => {
       const leagueId = queryKey[1];
       if (!leagueId || leagueId === 'all') return [];
-      return base44.entities.Game.filter({ league_id: leagueId }, '-game_date') || [];
+      return base44.entities.Game.filter({ league_id: leagueId }, '-game_date', 1000) || [];
     },
     enabled: !!selectedLeague && selectedLeague !== 'all',
     staleTime: 0,
