@@ -164,62 +164,160 @@ export default function RegularSeasonRecap() {
         .map(p => `${p.name} (${p.gp} GP): ${fmt(p.ppg)} PPG, ${fmt(p.tpm)} 3PM, ${fmt(p.rpg)} RPG, ${fmt(p.apg)} APG, ${fmt(p.spg)} SPG, ${fmt(p.bpg)} BPG`)
         .join("\n");
 
-      const prompt = `You are a lively grassroots basketball reporter creating a Facebook-ready regular season recap for a local basketball league.
+      const awardWinners = [
+        leaders.ppg ? `PPG Leader: ${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : null,
+        leaders.tpm ? `3PM Leader: ${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : null,
+        leaders.rpg ? `RPG Leader: ${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : null,
+        leaders.apg ? `APG Leader: ${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : null,
+        leaders.spg ? `SPG Leader: ${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : null,
+        leaders.bpg ? `BPG Leader: ${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : null,
+      ].filter(Boolean).join("\n");
 
-LEAGUE: ${selectedLeague?.name} (${selectedLeague?.season || ""})
-TOTAL COMPLETED GAMES: ${completedGames.length}
+      const prompt = `You are an elite grassroots basketball reporter and storyteller creating the OFFICIAL END-OF-SEASON Facebook recap for a competitive local basketball league using real statistics and standings data.
 
-STANDINGS:
+This is NOT a generic sports summary.
+
+This should feel like:
+- an emotional season-ending broadcast recap
+- a celebration of the league's journey
+- a dramatic retelling of the season
+- a memorable social media post league organizers and players would proudly share
+
+The tone must be:
+🔥 energetic
+🏀 emotional
+⚔️ competitive
+😂 occasionally funny when appropriate
+🏆 championship-level dramatic
+📣 Facebook-ready and highly shareable
+
+This season is OFFICIALLY COMPLETE because a CHAMPIONSHIP-tagged game has already concluded.
+
+LEAGUE:
+${selectedLeague?.name} (${selectedLeague?.season || ""})
+
+TOTAL COMPLETED GAMES:
+${completedGames.length}
+
+FINAL STANDINGS:
 ${standings.map((s, i) => `${i + 1}. ${s.name}: ${s.wins}W-${s.losses}L (${s.winPct}% win rate, Diff: ${s.pointsDiff > 0 ? "+" : ""}${s.pointsDiff})`).join("\n")}
 
-OFFICIAL LEAGUE LEADERS (per-game averages — same source as the Statistics page League Leaders tab — USE THESE AS THE AUTHORITATIVE SOURCE):
-PPG Leader: ${leaders.ppg ? `${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : "N/A"}
-3PM Leader: ${leaders.tpm ? `${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : "N/A"}
-RPG Leader: ${leaders.rpg ? `${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : "N/A"}
-APG Leader: ${leaders.apg ? `${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : "N/A"}
-SPG Leader: ${leaders.spg ? `${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : "N/A"}
-BPG Leader: ${leaders.bpg ? `${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : "N/A"}
+OFFICIAL LEAGUE LEADERS
+(These come directly from the Statistics Page League Leaders tab and MUST be treated as authoritative):
 
-TOP PLAYERS BY PER-GAME AVERAGES (use for identifying standout performers and all-around leaders):
+PPG Leader:
+${leaders.ppg ? `${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : "N/A"}
+
+3PM Leader:
+${leaders.tpm ? `${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : "N/A"}
+
+RPG Leader:
+${leaders.rpg ? `${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : "N/A"}
+
+APG Leader:
+${leaders.apg ? `${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : "N/A"}
+
+SPG Leader:
+${leaders.spg ? `${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : "N/A"}
+
+BPG Leader:
+${leaders.bpg ? `${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : "N/A"}
+
+TOP PLAYERS BY PER-GAME AVERAGES:
 ${topPlayers || "No player stats available."}
 
+OFFICIAL AWARD WINNERS:
+${awardWinners || "No awards available."}
+
+IMPORTANT CONTEXT:
+- The championship game has already ended
+- The season is officially over
+- The recap should feel conclusive and celebratory
+- Do NOT write like playoffs are still coming
+- Do NOT preview future rounds
+- This is the FINAL OFFICIAL SEASON RECAP
+
 INSTRUCTIONS:
-Write like a lively grassroots basketball reporter creating a Facebook-ready regular season recap. Use all the official data above as the source of truth. Identify the top teams, biggest standout players, and most important regular season storylines. Mention league leaders naturally and make the recap feel exciting, polished, and human. Do not invent numbers. Do not make it a dry list. The result should feel like a professional season recap that a league organizer would proudly post online.
 
-The recap must:
-1. Start EXACTLY with: 🎙️ COURTSIDE BY AI REPORT - ${selectedLeague?.name} - REGULAR SEASON RECAP
-2. Opening hook about the kind of season it was
-3. Top team storylines (best record, most consistent, strong finish, surprise team, momentum)
-4. League leaders and standout players — woven in naturally, not as a bullet list
-5. Key season takeaways (close standings race, dominant top seed, star-driven season, etc.)
-6. Strong forward-looking close hinting at playoffs/championship
-7. End EXACTLY with: 👉 Full stats & standings: https://courtside-by-ai.com/schedule
+Write a long-form Facebook-ready season recap using ONLY the real data above.
 
-CLOSING SECTION RULES — COMPETITION FORMAT:
-The closing section must follow this exact bracket logic based on the final standings:
-- Rank 1 vs Rank 8 → Rank 1 has twice-to-beat advantage (must lose twice to be eliminated)
-- Rank 2 vs Rank 7 → Rank 2 has twice-to-beat advantage (must lose twice to be eliminated)
-- Rank 3 vs Rank 6 → do-or-die single game (immediate elimination)
-- Rank 4 vs Rank 5 → do-or-die single game (immediate elimination)
-- Quarterfinal winners advance to semifinals, semifinal winners advance to the final.
+The recap should:
+- feel cinematic and memorable
+- celebrate the best teams and players
+- acknowledge heartbreak, dominance, rivalries, momentum swings, surprise teams, and standout performances
+- naturally weave in league leaders and award winners
+- sound human, emotional, and exciting
+- feel like the closing narration of a basketball season documentary
 
-The closing must:
-- Make it clear that NO team is eliminated yet — every team is still alive
-- Explain that the regular season determined seeding and matchup advantages, not survival
-- Highlight that the top two seeds earned a significant edge with their twice-to-beat advantage
-- Highlight that Ranks 3 vs 6 and Ranks 4 vs 5 face immediate knockout pressure — one game, one chance
-- Build excitement specifically for the quarterfinal stage without skipping ahead to semis or finals
-- Do NOT write as if any team is already out — the postseason has not started yet
+DO NOT:
+- invent stats
+- invent awards
+- invent players
+- invent storylines unsupported by the standings or leaders
+- use bullet points
+- sound robotic or templated
+- use generic AI phrasing
+
+The writing should feel like:
+- a passionate grassroots basketball commentator
+- an esports championship recap
+- a Facebook post people actually read and share
+
+STRUCTURE REQUIREMENTS:
+
+1. Start EXACTLY with:
+🎙️ COURTSIDE BY AI REPORT - ${selectedLeague?.name} - OFFICIAL SEASON RECAP
+
+2. Powerful opening hook describing the season's identity
+
+3. Discuss the championship team and how they earned it
+
+4. Discuss the biggest regular season storylines:
+- dominant teams
+- surprise teams
+- heartbreaking collapses
+- momentum swings
+- rivalries
+- offensive explosions
+- defensive dominance
+
+5. Naturally integrate:
+- league leaders
+- award winners
+- superstar players
+- unforgettable performances
+
+6. Add emotional/hype commentary throughout:
+Examples:
+- "this team refused to die"
+- "the scoreboard looked disrespectful"
+- "the league turned into a shootout"
+- "every possession felt personal"
+
+7. Include humor naturally when appropriate — especially for blowouts, rivalries, dramatic momentum swings, or veteran 40+ league moments
+
+8. The closing section must:
+- celebrate the completed season
+- congratulate the champions
+- recognize all teams for competing
+- reinforce that the stats, memories, and performances are now permanently preserved inside Courtside
+
+9. End EXACTLY with:
+👉 Full stats, standings & season records: https://courtside-by-ai.com/schedule
 
 RULES:
-- ONLY use numbers from the data above — never invent stats
-- Do not use bullet points anywhere in the recap
-- Include emojis naturally throughout
-- Target 250–400 words in the body
-- Make it Facebook-ready: upbeat, conversational, post-worthy
-- Vary phrasing so it never sounds like a template
+- Use emojis naturally throughout
+- Keep it Facebook-ready
+- Make it feel like a REAL sports media recap
+- Target around 500–900 words
+- Vary sentence rhythm and phrasing
+- Prioritize emotional storytelling over listing numbers
+- NEVER sound like a template
+- NEVER use bullet points
+- NEVER break character
 
-DO NOT include meta-commentary. Start directly with 🎙️ COURTSIDE BY AI REPORT.`;
+Start immediately with:
+🎙️ COURTSIDE BY AI REPORT`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
