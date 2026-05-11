@@ -228,7 +228,6 @@ export default function StoryBuilder() {
         if (p.blk >= 1) parts.push(`${p.blk} blk`);
         if (p.three >= 1) parts.push(`${p.three}x3PT`);
         // FT percentage intentionally omitted — most leagues don't track free throws missed
-        if (p.to >= 3) parts.push(`${p.to} TO`);
         if (p.fouls >= 4) parts.push(`${p.fouls} fouls`);
         if (p.tech >= 1) parts.push(`${p.tech} tech`);
         if (p.unsp >= 1) parts.push(`${p.unsp} unsp`);
@@ -301,8 +300,8 @@ ${loserTeam?.name} TOP PERFORMERS (sorted by impact):
 ${loserTopPlayers}
 
 TEAM TOTALS:
-${winnerTeam?.name}: ${winnerTeamTotals.pts} pts | ${winnerTeamTotals.reb} reb | ${winnerTeamTotals.ast} ast | ${winnerTeamTotals.stl} stl | ${winnerTeamTotals.blk} blk | ${winnerTeamTotals.three} 3PT | ${winnerTeamTotals.to} TO | ${winnerTeamTotals.fouls} fouls${winnerTeamTotals.techs > 0 ? ` | ${winnerTeamTotals.techs} tech fouls` : ""}${winnerTeamTotals.unsp > 0 ? ` | ${winnerTeamTotals.unsp} unsportsmanlike` : ""}
-${loserTeam?.name}: ${loserTeamTotals.pts} pts | ${loserTeamTotals.reb} reb | ${loserTeamTotals.ast} ast | ${loserTeamTotals.stl} stl | ${loserTeamTotals.blk} blk | ${loserTeamTotals.three} 3PT | ${loserTeamTotals.to} TO | ${loserTeamTotals.fouls} fouls${loserTeamTotals.techs > 0 ? ` | ${loserTeamTotals.techs} tech fouls` : ""}${loserTeamTotals.unsp > 0 ? ` | ${loserTeamTotals.unsp} unsportsmanlike` : ""}
+${winnerTeam?.name}: ${winnerTeamTotals.pts} pts | ${winnerTeamTotals.reb} reb | ${winnerTeamTotals.ast} ast | ${winnerTeamTotals.stl} stl | ${winnerTeamTotals.blk} blk | ${winnerTeamTotals.three} 3PT | ${winnerTeamTotals.fouls} fouls${winnerTeamTotals.techs > 0 ? ` | ${winnerTeamTotals.techs} tech fouls` : ""}${winnerTeamTotals.unsp > 0 ? ` | ${winnerTeamTotals.unsp} unsportsmanlike` : ""}
+${loserTeam?.name}: ${loserTeamTotals.pts} pts | ${loserTeamTotals.reb} reb | ${loserTeamTotals.ast} ast | ${loserTeamTotals.stl} stl | ${loserTeamTotals.blk} blk | ${loserTeamTotals.three} 3PT | ${loserTeamTotals.fouls} fouls${loserTeamTotals.techs > 0 ? ` | ${loserTeamTotals.techs} tech fouls` : ""}${loserTeamTotals.unsp > 0 ? ` | ${loserTeamTotals.unsp} unsportsmanlike` : ""}
 
 INSTRUCTIONS — READ CAREFULLY:
 
@@ -317,7 +316,8 @@ Write a Facebook post-game story following this structure:
    - Name the winning team's top performers (at least 2) with their real stats woven naturally into the narrative. Don't just list stats — describe HOW they scored, WHEN their plays mattered, and what role they played in the story.
    - Name the losing team's best performer(s) (at least 1) with real stats. Give them credit — describe what they did to keep their team in it and make the game competitive.
    - Identify the deciding moment or stretch — the run, the stop, the individual play that tilted the outcome. Make the reader feel the pressure.
-   - If relevant, weave in non-scoring factors (rebounding edge, steals creating transition, foul trouble, turnovers) as part of the story, not as a separate section.
+   - If relevant, weave in non-scoring factors (rebounding edge, steals creating transition, foul trouble) as part of the story, not as a separate section.
+   - BLOWOUT RULE: The margin of victory is ${Math.abs(winnerScore - loserScore)} points. ${Math.abs(winnerScore - loserScore) >= 40 ? `This is a HUMILIATING blowout of 40+ points. You MUST dedicate at least one full paragraph to hilariously roasting the losing team. Be savage, funny, and relentless — think trash talk from a friend who just watched the game. Use jokes, sarcasm, and vivid comedy to describe how badly they got destroyed. Examples of tone: "They didn't just lose — they got erased from existence," "The scoreboard ran out of sympathy long before the final buzzer," "Somewhere, their jerseys are filing a missing persons report." Keep it fun and never mean-spirited about individuals, but absolutely savage about the team performance as a whole.` : `Normal margin — no blowout roast needed.`}
    - Close with a punchy final line — something that captures the emotion of the result and sticks with the reader.
 5. After the story, add: 🏆 PLAYER OF THE GAME: [Name] (#[Jersey], [Team]) — [Key stats in format: PTS · REB · AST or whatever stats define their impact]
    IMPORTANT: The Player of the Game has already been officially designated. You MUST use: ${(() => { const pogPlayer = players.find(p => p.id === selectedGame.player_of_game); const pogStat = statsSummary.find(s => s.name === pogPlayer?.name); const pogTeam = teams.find(t => t.id === pogPlayer?.team_id); return pogPlayer ? `${pogPlayer.name} (#${pogPlayer.jersey_number}, ${pogTeam?.name})${pogStat ? ` — ${pogStat.pts} pts${pogStat.reb >= 1 ? ` · ${pogStat.reb} reb` : ""}${pogStat.ast >= 1 ? ` · ${pogStat.ast} ast` : ""}${pogStat.stl >= 1 ? ` · ${pogStat.stl} stl` : ""}${pogStat.blk >= 1 ? ` · ${pogStat.blk} blk` : ""}` : ""}` : "Not designated"; })()}. Do NOT choose a different player.
