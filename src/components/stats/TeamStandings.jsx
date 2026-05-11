@@ -160,7 +160,6 @@ export default function TeamStandings({ teams, games, leagues }) {
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Team</TableHead>
-                    <TableHead className="hidden md:table-cell">League</TableHead>
                     <TableHead className="text-center">W</TableHead>
                     <TableHead className="text-center">L</TableHead>
                     <TableHead className="text-center">Win %</TableHead>
@@ -169,7 +168,6 @@ export default function TeamStandings({ teams, games, leagues }) {
                 </TableHeader>
                 <TableBody>
                   {teamStandings.map((team, index) => {
-                    const league = leagues.find(l => l.id === team.league_id);
                     return (
                       <TableRow key={team.id}>
                         <TableCell className="font-semibold">{index + 1}</TableCell>
@@ -179,7 +177,6 @@ export default function TeamStandings({ teams, games, leagues }) {
                             <span className="font-medium truncate">{team.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-slate-600 text-sm">{league?.name}</TableCell>
                         <TableCell className="text-center font-semibold text-green-600">{team.wins}</TableCell>
                         <TableCell className="text-center font-semibold text-red-600">{team.losses}</TableCell>
                         <TableCell className="text-center font-semibold">{team.winPct}%</TableCell>
