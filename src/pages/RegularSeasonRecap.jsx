@@ -237,84 +237,59 @@ IMPORTANT CONTEXT:
 - Do NOT preview future rounds
 - This is the FINAL OFFICIAL SEASON RECAP
 
+IMPORTANT — THIS RECAP ACCOMPANIES A VISUAL SEASON POSTER:
+The poster already contains the full standings table, all league leader stats, award winners, and detailed statistics. DO NOT repeat or list those details here. The recap is the emotional narrative — the poster is the data.
+
 INSTRUCTIONS:
 
-Write a long-form Facebook-ready season recap using ONLY the real data above.
+Write a Facebook-ready season recap that reads like the closing narration of a basketball season documentary. It should feel cinematic, emotional, and human — NOT a stats summary.
 
-The recap should:
-- feel cinematic and memorable
-- celebrate the best teams and players
-- acknowledge heartbreak, dominance, rivalries, momentum swings, surprise teams, and standout performances
-- naturally weave in league leaders and award winners
-- sound human, emotional, and exciting
-- feel like the closing narration of a basketball season documentary
+FOCUS ONLY ON:
+1. The emotional identity of the season — what KIND of season was it? Gritty? Explosive? Dominant? Unpredictable?
+2. The championship team — how did they earn it? What was their journey?
+3. The Season MVP (PPG Leader) — give them a full dedicated cinematic paragraph. Make them the centerpiece. Describe their impact, their presence, what they meant to the season. This paragraph should feel like a sports documentary spotlight moment.
+4. 2–3 major season storylines drawn from the standings (e.g. a dominant team, a surprise run, a close race, a heartbreaking finish) — do NOT list stats, tell stories.
+5. An emotional closing that congratulates the champions, honors all competitors, and reinforces that the season's memories are now permanently preserved inside Courtside by AI.
 
 DO NOT:
-- invent stats
-- invent awards
-- invent players
-- invent storylines unsupported by the standings or leaders
-- use bullet points
-- sound robotic or templated
-- use generic AI phrasing
+- list league leaders or award categories
+- repeat standings numbers beyond what's needed for storytelling
+- name-drop many players — focus on 1–2 key figures maximum beyond the MVP
+- use bullet points anywhere
+- sound robotic, templated, or like an AI summary
+- invent stats, players, or storylines not supported by the data
 
-The writing should feel like:
-- a passionate grassroots basketball commentator
-- an esports championship recap
-- a Facebook post people actually read and share
+TONE AND STYLE:
+- passionate grassroots basketball commentator
+- championship broadcast closing narration
+- Facebook post people actually stop scrolling for
+- occasionally funny when the data supports it (blowouts, dominant runs, unlikely heroes)
+- emotional and hype — "this team refused to die", "the scoreboard looked disrespectful", "every possession felt personal"
 
-STRUCTURE REQUIREMENTS:
-
+STRUCTURE:
 1. Start EXACTLY with:
 🎙️ COURTSIDE BY AI REPORT - ${selectedLeague?.name} - OFFICIAL SEASON RECAP
 
-2. Powerful opening hook describing the season's identity
+2. Powerful opening hook — the season's emotional identity
 
-3. Discuss the championship team and how they earned it
+3. The championship team's story
 
-4. Discuss the biggest regular season storylines:
-- dominant teams
-- surprise teams
-- heartbreaking collapses
-- momentum swings
-- rivalries
-- offensive explosions
-- defensive dominance
+4. The Season MVP cinematic spotlight paragraph (PPG Leader)
 
-5. Naturally integrate:
-- league leaders
-- award winners
-- superstar players
-- unforgettable performances
+5. 2–3 major season storylines (narrative, not stats)
 
-6. Add emotional/hype commentary throughout:
-Examples:
-- "this team refused to die"
-- "the scoreboard looked disrespectful"
-- "the league turned into a shootout"
-- "every possession felt personal"
+6. Emotional closing — champions, competitors, and Courtside legacy
 
-7. Include humor naturally when appropriate — especially for blowouts, rivalries, dramatic momentum swings, or veteran 40+ league moments
-
-8. The closing section must:
-- celebrate the completed season
-- congratulate the champions
-- recognize all teams for competing
-- reinforce that the stats, memories, and performances are now permanently preserved inside Courtside
-
-9. End EXACTLY with:
+7. End EXACTLY with:
 👉 Full stats, standings & season records: https://courtside-by-ai.com/schedule
 
 RULES:
 - Use emojis naturally throughout
-- Keep it Facebook-ready
-- Make it feel like a REAL sports media recap
-- Target around 500–900 words
-- Vary sentence rhythm and phrasing
-- Prioritize emotional storytelling over listing numbers
-- NEVER sound like a template
+- Target 350–550 words
+- Vary sentence rhythm — short punchy lines mixed with flowing narrative
 - NEVER use bullet points
 - NEVER break character
+- NEVER sound like a template
 
 Start immediately with:
 🎙️ COURTSIDE BY AI REPORT`;
