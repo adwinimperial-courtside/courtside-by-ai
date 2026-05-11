@@ -5,15 +5,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper } from "lucide-react";
+import { DEFAULT_AWARD_SETTINGS } from "@/utils/awardDefaults";
 
-function didPlayerParticipate(stat) {
+function didPlay(stat) {
   if (stat.did_play) return true;
   if ((stat.minutes_played || 0) > 0) return true;
-  const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
+  return (
+    (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
     (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
     (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
-    (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
-  return hasStats;
+    (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0
+  );
+}
+
+function isActualGame(g) {
+  return g.status === "completed" && !g.is_default_result && g.result_type !== "default" && !g.exclude_from_awards;
+}
+
+function calcPts(stat, game) {
+  const isDigital = game && game.entry_type === "digital" && !game.edited;
+  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) +
+    (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
 }
 
 function calculateStandings(teams, games) {
@@ -36,62 +48,97 @@ function calculateStandings(teams, games) {
         pf += ts; pa += os;
       });
       const total = wins + losses;
-      return { name: team.name, wins, losses, winPct: total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0", pointsDiff: pf - pa };
+      return { id: team.id, name: team.name, wins, losses, winPct: total > 0 ? ((wins / total) * 100).toFixed(1) : "0.0", pointsDiff: pf - pa };
     })
     .sort((a, b) => parseFloat(b.winPct) - parseFloat(a.winPct));
 }
 
-// Mirrors the exact League Leaders tab calculation logic (per-game averages)
-function calcPoints(stat, games) {
-  const game = games.find(g => g.id === stat.game_id);
-  const isDigital = game && game.entry_type === 'digital' && !game.edited;
-  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-}
+function computeAwards(leagueGames, leagueTeams, players, stats, cfg = DEFAULT_AWARD_SETTINGS) {
+  const actualGames = leagueGames.filter(isActualGame);
 
-function calculateLeagueLeaderAverages(playerStats, players, games) {
-  // Count completed games per team (same logic as LeagueLeaders component)
-  const teamGameCounts = {};
-  games.forEach(g => {
-    teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
-    teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
+  // Team stats for eligibility
+  const teamStats = {};
+  leagueTeams.forEach(team => {
+    const tg = actualGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id);
+    const wins = tg.filter(g => (g.home_team_id === team.id ? g.home_score > g.away_score : g.away_score > g.home_score)).length;
+    teamStats[team.id] = { gamesPlayed: tg.length, wins, winPct: tg.length > 0 ? wins / tg.length : 0 };
   });
 
-  const aggregates = players.map(player => {
-    const ps = playerStats.filter(s => s.player_id === player.id);
-    const participated = ps.filter(didPlayerParticipate);
-    const gp = participated.length;
-    if (gp === 0) return null;
-    const teamGames = teamGameCounts[player.team_id] || 0;
-    if (teamGames === 0 || (gp / teamGames) < 0.4) return null;
-    const totals = participated.reduce((acc, s) => ({
-      pts: acc.pts + calcPoints(s, games),
-      threes: acc.threes + (s.points_3 || 0),
-      reb: acc.reb + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0),
-      ast: acc.ast + (s.assists || 0),
-      stl: acc.stl + (s.steals || 0),
-      blk: acc.blk + (s.blocks || 0),
-    }), { pts: 0, threes: 0, reb: 0, ast: 0, stl: 0, blk: 0 });
-    return {
-      name: player.name,
-      gp,
-      ppg: totals.pts / gp,
-      tpm: totals.threes / gp,
-      rpg: totals.reb / gp,
-      apg: totals.ast / gp,
-      spg: totals.stl / gp,
-      bpg: totals.blk / gp,
-    };
-  }).filter(Boolean);
+  const mvpMap = {};
+  const dpoyMap = {};
 
-  const top = (cat) => [...aggregates].sort((a, b) => b[cat] - a[cat])[0];
+  actualGames.forEach(game => {
+    const gs = stats.filter(s => s.game_id === game.id);
+    gs.forEach(s => {
+      if (!didPlay(s)) return;
+      const pid = s.player_id;
+
+      // MVP
+      if (!mvpMap[pid]) mvpMap[pid] = { gp: 0, sumGis: 0, sumTech: 0, sumUnsp: 0, teamId: s.team_id };
+      const pts = cfg.mvp_pts_weight * calcPts(s, game);
+      const gis = pts +
+        cfg.mvp_oreb_weight * (s.offensive_rebounds || 0) +
+        cfg.mvp_dreb_weight * (s.defensive_rebounds || 0) +
+        cfg.mvp_ast_weight * (s.assists || 0) +
+        cfg.mvp_stl_weight * (s.steals || 0) +
+        cfg.mvp_blk_weight * (s.blocks || 0) -
+        cfg.mvp_turnover_penalty * (s.turnovers || 0) -
+        cfg.mvp_foul_penalty * (s.fouls || 0) -
+        cfg.mvp_tech_penalty * (s.technical_fouls || 0) -
+        cfg.mvp_unsportsmanlike_penalty * (s.unsportsmanlike_fouls || 0);
+      mvpMap[pid].gp += 1;
+      mvpMap[pid].sumGis += gis;
+      mvpMap[pid].sumTech += s.technical_fouls || 0;
+      mvpMap[pid].sumUnsp += s.unsportsmanlike_fouls || 0;
+
+      // DPOY
+      if (!dpoyMap[pid]) dpoyMap[pid] = { gp: 0, sumDefGis: 0, sumTech: 0, sumUnsp: 0, teamId: s.team_id };
+      const defGis = cfg.dpoy_stl_weight * (s.steals || 0) +
+        cfg.dpoy_blk_weight * (s.blocks || 0) +
+        cfg.dpoy_oreb_weight * (s.offensive_rebounds || 0) +
+        cfg.dpoy_dreb_weight * (s.defensive_rebounds || 0) -
+        cfg.dpoy_foul_penalty * (s.fouls || 0) -
+        cfg.dpoy_turnover_penalty * (s.turnovers || 0) -
+        cfg.dpoy_tech_penalty * (s.technical_fouls || 0) -
+        cfg.dpoy_unsportsmanlike_penalty * (s.unsportsmanlike_fouls || 0);
+      dpoyMap[pid].gp += 1;
+      dpoyMap[pid].sumDefGis += defGis;
+      dpoyMap[pid].sumTech += s.technical_fouls || 0;
+      dpoyMap[pid].sumUnsp += s.unsportsmanlike_fouls || 0;
+    });
+  });
+
+  const mvpRanked = Object.entries(mvpMap).map(([pid, d]) => {
+    const player = players.find(p => p.id === pid);
+    const td = teamStats[d.teamId];
+    if (!player || !td || td.gamesPlayed === 0) return null;
+    const effectiveGp = Math.min(d.gp, td.gamesPlayed);
+    const gpPct = effectiveGp / td.gamesPlayed;
+    if (gpPct < cfg.mvp_min_games_percent / 100) return null;
+    const avgGis = d.sumGis / effectiveGp;
+    const score = cfg.mvp_avg_gis_weight * avgGis + cfg.mvp_gp_percent_weight * gpPct +
+      cfg.mvp_team_win_percent_weight * td.winPct -
+      cfg.mvp_tech_final_penalty * d.sumTech - cfg.mvp_unsp_final_penalty * d.sumUnsp;
+    return { player, score, gp: effectiveGp, avgGis: avgGis.toFixed(1), teamId: d.teamId };
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
+
+  const dpoyRanked = Object.entries(dpoyMap).map(([pid, d]) => {
+    const player = players.find(p => p.id === pid);
+    const tg = teamStats[d.teamId]?.gamesPlayed || 0;
+    if (!player || tg === 0) return null;
+    const effectiveGp = Math.min(d.gp, tg);
+    const gpPct = effectiveGp / tg;
+    if (gpPct < cfg.dpoy_min_games_percent / 100) return null;
+    const avgDefGis = d.sumDefGis / effectiveGp;
+    const score = avgDefGis + cfg.dpoy_gp_percent_weight * gpPct -
+      cfg.dpoy_tech_final_penalty * d.sumTech - cfg.dpoy_unsp_final_penalty * d.sumUnsp;
+    return { player, score, gp: effectiveGp };
+  }).filter(Boolean).sort((a, b) => b.score - a.score);
+
   return {
-    ppg: top("ppg"),
-    tpm: top("tpm"),
-    rpg: top("rpg"),
-    apg: top("apg"),
-    spg: top("spg"),
-    bpg: top("bpg"),
-    entries: aggregates,
+    mvp: mvpRanked[0] || null,
+    dpoy: dpoyRanked[0] || null,
+    mythical5: mvpRanked.slice(0, 5),
   };
 }
 
@@ -114,39 +161,76 @@ export default function RegularSeasonRecap() {
   });
 
   const { data: completedGames = [] } = useQuery({
-    queryKey: ["completedGames", selectedLeagueId],
+    queryKey: ["recapGames", selectedLeagueId],
     queryFn: () => base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, "-game_date"),
     enabled: !!selectedLeagueId,
   });
 
   const { data: leagueTeams = [] } = useQuery({
-    queryKey: ["leagueTeams", selectedLeagueId],
+    queryKey: ["recapTeams", selectedLeagueId],
     queryFn: () => base44.entities.Team.filter({ league_id: selectedLeagueId }),
     enabled: !!selectedLeagueId,
   });
 
-  const { data: allPlayers = [] } = useQuery({
-    queryKey: ["allPlayers"],
-    queryFn: () => base44.entities.Player.list(),
+  const { data: leaguePlayers = [] } = useQuery({
+    queryKey: ["recapPlayers", selectedLeagueId],
+    queryFn: async () => {
+      const teams = await base44.entities.Team.filter({ league_id: selectedLeagueId });
+      const teamIds = teams.map(t => t.id);
+      if (!teamIds.length) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
+    },
     enabled: !!selectedLeagueId,
   });
 
-  const { data: allPlayerStats = [] } = useQuery({
-    queryKey: ["allPlayerStats"],
-    queryFn: () => base44.entities.PlayerStats.list(),
+  const { data: leagueStats = [] } = useQuery({
+    queryKey: ["recapStats", selectedLeagueId],
+    queryFn: async () => {
+      const games = await base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, null, 500);
+      const gameIds = games.map(g => g.id);
+      if (!gameIds.length) return [];
+      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
+    },
     enabled: !!selectedLeagueId,
+  });
+
+  const { data: awardSettings = null } = useQuery({
+    queryKey: ["recapAwardSettings", selectedLeagueId],
+    queryFn: () => base44.entities.AwardSettings.filter({ league_id: selectedLeagueId }),
+    enabled: !!selectedLeagueId,
+    select: (data) => data[0] || null,
   });
 
   const selectedLeague = useMemo(() => leagues.find(l => l.id === selectedLeagueId), [leagues, selectedLeagueId]);
-
-  const leaguePlayerStats = useMemo(() => {
-    const completedGameIds = new Set(completedGames.map(g => g.id));
-    const teamIds = new Set(leagueTeams.map(t => t.id));
-    return allPlayerStats.filter(ps => completedGameIds.has(ps.game_id) && teamIds.has(ps.team_id));
-  }, [allPlayerStats, completedGames, leagueTeams]);
-
   const standings = useMemo(() => calculateStandings(leagueTeams, completedGames), [leagueTeams, completedGames]);
-  const leaders = useMemo(() => calculateLeagueLeaderAverages(leaguePlayerStats, allPlayers, completedGames), [leaguePlayerStats, allPlayers, completedGames]);
+
+  const awards = useMemo(() => {
+    if (!leagueTeams.length || !completedGames.length || !leaguePlayers.length || !leagueStats.length) return null;
+    const cfg = awardSettings ? { ...DEFAULT_AWARD_SETTINGS, ...awardSettings } : DEFAULT_AWARD_SETTINGS;
+    return computeAwards(completedGames, leagueTeams, leaguePlayers, leagueStats, cfg);
+  }, [completedGames, leagueTeams, leaguePlayers, leagueStats, awardSettings]);
+
+  // Championship game = completed game with game_stage === "championship"
+  const championshipGame = useMemo(() =>
+    completedGames.find(g => g.game_stage === "championship" && !g.is_default_result),
+    [completedGames]
+  );
+
+  const championTeam = useMemo(() => {
+    if (!championshipGame) return null;
+    const winnerId = (championshipGame.home_score || 0) >= (championshipGame.away_score || 0)
+      ? championshipGame.home_team_id
+      : championshipGame.away_team_id;
+    return leagueTeams.find(t => t.id === winnerId) || null;
+  }, [championshipGame, leagueTeams]);
+
+  const runnerUpTeam = useMemo(() => {
+    if (!championshipGame || !championTeam) return null;
+    const loserId = championTeam.id === championshipGame.home_team_id
+      ? championshipGame.away_team_id
+      : championshipGame.home_team_id;
+    return leagueTeams.find(t => t.id === loserId) || null;
+  }, [championshipGame, championTeam, leagueTeams]);
 
   const handleGenerate = async () => {
     setError("");
@@ -156,153 +240,74 @@ export default function RegularSeasonRecap() {
       if (!selectedLeagueId) throw new Error("Please select a league.");
       if (completedGames.length < 3) throw new Error("not_enough_games");
 
-      const fmt = (v) => v != null ? v.toFixed(1) : "N/A";
+      const fmt = (v) => v != null ? Number(v).toFixed(1) : "N/A";
 
-      const topPlayers = [...(leaders.entries || [])]
-        .sort((a, b) => b.ppg - a.ppg)
-        .slice(0, 10)
-        .map(p => `${p.name} (${p.gp} GP): ${fmt(p.ppg)} PPG, ${fmt(p.tpm)} 3PM, ${fmt(p.rpg)} RPG, ${fmt(p.apg)} APG, ${fmt(p.spg)} SPG, ${fmt(p.bpg)} BPG`)
-        .join("\n");
+      const champScore = championshipGame
+        ? `${championTeam?.name || "?"} ${Math.max(championshipGame.home_score || 0, championshipGame.away_score || 0)} – ${runnerUpTeam?.name || "?"} ${Math.min(championshipGame.home_score || 0, championshipGame.away_score || 0)}`
+        : "No championship game found";
 
-      const awardWinners = [
-        leaders.ppg ? `PPG Leader: ${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : null,
-        leaders.tpm ? `3PM Leader: ${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : null,
-        leaders.rpg ? `RPG Leader: ${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : null,
-        leaders.apg ? `APG Leader: ${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : null,
-        leaders.spg ? `SPG Leader: ${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : null,
-        leaders.bpg ? `BPG Leader: ${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : null,
-      ].filter(Boolean).join("\n");
+      const mythical5Names = awards?.mythical5?.map((e, i) => `${i + 1}. ${e.player.name} (${leagueTeams.find(t => t.id === e.teamId)?.name || "?"})`).join(", ") || "N/A";
 
-      const prompt = `You are an elite grassroots basketball reporter and storyteller creating the OFFICIAL END-OF-SEASON Facebook recap for a competitive local basketball league using real statistics and standings data.
+      const prompt = `You are an elite grassroots basketball reporter creating the OFFICIAL END-OF-SEASON recap for a local basketball league. Your job is to write a short, punchy, cinematic Facebook post — emotional, hype, memorable, shareable.
 
-This is NOT a generic sports summary.
-
-This should feel like:
-- an emotional season-ending broadcast recap
-- a celebration of the league's journey
-- a dramatic retelling of the season
-- a memorable social media post league organizers and players would proudly share
-
-The tone must be:
-🔥 energetic
-🏀 emotional
-⚔️ competitive
-😂 occasionally funny when appropriate
-🏆 championship-level dramatic
-📣 Facebook-ready and highly shareable
-
-This season is OFFICIALLY COMPLETE because a CHAMPIONSHIP-tagged game has already concluded.
-
-LEAGUE:
-${selectedLeague?.name} (${selectedLeague?.season || ""})
-
-TOTAL COMPLETED GAMES:
-${completedGames.length}
+LEAGUE: ${selectedLeague?.name} (${selectedLeague?.season || ""})
+TOTAL GAMES PLAYED: ${completedGames.length}
 
 FINAL STANDINGS:
-${standings.map((s, i) => `${i + 1}. ${s.name}: ${s.wins}W-${s.losses}L (${s.winPct}% win rate, Diff: ${s.pointsDiff > 0 ? "+" : ""}${s.pointsDiff})`).join("\n")}
+${standings.map((s, i) => `${i + 1}. ${s.name}: ${s.wins}W-${s.losses}L (${s.winPct}% win rate)`).join("\n")}
 
-OFFICIAL LEAGUE LEADERS
-(These come directly from the Statistics Page League Leaders tab and MUST be treated as authoritative):
+CHAMPIONSHIP FINAL:
+${champScore}
+🏆 CHAMPIONS: ${championTeam?.name || "Unknown"}
+Runner-up: ${runnerUpTeam?.name || "Unknown"}
 
-PPG Leader:
-${leaders.ppg ? `${leaders.ppg.name} — ${fmt(leaders.ppg.ppg)} PPG` : "N/A"}
+SEASON AWARDS:
+🏆 MVP: ${awards?.mvp ? `${awards.mvp.player.name} (${fmt(awards.mvp.avgGis)} Avg GIS, ${awards.mvp.gp} games)` : "N/A"}
+🛡️ DPOY: ${awards?.dpoy ? `${awards.dpoy.player.name} (${awards.dpoy.gp} games)` : "N/A"}
+⭐ MYTHICAL FIVE: ${mythical5Names}
 
-3PM Leader:
-${leaders.tpm ? `${leaders.tpm.name} — ${fmt(leaders.tpm.tpm)} 3PM` : "N/A"}
+---
 
-RPG Leader:
-${leaders.rpg ? `${leaders.rpg.name} — ${fmt(leaders.rpg.rpg)} RPG` : "N/A"}
+WRITE THE RECAP NOW. Follow this structure exactly:
 
-APG Leader:
-${leaders.apg ? `${leaders.apg.name} — ${fmt(leaders.apg.apg)} APG` : "N/A"}
-
-SPG Leader:
-${leaders.spg ? `${leaders.spg.name} — ${fmt(leaders.spg.spg)} SPG` : "N/A"}
-
-BPG Leader:
-${leaders.bpg ? `${leaders.bpg.name} — ${fmt(leaders.bpg.bpg)} BPG` : "N/A"}
-
-TOP PLAYERS BY PER-GAME AVERAGES:
-${topPlayers || "No player stats available."}
-
-OFFICIAL AWARD WINNERS:
-${awardWinners || "No awards available."}
-
-IMPORTANT CONTEXT:
-- The championship game has already ended
-- The season is officially over
-- The recap should feel conclusive and celebratory
-- Do NOT write like playoffs are still coming
-- Do NOT preview future rounds
-- This is the FINAL OFFICIAL SEASON RECAP
-
-IMPORTANT — THIS RECAP ACCOMPANIES A VISUAL SEASON POSTER:
-The poster already contains the full standings table, all league leader stats, award winners, and detailed statistics. DO NOT repeat or list those details here. The recap is the emotional narrative — the poster is the data.
-
-INSTRUCTIONS:
-
-Write a Facebook-ready season recap that reads like the closing narration of a basketball season documentary. It should feel cinematic, emotional, and human — NOT a stats summary.
-
-FOCUS ONLY ON:
-1. The emotional identity of the season — what KIND of season was it? Gritty? Explosive? Dominant? Unpredictable?
-2. The championship team — how did they earn it? What was their journey?
-3. The Season MVP (PPG Leader) — give them a full dedicated cinematic paragraph. Make them the centerpiece. Describe their impact, their presence, what they meant to the season. This paragraph should feel like a sports documentary spotlight moment.
-4. 2–3 major season storylines drawn from the standings (e.g. a dominant team, a surprise run, a close race, a heartbreaking finish) — do NOT list stats, tell stories.
-5. An emotional closing that congratulates the champions, honors all competitors, and reinforces that the season's memories are now permanently preserved inside Courtside by AI.
-
-DO NOT:
-- list league leaders or award categories
-- repeat standings numbers beyond what's needed for storytelling
-- name-drop many players — focus on 1–2 key figures maximum beyond the MVP
-- use bullet points anywhere
-- sound robotic, templated, or like an AI summary
-- invent stats, players, or storylines not supported by the data
-
-TONE AND STYLE:
-- passionate grassroots basketball commentator
-- championship broadcast closing narration
-- Facebook post people actually stop scrolling for
-- occasionally funny when the data supports it (blowouts, dominant runs, unlikely heroes)
-- emotional and hype — "this team refused to die", "the scoreboard looked disrespectful", "every possession felt personal"
-
-STRUCTURE:
 1. Start EXACTLY with:
 🎙️ COURTSIDE BY AI REPORT - ${selectedLeague?.name} - OFFICIAL SEASON RECAP
 
-2. Powerful opening hook — the season's emotional identity
+2. ONE powerful opening line that captures the soul of the season. Short. Punchy. Cinematic.
 
-3. The championship team's story
+3. THE CHAMPIONS — how did ${championTeam?.name || "the champions"} earn it? Describe their journey through the season — their record, their dominance or grind, how they showed up when it mattered. Make it feel earned. Make the reader feel the weight of the trophy.
 
-4. The Season MVP cinematic spotlight paragraph (PPG Leader)
+4. THE MVP SPOTLIGHT — this is the CENTERPIECE of the recap. Write a full dedicated paragraph exclusively about the MVP (${awards?.mvp?.player?.name || "the MVP"}). Make it feel like a documentary spotlight. Describe their presence, their impact, what they meant to this season. This should be the most emotionally charged part of the recap. No stats listing — pure storytelling.
 
-5. 2–3 major season storylines (narrative, not stats)
+5. SEASON STORYLINES — pick 2 storylines from the standings that feel interesting (a dominant team, a surprise run, a close race, a heartbreaking finish). Keep it narrative, not stats. One paragraph max each.
 
-6. Emotional closing — champions, competitors, and Courtside legacy
+6. AWARDS SHOUTOUT — briefly mention the DPOY and the Mythical Five by name in a single natural sentence or two. No bullet points. Just a proud recognition.
 
-7. End EXACTLY with:
+7. CLOSING — celebrate the champions, honor every team that competed, and close with something that makes players want to screenshot this post. Mention that every stat and memory is permanently recorded inside Courtside by AI.
+
+8. End EXACTLY with:
 👉 Full stats, standings & season records: https://courtside-by-ai.com/schedule
 
 RULES:
-- Use emojis naturally throughout
-- Target 350–550 words
-- Vary sentence rhythm — short punchy lines mixed with flowing narrative
+- Target 350–500 words total
+- Use emojis naturally — not on every line, but where they punch
 - NEVER use bullet points
-- NEVER break character
-- NEVER sound like a template
+- NEVER invent stats or players
+- NEVER sound like a template or an AI
+- SHORT punchy sentences mixed with longer flowing ones
+- Make it feel like a real sports media post people actually stop scrolling for
 
-Start immediately with:
-🎙️ COURTSIDE BY AI REPORT`;
+Start immediately with 🎙️ COURTSIDE BY AI REPORT`;
 
       const result = await base44.integrations.Core.InvokeLLM({
         prompt,
-        model: "claude_opus_4_6",
+        model: "claude_sonnet_4_6",
       });
 
       setRecap(typeof result === "string" ? result : JSON.stringify(result));
     } catch (err) {
       if (err.message === "not_enough_games") {
-        setError("Regular season recap cannot be generated because there is not enough completed league data available yet.");
+        setError("Not enough completed games to generate a recap.");
       } else {
         setError(err.message || "Failed to generate recap. Please try again.");
       }
@@ -331,9 +336,9 @@ Start immediately with:
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Newspaper className="w-6 h-6 text-purple-600" />
-          Regular Season Recap
+          Season Recap
         </h1>
-        <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready recap for a selected league's regular season.</p>
+        <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready official season recap for a completed league.</p>
       </div>
 
       <Card className="border-slate-200 mb-6">
@@ -351,9 +356,18 @@ Start immediately with:
               </SelectContent>
             </Select>
           </div>
+
+          {selectedLeagueId && (
+            <div className="text-xs text-slate-500 space-y-1">
+              <p>🏆 Champions: <span className="font-semibold text-slate-700">{championTeam?.name || "No championship game found"}</span></p>
+              <p>🥇 MVP: <span className="font-semibold text-slate-700">{awards?.mvp?.player?.name || "Calculating…"}</span></p>
+              <p>🛡️ DPOY: <span className="font-semibold text-slate-700">{awards?.dpoy?.player?.name || "Calculating…"}</span></p>
+            </div>
+          )}
+
           <p className="text-xs text-slate-400 flex items-center gap-1.5">
             <AlertCircle className="w-3.5 h-3.5" />
-            This generates a regular season recap using all completed games currently available in the selected league.
+            Requires a completed championship game and sufficient player stats.
           </p>
         </CardContent>
       </Card>
