@@ -111,19 +111,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     let timeoutStats, timeoutLogs;
 
-    // Invalidate PlayerStats on ALL external events (create, update, delete).
-    // This is critical for multi-device tracking: without this, Admin B's cache
-    // stays stale and never sees Admin A's stat changes, causing cross-device races.
-    // Each device's own mutation already calls invalidateQueries in onSuccess,
-    // so the extra debounced invalidation here is harmless but ensures sync.
     const unsubscribeStats = base44.entities.PlayerStats.subscribe(() => {
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 50); // Minimal debounce — just enough to batch rapid bursts
+      }, 50);
     });
 
-    // Invalidate GameLogs on all events so the activity feed stays in sync
     const unsubscribeLogs = base44.entities.GameLog.subscribe(() => {
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
@@ -142,11 +136,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const activePlayers = existingStats.filter(s => s.is_starter);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
-  // Track active player counts per team to detect lineup violations reactively
   const homeActiveCount = existingStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
   const awayActiveCount = existingStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
 
-  // Final review mode: clock at 00:00, not running, last regulation period or any overtime
   const _totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
   const currentPeriod = game.clock_period ?? 1;
   const isInFinalReview = (
@@ -156,10 +148,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     game.period_status === 'completed'
   );
 
-  // Fire repair check whenever lineup counts change (catches bad state on load + real-time updates)
   useEffect(() => {
     if (existingStats.length === 0) return;
-    if (isSubmittingSubRef.current) return; // Skip mid-substitution to avoid false positives
+    if (isSubmittingSubRef.current) return;
     checkAndTriggerRepair(existingStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homeActiveCount, awayActiveCount]);
@@ -176,7 +167,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         };
       }
     });
-    // Initialize valid lineup snapshots on first load
     if (existingStats.length > 0) {
       updateValidSnapshots(existingStats);
     }
@@ -301,7 +291,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (updates.length > 0) {
         Promise.all(updates).catch(() => {});
       }
-    }, 10000); // Update every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.game_mode, game.clock_started_at, game.clock_time_left, game.clock_period, activePlayers, updateStatMutation]);
@@ -360,7 +350,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return false;
   };
 
-  // Derive score from player stats to avoid stale game.home_score / game.away_score
   const calcTeamScore = (teamId, stats) => stats.reduce((acc, s) => {
     if (s.team_id !== teamId) return acc;
     return acc + (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
@@ -373,7 +362,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return String(period);
   };
 
-  // ── Lineup validation ────────────────────────────────────────────
   const getFoulLimits = () => ({
     personalFoulLimit: game.game_rules?.personalFoulLimit ?? MAX_FOUL_LIMIT,
     technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
@@ -413,7 +401,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           activePlayers: activePls,
         });
       } else {
-        // Valid — update snapshot
         lastValidLineupsRef.current[teamId] = {
           playerIds: [...activeIds],
           timestamp: new Date().toISOString(),
@@ -451,11 +438,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleStatClick = async (statType) => {
-    // Prevent concurrent mutations
     if (isProcessingStatRef.current) return;
     if (!selectedPlayer) return;
 
-    // Use cached stat row — kept fresh by real-time subscription. No network fetch on click.
     const playerStatCached = existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStatCached) return;
 
@@ -465,16 +450,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const currentValue = playerStat[statType.key] || 0;
       const updates = { [statType.key]: currentValue + 1 };
 
-
-
       const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
       const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
       const oldScores = { home: currentHomeScore, away: currentAwayScore };
 
-      // Build game update payload (can combine multiple fields)
       const gameUpdates = {};
       
-      // Add team fouls if applicable
       if (statCountsAsTeamFoul(statType.key)) {
         const isHome = selectedPlayer.team_id === game.home_team_id;
         const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
@@ -485,7 +466,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         gameUpdates[foulKey] = currentFoulMap;
       }
 
-      // Add score if points were awarded
       if (statType.points > 0) {
         const isHomeTeam = selectedPlayer.team_id === game.home_team_id;
         const newScore = isHomeTeam
@@ -494,7 +474,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         gameUpdates[isHomeTeam ? 'home_score' : 'away_score'] = newScore;
       }
 
-      // Batch all mutations in parallel
       const promises = [
         updateStatMutation.mutateAsync({ statId: playerStat.id, updates })
       ];
@@ -503,7 +482,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
       }
 
-      // Main stat log
       promises.push(createLogMutation.mutateAsync({
         game_id: game.id,
         player_id: selectedPlayer.id,
@@ -521,7 +499,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         device_name: getDeviceName()
       }));
 
-      // Handle ejections
       let ejectionLog = null;
       if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
         ejectionLog = {
@@ -559,10 +536,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }));
       }
 
-      // Execute all in parallel
       await Promise.all(promises);
 
-      // Show ejection dialog after mutations complete
       if (ejectionLog) {
         setEjectedPlayer(selectedPlayer);
         setEjectionReason(ejectionLog.reason);
@@ -595,78 +570,83 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setShowSubDialog(false);
     resetSubDialog();
 
-    const currentComputedTimeLeft = computeTimeLeft(game);
-    // Always fetch fresh stats to avoid stale cache causing > 5 players bug
-    const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+    try {
+      const currentComputedTimeLeft = computeTimeLeft(game);
+      // Always fetch fresh stats to avoid stale cache causing > 5 players bug
+      const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
 
-    const processTeamSub = async (playersOut, playersIn, teamId) => {
-      if (playersOut.length === 0) return;
-      const team = teamId === game.home_team_id ? homeTeam : awayTeam;
+      const processTeamSub = async (playersOut, playersIn, teamId) => {
+        if (playersOut.length === 0) return;
+        const team = teamId === game.home_team_id ? homeTeam : awayTeam;
 
-      for (const playerOut of playersOut) {
-        if (game.game_mode === 'timed' && game.clock_running) {
-          const clockState = playerGameClockStateRef.current[playerOut.id];
-          if (clockState && clockState.period === game.clock_period) {
-            const elapsed = clockState.timeLeft - currentComputedTimeLeft;
-            playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + elapsed;
+        for (const playerOut of playersOut) {
+          if (game.game_mode === 'timed' && game.clock_running) {
+            const clockState = playerGameClockStateRef.current[playerOut.id];
+            if (clockState && clockState.period === game.clock_period) {
+              const elapsed = clockState.timeLeft - currentComputedTimeLeft;
+              playerMinutesRef.current[playerOut.id] = (playerMinutesRef.current[playerOut.id] || 0) + elapsed;
+            }
           }
+          playerGameClockStateRef.current[playerOut.id] = null;
+          const outStat = freshStats.find(s => s.player_id === playerOut.id);
+          if (outStat) {
+            const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
+            const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+            await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
+          }
+          if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
         }
-        playerGameClockStateRef.current[playerOut.id] = null;
-        const outStat = freshStats.find(s => s.player_id === playerOut.id);
-        if (outStat) {
-          const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
-          const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
-          await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
+
+        for (const playerInId of playersIn) {
+          const inStat = freshStats.find(s => s.player_id === playerInId);
+          if (inStat) {
+            await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
+          } else {
+            await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+          }
+          playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
+          if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
         }
-        if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
-      }
 
-      for (const playerInId of playersIn) {
-        const inStat = freshStats.find(s => s.player_id === playerInId);
-        if (inStat) {
-          await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
-        } else {
-          await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
-        }
-        playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
-        if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
-      }
+        const outNames = playersOut.map(p => p.name).join(', ');
+        const inNames = playersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
+        const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
+        const logData = JSON.stringify({
+          display: logLabel,
+          out_ids: playersOut.map(p => p.id),
+          in_ids: playersIn,
+          team_id: teamId
+        });
+        await createLogMutation.mutateAsync({
+          game_id: game.id,
+          player_id: playersOut[0].id,
+          team_id: teamId,
+          stat_type: 'substitution',
+          stat_label: logData,
+          stat_points: 0,
+          stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
+          old_home_score: game.home_score || 0,
+          old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '',
+          device_name: getDeviceName()
+        });
+      };
 
-      const outNames = playersOut.map(p => p.name).join(', ');
-      const inNames = playersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
-      const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
-      const logData = JSON.stringify({
-        display: logLabel,
-        out_ids: playersOut.map(p => p.id),
-        in_ids: playersIn,
-        team_id: teamId
-      });
-      await createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: playersOut[0].id,
-        team_id: teamId,
-        stat_type: 'substitution',
-        stat_label: logData,
-        stat_points: 0,
-        stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
-        old_home_score: game.home_score || 0,
-        old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      });
-    };
+      console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
 
-    // Diagnostic logging
-    console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
+      await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
+      await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
-    await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
-    await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
-
-    // Validate lineup integrity after substitution
-    const postSubStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-    checkAndTriggerRepair(postSubStats);
-
-    isSubmittingSubRef.current = false;
+      // Validate lineup integrity after substitution
+      const postSubStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      checkAndTriggerRepair(postSubStats);
+    } catch (error) {
+      console.error('Error during substitution:', error);
+      alert('Substitution failed. Please try again.');
+    } finally {
+      // CRITICAL: always reset the lock so future substitutions are not blocked
+      isSubmittingSubRef.current = false;
+    }
   };
 
   const togglePlayerOut = (player, teamId) => {
@@ -674,7 +654,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       setHomePlayersOut(prev =>
         prev.some(p => p.id === player.id) ? prev.filter(p => p.id !== player.id) : [...prev, player]
       );
-      // Reset corresponding in selections when out changes
       setHomePlayersIn([]);
     } else {
       setAwayPlayersOut(prev =>
@@ -786,10 +765,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const handleUndo = async (logEntry) => {
     const updates = { [logEntry.statType.key]: logEntry.oldValue };
 
-    // Diagnostic logging — remove when bug is resolved
     console.log(`[LiveStat:undo] game=${game.id} player=${logEntry.statId} stat=${logEntry.statType.key} restoring to old=${logEntry.oldValue}`);
     
-    // Prepare game updates (can batch score + fouls)
     const gameUpdates = {};
     
     if (logEntry.statType.points > 0) {
@@ -810,7 +787,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       gameUpdates[foulKey] = currentFoulMap;
     }
 
-    // Batch stat update + game update (if needed) + log delete
     const promises = [
       updateStatMutation.mutateAsync({ statId: logEntry.statId, updates })
     ];
@@ -846,28 +822,23 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const { out_ids, in_ids } = logEntry.subData;
     const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
     
-    // Batch all stat updates
     const statUpdatePromises = [];
     
-    // Reverse: players who went OUT come back as starters
     for (const playerId of (out_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
       if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true, is_active: true } }));
     }
     
-    // Reverse: players who came IN go back to bench
     for (const playerId of (in_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
       if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false, is_active: false } }));
     }
     
-    // Execute stat updates in parallel + delete log in parallel
     await Promise.all([
       ...statUpdatePromises,
       deleteLogMutation.mutateAsync(logEntry.id)
     ]);
 
-    // Validate lineup integrity after undo substitution
     const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
     checkAndTriggerRepair(postUndoStats);
   };
@@ -904,7 +875,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       await Promise.all(minuteUpdates);
 
-      // Diagnostic: log final stat snapshot at end-game
       console.log('[LiveStat:endgame] Final PlayerStats snapshot:', existingStats.map(s => ({
         player_id: s.player_id, pts2: s.points_2, pts3: s.points_3, ft: s.free_throws,
         reb: (s.offensive_rebounds||0)+(s.defensive_rebounds||0),
@@ -961,9 +931,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && !activePlayerIds.includes(p.id)
   );
 
-  // ── Player Card ──
-  // isDesktop=true → show R & A; isDesktop=false (mobile) → show only F & T
-  // side='home' → blue SUB pill; side='away' → red SUB pill
   const PlayerButton = ({ player, teamColor, onSubClick, isDesktop, side }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
@@ -1000,7 +967,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         style={desktopStyle}
       >
         <div className="flex flex-col items-center gap-0.5">
-          {/* Top row: jersey + SUB pill */}
           <div className="flex items-center justify-between w-full gap-0.5">
             <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0" style={{ backgroundColor: teamColor || '#64748b' }}>
               {player.jersey_number}
@@ -1021,7 +987,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <div className="w-full pt-0.5 border-t border-slate-200">
               <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
               <div className="flex justify-around mt-0.5">
-                {/* R and A only shown on desktop/tablet */}
                 {isDesktop && (
                   <>
                     <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
@@ -1038,7 +1003,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  // ── Team panel ──
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
     const accentColor = isHome ? '#3b82f6' : '#ef4444';
@@ -1088,7 +1052,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
-  // ── Stat control panel ──
   const StatPanel = ({ large, showSub = true }) => {
     const btnH = large ? 'h-[4.5rem]' : 'h-14';
     return (
@@ -1119,7 +1082,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <div className="flex rounded-lg overflow-hidden shadow-md">
             <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTM</motion.button>
             <div className="w-px bg-indigo-900/30" />
-            <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTX</motion.button>
+            <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indide-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTX</motion.button>
           </div>
           {['points_2', 'points_3'].map(key => {
             const stat = STAT_TYPES.find(s => s.key === key);
@@ -1245,7 +1208,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
         <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
         <div className="mt-3 space-y-3">
-          {/* Mobile uses side=undefined so isDesktop=false → no R/A */}
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
@@ -1292,7 +1254,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 </motion.div>
               ); })}
             </div>
-            {/* Make Substitution button hidden — use SUB buttons on player cards */}
           </div>
           {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
@@ -1322,12 +1283,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           <div className="w-[50%] flex-shrink-0 flex flex-col min-h-0">
-            {/* Stat buttons — shrink-wrap to content */}
             <div className="flex-shrink-0">
               {StatPanel({ large: true, showSub: false })}
             </div>
-            {/* Substitution strip — hidden, use SUB buttons on player cards instead */}
-            {/* Activity log — all remaining space */}
             <div className="flex-1 min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
               {ActivityLog({ compact: true })}
             </div>
@@ -1457,7 +1415,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
             {subStep === 'select_out' ? (
               <>
-                {/* HOME team — blue accent */}
+                {/* HOME team */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
@@ -1483,7 +1441,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   </div>
                 </div>
 
-                {/* AWAY team — red accent */}
+                {/* AWAY team */}
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
