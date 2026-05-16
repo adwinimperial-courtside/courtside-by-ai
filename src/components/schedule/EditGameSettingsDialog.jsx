@@ -23,6 +23,8 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
     period_type: game.period_type || "quarters",
     period_minutes: game.period_minutes ?? 10,
     overtime_minutes: game.overtime_minutes ?? 5,
+    timeoutsPerSegment: game.game_rules?.timeoutsPerSegment ?? 2,
+    teamFoulBonusThreshold: game.game_rules?.teamFoulBonusThreshold ?? 5,
   });
 
   const handleStageChange = (value) => {
@@ -39,9 +41,11 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    const payload = { ...formData };
+    const { timeoutsPerSegment, teamFoulBonusThreshold, ...rest } = formData;
+    const payload = { ...rest };
     if (isTimed) {
       payload.period_count = formData.period_type === "quarters" ? 4 : 2;
+      payload.game_rules = { ...(game.game_rules || {}), timeoutsPerSegment, teamFoulBonusThreshold };
     } else {
       payload.period_type = null;
       payload.period_count = null;
@@ -175,6 +179,30 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
                       max={15}
                       value={formData.overtime_minutes}
                       onChange={(e) => setFormData({ ...formData, overtime_minutes: Number(e.target.value) })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="timeoutsPerSegment">Timeouts per Segment</Label>
+                    <Input
+                      id="timeoutsPerSegment"
+                      type="number"
+                      min={0}
+                      max={10}
+                      value={formData.timeoutsPerSegment}
+                      onChange={(e) => setFormData({ ...formData, timeoutsPerSegment: Number(e.target.value) })}
+                      className="mt-1.5"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="teamFoulBonusThreshold">Team Fouls Before Bonus</Label>
+                    <Input
+                      id="teamFoulBonusThreshold"
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={formData.teamFoulBonusThreshold}
+                      onChange={(e) => setFormData({ ...formData, teamFoulBonusThreshold: Number(e.target.value) })}
                       className="mt-1.5"
                     />
                   </div>
