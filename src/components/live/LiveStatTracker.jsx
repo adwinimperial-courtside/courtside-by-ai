@@ -28,7 +28,6 @@ const STAT_TYPES = [
   { key: 'unsportsmanlike_fouls', label: 'UNSP', points: 0, color: 'bg-rose-700 hover:bg-rose-800' },
 ];
 
-const MAX_FOUL_LIMIT = 5; // Configurable: change this to support different league foul limits
 
 const getDeviceName = () => {
   const ua = navigator.userAgent;
@@ -363,7 +362,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const getFoulLimits = () => ({
-    personalFoulLimit: game.game_rules?.personalFoulLimit ?? MAX_FOUL_LIMIT,
+    personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
     technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
     unsportsmanlikeFoulLimit: game.game_rules?.unsportsmanlikeFoulLimit ?? 2,
   });
@@ -506,10 +505,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
           color: 'bg-pink-700 hover:bg-pink-800'
         };
-      } else if (statType.key === 'fouls' && currentValue + 1 >= MAX_FOUL_LIMIT) {
+      } else if (statType.key === 'fouls' && currentValue + 1 >= (game.game_rules?.personalFoulLimit ?? 5)) {
+        const foulLimit = game.game_rules?.personalFoulLimit ?? 5;
         ejectionLog = {
-          reason: `${MAX_FOUL_LIMIT} Fouls`,
-          label: `FOUL OUT — ${selectedPlayer.name} reached ${MAX_FOUL_LIMIT} fouls`,
+          reason: `${foulLimit} Fouls`,
+          label: `FOUL OUT — ${selectedPlayer.name} reached ${foulLimit} fouls`,
           color: 'bg-red-700 hover:bg-red-800'
         };
       } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
@@ -916,7 +916,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const stats = existingStats.find(s => s.player_id === playerId);
     if (!stats) return false;
     return (
-      (stats.fouls || 0) >= MAX_FOUL_LIMIT ||
+      (stats.fouls || 0) >= (game.game_rules?.personalFoulLimit ?? 5) ||
       (stats.technical_fouls || 0) >= 2 ||
       (stats.unsportsmanlike_fouls || 0) >= 2
     );

@@ -342,6 +342,10 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   // Default allowances per segment and format
   const getSegmentAllowance = (segment) => {
+    // If explicitly configured in game_rules, use that for all segments
+    const configured = localGame.game_rules?.timeoutsPerSegment;
+    if (configured != null) return configured;
+    // Default fallback
     if (segment === 'OVERTIME') return 1;
     if (segment === 'FIRST_HALF') return 2;
     // SECOND_HALF
@@ -507,7 +511,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                 className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 style={{ minHeight: '36px', minWidth: '100px' }}
               >
-                TIMEOUT
+                {homeRemaining <= 0 ? 'NO TIMEOUTS' : 'TIMEOUT'}
               </button>
             </div>
             <div className="flex items-center gap-2 mt-1.5">
@@ -678,7 +682,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
                 className="px-3 rounded-lg font-bold text-xs bg-white/20 hover:bg-white/30 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                 style={{ minHeight: '36px', minWidth: '100px' }}
               >
-                TIMEOUT
+                {awayRemaining <= 0 ? 'NO TIMEOUTS' : 'TIMEOUT'}
               </button>
               <div className="flex items-center gap-1.5">
                 {Array.from({ length: segmentAllowance }).map((_, i) => (
