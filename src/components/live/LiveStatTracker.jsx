@@ -573,7 +573,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     try {
       const currentComputedTimeLeft = computeTimeLeft(game);
       // Always fetch fresh stats to avoid stale cache causing > 5 players bug
-      const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      const freshStats = await Promise.race([
+        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Stats fetch timed out')), 10000)
+        )
+      ]);
 
       const processTeamSub = async (playersOut, playersIn, teamId) => {
         if (playersOut.length === 0) return;
@@ -638,7 +643,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
       // Validate lineup integrity after substitution
-      const postSubStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      const postSubStats = await Promise.race([
+        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Stats fetch timed out')), 10000)
+        )
+      ]);
       checkAndTriggerRepair(postSubStats);
     } catch (error) {
       console.error('Error during substitution:', error);
