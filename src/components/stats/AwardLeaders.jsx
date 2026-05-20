@@ -126,13 +126,17 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
           team,
           gp: effectiveGp,
           avgGis: avgGis.toFixed(1),
+          avgGisNum: avgGis,
           gpPct: (gpPct * 100).toFixed(1),
           mvpScore: mvpScore.toFixed(1),
           mvpScoreNum: mvpScore
         };
       })
       .filter(Boolean)
-      .sort((a, b) => b.mvpScoreNum - a.mvpScoreNum)
+      .sort((a, b) => {
+        if (b.mvpScoreNum !== a.mvpScoreNum) return b.mvpScoreNum - a.mvpScoreNum;
+        return b.avgGisNum - a.avgGisNum;
+      })
       .slice(0, 10);
 
     return candidates;
