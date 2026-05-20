@@ -220,6 +220,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
           player,
           team,
           gp: effectiveGp,
+          avgDefGisNum: avgDefGis,
           avgDefGis: avgDefGis.toFixed(1),
           gpPct: (gpPct * 100).toFixed(1),
           sumTech: data.sumTech,
@@ -229,7 +230,11 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
         };
       })
       .filter(Boolean)
-      .sort((a, b) => b.dpoyScoreNum - a.dpoyScoreNum)
+      .sort((a, b) => {
+        const scoreDiff = Math.round(b.dpoyScoreNum * 10) - Math.round(a.dpoyScoreNum * 10);
+        if (scoreDiff !== 0) return scoreDiff;
+        return b.avgDefGisNum - a.avgDefGisNum;
+      })
       .slice(0, 5);
 
     return leaders;
