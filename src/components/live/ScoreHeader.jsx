@@ -109,15 +109,6 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
   const totalPeriods = localGame?.period_count || (periodType === "halves" ? 2 : 4);
   const overtimeMinutes = localGame?.overtime_minutes || 5;
 
-  const getPerPeriodMinutes = (p) => {
-    const perPeriod = localGame.game_rules?.periodMinutes;
-    if (p > totalPeriods) return overtimeMinutes;
-    if (Array.isArray(perPeriod) && perPeriod[p - 1] != null) return perPeriod[p - 1];
-    return localGame?.period_minutes || 10;
-  };
-  // periodMinutes for current period (used in existing period-advance logic)
-  const periodMinutes = getPerPeriodMinutes(period);
-
   // Local display state — derived from game, updated every second if running
   const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(localGame));
   const [homeTimeoutsUsed, setHomeTimeoutsUsed] = useState(() => localGame.home_timeouts || {});
@@ -126,6 +117,15 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   const period = localGame?.clock_period ?? 1;
   const running = localGame?.clock_running ?? false;
+
+  const getPerPeriodMinutes = (p) => {
+    const perPeriod = localGame.game_rules?.periodMinutes;
+    if (p > totalPeriods) return overtimeMinutes;
+    if (Array.isArray(perPeriod) && perPeriod[p - 1] != null) return perPeriod[p - 1];
+    return localGame?.period_minutes || 10;
+  };
+  // periodMinutes for current period (used in existing period-advance logic)
+  const periodMinutes = getPerPeriodMinutes(period);
   const isOvertime = period > totalPeriods;
   const periodLabel = getPeriodLabel(period, periodType);
 
