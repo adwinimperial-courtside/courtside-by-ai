@@ -12,22 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
+const DEFAULT_FORM = { league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5 };
+
 export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams }) {
-  const [formData, setFormData] = useState({
-    league_id: "",
-    home_team_id: "",
-    away_team_id: "",
-    game_date: "",
-    location: "",
-    game_mode: "timed",
-    game_stage: "regular",
-    exclude_from_awards: false,
-    period_type: "quarters",
-    period_minutes: 10,
-    overtime_minutes: 5,
-    timeoutsPerSegment: 2,
-    teamFoulBonusThreshold: 5,
-  });
+  const [formData, setFormData] = useState(DEFAULT_FORM);
+  const [diffTimePeriod, setDiffTimePeriod] = useState(false);
+  const [perPeriodMinutes, setPerPeriodMinutes] = useState([10, 10, 10, 10]);
 
   const handleStageChange = (value) => {
     setFormData(prev => ({
@@ -40,13 +30,34 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
 
   const isTimed = formData.game_mode === "timed";
 
+  const periodCount = formData.period_type === "quarters" ? 4 : 2;
+  const periodLabels = formData.period_type === "quarters"
+    ? ["Q1 (min)", "Q2 (min)", "Q3 (min)", "Q4 (min)"]
+    : ["1st half (min)", "2nd half (min)"];
+
+  const handlePeriodTypeChange = (value) => {
+    const count = value === "quarters" ? 4 : 2;
+    setPerPeriodMinutes(Array(count).fill(formData.period_minutes));
+    setFormData(prev => ({ ...prev, period_type: value }));
+  };
+
+  const handleToggleDiffTime = (checked) => {
+    setDiffTimePeriod(checked);
+    setPerPeriodMinutes(Array(periodCount).fill(formData.period_minutes));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const { timeoutsPerSegment, teamFoulBonusThreshold, ...rest } = formData;
     const payload = { ...rest };
     if (isTimed) {
-      payload.period_count = formData.period_type === "quarters" ? 4 : 2;
-      payload.game_rules = { timeoutsPerSegment, teamFoulBonusThreshold };
+      payload.period_count = periodCount;
+      const gameRules = { timeoutsPerSegment, teamFoulBonusThreshold };
+      if (diffTimePeriod) {
+        gameRules.periodMinutes = perPeriodMinutes;
+        payload.period_minutes = perPeriodMinutes[0];
+      }
+      payload.game_rules = gameRules;
     } else {
       payload.period_type = null;
       payload.period_count = null;
@@ -54,7 +65,9 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
       payload.overtime_minutes = null;
     }
     onSubmit(payload);
-    setFormData({ league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5 });
+    setFormData(DEFAULT_FORM);
+    setDiffTimePeriod(false);
+    setPerPeriodMinutes([10, 10, 10, 10]);
   };
 
   const leagueTeams = formData.league_id 
@@ -207,10 +220,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
               <>
                 <div>
                   <Label>Period Format</Label>
-                  <Select
-                    value={formData.period_type}
-                    onValueChange={(value) => setFormData({ ...formData, period_type: value })}
-                  >
+                  <Select value={formData.period_type} onValueChange={handlePeriodTypeChange}>
                     <SelectTrigger className="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
@@ -221,7 +231,20 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                   </Select>
                 </div>
 
+                {/* Different time per period toggle */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="diffTimePeriod_create"
+                    checked={diffTimePeriod}
+                    onCheckedChange={handleToggleDiffTime}
+                  />
+                  <label htmlFor="diffTimePeriod_create" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Different time per period
+                  </label>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {!diffTimePeriod && (
                   <div>
                     <Label htmlFor="period_minutes">Minutes per Period</Label>
                     <Input
@@ -234,6 +257,24 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                       className="mt-1.5"
                     />
                   </div>
+                  )}
+                  {diffTimePeriod && periodLabels.map((label, i) => (
+                    <div key={i}>
+                      <Label>{label}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={perPeriodMinutes[i] ?? formData.period_minutes}
+                        onChange={(e) => {
+                          const updated = [...perPeriodMinutes];
+                          updated[i] = Number(e.target.value);
+                          setPerPeriodMinutes(updated);
+                        }}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  ))}
                   <div>
                     <Label htmlFor="overtime_minutes">Overtime Minutes <span className="text-slate-400 font-normal">(0 = no overtime)</span></Label>
                     <Input

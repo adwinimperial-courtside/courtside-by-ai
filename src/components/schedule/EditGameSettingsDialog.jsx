@@ -14,6 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/base44Client";
 
 export default function EditGameSettingsDialog({ open, onOpenChange, game, onSaved }) {
+  const existingPerPeriod = Array.isArray(game.game_rules?.periodMinutes) ? game.game_rules.periodMinutes : null;
   const [formData, setFormData] = useState({
     game_date: game.game_date ? new Date(game.game_date).toISOString().slice(0, 16) : "",
     location: game.location || "",
@@ -26,6 +27,9 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
     timeoutsPerSegment: game.game_rules?.timeoutsPerSegment ?? 2,
     teamFoulBonusThreshold: game.game_rules?.teamFoulBonusThreshold ?? 5,
   });
+  const [diffTimePeriod, setDiffTimePeriod] = useState(!!existingPerPeriod);
+  const defaultPerPeriod = existingPerPeriod || Array((game.period_type || "quarters") === "quarters" ? 4 : 2).fill(game.period_minutes ?? 10);
+  const [perPeriodMinutes, setPerPeriodMinutes] = useState(defaultPerPeriod);
 
   const handleStageChange = (value) => {
     setFormData(prev => ({
@@ -37,6 +41,21 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
   const [isSaving, setIsSaving] = useState(false);
 
   const isTimed = formData.game_mode === "timed";
+  const periodCount = formData.period_type === "quarters" ? 4 : 2;
+  const periodLabels = formData.period_type === "quarters"
+    ? ["Q1 (min)", "Q2 (min)", "Q3 (min)", "Q4 (min)"]
+    : ["1st half (min)", "2nd half (min)"];
+
+  const handlePeriodTypeChange = (value) => {
+    const count = value === "quarters" ? 4 : 2;
+    setPerPeriodMinutes(Array(count).fill(formData.period_minutes));
+    setFormData(prev => ({ ...prev, period_type: value }));
+  };
+
+  const handleToggleDiffTime = (checked) => {
+    setDiffTimePeriod(checked);
+    setPerPeriodMinutes(Array(periodCount).fill(formData.period_minutes));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -44,8 +63,15 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
     const { timeoutsPerSegment, teamFoulBonusThreshold, ...rest } = formData;
     const payload = { ...rest };
     if (isTimed) {
-      payload.period_count = formData.period_type === "quarters" ? 4 : 2;
-      payload.game_rules = { ...(game.game_rules || {}), timeoutsPerSegment, teamFoulBonusThreshold };
+      payload.period_count = periodCount;
+      const gameRules = { ...(game.game_rules || {}), timeoutsPerSegment, teamFoulBonusThreshold };
+      if (diffTimePeriod) {
+        gameRules.periodMinutes = perPeriodMinutes;
+        payload.period_minutes = perPeriodMinutes[0];
+      } else {
+        delete gameRules.periodMinutes;
+      }
+      payload.game_rules = gameRules;
     } else {
       payload.period_type = null;
       payload.period_count = null;
@@ -143,10 +169,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
               <>
                 <div>
                   <Label>Period Format</Label>
-                  <Select
-                    value={formData.period_type}
-                    onValueChange={(value) => setFormData({ ...formData, period_type: value })}
-                  >
+                  <Select value={formData.period_type} onValueChange={handlePeriodTypeChange}>
                     <SelectTrigger className="mt-1.5">
                       <SelectValue />
                     </SelectTrigger>
@@ -157,7 +180,20 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
                   </Select>
                 </div>
 
+                {/* Different time per period toggle */}
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    id="diffTimePeriod_edit"
+                    checked={diffTimePeriod}
+                    onCheckedChange={handleToggleDiffTime}
+                  />
+                  <label htmlFor="diffTimePeriod_edit" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Different time per period
+                  </label>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {!diffTimePeriod && (
                   <div>
                     <Label htmlFor="period_minutes">Minutes per Period</Label>
                     <Input
@@ -170,6 +206,24 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
                       className="mt-1.5"
                     />
                   </div>
+                  )}
+                  {diffTimePeriod && periodLabels.map((label, i) => (
+                    <div key={i}>
+                      <Label>{label}</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={60}
+                        value={perPeriodMinutes[i] ?? formData.period_minutes}
+                        onChange={(e) => {
+                          const updated = [...perPeriodMinutes];
+                          updated[i] = Number(e.target.value);
+                          setPerPeriodMinutes(updated);
+                        }}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  ))}
                   <div>
                     <Label htmlFor="overtime_minutes">Overtime Minutes <span className="text-slate-400 font-normal">(0 = no overtime)</span></Label>
                     <Input
