@@ -80,8 +80,12 @@ export default function Landing() {
                 Where Competition<br />Gets <span className="bg-gradient-to-r from-blue-600 to-orange-500 bg-clip-text text-transparent">Serious</span>.
               </h1>
               
-              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                Live stats. Automated awards. Tactical insights. Competitive analytics.
+              <p className="text-xl text-slate-600 mb-3 leading-relaxed">
+                The complete basketball league platform — for organisers, coaches, players, and fans.
+              </p>
+
+              <p className="text-sm font-semibold mb-8" style={{ color: "#F26B1F" }}>
+                Free for grassroots leagues. No subscription. Ever.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4">
@@ -141,6 +145,25 @@ export default function Landing() {
                 </Card>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Bar */}
+      <section className="bg-white py-8">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+            {[
+              { number: "186+", label: "Users" },
+              { number: "101+", label: "Players" },
+              { number: "500+", label: "Games Logged" },
+              { number: "15+", label: "Leagues" },
+            ].map((stat, idx) => (
+              <div key={idx}>
+                <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>
+                <div className="text-sm text-slate-500 mt-1">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
