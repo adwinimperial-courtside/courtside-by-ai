@@ -150,19 +150,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     staleTime: 0,
   });
 
-  const { data: allUsers = [] } = useQuery({
-    queryKey: ['sidebarAllUsers'],
-    queryFn: () => base44.entities.User.list('-created_date', 500),
-    enabled: currentUser?.user_type === 'app_admin',
-    refetchInterval: 15000,
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: true,
-  });
-
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
-  const totalUsersCount = allUsers.filter(u => u.user_type !== 'app_admin').length;
 
   const playerNavItem = {
     title: "Player Profile",
@@ -279,9 +267,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                           {item.title === "Requests" && pendingRequestsCount > 0 && (
                             <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
                           )}
-                          {item.title === "User Roles" && totalUsersCount > 0 && (
-                            <Badge className="ml-auto bg-slate-500 text-white">{totalUsersCount}</Badge>
-                          )}
+
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
