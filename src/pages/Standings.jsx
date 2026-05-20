@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trophy, Filter } from "lucide-react";
 
 import TeamStandings from "../components/stats/TeamStandings";
+import BracketStandings from "../components/stats/BracketStandings";
 
 export default function StandingsPage() {
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -113,6 +114,12 @@ export default function StandingsPage() {
               Please select a league from the filter above to view team standings.
             </p>
           </div>
+        ) : teams.some(t => t.bracket) ? (
+          <BracketStandings
+            teams={filteredTeams}
+            games={filteredGames}
+            leagues={leagues}
+          />
         ) : (
           <TeamStandings 
             teams={filteredTeams}
