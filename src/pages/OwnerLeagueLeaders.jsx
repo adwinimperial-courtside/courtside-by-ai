@@ -1,0 +1,134 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Trophy, Filter } from "lucide-react";
+import AwardLeadersTop20 from "@/components/stats/AwardLeadersTop20";
+
+export default function OwnerLeagueLeadersPage() {
+  const [selectedLeague, setSelectedLeague] = useState(null);
+
+  const { data: currentUser } = useQuery({
+    queryKey: ['currentUser'],
+    queryFn: () => base44.auth.me(),
+  });
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.default_league_id) {
+      setSelectedLeague(currentUser.default_league_id);
+    } else if (currentUser.assigned_league_ids?.length === 1) {
+      setSelectedLeague(currentUser.assigned_league_ids[0]);
+    } else {
+      setSelectedLeague("all");
+    }
+  }, [currentUser]);
+
+  const { data: leagues = [] } = useQuery({
+    queryKey: ['leagues'],
+    queryFn: () => base44.entities.League.list('-created_date', 200),
+  });
+
+  const isAppAdmin = currentUser?.user_type === 'app_admin';
+  const assignedLeagueIds = currentUser?.assigned_league_ids || [];
+  const visibleLeagues = isAppAdmin
+    ? leagues
+    : leagues.filter(l => assignedLeagueIds.includes(l.id));
+
+  const { data: teams = [] } = useQuery({
+    queryKey: ['owner_teams', selectedLeague],
+    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeague }, null, 500),
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 60000,
+  });
+
+  const { data: players = [] } = useQuery({
+    queryKey: ['owner_players', selectedLeague, teams.length],
+    queryFn: () => {
+      const teamIds = teams.map(t => t.id);
+      if (teamIds.length === 0) return [];
+      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
+    },
+    enabled: !!selectedLeague && selectedLeague !== 'all' && teams.length > 0,
+    staleTime: 60000,
+  });
+
+  const { data: games = [] } = useQuery({
+    queryKey: ['owner_games', selectedLeague],
+    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000),
+    enabled: !!selectedLeague && selectedLeague !== 'all',
+    staleTime: 30000,
+  });
+
+  const gameIds = games.map(g => g.id);
+
+  const { data: allStats = [] } = useQuery({
+    queryKey: ['owner_stats', selectedLeague, gameIds.length],
+    queryFn: () => base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000),
+    enabled: !!selectedLeague && selectedLeague !== 'all' && gameIds.length > 0,
+    staleTime: 30000,
+  });
+
+  const { data: allAwardSettings = [] } = useQuery({
+    queryKey: ['awardSettings'],
+    queryFn: () => base44.entities.AwardSettings.list(),
+    staleTime: 60000,
+  });
+
+  const leagueAwardSettings = allAwardSettings.find(s => s.league_id === selectedLeague) || null;
+  const selectedLeagueObj = leagues.find(l => l.id === selectedLeague);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">League Leaders Top 20</h1>
+          </div>
+          <p className="text-slate-600 ml-15">Full MVP race — top 20 eligible players ranked by score</p>
+        </div>
+
+        {/* League Selector */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Filter className="w-5 h-5 text-yellow-600" />
+            <h2 className="text-lg font-semibold text-slate-900">Select League</h2>
+          </div>
+          <div className="max-w-md">
+            <Select value={selectedLeague} onValueChange={setSelectedLeague}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select league" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leagues</SelectItem>
+                {[...visibleLeagues].sort((a, b) => a.name.localeCompare(b.name)).map(league => (
+                  <SelectItem key={league.id} value={league.id}>
+                    {league.name} ({league.season})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {selectedLeague === "all" || !selectedLeague ? (
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <p className="text-slate-500 text-center">Please select a league to view the Top 20 MVP rankings</p>
+          </div>
+        ) : (
+          <AwardLeadersTop20
+            league={selectedLeagueObj}
+            teams={teams}
+            games={games}
+            players={players}
+            stats={allStats}
+            awardSettings={leagueAwardSettings}
+          />
+        )}
+      </div>
+    </div>
+  );
+}

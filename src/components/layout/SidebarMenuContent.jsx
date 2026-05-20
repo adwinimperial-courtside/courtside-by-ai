@@ -136,6 +136,11 @@ const ownerItems = [
     title: "Season Recap",
     url: "/RegularSeasonRecap",
     icon: Newspaper
+  },
+  {
+    title: "League Leaders Top 20",
+    url: "/OwnerLeagueLeaders",
+    icon: Medal
   }
 ];
 
