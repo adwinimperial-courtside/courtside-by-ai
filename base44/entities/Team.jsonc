@@ -1,0 +1,98 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Team name"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "color": {
+      "type": "string",
+      "description": "Team primary color (hex code)",
+      "default": "#f97316"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "URL to team logo image"
+    },
+    "head_coach": {
+      "type": "string",
+      "description": "Name of the head coach"
+    },
+    "manager": {
+      "type": "string",
+      "description": "Name of the manager"
+    },
+    "team_captain": {
+      "type": "string",
+      "description": "Reference to the team captain player"
+    },
+    "wins": {
+      "type": "number",
+      "default": 0
+    },
+    "losses": {
+      "type": "number",
+      "default": 0
+    },
+    "bracket": {
+      "type": "string",
+      "description": "Bracket or group the team belongs to (e.g. East, West, Group A)"
+    }
+  },
+  "required": [
+    "name",
+    "league_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        }
+      ]
+    }
+  }
+}
