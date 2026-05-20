@@ -58,12 +58,11 @@ export default function AwardLeadersPage() {
     queryKey: ['awards_players', selectedLeague],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
-      const teamIds = leagueTeams.map(t => t.id);
+      const teamIds = teams.map(t => t.id);
       if (teamIds.length === 0) return [];
       return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
     },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
+    enabled: !!selectedLeague && selectedLeague !== 'all' && teams.length > 0,
     staleTime: 60000,
   });
 
@@ -77,16 +76,16 @@ export default function AwardLeadersPage() {
     staleTime: 30000,
   });
 
+  const gameIds = games.map(g => g.id);
+
   const { data: allStats = [] } = useQuery({
-    queryKey: ['awards_playerStats', selectedLeague],
+    queryKey: ['awards_playerStats', selectedLeague, gameIds.length],
     queryFn: async () => {
       if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague }, null, 1000);
-      const gameIds = leagueGames.map(g => g.id);
       if (gameIds.length === 0) return [];
       return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
     },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
+    enabled: !!selectedLeague && selectedLeague !== 'all' && gameIds.length > 0,
     staleTime: 30000,
   });
 
