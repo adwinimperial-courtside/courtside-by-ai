@@ -11,6 +11,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
+import Landing from './pages/Landing';
 import AllPlayersViewPage from './pages/AllPlayersView';
 import ApplyForLeaguePage from './pages/ApplyForLeague';
 import StoryBuilderPage from './pages/StoryBuilder';
@@ -55,7 +56,7 @@ const AuthenticatedApp = () => {
   return (
     <LayoutWrapper currentPageName={mainPageKey}>
       <Routes>
-        <Route path="/" element={<MainPage />} handle={{ pageName: mainPageKey }} />
+        <Route path="/" element={<Landing />} handle={{ pageName: "Landing" }} />
         {Object.entries(Pages).map(([path, Page]) => (
           <Route key={path} path={`/${path}`} element={<Page />} handle={{ pageName: path }} />
         ))}
