@@ -29,7 +29,8 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     color: "#f97316",
     logo_url: "",
     head_coach: "",
-    manager: ""
+    manager: "",
+    bracket: ""
   });
   const [captainData, setCaptainData] = useState({
     name: "",
@@ -45,7 +46,7 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
       submitData.captain = captainData;
     }
     onSubmit(submitData);
-    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "" });
+    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "", bracket: "" });
     setCaptainData({ name: "", jersey_number: "", position: "PG" });
   };
 
@@ -79,6 +80,16 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Warriors"
               required
+              className="mt-1.5"
+            />
+          </div>
+          <div>
+            <Label htmlFor="bracket">Bracket (optional)</Label>
+            <Input
+              id="bracket"
+              value={formData.bracket}
+              onChange={(e) => setFormData({ ...formData, bracket: e.target.value })}
+              placeholder="e.g., East, West, Group A"
               className="mt-1.5"
             />
           </div>

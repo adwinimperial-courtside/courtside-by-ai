@@ -28,7 +28,8 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
     color: "#f97316",
     logo_url: "",
     head_coach: "",
-    manager: ""
+    manager: "",
+    bracket: ""
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
 
@@ -39,7 +40,8 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
         color: team.color || "#f97316",
         logo_url: team.logo_url || "",
         head_coach: team.head_coach || "",
-        manager: team.manager || ""
+        manager: team.manager || "",
+        bracket: team.bracket || ""
       });
     }
   }, [team, open]);
@@ -81,6 +83,17 @@ export default function EditTeamDialog({ open, onOpenChange, team, onSubmit, isL
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g., Warriors"
               required
+              className="mt-1.5"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="bracket">Bracket (optional)</Label>
+            <Input
+              id="bracket"
+              value={formData.bracket}
+              onChange={(e) => setFormData({ ...formData, bracket: e.target.value })}
+              placeholder="e.g., East, West, Group A"
               className="mt-1.5"
             />
           </div>
