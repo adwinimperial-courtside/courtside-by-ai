@@ -134,7 +134,8 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
       })
       .filter(Boolean)
       .sort((a, b) => {
-        if (b.mvpScoreNum !== a.mvpScoreNum) return b.mvpScoreNum - a.mvpScoreNum;
+        const scoreDiff = Math.round(b.mvpScoreNum * 10) - Math.round(a.mvpScoreNum * 10);
+        if (scoreDiff !== 0) return scoreDiff;
         return b.avgGisNum - a.avgGisNum;
       })
       .slice(0, 10);
