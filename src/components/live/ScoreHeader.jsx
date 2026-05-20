@@ -107,8 +107,16 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     gameRules.teamFoulBonusThreshold = periodType === 'halves' ? 7 : 5;
   }
   const totalPeriods = localGame?.period_count || (periodType === "halves" ? 2 : 4);
-  const periodMinutes = localGame?.period_minutes || 10;
   const overtimeMinutes = localGame?.overtime_minutes || 5;
+
+  const getPerPeriodMinutes = (p) => {
+    const perPeriod = localGame.game_rules?.periodMinutes;
+    if (p > totalPeriods) return overtimeMinutes;
+    if (Array.isArray(perPeriod) && perPeriod[p - 1] != null) return perPeriod[p - 1];
+    return localGame?.period_minutes || 10;
+  };
+  // periodMinutes for current period (used in existing period-advance logic)
+  const periodMinutes = getPerPeriodMinutes(period);
 
   // Local display state — derived from game, updated every second if running
   const [displayTime, setDisplayTime] = useState(() => computeTimeLeft(localGame));
@@ -212,8 +220,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
       isSaving.current = true;
       try {
         const nextPeriod = period + 1;
-        const nextIsOT = nextPeriod > totalPeriods;
-        const nextMins = nextIsOT ? overtimeMinutes : periodMinutes;
+        const nextMins = getPerPeriodMinutes(nextPeriod);
         const updates = {
           clock_period: nextPeriod,
           clock_time_left: nextMins * 60,
@@ -268,8 +275,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (isSaving.current) return;
     isSaving.current = true;
     const nextPeriod = period + 1;
-    const nextIsOT = nextPeriod > totalPeriods;
-    const nextMins = nextIsOT ? overtimeMinutes : periodMinutes;
+    const nextMins = getPerPeriodMinutes(nextPeriod);
     try {
       const updates = {
         clock_period: nextPeriod,
@@ -288,8 +294,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
     if (period <= 1 || isSaving.current) return;
     isSaving.current = true;
     const prevPeriod = period - 1;
-    const prevIsOT = prevPeriod > totalPeriods;
-    const prevMins = prevIsOT ? overtimeMinutes : periodMinutes;
+    const prevMins = getPerPeriodMinutes(prevPeriod);
     try {
       const updates = {
         clock_period: prevPeriod,

@@ -687,11 +687,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return true;
   };
 
+  const getPerPeriodMinutes = (g, p) => {
+    const perPeriod = g.game_rules?.periodMinutes;
+    const totalPeriods = g.period_count || (g.period_type === 'halves' ? 2 : 4);
+    if (p > totalPeriods) return g.overtime_minutes || 5;
+    if (Array.isArray(perPeriod) && perPeriod[p - 1] != null) return perPeriod[p - 1];
+    return g.period_minutes || 10;
+  };
+
   const handleStartNextPeriod = async () => {
     const nextPeriod = game.clock_period + 1;
-    const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
-    const nextIsOT = nextPeriod > totalPeriods;
-    const nextMins = nextIsOT ? (game.overtime_minutes || 5) : (game.period_minutes || 10);
+    const nextMins = getPerPeriodMinutes(game, nextPeriod);
 
     await updateGameMutation.mutateAsync({
       gameId: game.id,
@@ -709,7 +715,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const handleStartOvertime = async () => {
     const totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
     const otPeriod = totalPeriods + 1;
-    const otMins = game.overtime_minutes || 5;
+    const otMins = getPerPeriodMinutes(game, otPeriod);
 
     await updateGameMutation.mutateAsync({
       gameId: game.id,
