@@ -18,6 +18,8 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [diffTimePeriod, setDiffTimePeriod] = useState(false);
   const [perPeriodMinutes, setPerPeriodMinutes] = useState([10, 10, 10, 10]);
+  const [diffTimeoutPeriod, setDiffTimeoutPeriod] = useState(false);
+  const [perPeriodTimeouts, setPerPeriodTimeouts] = useState([2, 2, 2, 2]);
 
   const handleStageChange = (value) => {
     setFormData(prev => ({
@@ -38,6 +40,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
   const handlePeriodTypeChange = (value) => {
     const count = value === "quarters" ? 4 : 2;
     setPerPeriodMinutes(Array(count).fill(formData.period_minutes));
+    setPerPeriodTimeouts(Array(count).fill(formData.timeoutsPerSegment));
     setFormData(prev => ({ ...prev, period_type: value }));
   };
 
@@ -46,13 +49,21 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     setPerPeriodMinutes(Array(periodCount).fill(formData.period_minutes));
   };
 
+  const handleToggleDiffTimeout = (checked) => {
+    setDiffTimeoutPeriod(checked);
+    setPerPeriodTimeouts(Array(periodCount).fill(formData.timeoutsPerSegment));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const { timeoutsPerSegment, teamFoulBonusThreshold, ...rest } = formData;
     const payload = { ...rest };
     if (isTimed) {
       payload.period_count = periodCount;
-      const gameRules = { timeoutsPerSegment, teamFoulBonusThreshold };
+      const gameRules = {
+        timeoutsPerSegment: diffTimeoutPeriod ? perPeriodTimeouts : timeoutsPerSegment,
+        teamFoulBonusThreshold,
+      };
       if (diffTimePeriod) {
         gameRules.periodMinutes = perPeriodMinutes;
         payload.period_minutes = perPeriodMinutes[0];
@@ -68,6 +79,8 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     setFormData(DEFAULT_FORM);
     setDiffTimePeriod(false);
     setPerPeriodMinutes([10, 10, 10, 10]);
+    setDiffTimeoutPeriod(false);
+    setPerPeriodTimeouts([2, 2, 2, 2]);
   };
 
   const leagueTeams = formData.league_id 
@@ -287,6 +300,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                       className="mt-1.5"
                     />
                   </div>
+                  {!diffTimeoutPeriod && (
                   <div>
                     <Label htmlFor="timeoutsPerSegment">Timeouts per Segment</Label>
                     <Input
@@ -299,6 +313,39 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                       className="mt-1.5"
                     />
                   </div>
+                  )}
+                  <div className="sm:col-span-2">
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        id="diffTimeoutPeriod_create"
+                        checked={diffTimeoutPeriod}
+                        onCheckedChange={handleToggleDiffTimeout}
+                      />
+                      <label htmlFor="diffTimeoutPeriod_create" className="text-sm font-medium text-slate-700 cursor-pointer">
+                        Different timeouts per period
+                      </label>
+                    </div>
+                  </div>
+                  {diffTimeoutPeriod && (formData.period_type === "quarters"
+                    ? ["Q1 timeouts", "Q2 timeouts", "Q3 timeouts", "Q4 timeouts"]
+                    : ["1st half timeouts", "2nd half timeouts"]
+                  ).map((label, i) => (
+                    <div key={i}>
+                      <Label>{label}</Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={10}
+                        value={perPeriodTimeouts[i] ?? formData.timeoutsPerSegment}
+                        onChange={(e) => {
+                          const updated = [...perPeriodTimeouts];
+                          updated[i] = Number(e.target.value);
+                          setPerPeriodTimeouts(updated);
+                        }}
+                        className="mt-1.5"
+                      />
+                    </div>
+                  ))}
                   <div>
                     <Label htmlFor="teamFoulBonusThreshold">Team Fouls Before Bonus</Label>
                     <Input

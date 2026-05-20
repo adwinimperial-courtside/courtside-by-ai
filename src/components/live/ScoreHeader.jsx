@@ -347,19 +347,23 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
 
   // Default allowances per segment and format
   const getSegmentAllowance = (segment) => {
-    // If explicitly configured in game_rules, use that for all segments
     const configured = localGame.game_rules?.timeoutsPerSegment;
+    // Per-period array: index by current period (1-based)
+    if (Array.isArray(configured)) {
+      const idx = period - 1;
+      if (idx >= 0 && idx < configured.length) return configured[idx];
+      return 1; // OT or out-of-range
+    }
     if (configured != null) return configured;
     // Default fallback
     if (segment === 'OVERTIME') return 1;
     if (segment === 'FIRST_HALF') return 2;
-    // SECOND_HALF
     if (periodType === 'halves') return 2;
     return 3; // quarters SECOND_HALF
   };
 
   const currentSegment = getSegment(period);
-  const segmentKey = currentSegment; // used as key in persisted map
+  const segmentKey = currentSegment;
   const segmentAllowance = getSegmentAllowance(currentSegment);
 
   // ── Sync from persisted game record ──────────────────────────────
