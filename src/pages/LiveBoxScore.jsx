@@ -59,8 +59,8 @@ export default function LiveBoxScorePage() {
     queryFn: () => base44.entities.Game.get(gameId),
     enabled: !!gameId,
     staleTime: 0,
-    refetchInterval: 3000,
-    refetchOnWindowFocus: true
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
@@ -72,8 +72,8 @@ export default function LiveBoxScorePage() {
     queryFn: () => base44.entities.PlayerStats.filter({ game_id: gameId }),
     enabled: !!gameId,
     staleTime: 0,
-    refetchInterval: 3000,
-    refetchOnWindowFocus: true
+    refetchInterval: 30000,
+    refetchOnWindowFocus: false
   });
 
   useEffect(() => {
