@@ -151,13 +151,12 @@ export default function Landing() {
 
       {/* Stats Bar */}
       <section className="bg-white py-8">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+        <div className="max-w-2xl mx-auto px-6">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-8 text-center">
             {[
-              { number: "186+", label: "Users" },
-              { number: "101+", label: "Players" },
               { number: "500+", label: "Games Logged" },
-              { number: "15+", label: "Leagues" },
+              { number: "20+", label: "Leagues" },
+              { number: "186+", label: "Users" },
             ].map((stat, idx) => (
               <div key={idx}>
                 <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>
