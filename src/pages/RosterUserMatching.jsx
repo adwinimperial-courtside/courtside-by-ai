@@ -29,6 +29,7 @@ export default function RosterUserMatching() {
   const [approvalState, setApprovalState] = useState({}); // rowIndex -> "approved"|"skipped"|"pending"
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [alreadyAssignedCount, setAlreadyAssignedCount] = useState(0);
   const [searchOverride, setSearchOverride] = useState({}); // rowIndex -> search query
   const [userSearchResults, setUserSearchResults] = useState({}); // rowIndex -> [users]
   const [overrideUser, setOverrideUser] = useState({}); // rowIndex -> user object
@@ -73,18 +74,27 @@ export default function RosterUserMatching() {
       const targetTeams = allTeams.filter(t => t.league_id === targetLeagueId);
       const sourceTeams = allTeams.filter(t => t.league_id === sourceLeagueId);
 
-      const [targetPlayers, sourceIdentities] = await Promise.all([
+      const [targetPlayers, sourceIdentities, existingTargetIdentities] = await Promise.all([
         base44.entities.Player.filter(
           { team_id: { $in: targetTeams.map(t => t.id) } },
           "-created_date", 2000
         ),
         base44.entities.UserLeagueIdentity.filter({ league_id: sourceLeagueId }, "-created_date", 2000),
+        base44.entities.UserLeagueIdentity.filter({ league_id: targetLeagueId }, "-created_date", 2000),
       ]);
+
+      const alreadyMatchedPlayerIds = new Set(
+        existingTargetIdentities
+          .filter(i => i.matched_player_id && i.match_status === 'matched')
+          .map(i => i.matched_player_id)
+      );
+      setAlreadyAssignedCount(existingTargetIdentities.filter(i => i.match_status === 'matched').length);
 
       const rows = [];
       const newApprovalState = {};
 
       for (const player of targetPlayers) {
+        if (alreadyMatchedPlayerIds.has(player.id)) continue;
         const team = targetTeams.find(t => t.id === player.team_id);
         const nameMatches = sourceIdentities.filter(
           id => normalize(id.matched_player_name) === normalize(player.name)
@@ -268,9 +278,9 @@ export default function RosterUserMatching() {
               <div className="grid grid-cols-3 md:grid-cols-6 gap-3 text-center text-sm mb-5">
                 {[
                   { label: "Total Players", val: previewRows.length, cls: "bg-slate-50 text-slate-700" },
+                  { label: "Already Assigned", val: alreadyAssignedCount, cls: "bg-slate-100 text-slate-500" },
                   { label: "Auto Matched", val: autoMatchedRows.length, cls: "bg-green-50 text-green-800" },
                   { label: "Needs Review", val: reviewRows.length, cls: "bg-yellow-50 text-yellow-800" },
-                  { label: "Unmatched", val: unmatchedRows.length, cls: "bg-slate-100 text-slate-600" },
                   { label: "Approved", val: approvedCount, cls: "bg-blue-50 text-blue-800 font-bold" },
                   { label: "Skipped", val: skippedCount, cls: "bg-slate-50 text-slate-500" },
                 ].map(s => (
