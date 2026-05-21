@@ -57,18 +57,6 @@ export default function RosterUserMatching() {
 
   if (!userLoaded) return null;
 
-  if (currentUser?.user_type !== "app_admin") {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">
-        <div className="bg-white rounded-xl border border-red-200 p-8 text-center max-w-md">
-          <Key className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">Access Denied</h1>
-          <p className="text-slate-600">This tool is restricted to app owners only.</p>
-        </div>
-      </div>
-    );
-  }
-
   const targetLeague = leagues.find(l => l.id === targetLeagueId);
   const sourceLeague = leagues.find(l => l.id === sourceLeagueId);
 
@@ -212,7 +200,7 @@ export default function RosterUserMatching() {
   const unmatchedRows = previewRows?.map((r, i) => ({ ...r, idx: i })).filter(r => r.status === "unmatched") || [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="p-6">
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
