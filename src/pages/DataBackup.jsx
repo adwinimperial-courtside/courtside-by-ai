@@ -57,9 +57,17 @@ export default function DataBackup() {
 
     for (const entity of ENTITIES) {
       try {
-        const records = await base44.entities[entity].list('-created_date', 100000);
-        backup.entities[entity] = records;
-        setBackupProgress(prev => [...prev, { entity, count: records.length, status: "ok" }]);
+        const PAGE_SIZE = 5000;
+        let allRecords = [];
+        let skip = 0;
+        while (true) {
+          const page = await base44.entities[entity].list('-created_date', PAGE_SIZE, skip);
+          allRecords = allRecords.concat(page);
+          if (page.length < PAGE_SIZE) break;
+          skip += PAGE_SIZE;
+        }
+        backup.entities[entity] = allRecords;
+        setBackupProgress(prev => [...prev, { entity, count: allRecords.length, status: "ok" }]);
       } catch (e) {
         backup.entities[entity] = [];
         setBackupProgress(prev => [...prev, { entity, count: 0, status: "error" }]);
@@ -105,7 +113,15 @@ export default function DataBackup() {
           counts[entity] = { restored: 0, skipped: 0 };
           continue;
         }
-        const existing = await base44.entities[entity].list('-created_date', 50000);
+        const PAGE_SIZE = 5000;
+        let existing = [];
+        let skip = 0;
+        while (true) {
+          const page = await base44.entities[entity].list('-created_date', PAGE_SIZE, skip);
+          existing = existing.concat(page);
+          if (page.length < PAGE_SIZE) break;
+          skip += PAGE_SIZE;
+        }
         const existingIds = new Set(existing.map(r => r.id));
         const missing = records.filter(r => !existingIds.has(r.id));
         if (missing.length > 0) {
