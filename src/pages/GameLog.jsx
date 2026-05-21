@@ -23,9 +23,26 @@ export default function GameLogPage() {
     enabled: !!currentUser,
   });
 
-  const leagues = currentUser?.assigned_league_ids?.length > 0
-    ? allLeagues.filter(l => currentUser.assigned_league_ids.includes(l.id))
-    : allLeagues;
+  const { data: myLeagueIdentities = [], isLoading: identitiesLoading } = useQuery({
+    queryKey: ['myLeagueIdentities', currentUser?.id],
+    queryFn: () => base44.entities.UserLeagueIdentity.filter({ user_id: currentUser.id }),
+    enabled: !!currentUser?.id,
+    staleTime: 60000,
+  });
+
+  const isAppAdmin = currentUser?.user_type === 'app_admin';
+
+  const leagues = (() => {
+    if (isAppAdmin) return allLeagues;
+    if (identitiesLoading) return [];
+    const nonAdminLeagueIds = myLeagueIdentities
+      .filter(i => i.role !== 'league_admin')
+      .map(i => i.league_id);
+    const assignedIds = currentUser?.assigned_league_ids || [];
+    return allLeagues.filter(l =>
+      assignedIds.includes(l.id) && !nonAdminLeagueIds.includes(l.id)
+    );
+  })();
 
   const { data: games = [] } = useQuery({
     queryKey: ["games", selectedLeagueId],
@@ -51,7 +68,9 @@ export default function GameLogPage() {
     enabled: !!selectedGameId,
   });
 
-  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
+  const hasAdminAccess = isAppAdmin || leagues.length > 0;
+
+  if (currentUser && !identitiesLoading && !hasAdminAccess) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-slate-500">You don't have permission to view this page.</p>

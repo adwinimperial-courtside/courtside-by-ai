@@ -140,7 +140,13 @@ export default function LeagueUsers() {
   });
 
   const { isAppAdmin, isLeagueAdmin } = useEffectiveRole(currentUser, selectedLeague === 'all' ? null : selectedLeague);
-  const adminLeagueIds = currentUser?.assigned_league_ids || [];
+
+  const { data: myLeagueIdentities = [], isLoading: identitiesLoading } = useQuery({
+    queryKey: ['myLeagueIdentities', currentUser?.id],
+    queryFn: () => base44.entities.UserLeagueIdentity.filter({ user_id: currentUser.id }),
+    enabled: !!currentUser?.id,
+    staleTime: 60000,
+  });
 
   const { data: allUsers = [], isLoading } = useQuery({
     queryKey: ['leagueUsersPage'],
@@ -188,9 +194,18 @@ export default function LeagueUsers() {
   }
 
   // Which leagues are visible to this admin
-  const visibleLeagues = isAppAdmin
-    ? leagues
-    : leagues.filter(l => adminLeagueIds.includes(l.id));
+  const visibleLeagues = (() => {
+    if (isAppAdmin) return leagues;
+    if (identitiesLoading) return [];
+    const nonAdminLeagueIds = myLeagueIdentities
+      .filter(i => i.role !== 'league_admin')
+      .map(i => i.league_id);
+    const assignedIds = currentUser?.assigned_league_ids || [];
+    return leagues.filter(l =>
+      assignedIds.includes(l.id) && !nonAdminLeagueIds.includes(l.id)
+    );
+  })();
+  const adminLeagueIds = visibleLeagues.map(l => l.id);
 
   // Filter users: only those assigned to at least one of the admin's leagues, exclude app_admins
   // For league_admin viewers: also exclude other league_admins (they manage different leagues)

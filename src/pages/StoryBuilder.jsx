@@ -81,12 +81,25 @@ export default function StoryBuilder() {
     staleTime: 60000,
   });
 
-  const visibleLeagues = leagues.filter(l => {
-    if (!currentUser) return false;
-    if (currentUser.user_type === "app_admin") return true;
-    const assignedIds = currentUser.assigned_league_ids || [];
-    return assignedIds.includes(l.id) || l.created_by === currentUser.email;
+  const { data: myLeagueIdentities = [], isLoading: identitiesLoading } = useQuery({
+    queryKey: ['myLeagueIdentities', currentUser?.id],
+    queryFn: () => base44.entities.UserLeagueIdentity.filter({ user_id: currentUser.id }),
+    enabled: !!currentUser?.id,
+    staleTime: 60000,
   });
+
+  const visibleLeagues = (() => {
+    if (!currentUser) return [];
+    if (currentUser.user_type === "app_admin") return leagues;
+    if (identitiesLoading) return [];
+    const nonAdminLeagueIds = myLeagueIdentities
+      .filter(i => i.role !== 'league_admin')
+      .map(i => i.league_id);
+    const assignedIds = currentUser.assigned_league_ids || [];
+    return leagues.filter(l =>
+      assignedIds.includes(l.id) && !nonAdminLeagueIds.includes(l.id)
+    );
+  })();
 
   const eligibleGames = allGames.filter(g =>
     g.status === "completed" &&
