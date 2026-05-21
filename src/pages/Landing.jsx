@@ -134,7 +134,7 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-0 text-center">
             {[
-              { number: "500+", label: "Games logged" },
+              { number: "270+", label: "Games logged" },
               { number: "20+", label: "Leagues" },
               { number: "200+", label: "Users" },
             ].map((stat, idx) => (
