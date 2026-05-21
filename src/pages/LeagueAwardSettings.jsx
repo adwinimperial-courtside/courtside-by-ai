@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Shield, Star, Users, Save, RotateCcw, Info, CheckCircle } from "lucide-react";
+import { Trophy, Shield, Star, Users, Save, RotateCcw, Info, CheckCircle, BookOpen } from "lucide-react";
 import { DEFAULT_AWARD_SETTINGS, resolveSettings } from "@/utils/awardDefaults";
 import { format } from "date-fns";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function NumField({ label, info, value, onChange, min = 0, max = 20, step = 0.1 }) {
   return (
@@ -41,13 +42,19 @@ function NumField({ label, info, value, onChange, min = 0, max = 20, step = 0.1 
   );
 }
 
-function SectionCard({ icon: Icon, iconColor, title, description, children, insight }) {
+function SectionCard({ icon: Icon, iconColor, title, description, children, insight, onExample }) {
   return (
     <Card className="border-slate-200">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Icon className={`w-5 h-5 ${iconColor}`} />
-          {title}
+          <span className="flex-1">{title}</span>
+          {onExample && (
+            <Button variant="outline" size="sm" onClick={onExample} className="text-slate-600 font-normal">
+              <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+              See Example
+            </Button>
+          )}
         </CardTitle>
         <p className="text-sm text-slate-500">{description}</p>
       </CardHeader>
@@ -78,6 +85,9 @@ export default function LeagueAwardSettings() {
   const [saving, setSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [resetPending, setResetPending] = useState(false);
+  const [showMvpExample, setShowMvpExample] = useState(false);
+  const [showDpoyExample, setShowDpoyExample] = useState(false);
+  const [showPogExample, setShowPogExample] = useState(false);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -258,6 +268,7 @@ export default function LeagueAwardSettings() {
                 title="MVP Settings"
                 description="Controls how the Most Valuable Player ranking is calculated."
                 insight="Higher weights increase a stat's influence on the MVP score. Penalty weights reduce the score. The minimum games played % sets who is eligible — raise it to be stricter."
+                onExample={() => setShowMvpExample(true)}
               >
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-2 text-sm text-blue-700">
                   <Info className="w-4 h-4 flex-shrink-0 mt-0.5 text-blue-400" />
@@ -314,6 +325,7 @@ export default function LeagueAwardSettings() {
                 title="Defensive Player of the Year (DPOY) Settings"
                 description="Controls how the best defender of the season is chosen. Scoring is not included — this is purely defense."
                 insight="Higher steal and block weights reward lockdown defenders. Raise the foul penalty to favor disciplined defenders."
+                onExample={() => setShowDpoyExample(true)}
               >
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Defensive Weights</p>
@@ -351,6 +363,7 @@ export default function LeagueAwardSettings() {
                 title="Player of the Game (POG) Settings"
                 description="Controls how the best player of each individual game is selected."
                 insight="The POG is picked automatically after each completed game based on the highest score from the formulas below."
+                onExample={() => setShowPogExample(true)}
               >
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Statistic Weights</p>
@@ -428,6 +441,227 @@ export default function LeagueAwardSettings() {
                 </FieldGrid>
               </SectionCard>
             </div>
+
+            {/* MVP Example Dialog */}
+            <Dialog open={showMvpExample} onOpenChange={setShowMvpExample}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-xl">
+                    <Trophy className="w-5 h-5 text-yellow-500" />
+                    How MVP is Calculated — Example
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-slate-600 mt-1">
+                  For each game, a player earns a Game Impact Score (GIS) based on their stats multiplied by the weights you set. At the end of the season, their average GIS is combined with bonuses for games played and team wins to produce the final MVP score.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Carlo */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Carlo Santos <span className="font-normal text-slate-500 text-sm">(Pure Scorer)</span></p>
+                      <p className="text-xs text-slate-500">Played: 10/10 games · Team wins: 5/10</p>
+                      <p className="text-xs text-slate-500">24 pts, 2 ast, 1 oreb, 3 dreb, 1 stl, 0 blk, 3 to, 2 fouls</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">GIS Breakdown (per game)</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>24 pts × 1.0</span><span className="text-green-600">+24.0</span></div>
+                        <div className="flex justify-between"><span>2 ast × 1.5</span><span className="text-green-600">+3.0</span></div>
+                        <div className="flex justify-between"><span>1 oreb × 1.2</span><span className="text-green-600">+1.2</span></div>
+                        <div className="flex justify-between"><span>3 dreb × 1.0</span><span className="text-green-600">+3.0</span></div>
+                        <div className="flex justify-between"><span>1 stl × 2.5</span><span className="text-green-600">+2.5</span></div>
+                        <div className="flex justify-between"><span>3 to × 2.0</span><span className="text-red-500">−6.0</span></div>
+                        <div className="flex justify-between"><span>2 f × 0.5</span><span className="text-red-500">−1.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>GIS per game</span><span>26.7</span></div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Final MVP Score</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>0.6 × 26.7 (avg GIS)</span><span>16.02</span></div>
+                        <div className="flex justify-between"><span>20 × 1.0 (games played)</span><span>20.00</span></div>
+                        <div className="flex justify-between"><span>20 × 0.5 (team wins)</span><span>10.00</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>TOTAL</span><span>46.02</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Marcus */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Marcus Reyes <span className="font-normal text-slate-500 text-sm">(Two-way Player)</span></p>
+                      <p className="text-xs text-slate-500">Played: 9/10 games · Team wins: 7/10</p>
+                      <p className="text-xs text-slate-500">15 pts, 6 ast, 2 oreb, 5 dreb, 3 stl, 1 blk, 2 to, 2 fouls</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">GIS Breakdown (per game)</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>15 pts × 1.0</span><span className="text-green-600">+15.0</span></div>
+                        <div className="flex justify-between"><span>6 ast × 1.5</span><span className="text-green-600">+9.0</span></div>
+                        <div className="flex justify-between"><span>2 oreb × 1.2</span><span className="text-green-600">+2.4</span></div>
+                        <div className="flex justify-between"><span>5 dreb × 1.0</span><span className="text-green-600">+5.0</span></div>
+                        <div className="flex justify-between"><span>3 stl × 2.5</span><span className="text-green-600">+7.5</span></div>
+                        <div className="flex justify-between"><span>1 blk × 2.0</span><span className="text-green-600">+2.0</span></div>
+                        <div className="flex justify-between"><span>2 to × 2.0</span><span className="text-red-500">−4.0</span></div>
+                        <div className="flex justify-between"><span>2 f × 0.5</span><span className="text-red-500">−1.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>GIS per game</span><span>35.9</span></div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Final MVP Score</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>0.6 × 35.9 (avg GIS)</span><span>21.54</span></div>
+                        <div className="flex justify-between"><span>20 × 0.9 (games played)</span><span>18.00</span></div>
+                        <div className="flex justify-between"><span>20 × 0.7 (team wins)</span><span>14.00</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>TOTAL</span><span>53.54</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+                  <p className="font-bold mb-1">🏆 Marcus Reyes wins MVP — 53.54 vs 46.02</p>
+                  <p>Despite scoring less than Carlo, Marcus's assists, steals and blocks gave him a much higher GIS (35.9 vs 26.7). Playing on a winning team added to his bonus as well.</p>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* DPOY Example Dialog */}
+            <Dialog open={showDpoyExample} onOpenChange={setShowDpoyExample}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-xl">
+                    <Shield className="w-5 h-5 text-blue-500" />
+                    How DPOY is Calculated — Example
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-slate-600 mt-1">
+                  A player's Defensive GIS is calculated from steals, blocks and rebounds, minus penalties for fouls and turnovers. Points are not included — DPOY is purely defensive. The final score is the average Defensive GIS plus a games played bonus.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Dante */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Dante Cruz <span className="font-normal text-slate-500 text-sm">(Paint Protector)</span></p>
+                      <p className="text-xs text-slate-500">Played: 10/10 games</p>
+                      <p className="text-xs text-slate-500">1 stl, 4 blk, 3 oreb, 8 dreb, 3 fouls, 1 to</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Defensive GIS (per game)</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>1 stl × 3.0</span><span className="text-green-600">+3.0</span></div>
+                        <div className="flex justify-between"><span>4 blk × 2.5</span><span className="text-green-600">+10.0</span></div>
+                        <div className="flex justify-between"><span>3 oreb × 1.5</span><span className="text-green-600">+4.5</span></div>
+                        <div className="flex justify-between"><span>8 dreb × 1.0</span><span className="text-green-600">+8.0</span></div>
+                        <div className="flex justify-between"><span>3 f × 1.5</span><span className="text-red-500">−4.5</span></div>
+                        <div className="flex justify-between"><span>1 to × 2.0</span><span className="text-red-500">−2.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>Def. GIS per game</span><span>19.0</span></div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Final DPOY Score</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>19.0 avg Def. GIS</span><span>19.0</span></div>
+                        <div className="flex justify-between"><span>10 × 1.0 (games played)</span><span>10.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>TOTAL</span><span>29.0</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Bryan */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Bryan Santos <span className="font-normal text-slate-500 text-sm">(Perimeter Disruptor)</span></p>
+                      <p className="text-xs text-slate-500">Played: 10/10 games</p>
+                      <p className="text-xs text-slate-500">4 stl, 1 blk, 1 oreb, 4 dreb, 2 fouls, 2 to</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Defensive GIS (per game)</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>4 stl × 3.0</span><span className="text-green-600">+12.0</span></div>
+                        <div className="flex justify-between"><span>1 blk × 2.5</span><span className="text-green-600">+2.5</span></div>
+                        <div className="flex justify-between"><span>1 oreb × 1.5</span><span className="text-green-600">+1.5</span></div>
+                        <div className="flex justify-between"><span>4 dreb × 1.0</span><span className="text-green-600">+4.0</span></div>
+                        <div className="flex justify-between"><span>2 f × 1.5</span><span className="text-red-500">−3.0</span></div>
+                        <div className="flex justify-between"><span>2 to × 2.0</span><span className="text-red-500">−4.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>Def. GIS per game</span><span>13.0</span></div>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Final DPOY Score</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>13.0 avg Def. GIS</span><span>13.0</span></div>
+                        <div className="flex justify-between"><span>10 × 1.0 (games played)</span><span>10.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>TOTAL</span><span>23.0</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+                  <p className="font-bold mb-1">🏆 Dante Cruz wins DPOY — 29.0 vs 23.0</p>
+                  <p>Despite Bryan averaging 4 steals per game, Dante's 4 blocks (×2.5 = 10 per game) and 8 defensive rebounds gave him a much higher Defensive GIS. Fouls and turnovers cost Bryan 7 points per game.</p>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {/* POG Example Dialog */}
+            <Dialog open={showPogExample} onOpenChange={setShowPogExample}>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-xl">
+                    <Star className="w-5 h-5 text-orange-500" />
+                    How Player of the Game is Calculated — Example
+                  </DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-slate-600 mt-1">
+                  POG uses the same weighted formula as MVP but for a single game only. The player with the highest score wins. If 'Winning team only' is ON, only players from the winning team are considered.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  {/* Rico */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Rico Macaraeg <span className="font-normal text-slate-500 text-sm">(Scorer)</span></p>
+                      <p className="text-xs text-slate-500">28 pts, 2 ast, 1 oreb, 3 dreb, 1 stl, 1 blk, 3 to, 4 fouls</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">POG Score Breakdown</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>28 pts × 1.0</span><span className="text-green-600">+28.0</span></div>
+                        <div className="flex justify-between"><span>2 ast × 1.5</span><span className="text-green-600">+3.0</span></div>
+                        <div className="flex justify-between"><span>1 oreb × 1.2</span><span className="text-green-600">+1.2</span></div>
+                        <div className="flex justify-between"><span>3 dreb × 1.0</span><span className="text-green-600">+3.0</span></div>
+                        <div className="flex justify-between"><span>1 stl × 2.5</span><span className="text-green-600">+2.5</span></div>
+                        <div className="flex justify-between"><span>1 blk × 2.0</span><span className="text-green-600">+2.0</span></div>
+                        <div className="flex justify-between"><span>3 to × 2.0</span><span className="text-red-500">−6.0</span></div>
+                        <div className="flex justify-between"><span>4 f × 0.5</span><span className="text-red-500">−2.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>POG Score</span><span>31.7</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Jomar */}
+                  <div className="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+                    <div>
+                      <p className="font-bold text-slate-800">Jomar dela Cruz <span className="font-normal text-slate-500 text-sm">(Playmaker)</span></p>
+                      <p className="text-xs text-slate-500">14 pts, 11 ast, 2 oreb, 4 dreb, 3 stl, 0 blk, 1 to, 2 fouls</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">POG Score Breakdown</p>
+                      <div className="text-xs text-slate-700 space-y-0.5 font-mono">
+                        <div className="flex justify-between"><span>14 pts × 1.0</span><span className="text-green-600">+14.0</span></div>
+                        <div className="flex justify-between"><span>11 ast × 1.5</span><span className="text-green-600">+16.5</span></div>
+                        <div className="flex justify-between"><span>2 oreb × 1.2</span><span className="text-green-600">+2.4</span></div>
+                        <div className="flex justify-between"><span>4 dreb × 1.0</span><span className="text-green-600">+4.0</span></div>
+                        <div className="flex justify-between"><span>3 stl × 2.5</span><span className="text-green-600">+7.5</span></div>
+                        <div className="flex justify-between"><span>1 to × 2.0</span><span className="text-red-500">−2.0</span></div>
+                        <div className="flex justify-between"><span>2 f × 0.5</span><span className="text-red-500">−1.0</span></div>
+                        <div className="flex justify-between border-t border-slate-300 pt-1 font-bold"><span>POG Score</span><span>41.4</span></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
+                  <p className="font-bold mb-1">🏆 Jomar dela Cruz wins POG — 41.4 vs 31.7</p>
+                  <p>Despite scoring only 14 points, Jomar's 11 assists (×1.5 = 16.5) and 3 steals (×2.5 = 7.5) made the difference. Rico's 3 turnovers and 4 fouls cost him 8 points.</p>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Action Bar */}
             <div className="sticky bottom-0 bg-white/95 backdrop-blur border-t border-slate-200 mt-8 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap items-center gap-3 justify-between">
