@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Upload, Database, CheckCircle, AlertTriangle, Loader2, Key, Trash2 } from "lucide-react";
+import { Download, Upload, Database, CheckCircle, AlertTriangle, Loader2, Key } from "lucide-react";
 
 const ENTITIES = [
   "League", "Team", "Player", "Game", "PlayerStats", "GameLog",
@@ -15,7 +15,7 @@ const ENTITIES = [
   "LeagueAccessRequest", "DeletionLog", "LoginEvent", "User"
 ];
 
-const CONFIRMATION_PHRASE = "DELETE AND RESTORE";
+const CONFIRMATION_PHRASE = "RESTORE MISSING DATA";
 
 export default function DataBackup() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -96,17 +96,24 @@ export default function DataBackup() {
       if (!backup.entities) throw new Error("Invalid backup file format.");
       const counts = {};
       for (const entity of ENTITIES) {
-        try {
-          const existing = await base44.entities[entity].list('-created_date', 5000);
-          await Promise.all(existing.map(r => base44.entities[entity].delete(r.id)));
-        } catch (_) {}
+        if (entity === "User") {
+          counts[entity] = { restored: 0, skipped: 0, userSkipped: true };
+          continue;
+        }
         const records = backup.entities[entity];
-        if (!records || records.length === 0) { counts[entity] = 0; continue; }
-        const cleaned = records.map(({ id, created_date, updated_date, created_by, ...rest }) => rest);
-        await base44.entities[entity].bulkCreate(cleaned);
-        counts[entity] = cleaned.length;
+        if (!records || records.length === 0) {
+          counts[entity] = { restored: 0, skipped: 0 };
+          continue;
+        }
+        const existing = await base44.entities[entity].list('-created_date', 50000);
+        const existingIds = new Set(existing.map(r => r.id));
+        const missing = records.filter(r => !existingIds.has(r.id));
+        if (missing.length > 0) {
+          await base44.entities[entity].bulkCreate(missing);
+        }
+        counts[entity] = { restored: missing.length, skipped: records.length - missing.length };
       }
-      setRestoreStatus({ success: true, message: "Clean restore completed successfully!", counts });
+      setRestoreStatus({ success: true, message: "Additive restore completed successfully!", counts });
     } catch (err) {
       setRestoreStatus({ success: false, message: "Restore failed: " + err.message, counts: {} });
     } finally {
@@ -187,11 +194,11 @@ export default function DataBackup() {
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-6 space-y-4">
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800 flex gap-3">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 flex gap-3">
                 <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold mb-1">Warning: This is a destructive operation</p>
-                  <p>ALL existing data will be permanently deleted and replaced with the backup. You will be asked to type a confirmation phrase before proceeding.</p>
+                  <p className="font-semibold mb-1">Safe additive restore</p>
+                  <p>This will recover records that are missing from the app. Existing data will NOT be changed or deleted. User records are always skipped.</p>
                 </div>
               </div>
 
@@ -228,10 +235,16 @@ export default function DataBackup() {
                   </div>
                   {restoreStatus.success && Object.keys(restoreStatus.counts).length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs mt-3">
-                      {Object.entries(restoreStatus.counts).filter(([, v]) => v > 0).map(([entity, count]) => (
-                        <div key={entity} className="flex justify-between bg-white rounded px-2 py-1 border border-green-100">
-                          <span className="text-slate-600">{entity}</span>
-                          <span className="font-semibold text-slate-800">+{count}</span>
+                      {Object.entries(restoreStatus.counts).map(([entity, c]) => (
+                        <div key={entity} className="flex flex-col bg-white rounded px-2 py-1.5 border border-green-100">
+                          <span className="text-slate-600 font-medium">{entity}</span>
+                          {c.userSkipped
+                            ? <span className="text-slate-400 italic">Skipped — managed by auth system</span>
+                            : <span className="text-slate-700">
+                                <span className="text-green-700 font-semibold">+{c.restored} restored</span>
+                                {c.skipped > 0 && <span className="text-slate-400"> · {c.skipped} skipped</span>}
+                              </span>
+                          }
                         </div>
                       ))}
                     </div>
@@ -247,22 +260,22 @@ export default function DataBackup() {
       <Dialog open={showConfirmDialog} onOpenChange={(open) => { if (!open) { setShowConfirmDialog(false); setPendingFile(null); } }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-700">
-              <AlertTriangle className="w-5 h-5" />
-              Confirm Clean Restore
+            <DialogTitle className="flex items-center gap-2 text-blue-700">
+              <Upload className="w-5 h-5" />
+              Confirm Additive Restore
             </DialogTitle>
             <DialogDescription className="space-y-3 pt-2">
-              <p className="text-slate-700">This will <strong>permanently delete ALL existing data</strong> in every table and replace it with the contents of the backup file. This cannot be undone.</p>
+              <p className="text-slate-700">This will recover records that are missing from the app. <strong>Existing data will NOT be changed or deleted.</strong> User records are always skipped.</p>
               <p className="text-slate-700">File: <span className="font-semibold">{pendingFile?.name}</span></p>
               <div className="pt-2">
                 <p className="text-sm font-medium text-slate-700 mb-2">
-                  Type <span className="font-bold text-red-600">{CONFIRMATION_PHRASE}</span> to proceed:
+                  Type <span className="font-bold text-blue-600">{CONFIRMATION_PHRASE}</span> to proceed:
                 </p>
                 <Input
                   value={confirmInput}
                   onChange={(e) => setConfirmInput(e.target.value)}
                   placeholder={CONFIRMATION_PHRASE}
-                  className="border-red-300 focus-visible:ring-red-400"
+                  className="border-blue-300 focus-visible:ring-blue-400"
                 />
               </div>
             </DialogDescription>
@@ -272,10 +285,10 @@ export default function DataBackup() {
             <Button
               disabled={confirmInput !== CONFIRMATION_PHRASE}
               onClick={handleConfirmedRestore}
-              className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40"
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40"
             >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete All & Restore
+              <Upload className="w-4 h-4 mr-2" />
+              Restore Missing Data
             </Button>
           </div>
         </DialogContent>
