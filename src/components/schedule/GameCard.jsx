@@ -14,6 +14,7 @@ import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
 import EditGameSettingsDialog from "./EditGameSettingsDialog";
 import POGSpotlightModal from "./POGSpotlightModal";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function GameCard({ game, teams, leagues, onStartGame, currentUser, onGameUpdated }) {
   const navigate = useNavigate();
@@ -77,7 +78,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const awayTeam = teams.find(t => t.id === liveGame.away_team_id);
   const league = leagues.find(l => l.id === liveGame.league_id);
 
-  const isAdmin = currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin';
+  const { isLeagueAdmin, isAppAdmin } = useEffectiveRole(currentUser, game?.league_id);
+  const isAdmin = isAppAdmin || isLeagueAdmin;
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
 
@@ -297,7 +299,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   {reopening ? "Reopening..." : reopenConfirm ? "Click again to confirm reopen" : "Reopen Result"}
                 </Button>
               )}
-              {liveGame.status === 'scheduled' && (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
+              {liveGame.status === 'scheduled' && isAdmin && (
                 <>
                   <Button
                     onClick={onStartGame}
@@ -326,7 +328,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                     <BarChart3 className="w-4 h-4 mr-2" />
                     View Live Box Score
                   </Button>
-                  {(currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') && (
+                  {isAdmin && (
                     <Button
                       onClick={onStartGame}
                       variant="outline"
