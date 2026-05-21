@@ -54,6 +54,7 @@ import LeagueAwardSettings from './pages/LeagueAwardSettings';
 import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
+import System from './pages/System';
 import Feedback from './pages/Feedback';
 import AwardLeaders from './pages/AwardLeaders';
 import CoachInsights from './pages/CoachInsights';
@@ -86,6 +87,7 @@ export const PAGES = {
     "DataBackup": DataBackup,
     "DeleteLeague": DeleteLeague,
     "Analytics": Analytics,
+    "System": System,
     "Feedback": Feedback,
     "AwardLeaders": AwardLeaders,
     "CoachInsights": CoachInsights,

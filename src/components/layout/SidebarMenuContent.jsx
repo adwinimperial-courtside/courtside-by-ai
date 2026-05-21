@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2 } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -117,14 +117,9 @@ const ownerItems = [
     icon: MessageSquare
   },
   {
-    title: "Delete League",
-    url: createPageUrl("DeleteLeague"),
-    icon: Trash2
-  },
-  {
-    title: "Data Backup",
-    url: createPageUrl("DataBackup"),
-    icon: HardDrive
+    title: "System",
+    url: createPageUrl("System"),
+    icon: Settings2
   },
 
   {
