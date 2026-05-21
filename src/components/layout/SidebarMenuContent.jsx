@@ -123,7 +123,7 @@ const ownerItems = [
     icon: Link2
   },
   {
-    title: "League Award Settings",
+    title: "Award Settings",
     url: createPageUrl("LeagueAwardSettings"),
     icon: SlidersHorizontal
   },

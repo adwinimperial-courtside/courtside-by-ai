@@ -50,7 +50,7 @@ function SectionCard({ icon: Icon, iconColor, title, description, children, insi
           <Icon className={`w-5 h-5 ${iconColor}`} />
           <span className="flex-1">{title}</span>
           {onExample && (
-            <Button variant="outline" size="sm" onClick={onExample} className="text-slate-600 font-normal">
+            <Button size="sm" onClick={onExample} className="bg-orange-500 hover:bg-orange-600 text-white font-medium">
               <BookOpen className="w-3.5 h-3.5 mr-1.5" />
               See Example
             </Button>
@@ -193,7 +193,7 @@ export default function LeagueAwardSettings() {
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">League Award Settings</h1>
+              <h1 className="text-3xl font-bold text-slate-900">Award Settings</h1>
               <p className="text-slate-500 text-sm mt-0.5">Adjust how awards are calculated for the selected league. These settings only affect this league.</p>
             </div>
           </div>
