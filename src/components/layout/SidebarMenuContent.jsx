@@ -97,6 +97,11 @@ const ownerItems = [
     icon: ClipboardList
   },
   {
+    title: "People",
+    url: createPageUrl("People"),
+    icon: Users
+  },
+  {
     title: "User Management",
     url: createPageUrl("UserManagement"),
     icon: Users
