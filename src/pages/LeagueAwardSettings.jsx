@@ -214,6 +214,7 @@ export default function LeagueAwardSettings() {
         league_id: selectedLeagueId,
         league_name: selectedLeague?.name || "",
         updated_by: currentUser?.email || "",
+        updated_by_role: currentUser?.user_type || "",
         updated_at: new Date().toISOString(),
       };
       if (savedSettingsId) {
@@ -320,7 +321,7 @@ export default function LeagueAwardSettings() {
                   </SelectContent>
                 </Select>
               </div>
-              {savedRecord && (
+              {savedRecord && savedRecord.updated_by_role !== "app_admin" && (
                 <div className="text-xs text-slate-400 flex-shrink-0">
                   <p>Last saved by <span className="font-medium text-slate-600">{savedRecord.updated_by || "—"}</span></p>
                   <p>{savedRecord.updated_at ? format(new Date(savedRecord.updated_at), "MMM d, yyyy HH:mm") : "—"}</p>
