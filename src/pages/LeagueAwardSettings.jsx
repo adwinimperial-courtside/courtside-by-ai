@@ -266,31 +266,31 @@ export default function LeagueAwardSettings() {
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Statistic Weights</p>
                   <FieldGrid>
-                    <NumField label="Points weight" value={settings.mvp_pts_weight} onChange={v => set("mvp_pts_weight", v)} info="Each point a player scores adds this amount to their Game Impact Score (GIS) for that game. Raise this if you want top scorers to have a bigger advantage over other stats." />
-                    <NumField label="Offensive rebound weight" value={settings.mvp_oreb_weight} onChange={v => set("mvp_oreb_weight", v)} info="Each offensive rebound adds this amount to a player's GIS. Worth more than defensive boards by default because they're harder to get — the other team already had position." />
-                    <NumField label="Defensive rebound weight" value={settings.mvp_dreb_weight} onChange={v => set("mvp_dreb_weight", v)} info="Each defensive rebound adds this amount to a player's GIS." />
-                    <NumField label="Assist weight" value={settings.mvp_ast_weight} onChange={v => set("mvp_ast_weight", v)} info="Each assist adds this amount to a player's GIS. Higher than points by default to reward playmakers, not just scorers." />
-                    <NumField label="Steal weight" value={settings.mvp_stl_weight} onChange={v => set("mvp_stl_weight", v)} info="Each steal adds this amount to a player's GIS. High by default because steals are rare, require anticipation, and directly stop the other team from scoring." />
-                    <NumField label="Block weight" value={settings.mvp_blk_weight} onChange={v => set("mvp_blk_weight", v)} info="Each block adds this amount to a player's GIS." />
+                    <NumField label="Points weight" value={settings.mvp_pts_weight} onChange={v => set("mvp_pts_weight", v)} info="Multiplier applied to a player's total points in each game when calculating their GIS." />
+                    <NumField label="Offensive rebound weight" value={settings.mvp_oreb_weight} onChange={v => set("mvp_oreb_weight", v)} info="Multiplier applied to each offensive rebound when calculating a player's GIS." />
+                    <NumField label="Defensive rebound weight" value={settings.mvp_dreb_weight} onChange={v => set("mvp_dreb_weight", v)} info="Multiplier applied to each defensive rebound when calculating a player's GIS." />
+                    <NumField label="Assist weight" value={settings.mvp_ast_weight} onChange={v => set("mvp_ast_weight", v)} info="Multiplier applied to each assist when calculating a player's GIS." />
+                    <NumField label="Steal weight" value={settings.mvp_stl_weight} onChange={v => set("mvp_stl_weight", v)} info="Multiplier applied to each steal when calculating a player's GIS." />
+                    <NumField label="Block weight" value={settings.mvp_blk_weight} onChange={v => set("mvp_blk_weight", v)} info="Multiplier applied to each block when calculating a player's GIS." />
                   </FieldGrid>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-3">Penalties (reduce score)</p>
                   <FieldGrid>
-                    <NumField label="Turnover penalty" value={settings.mvp_turnover_penalty} onChange={v => set("mvp_turnover_penalty", v)} info="Each turnover subtracts this amount from a player's GIS. Raise this if you want to punish poor ball handling more heavily." />
-                    <NumField label="Foul penalty" value={settings.mvp_foul_penalty} onChange={v => set("mvp_foul_penalty", v)} info="Each personal foul subtracts this amount from a player's GIS. Keep this low — fouls are a normal part of the game." />
-                    <NumField label="Technical foul penalty" value={settings.mvp_tech_penalty} onChange={v => set("mvp_tech_penalty", v)} info="Each technical foul subtracts this amount from a player's GIS for that game." />
-                    <NumField label="Unsportsmanlike penalty" value={settings.mvp_unsportsmanlike_penalty} onChange={v => set("mvp_unsportsmanlike_penalty", v)} info="Each unsportsmanlike foul subtracts this amount from a player's GIS. High by default to strongly discourage dirty play." />
+                    <NumField label="Turnover penalty" value={settings.mvp_turnover_penalty} onChange={v => set("mvp_turnover_penalty", v)} info="Amount subtracted from a player's GIS for each turnover." />
+                    <NumField label="Foul penalty" value={settings.mvp_foul_penalty} onChange={v => set("mvp_foul_penalty", v)} info="Amount subtracted from a player's GIS for each personal foul." />
+                    <NumField label="Technical foul penalty" value={settings.mvp_tech_penalty} onChange={v => set("mvp_tech_penalty", v)} info="Amount subtracted from a player's GIS for each technical foul." />
+                    <NumField label="Unsportsmanlike penalty" value={settings.mvp_unsportsmanlike_penalty} onChange={v => set("mvp_unsportsmanlike_penalty", v)} info="Amount subtracted from a player's GIS for each unsportsmanlike foul." />
                   </FieldGrid>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Final Score Contributions</p>
                   <FieldGrid>
-                    <NumField label="Avg GIS contribution" value={settings.mvp_avg_gis_weight} onChange={v => set("mvp_avg_gis_weight", v)} min={0} max={5} step={0.05} info="This multiplies the player's average GIS across the season to produce their base MVP score. The average GIS is their weighted stat total per game (using all the weights above), averaged across all games they played. The default of 0.6 keeps it balanced against the games played and team win bonuses." />
-                    <NumField label="Games played % contribution" value={settings.mvp_gp_percent_weight} onChange={v => set("mvp_gp_percent_weight", v)} min={0} max={50} step={1} info="A bonus added based on what percentage of games the player appeared in. Rewards players who show up consistently all season, not just for a few games." />
-                    <NumField label="Team win % contribution" value={settings.mvp_team_win_percent_weight} onChange={v => set("mvp_team_win_percent_weight", v)} min={0} max={50} step={1} info="A bonus based on how often the player's team wins. This prevents a star player on a losing team from automatically taking MVP over a well-rounded player on a winning team." />
-                    <NumField label="Season tech foul penalty" value={settings.mvp_tech_final_penalty} onChange={v => set("mvp_tech_final_penalty", v)} min={0} max={20} step={0.5} info="A flat deduction applied to the player's final MVP score for each technical foul they accumulated across the whole season. This stacks on top of the per-game technical foul penalty above." />
-                    <NumField label="Season unsports. penalty" value={settings.mvp_unsp_final_penalty} onChange={v => set("mvp_unsp_final_penalty", v)} min={0} max={20} step={0.5} info="A flat deduction on the final MVP score for each unsportsmanlike foul across the whole season. Stacks on top of the per-game unsportsmanlike penalty above." />
+                    <NumField label="Avg GIS contribution" value={settings.mvp_avg_gis_weight} onChange={v => set("mvp_avg_gis_weight", v)} min={0} max={5} step={0.05} info="Multiplier applied to the player's average GIS across all games played. This is the main driver of the final MVP score." />
+                    <NumField label="Games played % contribution" value={settings.mvp_gp_percent_weight} onChange={v => set("mvp_gp_percent_weight", v)} min={0} max={50} step={1} info="Points added to the final MVP score based on the percentage of games the player appeared in." />
+                    <NumField label="Team win % contribution" value={settings.mvp_team_win_percent_weight} onChange={v => set("mvp_team_win_percent_weight", v)} min={0} max={50} step={1} info="Points added to the final MVP score based on the win percentage of the player's team." />
+                    <NumField label="Season tech foul penalty" value={settings.mvp_tech_final_penalty} onChange={v => set("mvp_tech_final_penalty", v)} min={0} max={20} step={0.5} info="Amount subtracted from the final MVP score for each technical foul accumulated across the season." />
+                    <NumField label="Season unsports. penalty" value={settings.mvp_unsp_final_penalty} onChange={v => set("mvp_unsp_final_penalty", v)} min={0} max={20} step={0.5} info="Amount subtracted from the final MVP score for each unsportsmanlike foul accumulated across the season." />
                   </FieldGrid>
                 </div>
                 <div>
@@ -298,7 +298,7 @@ export default function LeagueAwardSettings() {
                   <div className="max-w-xs">
                     <NumField
                       label="Minimum games played %"
-                      info="The minimum percentage of games a player must have played to be eligible for MVP at all. For example, 60 means they must have played at least 60% of all games. This stops someone from winning after just one outstanding performance."
+                      info="The minimum percentage of season games a player must have appeared in to be eligible for MVP. Enter as a number — e.g. 60 means 60%."
                       value={settings.mvp_min_games_percent}
                       onChange={v => set("mvp_min_games_percent", v)}
                       min={0} max={100} step={5}
@@ -318,28 +318,28 @@ export default function LeagueAwardSettings() {
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Defensive Weights</p>
                   <FieldGrid>
-                    <NumField label="Steal weight" value={settings.dpoy_stl_weight} onChange={v => set("dpoy_stl_weight", v)} info="The most important stat for DPOY. Steals show active defensive effort, anticipation, and the ability to read the opposing player." />
-                    <NumField label="Block weight" value={settings.dpoy_blk_weight} onChange={v => set("dpoy_blk_weight", v)} info="Each block adds this to the DPOY score. Worth more than steals by default because they require precise timing and protect the paint." />
-                    <NumField label="Offensive rebound weight" value={settings.dpoy_oreb_weight} onChange={v => set("dpoy_oreb_weight", v)} info="Offensive boards are included in DPOY because boxing out the opposing player is a key part of team defense." />
-                    <NumField label="Defensive rebound weight" value={settings.dpoy_dreb_weight} onChange={v => set("dpoy_dreb_weight", v)} info="Each defensive rebound adds this to the DPOY score." />
+                    <NumField label="Steal weight" value={settings.dpoy_stl_weight} onChange={v => set("dpoy_stl_weight", v)} info="Multiplier applied to each steal when calculating a player's defensive GIS." />
+                    <NumField label="Block weight" value={settings.dpoy_blk_weight} onChange={v => set("dpoy_blk_weight", v)} info="Multiplier applied to each block when calculating a player's defensive GIS." />
+                    <NumField label="Offensive rebound weight" value={settings.dpoy_oreb_weight} onChange={v => set("dpoy_oreb_weight", v)} info="Multiplier applied to each offensive rebound when calculating a player's defensive GIS." />
+                    <NumField label="Defensive rebound weight" value={settings.dpoy_dreb_weight} onChange={v => set("dpoy_dreb_weight", v)} info="Multiplier applied to each defensive rebound when calculating a player's defensive GIS." />
                   </FieldGrid>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-3">Penalties</p>
                   <FieldGrid>
-                    <NumField label="Foul penalty" value={settings.dpoy_foul_penalty} onChange={v => set("dpoy_foul_penalty", v)} info="Each foul subtracts this from the DPOY score. Higher than MVP because great defenders should know how to apply pressure without fouling." />
-                    <NumField label="Turnover penalty" value={settings.dpoy_turnover_penalty} onChange={v => set("dpoy_turnover_penalty", v)} info="Each turnover subtracts this from the DPOY score." />
-                    <NumField label="Technical foul penalty" value={settings.dpoy_tech_penalty} onChange={v => set("dpoy_tech_penalty", v)} info="Final score deduction per technical foul across the season." />
-                    <NumField label="Unsportsmanlike penalty" value={settings.dpoy_unsportsmanlike_penalty} onChange={v => set("dpoy_unsportsmanlike_penalty", v)} info="Final score deduction per unsportsmanlike foul across the season." />
+                    <NumField label="Foul penalty" value={settings.dpoy_foul_penalty} onChange={v => set("dpoy_foul_penalty", v)} info="Amount subtracted from a player's defensive GIS for each personal foul." />
+                    <NumField label="Turnover penalty" value={settings.dpoy_turnover_penalty} onChange={v => set("dpoy_turnover_penalty", v)} info="Amount subtracted from a player's defensive GIS for each turnover." />
+                    <NumField label="Technical foul penalty" value={settings.dpoy_tech_penalty} onChange={v => set("dpoy_tech_penalty", v)} info="Amount subtracted from the final DPOY score for each technical foul across the season." />
+                    <NumField label="Unsportsmanlike penalty" value={settings.dpoy_unsportsmanlike_penalty} onChange={v => set("dpoy_unsportsmanlike_penalty", v)} info="Amount subtracted from the final DPOY score for each unsportsmanlike foul across the season." />
                   </FieldGrid>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Final Score &amp; Eligibility</p>
                   <FieldGrid>
-                    <NumField label="Games played % contribution" value={settings.dpoy_gp_percent_weight} onChange={v => set("dpoy_gp_percent_weight", v)} min={0} max={50} step={1} info="Bonus for playing more games. Defensive consistency across a full season matters more than one or two great defensive performances." />
-                    <NumField label="Season tech foul penalty" value={settings.dpoy_tech_final_penalty} onChange={v => set("dpoy_tech_final_penalty", v)} min={0} max={20} step={0.5} info="Final score deduction per technical foul across the season." />
-                    <NumField label="Season unsports. penalty" value={settings.dpoy_unsp_final_penalty} onChange={v => set("dpoy_unsp_final_penalty", v)} min={0} max={20} step={0.5} info="Final score deduction per unsportsmanlike foul across the season." />
-                    <NumField label="Minimum games played %" value={settings.dpoy_min_games_percent} onChange={v => set("dpoy_min_games_percent", v)} min={0} max={100} step={5} info="Minimum percentage of games played to be eligible for DPOY. For example, 60 means they must have played at least 60% of all games." />
+                    <NumField label="Games played % contribution" value={settings.dpoy_gp_percent_weight} onChange={v => set("dpoy_gp_percent_weight", v)} min={0} max={50} step={1} info="Points added to the final DPOY score based on the percentage of games the player appeared in." />
+                    <NumField label="Season tech foul penalty" value={settings.dpoy_tech_final_penalty} onChange={v => set("dpoy_tech_final_penalty", v)} min={0} max={20} step={0.5} info="Amount subtracted from the final DPOY score for each technical foul across the season." />
+                    <NumField label="Season unsports. penalty" value={settings.dpoy_unsp_final_penalty} onChange={v => set("dpoy_unsp_final_penalty", v)} min={0} max={20} step={0.5} info="Amount subtracted from the final DPOY score for each unsportsmanlike foul across the season." />
+                    <NumField label="Minimum games played %" value={settings.dpoy_min_games_percent} onChange={v => set("dpoy_min_games_percent", v)} min={0} max={100} step={5} info="The minimum percentage of season games a player must have appeared in to be eligible for DPOY. Enter as a number — e.g. 60 means 60%." />
                   </FieldGrid>
                 </div>
               </SectionCard>
@@ -355,21 +355,21 @@ export default function LeagueAwardSettings() {
                 <div>
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Statistic Weights</p>
                   <FieldGrid>
-                    <NumField label="Points weight" value={settings.pog_pts_weight} onChange={v => set("pog_pts_weight", v)} info="How much points count toward Player of the Game. Uses the same formula as MVP but looks at one game only, not the whole season." />
-                    <NumField label="Offensive rebound weight" value={settings.pog_oreb_weight} onChange={v => set("pog_oreb_weight", v)} info="How much each offensive rebound counts for POG." />
-                    <NumField label="Defensive rebound weight" value={settings.pog_dreb_weight} onChange={v => set("pog_dreb_weight", v)} info="How much each defensive rebound counts for POG." />
-                    <NumField label="Assist weight" value={settings.pog_ast_weight} onChange={v => set("pog_ast_weight", v)} info="How much each assist counts for POG." />
-                    <NumField label="Steal weight" value={settings.pog_stl_weight} onChange={v => set("pog_stl_weight", v)} info="How much each steal counts for POG." />
-                    <NumField label="Block weight" value={settings.pog_blk_weight} onChange={v => set("pog_blk_weight", v)} info="How much each block counts for POG." />
+                    <NumField label="Points weight" value={settings.pog_pts_weight} onChange={v => set("pog_pts_weight", v)} info="Multiplier applied to a player's total points when calculating their POG score for that game." />
+                    <NumField label="Offensive rebound weight" value={settings.pog_oreb_weight} onChange={v => set("pog_oreb_weight", v)} info="Multiplier applied to each offensive rebound in the POG calculation." />
+                    <NumField label="Defensive rebound weight" value={settings.pog_dreb_weight} onChange={v => set("pog_dreb_weight", v)} info="Multiplier applied to each defensive rebound in the POG calculation." />
+                    <NumField label="Assist weight" value={settings.pog_ast_weight} onChange={v => set("pog_ast_weight", v)} info="Multiplier applied to each assist in the POG calculation." />
+                    <NumField label="Steal weight" value={settings.pog_stl_weight} onChange={v => set("pog_stl_weight", v)} info="Multiplier applied to each steal in the POG calculation." />
+                    <NumField label="Block weight" value={settings.pog_blk_weight} onChange={v => set("pog_blk_weight", v)} info="Multiplier applied to each block in the POG calculation." />
                   </FieldGrid>
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-3">Penalties</p>
                   <FieldGrid>
-                    <NumField label="Turnover penalty" value={settings.pog_turnover_penalty} onChange={v => set("pog_turnover_penalty", v)} info="How much each turnover subtracts from the POG score." />
-                    <NumField label="Foul penalty" value={settings.pog_foul_penalty} onChange={v => set("pog_foul_penalty", v)} info="How much each foul subtracts from POG." />
-                    <NumField label="Technical foul penalty" value={settings.pog_tech_penalty} onChange={v => set("pog_tech_penalty", v)} info="How much a technical foul subtracts from the POG score." />
-                    <NumField label="Unsportsmanlike penalty" value={settings.pog_unsportsmanlike_penalty} onChange={v => set("pog_unsportsmanlike_penalty", v)} info="How much an unsportsmanlike foul subtracts from the POG score." />
+                    <NumField label="Turnover penalty" value={settings.pog_turnover_penalty} onChange={v => set("pog_turnover_penalty", v)} info="Amount subtracted from the POG score for each turnover." />
+                    <NumField label="Foul penalty" value={settings.pog_foul_penalty} onChange={v => set("pog_foul_penalty", v)} info="Amount subtracted from the POG score for each personal foul." />
+                    <NumField label="Technical foul penalty" value={settings.pog_tech_penalty} onChange={v => set("pog_tech_penalty", v)} info="Amount subtracted from the POG score for each technical foul." />
+                    <NumField label="Unsportsmanlike penalty" value={settings.pog_unsportsmanlike_penalty} onChange={v => set("pog_unsportsmanlike_penalty", v)} info="Amount subtracted from the POG score for each unsportsmanlike foul." />
                   </FieldGrid>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
@@ -391,7 +391,7 @@ export default function LeagueAwardSettings() {
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="max-w-xs text-sm text-slate-600 p-3">
-                        When ON, only players from the winning team can win Player of the Game. Turn OFF if you want to allow a standout player from the losing team to still be recognised.
+                        When ON, only players from the winning team are considered for Player of the Game.
                       </PopoverContent>
                     </Popover>
                   </div>
