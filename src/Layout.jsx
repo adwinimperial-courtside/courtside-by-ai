@@ -346,19 +346,15 @@ export default function Layout({ children }) {
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </Button>
-                <p className="text-center text-xs text-slate-400 pt-1">
-                  Support:{" "}
-                  <a href="mailto:info@courtside-by-ai.com" className="text-slate-500 hover:text-orange-500 transition-colors">
-                    info@courtside-by-ai.com
-                  </a>
-                </p>
-                <button
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-slate-600 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50"
                   onClick={() => { setShowFeedback(true); setFeedbackSuccess(false); setFeedbackError(""); setFeedbackType("bug"); setFeedbackDesc(""); }}
-                  className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-orange-500 transition-colors pt-1"
                 >
-                  <MessageSquare className="w-3 h-3" />
-                  Report a bug or suggestion
-                </button>
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Report a Bug or Suggestion
+                </Button>
               </div>
             }
           </SidebarHeader>
