@@ -33,9 +33,28 @@ export default function AdminTools() {
     queryFn: () => base44.entities.League.list(),
   });
 
-  const filteredLeagues = currentUser?.assigned_league_ids?.length > 0
-    ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
-    : leagues;
+  const { data: myLeagueIdentities = [] } = useQuery({
+    queryKey: ['myLeagueIdentities', currentUser?.id],
+    queryFn: () => base44.entities.UserLeagueIdentity.filter({ user_id: currentUser.id }),
+    enabled: !!currentUser?.id,
+    staleTime: 60000,
+  });
+
+  const isAppAdmin = currentUser?.user_type === 'app_admin';
+
+  const filteredLeagues = (() => {
+    if (isAppAdmin) return leagues;
+    // For league_admin: only leagues where they have an explicit league_admin identity
+    const adminLeagueIds = myLeagueIdentities
+      .filter(i => i.role === 'league_admin')
+      .map(i => i.league_id);
+    if (adminLeagueIds.length > 0) {
+      return leagues.filter(l => adminLeagueIds.includes(l.id));
+    }
+    // Fallback: use assigned_league_ids for backwards compatibility
+    const assignedIds = currentUser?.assigned_league_ids || [];
+    return assignedIds.length > 0 ? leagues.filter(l => assignedIds.includes(l.id)) : leagues;
+  })();
 
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
