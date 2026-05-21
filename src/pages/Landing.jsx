@@ -136,7 +136,7 @@ export default function Landing() {
             {[
               { number: "500+", label: "Games logged" },
               { number: "20+", label: "Leagues" },
-              { number: "186+", label: "Users" },
+              { number: "200+", label: "Users" },
             ].map((stat, idx) => (
               <div key={idx} className={`flex-1 ${idx > 0 ? "sm:border-l sm:border-slate-200" : ""}`}>
                 <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>
