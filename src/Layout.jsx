@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { Shield, Eye, LogOut, Trophy, Circle } from "lucide-react";
+import { Shield, Eye, LogOut, Trophy, Circle, MessageSquare, Bug, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
@@ -9,6 +9,8 @@ import {
   SidebarProvider,
   SidebarTrigger } from
 "@/components/ui/sidebar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 import RegistrationGate from "@/components/registration/RegistrationGate";
@@ -24,6 +26,12 @@ export default function Layout({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayerIdentity, setShowPlayerIdentity] = useState(false);
   const [showConsentReminder, setShowConsentReminder] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackType, setFeedbackType] = useState("bug");
+  const [feedbackDesc, setFeedbackDesc] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
+  const [feedbackError, setFeedbackError] = useState("");
   const sessionStartTimeRef = useRef(null);
   const hasLoggedLoginEventRef = useRef(false);
 
@@ -212,9 +220,84 @@ export default function Layout({ children }) {
     return <RegistrationGate user={currentUser} />;
   }
 
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackDesc.trim()) return;
+    setFeedbackSending(true);
+    setFeedbackError("");
+    try {
+      await base44.entities.Feedback.create({
+        type: feedbackType,
+        description: feedbackDesc.trim(),
+        page_url: window.location.pathname,
+        submitted_by: currentUser?.email || "",
+        submitted_by_name: currentUser?.full_name || "",
+        user_type: currentUser?.user_type || "",
+        submitted_at: new Date().toISOString(),
+        status: "new",
+      });
+      setFeedbackSuccess(true);
+      setTimeout(() => setShowFeedback(false), 2000);
+    } catch {
+      setFeedbackError("Something went wrong. Please try again.");
+    } finally {
+      setFeedbackSending(false);
+    }
+  };
+
   return (
     <SidebarProvider defaultOpen={true}>
       <ApplyPendingAssignments />
+
+      <Dialog open={showFeedback} onOpenChange={(open) => { setShowFeedback(open); if (!open) { setFeedbackDesc(""); setFeedbackSuccess(false); setFeedbackError(""); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-orange-500" />
+              Report a Bug or Suggestion
+            </DialogTitle>
+          </DialogHeader>
+          {feedbackSuccess ? (
+            <div className="py-6 text-center text-green-600 font-medium">
+              Thank you! We've received your feedback.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setFeedbackType("bug")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors ${feedbackType === "bug" ? "border-orange-500 bg-orange-50" : "border-slate-200 hover:border-slate-300"}`}
+                >
+                  <Bug className={`w-6 h-6 ${feedbackType === "bug" ? "text-orange-500" : "text-slate-400"}`} />
+                  <span className={`text-sm font-semibold ${feedbackType === "bug" ? "text-orange-700" : "text-slate-600"}`}>Bug Report</span>
+                  <span className="text-xs text-slate-400 text-center">Something isn't working correctly</span>
+                </button>
+                <button
+                  onClick={() => setFeedbackType("suggestion")}
+                  className={`flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors ${feedbackType === "suggestion" ? "border-orange-500 bg-orange-50" : "border-slate-200 hover:border-slate-300"}`}
+                >
+                  <Lightbulb className={`w-6 h-6 ${feedbackType === "suggestion" ? "text-orange-500" : "text-slate-400"}`} />
+                  <span className={`text-sm font-semibold ${feedbackType === "suggestion" ? "text-orange-700" : "text-slate-600"}`}>Suggestion</span>
+                  <span className="text-xs text-slate-400 text-center">An idea to improve the app</span>
+                </button>
+              </div>
+              <Textarea
+                placeholder="Describe the issue or idea in as much detail as you can..."
+                value={feedbackDesc}
+                onChange={e => setFeedbackDesc(e.target.value)}
+                className="min-h-[120px] resize-none"
+              />
+              {feedbackError && <p className="text-sm text-red-500">{feedbackError}</p>}
+              <Button
+                onClick={handleFeedbackSubmit}
+                disabled={!feedbackDesc.trim() || feedbackSending}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {feedbackSending ? "Sending..." : "Submit Feedback"}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       {showPlayerIdentity && (
         <PlayerIdentityModal
           user={currentUser}
@@ -269,6 +352,13 @@ export default function Layout({ children }) {
                     info@courtside-by-ai.com
                   </a>
                 </p>
+                <button
+                  onClick={() => { setShowFeedback(true); setFeedbackSuccess(false); setFeedbackError(""); setFeedbackType("bug"); setFeedbackDesc(""); }}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-400 hover:text-orange-500 transition-colors pt-1"
+                >
+                  <MessageSquare className="w-3 h-3" />
+                  Report a bug or suggestion
+                </button>
               </div>
             }
           </SidebarHeader>

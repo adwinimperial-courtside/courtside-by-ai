@@ -1,0 +1,55 @@
+{
+  "name": "Feedback",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "bug",
+        "suggestion"
+      ],
+      "description": "Type of feedback"
+    },
+    "description": {
+      "type": "string",
+      "description": "Feedback details"
+    },
+    "page_url": {
+      "type": "string",
+      "description": "Page the user was on when submitting"
+    },
+    "submitted_by": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "submitted_by_name": {
+      "type": "string",
+      "description": "Full name of the user"
+    },
+    "user_type": {
+      "type": "string",
+      "description": "Role of the user"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "new",
+        "reviewed",
+        "dismissed"
+      ],
+      "default": "new",
+      "description": "Review status"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the feedback was submitted"
+    }
+  },
+  "required": [
+    "type",
+    "description",
+    "submitted_by",
+    "submitted_at"
+  ]
+}
