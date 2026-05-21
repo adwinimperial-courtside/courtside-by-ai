@@ -18,6 +18,7 @@ import StoryBuilderPage from './pages/StoryBuilder';
 import LeagueUsersPage from './pages/LeagueUsers';
 import RegularSeasonRecapPage from './pages/RegularSeasonRecap';
 import SystemPage from './pages/System';
+import ReportsPage from './pages/Reports';
 import OwnerLeagueLeadersPage from './pages/OwnerLeagueLeaders';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsOfUsePage from './pages/TermsOfUse';
@@ -69,6 +70,7 @@ const AuthenticatedApp = () => {
         <Route path="/RegularSeasonRecap" element={<LayoutWrapper currentPageName="RegularSeasonRecap"><RegularSeasonRecapPage /></LayoutWrapper>} />
         <Route path="/OwnerLeagueLeaders" element={<LayoutWrapper currentPageName="OwnerLeagueLeaders"><OwnerLeagueLeadersPage /></LayoutWrapper>} />
         <Route path="/System" element={<LayoutWrapper currentPageName="System"><SystemPage /></LayoutWrapper>} />
+        <Route path="/Reports" element={<LayoutWrapper currentPageName="Reports"><ReportsPage /></LayoutWrapper>} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-use" element={<TermsOfUsePage />} />
         <Route path="*" element={<PageNotFound />} />

@@ -55,6 +55,7 @@ import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
 import System from './pages/System';
+import Reports from './pages/Reports';
 import Feedback from './pages/Feedback';
 import AwardLeaders from './pages/AwardLeaders';
 import CoachInsights from './pages/CoachInsights';
@@ -88,6 +89,7 @@ export const PAGES = {
     "DeleteLeague": DeleteLeague,
     "Analytics": Analytics,
     "System": System,
+    "Reports": Reports,
     "Feedback": Feedback,
     "AwardLeaders": AwardLeaders,
     "CoachInsights": CoachInsights,
