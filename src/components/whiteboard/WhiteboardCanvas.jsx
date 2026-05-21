@@ -64,102 +64,60 @@ const C = {
 function HalfCourtSVG({ width, height }) {
   const w = width, h = height;
   const lw = C.lineW;
-  
-  // FIBA Half-Court: 15m wide × 14m deep
-  // Rim center is single reference point for all arcs
-  const rimX = w / 2;
-  const rimY = h * 0.04; // baseline at top
-  
-  // Court dimensions (normalized)
+
   const courtW = w * 0.92;
   const courtH = h * 0.92;
   const x0 = (w - courtW) / 2;
   const y0 = (h - courtH) / 2;
   const x1 = x0 + courtW;
   const y1 = y0 + courtH;
-  
-  // Paint (4.9m × 5.8m on real court, ~1/3 of width, ~1/2 of depth)
-  const paintW = courtW * 0.327; // ~4.9m / 15m
-  const paintH = courtH * 0.414; // ~5.8m / 14m
+
+  const rimX = w / 2;
+  const rimY = y0;
+
+  const paintW  = courtW * (4.9 / 15);
+  const paintH  = courtH * (5.8 / 14);
   const paintX0 = rimX - paintW / 2;
   const paintX1 = rimX + paintW / 2;
-  const paintY0 = rimY;
   const paintY1 = rimY + paintH;
-  
-  // Free-Throw Circle: 1.8m radius, centered on FT line
-  const ftRadius = courtW * (1.8 / 15); // 1.8m / 15m court width
-  const ftCy = paintY1;
-  
-  // Restricted Area: small semicircle from rim
-  const restrictedR = courtW * 0.04;
-  
-  // 3-Point Arc: 6.75m from rim center (realistic distance)
-  const threeRadius = courtH * (6.75 / 14);
-  
+
+  const ftRadius    = courtW * (1.8  / 15);
+  const restrictedR = courtW * (1.25 / 15);
+
+  const threeR       = courtH * (6.75 / 14);
+  const cornerOffset = courtW * (0.9  / 15);
+  const leftCornerX  = x0 + cornerOffset;
+  const rightCornerX = x1 - cornerOffset;
+  const dxCorner     = rimX - leftCornerX;
+  const dyCorner     = Math.sqrt(Math.max(0, threeR * threeR - dxCorner * dxCorner));
+  const arcEndY      = rimY + dyCorner;
+
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
-      {/* Background */}
       <rect width={w} height={h} fill={C.courtBg} rx={6} />
-      
-      {/* Court boundary */}
-      <rect x={x0} y={y0} width={courtW} height={courtH} fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
-      
-      {/* Paint rectangle with fill */}
-      <rect x={paintX0} y={paintY0} width={paintW} height={paintH} fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
-      
-      {/* Backboard */}
-      <line 
-        x1={rimX - w * 0.1} y1={rimY - h * 0.015} 
-        x2={rimX + w * 0.1} y2={rimY - h * 0.015} 
-        stroke={C.basket} strokeWidth={lw * 2} 
-      />
-      
-      {/* Basket */}
-      <circle cx={rimX} cy={rimY} r={w * 0.025} fill="none" stroke={C.basket} strokeWidth={lw * 1.5} />
-      
-      {/* Free-Throw Circle: centered on FT line (top of paint), split inside/outside */}
-      <circle cx={rimX} cy={ftCy} r={ftRadius} fill="none" stroke={C.line} strokeWidth={lw} />
-      
-      {/* Free-Throw Line (top of paint) */}
-      <line x1={paintX0} y1={paintY1} x2={paintX1} y2={paintY1} stroke={C.line} strokeWidth={lw} />
-      
-      {/* Restricted Area Semicircle: from rim, inside paint */}
-      <path 
-        d={`M ${rimX - restrictedR} ${rimY} A ${restrictedR} ${restrictedR} 0 0 1 ${rimX + restrictedR} ${rimY}`} 
-        fill="none" stroke={C.line} strokeWidth={lw} 
-      />
-      
-      {/* 3-Point Line: corner straight portions + arc */}
-      {(() => {
-        const cornerOffset = courtW * (0.9 / 15);
-        const leftCornerX = x0 + cornerOffset;
-        const rightCornerX = x1 - cornerOffset;
-        const dxCorner = Math.abs(rimX - leftCornerX);
-        const dyCorner = Math.sqrt(Math.max(0, threeRadius * threeRadius - dxCorner * dxCorner));
-        const arcEndY = rimY + dyCorner;
-        return (
-          <>
-            {/* Left corner straight line */}
-            <line x1={leftCornerX} y1={y0} x2={leftCornerX} y2={arcEndY} stroke={C.line} strokeWidth={lw} />
-            {/* Right corner straight line */}
-            <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY} stroke={C.line} strokeWidth={lw} />
-            {/* 3-point arc (large arc going away from basket) */}
-            <path
-              d={`M ${leftCornerX} ${arcEndY} A ${threeRadius} ${threeRadius} 0 0 1 ${rightCornerX} ${arcEndY}`}
-              fill="none"
-              stroke={C.line}
-              strokeWidth={lw}
-            />
-          </>
-        );
-      })()}
-      
-      {/* Sidelines connecting 3-point corners to court boundary */}
-      <line x1={x0} y1={y0} x2={x0} y2={y1} stroke={C.line} strokeWidth={lw} />
-      <line x1={x1} y1={y0} x2={x1} y2={y1} stroke={C.line} strokeWidth={lw} />
-      
-      {/* Midcourt line (dashed circle at bottom) */}
-      <circle cx={rimX} cy={y1} r={courtW * 0.1} fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="4 4" />
+      <rect x={x0} y={y0} width={courtW} height={courtH}
+            fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
+      <rect x={paintX0} y={rimY} width={paintW} height={paintH}
+            fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
+      <line x1={paintX0} y1={paintY1} x2={paintX1} y2={paintY1}
+            stroke={C.line} strokeWidth={lw} />
+      <circle cx={rimX} cy={paintY1} r={ftRadius}
+              fill="none" stroke={C.line} strokeWidth={lw} />
+      <path d={`M ${rimX - restrictedR} ${rimY} A ${restrictedR} ${restrictedR} 0 0 1 ${rimX + restrictedR} ${rimY}`}
+            fill="none" stroke={C.line} strokeWidth={lw} />
+      <line x1={leftCornerX}  y1={y0} x2={leftCornerX}  y2={arcEndY}
+            stroke={C.line} strokeWidth={lw} />
+      <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY}
+            stroke={C.line} strokeWidth={lw} />
+      <path d={`M ${leftCornerX} ${arcEndY} A ${threeR} ${threeR} 0 0 0 ${rightCornerX} ${arcEndY}`}
+            fill="none" stroke={C.line} strokeWidth={lw} />
+      <line x1={rimX - courtW * 0.1} y1={rimY - h * 0.015}
+            x2={rimX + courtW * 0.1} y2={rimY - h * 0.015}
+            stroke={C.basket} strokeWidth={lw * 2} />
+      <circle cx={rimX} cy={rimY} r={courtW * 0.025}
+              fill="none" stroke={C.basket} strokeWidth={lw * 1.5} />
+      <circle cx={rimX} cy={y1} r={courtW * 0.1}
+              fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="4 4" />
     </svg>
   );
 }
