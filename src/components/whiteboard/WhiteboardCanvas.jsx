@@ -84,8 +84,8 @@ function HalfCourtSVG({ width, height }) {
   const ftRadius    = courtW * (1.8  / 15);
   const restrictedR = courtW * (1.25 / 15);
 
-  const threeR       = Math.min(courtW * 0.44, courtH * 0.48);
-  const cornerOffset = courtW * (0.9  / 15);
+  const threeR       = courtW * 0.62;
+  const cornerOffset = courtW * 0.12;
   const leftCornerX  = x0 + cornerOffset;
   const rightCornerX = x1 - cornerOffset;
   const dxCorner     = rimX - leftCornerX;
