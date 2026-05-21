@@ -9,6 +9,7 @@ import { createPageUrl } from "@/utils";
 
 import CreateGameDialog from "../components/schedule/CreateGameDialog";
 import GameCard from "../components/schedule/GameCard";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -46,8 +47,7 @@ export default function SchedulePage() {
     fetchUser();
   }, []);
 
-  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
-  const isAppAdmin = currentUser?.user_type === 'app_admin';
+  const { isLeagueAdmin, isAppAdmin } = useEffectiveRole(currentUser, selectedLeague);
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
   const hasAssignedLeagues = assignedLeagueIds.length > 0;
 
