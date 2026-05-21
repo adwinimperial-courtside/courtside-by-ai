@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { RefreshCw, User, ChevronRight } from "lucide-react";
-import BulkIdentityMatching from "@/components/admin/BulkIdentityMatching";
 import PlayerIdentityDetailPanel from "@/components/admin/PlayerIdentityDetailPanel";
 
 function looksLikeRealName(name) {
@@ -137,8 +136,6 @@ export default function PlayerIdentityAdmin() {
 
   return (
     <div>
-      <BulkIdentityMatching leagues={leagues} allUsers={players} />
-
       {selectedPlayer && (
         <PlayerIdentityDetailPanel
           player={selectedPlayer}
