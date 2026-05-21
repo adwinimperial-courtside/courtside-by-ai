@@ -5,11 +5,56 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Shield, Star, Users, Save, RotateCcw, Info, CheckCircle, BookOpen } from "lucide-react";
+import { Trophy, Shield, Star, Users, Save, RotateCcw, Info, CheckCircle, BookOpen, ChevronDown, ChevronUp, History } from "lucide-react";
 import { DEFAULT_AWARD_SETTINGS, resolveSettings } from "@/utils/awardDefaults";
 import { format } from "date-fns";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+
+const FIELD_LABELS = {
+  mvp_pts_weight: "MVP — Points weight",
+  mvp_oreb_weight: "MVP — Offensive rebound weight",
+  mvp_dreb_weight: "MVP — Defensive rebound weight",
+  mvp_ast_weight: "MVP — Assist weight",
+  mvp_stl_weight: "MVP — Steal weight",
+  mvp_blk_weight: "MVP — Block weight",
+  mvp_turnover_penalty: "MVP — Turnover penalty",
+  mvp_foul_penalty: "MVP — Foul penalty",
+  mvp_tech_penalty: "MVP — Technical foul penalty",
+  mvp_unsportsmanlike_penalty: "MVP — Unsportsmanlike penalty",
+  mvp_avg_gis_weight: "MVP — Avg GIS contribution",
+  mvp_gp_percent_weight: "MVP — Games played % contribution",
+  mvp_team_win_percent_weight: "MVP — Team win % contribution",
+  mvp_min_games_percent: "MVP — Minimum games played %",
+  mvp_tech_final_penalty: "MVP — Season tech foul penalty",
+  mvp_unsp_final_penalty: "MVP — Season unsports. penalty",
+  dpoy_stl_weight: "DPOY — Steal weight",
+  dpoy_blk_weight: "DPOY — Block weight",
+  dpoy_oreb_weight: "DPOY — Offensive rebound weight",
+  dpoy_dreb_weight: "DPOY — Defensive rebound weight",
+  dpoy_foul_penalty: "DPOY — Foul penalty",
+  dpoy_turnover_penalty: "DPOY — Turnover penalty",
+  dpoy_tech_penalty: "DPOY — Technical foul penalty",
+  dpoy_unsportsmanlike_penalty: "DPOY — Unsportsmanlike penalty",
+  dpoy_gp_percent_weight: "DPOY — Games played % contribution",
+  dpoy_min_games_percent: "DPOY — Minimum games played %",
+  dpoy_tech_final_penalty: "DPOY — Season tech foul penalty",
+  dpoy_unsp_final_penalty: "DPOY — Season unsports. penalty",
+  pog_pts_weight: "POG — Points weight",
+  pog_oreb_weight: "POG — Offensive rebound weight",
+  pog_dreb_weight: "POG — Defensive rebound weight",
+  pog_ast_weight: "POG — Assist weight",
+  pog_stl_weight: "POG — Steal weight",
+  pog_blk_weight: "POG — Block weight",
+  pog_turnover_penalty: "POG — Turnover penalty",
+  pog_foul_penalty: "POG — Foul penalty",
+  pog_tech_penalty: "POG — Technical foul penalty",
+  pog_unsportsmanlike_penalty: "POG — Unsportsmanlike penalty",
+  pog_winning_team_only: "POG — Winning team only",
+  mythical_five_count: "Mythical Five — Number of players",
+};
 
 function NumField({ label, info, value, onChange, min = 0, max = 20, step = 0.1 }) {
   return (
@@ -88,6 +133,8 @@ export default function LeagueAwardSettings() {
   const [showMvpExample, setShowMvpExample] = useState(false);
   const [showDpoyExample, setShowDpoyExample] = useState(false);
   const [showPogExample, setShowPogExample] = useState(false);
+  const [activeTab, setActiveTab] = useState("settings");
+  const [logLeagueId, setLogLeagueId] = useState(null);
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -102,6 +149,18 @@ export default function LeagueAwardSettings() {
   const { data: existingSettings = [] } = useQuery({
     queryKey: ["awardSettings"],
     queryFn: () => base44.entities.AwardSettings.list(),
+    staleTime: 0,
+  });
+
+  const effectiveLogLeagueId = logLeagueId || selectedLeagueId;
+  const { data: auditLogs = [] } = useQuery({
+    queryKey: ["awardSettingsLog", effectiveLogLeagueId],
+    queryFn: () => base44.entities.AwardSettingsLog.filter(
+      { league_id: effectiveLogLeagueId },
+      "-changed_at",
+      100
+    ),
+    enabled: !!effectiveLogLeagueId,
     staleTime: 0,
   });
 
@@ -146,6 +205,30 @@ export default function LeagueAwardSettings() {
         setSavedSettingsId(created.id);
       }
       queryClient.invalidateQueries({ queryKey: ["awardSettings"] });
+
+      // Build audit log
+      const changes = Object.keys(FIELD_LABELS)
+        .filter(key => {
+          const oldVal = savedRecord ? savedRecord[key] : DEFAULT_AWARD_SETTINGS[key];
+          return String(settings[key]) !== String(oldVal ?? "");
+        })
+        .map(key => ({
+          field_key: key,
+          field_label: FIELD_LABELS[key],
+          old_value: String(savedRecord ? (savedRecord[key] ?? DEFAULT_AWARD_SETTINGS[key]) : DEFAULT_AWARD_SETTINGS[key]),
+          new_value: String(settings[key]),
+        }));
+      if (changes.length > 0) {
+        await base44.entities.AwardSettingsLog.create({
+          league_id: selectedLeagueId,
+          league_name: selectedLeague?.name || "",
+          changed_by: currentUser?.email || "",
+          changed_at: new Date().toISOString(),
+          changes,
+        });
+        queryClient.invalidateQueries({ queryKey: ["awardSettingsLog", selectedLeagueId] });
+      }
+
       setIsDirty(false);
       setSuccessMsg(`Award settings saved for ${selectedLeague?.name}.`);
     } finally {
@@ -236,7 +319,51 @@ export default function LeagueAwardSettings() {
           </div>
         )}
 
-        {selectedLeagueId && settings && (
+        {selectedLeagueId && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-6">
+              <TabsTrigger value="settings">Settings</TabsTrigger>
+              <TabsTrigger value="history">
+                <History className="w-4 h-4 mr-1.5" />
+                Change History
+              </TabsTrigger>
+            </TabsList>
+
+            {/* ── CHANGE HISTORY TAB ── */}
+            <TabsContent value="history">
+              {currentUser?.user_type === "app_admin" && (
+                <div className="mb-4">
+                  <label className="text-sm font-semibold text-slate-700 block mb-1">View history for league</label>
+                  <Select value={logLeagueId || selectedLeagueId} onValueChange={setLogLeagueId}>
+                    <SelectTrigger className="w-full max-w-sm">
+                      <SelectValue placeholder="Choose a league..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leagues.map(l => (
+                        <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {auditLogs.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-slate-400">
+                  <History className="w-8 h-8 mx-auto mb-2 text-slate-200" />
+                  <p>No changes recorded yet for this league.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {auditLogs.map(log => (
+                    <AuditLogRow key={log.id} log={log} />
+                  ))}
+                </div>
+              )}
+            </TabsContent>
+
+            {/* ── SETTINGS TAB ── */}
+            <TabsContent value="settings">
+              {settings && (
           <>
             {/* Summary card */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
@@ -692,8 +819,61 @@ export default function LeagueAwardSettings() {
               </div>
             </div>
           </>
+              )}
+            </TabsContent>
+          </Tabs>
         )}
       </div>
     </div>
+  );
+}
+
+function AuditLogRow({ log }) {
+  const [open, setOpen] = useState(false);
+  const formatVal = (v) => {
+    if (v === "true") return "Yes";
+    if (v === "false") return "No";
+    return v;
+  };
+  const dateLabel = log.changed_at
+    ? format(new Date(log.changed_at), "MMM d, yyyy · h:mm a")
+    : "—";
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="w-full flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 hover:bg-slate-50 transition-colors text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            <span className="text-sm font-medium text-slate-800">{dateLabel}</span>
+            <span className="text-xs text-slate-500">{log.changed_by}</span>
+            <span className="text-xs bg-orange-100 text-orange-700 rounded-full px-2 py-0.5 font-medium">
+              {log.changes?.length ?? 0} field{log.changes?.length !== 1 ? "s" : ""} changed
+            </span>
+          </div>
+          {open ? <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="border border-t-0 border-slate-200 rounded-b-xl overflow-hidden mb-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide w-1/2">Setting</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">Previous value</th>
+                <th className="text-left px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wide">New value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(log.changes || []).map((c, i) => (
+                <tr key={i} className="border-b border-slate-100 last:border-0">
+                  <td className="px-4 py-2 text-slate-700">{c.field_label}</td>
+                  <td className="px-4 py-2 text-slate-500">{formatVal(c.old_value)}</td>
+                  <td className="px-4 py-2 font-medium text-slate-800">{formatVal(c.new_value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

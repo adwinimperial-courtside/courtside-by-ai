@@ -1,0 +1,49 @@
+{
+  "name": "AwardSettingsLog",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "Cached league name"
+    },
+    "changed_by": {
+      "type": "string",
+      "description": "Email of the user who saved"
+    },
+    "changed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the save occurred"
+    },
+    "changes": {
+      "type": "array",
+      "description": "List of changed fields",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field_key": {
+            "type": "string"
+          },
+          "field_label": {
+            "type": "string"
+          },
+          "old_value": {
+            "type": "string"
+          },
+          "new_value": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "league_id",
+    "changed_by",
+    "changed_at"
+  ]
+}
