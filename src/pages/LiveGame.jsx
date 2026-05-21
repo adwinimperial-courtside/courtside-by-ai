@@ -7,6 +7,7 @@ import { createPageUrl } from "@/utils";
 
 import StartingLineup from "../components/live/StartingLineup";
 import LiveStatTracker from "../components/live/LiveStatTracker";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function LiveGamePage() {
   const navigate = useNavigate();
@@ -90,6 +91,8 @@ export default function LiveGamePage() {
     retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
+  const { isViewer: liveIsViewer } = useEffectiveRole(currentUser, game?.league_id || null);
+
   const updateGameMutation = useMutation({
     mutationFn: ({ gameId, data }) => base44.entities.Game.update(gameId, data),
     onSuccess: () => {
@@ -127,7 +130,7 @@ export default function LiveGamePage() {
     }
   }, [mergedGame, existingStats]);
 
-  if (currentUser?.user_type === "viewer") {
+  if (liveIsViewer) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center text-white">

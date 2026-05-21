@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, ChevronDown, ChevronUp } from "lucide-react";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 const ROLE_COLORS = {
   player: "bg-blue-100 text-blue-800",
@@ -138,8 +139,7 @@ export default function LeagueUsers() {
     queryFn: () => base44.auth.me(),
   });
 
-  const isAppAdmin = currentUser?.user_type === 'app_admin';
-  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const { isAppAdmin, isLeagueAdmin } = useEffectiveRole(currentUser, selectedLeague === 'all' ? null : selectedLeague);
   const adminLeagueIds = currentUser?.assigned_league_ids || [];
 
   const { data: allUsers = [], isLoading } = useQuery({

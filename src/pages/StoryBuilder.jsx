@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper } from "lucide-react";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function StoryBuilder() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -30,7 +31,8 @@ export default function StoryBuilder() {
   const usageCounter = usageCounters[0];
   const briefingsUsed = usageCounter?.briefings_generated || 0;
   const briefingsRemaining = MONTHLY_LIMIT - briefingsUsed;
-  const hasReachedLimit = currentUser?.user_type === "league_admin" && briefingsUsed >= MONTHLY_LIMIT;
+  const { isAppAdmin: storyIsAppAdmin, isLeagueAdmin: storyIsLeagueAdmin } = useEffectiveRole(currentUser, selectedLeagueId || null);
+  const hasReachedLimit = storyIsLeagueAdmin && !storyIsAppAdmin && briefingsUsed >= MONTHLY_LIMIT;
 
   useEffect(() => {
     base44.auth.me().then(setCurrentUser).catch(() => {});
@@ -82,11 +84,8 @@ export default function StoryBuilder() {
   const visibleLeagues = leagues.filter(l => {
     if (!currentUser) return false;
     if (currentUser.user_type === "app_admin") return true;
-    if (currentUser.user_type === "league_admin") {
-      const assignedIds = currentUser.assigned_league_ids || [];
-      return assignedIds.includes(l.id) || l.created_by === currentUser.email;
-    }
-    return false;
+    const assignedIds = currentUser.assigned_league_ids || [];
+    return assignedIds.includes(l.id) || l.created_by === currentUser.email;
   });
 
   const eligibleGames = allGames.filter(g =>
@@ -106,7 +105,7 @@ export default function StoryBuilder() {
 
     try {
       // --- Usage limit check (league_admin only) ---
-      if (currentUser?.user_type === "league_admin" && briefingsUsed >= MONTHLY_LIMIT) {
+      if (storyIsLeagueAdmin && !storyIsAppAdmin && briefingsUsed >= MONTHLY_LIMIT) {
         setError(`Monthly limit of ${MONTHLY_LIMIT} story generations reached. Limit resets next month.`);
         setIsGenerating(false);
         return;
@@ -350,7 +349,7 @@ MANDATORY RULES:
       setStory(typeof result === "string" ? result : JSON.stringify(result));
 
       // --- Track usage (league_admin only) ---
-      if (currentUser?.user_type === "league_admin") {
+      if (storyIsLeagueAdmin && !storyIsAppAdmin) {
         if (usageCounter) {
           await base44.entities.AIUsageCounter.update(usageCounter.id, {
             briefings_generated: briefingsUsed + 1
@@ -379,7 +378,7 @@ MANDATORY RULES:
     });
   };
 
-  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
+  if (currentUser && !storyIsAppAdmin && !storyIsLeagueAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-slate-500">You don't have permission to view this page.</p>
@@ -405,7 +404,7 @@ MANDATORY RULES:
             </h1>
             <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready post-game story powered by AI.</p>
           </div>
-          {currentUser?.user_type === "league_admin" && (
+          {storyIsLeagueAdmin && !storyIsAppAdmin && (
             <div className={`flex flex-col items-end gap-1 px-4 py-3 rounded-xl border-2 ${
               hasReachedLimit ? "border-red-200 bg-red-50" : briefingsRemaining <= 5 ? "border-amber-200 bg-amber-50" : "border-green-200 bg-green-50"
             }`}>

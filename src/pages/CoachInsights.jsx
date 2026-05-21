@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Target, Users, Trophy, Shield, ArrowUpDown, AlertCircle, Lightbulb, Minus, Plus } from "lucide-react";
 import AITacticalBriefing from "../components/insights/AITacticalBriefing";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 // Leagues where turnovers are not tracked / should be excluded
 const LEAGUES_NO_TURNOVERS = ['698c39d164c376418918321d', '698b4d0c05fbeef938b93720'];
@@ -64,7 +65,9 @@ export default function CoachInsights() {
     staleTime: 60000,
   });
 
-  const filteredLeagues = currentUser?.user_type !== 'app_admin' && currentUser?.assigned_league_ids?.length
+  const { isAppAdmin: coachIsAppAdmin, isViewer: coachIsViewer } = useEffectiveRole(currentUser, selectedLeague || null);
+
+  const filteredLeagues = !coachIsAppAdmin && currentUser?.assigned_league_ids?.length
     ? leagues.filter(league => currentUser.assigned_league_ids.includes(league.id))
     : leagues;
 
@@ -451,7 +454,7 @@ export default function CoachInsights() {
   const selectedOpponentName = teams.find(t => t.id === selectedOpponent)?.name || "";
 
   // Early return for viewers — AFTER all hooks
-  if (currentUser && currentUser.user_type === 'viewer') {
+  if (currentUser && coachIsViewer) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
         <div className="text-center">

@@ -6,6 +6,7 @@ import { ArrowLeft, User, Upload } from "lucide-react";
 
 import PlayerManagement from "./PlayerManagement";
 import TeamLogo from "./TeamLogo";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function TeamDetailView({ team, onBack }) {
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -40,6 +41,9 @@ export default function TeamDetailView({ team, onBack }) {
     }
   };
 
+  const { isAppAdmin: detailIsAppAdmin, isLeagueAdmin: detailIsLeagueAdmin } = useEffectiveRole(currentUser, null);
+  const canManageLogo = detailIsAppAdmin || detailIsLeagueAdmin;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
@@ -57,7 +61,7 @@ export default function TeamDetailView({ team, onBack }) {
             <div className="flex items-center gap-4 mb-2">
               <div className="relative group">
                 <TeamLogo team={team} size="lg" />
-                 {(currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin') && (
+                 {canManageLogo && (
                     <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                       <Upload className="w-6 h-6 text-white" />
                       <input

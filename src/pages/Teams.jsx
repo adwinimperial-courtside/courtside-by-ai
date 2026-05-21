@@ -18,6 +18,7 @@ import TeamCard from "../components/teams/TeamCard";
 import CreateTeamDialog from "../components/teams/CreateTeamDialog";
 import EditTeamDialog from "../components/teams/EditTeamDialog";
 import TeamDetailView from "../components/teams/TeamDetailView";
+import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 
 export default function TeamsPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -59,8 +60,7 @@ export default function TeamsPage() {
     initialData: [],
   });
 
-  const isAppAdmin = currentUser?.user_type === 'app_admin';
-  const isLeagueAdmin = currentUser?.user_type === 'league_admin';
+  const { isAppAdmin, isLeagueAdmin } = useEffectiveRole(currentUser, selectedLeague);
   const canManageTeams = isAppAdmin || isLeagueAdmin;
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
   const hasAssignedLeagues = assignedLeagueIds.length > 0;
