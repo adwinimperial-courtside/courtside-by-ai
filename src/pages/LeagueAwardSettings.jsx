@@ -321,8 +321,12 @@ export default function LeagueAwardSettings() {
                   </SelectContent>
                 </Select>
               </div>
-              {savedRecord && savedRecord.updated_by_role !== "app_admin" && currentUser?.user_type !== "app_admin" && (
-                <div className="text-xs text-slate-400 flex-shrink-0">
+              {savedRecord && currentUser && !(
+                savedRecord.updated_by_role === "app_admin" ||
+                (currentUser.user_type === "app_admin" && 
+                 savedRecord.updated_by === currentUser.email)
+              ) && (
+                <div className="text-right text-xs text-slate-400 flex-shrink-0">
                   <p>Last saved by <span className="font-medium text-slate-600">{savedRecord.updated_by || "—"}</span></p>
                   <p>{savedRecord.updated_at ? format(new Date(savedRecord.updated_at), "MMM d, yyyy HH:mm") : "—"}</p>
                 </div>
