@@ -45,19 +45,15 @@ export default function AdminTools() {
   const filteredLeagues = (() => {
     if (isAppAdmin) return leagues;
     if (identitiesLoading) return [];
-    const adminLeagueIds = myLeagueIdentities
-      .filter(i => i.role === 'league_admin')
+
+    const nonAdminLeagueIds = myLeagueIdentities
+      .filter(i => i.role !== 'league_admin')
       .map(i => i.league_id);
-    if (adminLeagueIds.length > 0) {
-      return leagues.filter(l => adminLeagueIds.includes(l.id));
-    }
-    // Only fall back if user has NO identity records at all (old accounts)
-    if (myLeagueIdentities.length === 0) {
-      const assignedIds = currentUser?.assigned_league_ids || [];
-      return assignedIds.length > 0 ? leagues.filter(l => assignedIds.includes(l.id)) : leagues;
-    }
-    // Has identity records but none are league_admin — not an admin anywhere
-    return [];
+
+    const assignedIds = currentUser?.assigned_league_ids || [];
+    return leagues.filter(l =>
+      assignedIds.includes(l.id) && !nonAdminLeagueIds.includes(l.id)
+    );
   })();
 
   const { data: teams = [] } = useQuery({
