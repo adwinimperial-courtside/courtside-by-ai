@@ -145,7 +145,7 @@ function HalfCourtSVG({ width, height }) {
             <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY} stroke={C.line} strokeWidth={lw} />
             {/* 3-point arc (large arc going away from basket) */}
             <path
-              d={`M ${leftCornerX} ${arcEndY} A ${threeRadius} ${threeRadius} 0 1 1 ${rightCornerX} ${arcEndY}`}
+              d={`M ${leftCornerX} ${arcEndY} A ${threeRadius} ${threeRadius} 0 0 1 ${rightCornerX} ${arcEndY}`}
               fill="none"
               stroke={C.line}
               strokeWidth={lw}
