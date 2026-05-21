@@ -402,7 +402,7 @@ export default function WhiteboardCanvas() {
 
         {/* Right: Exit */}
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/")}
           style={{
             display: "flex", alignItems: "center", justifyContent: "center",
             width: 38, height: 38, background: "white", color: "#334155",
