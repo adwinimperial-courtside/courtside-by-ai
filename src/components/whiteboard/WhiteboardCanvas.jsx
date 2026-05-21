@@ -72,25 +72,30 @@ function HalfCourtSVG({ width, height }) {
   const x1 = x0 + courtW;
   const y1 = y0 + courtH;
 
+  const pxPerMW = courtW / 15;
+  const pxPerMH = courtH / 14;
+
   const rimX = w / 2;
   const rimY = y0;
 
-  const paintW  = courtW * (4.9 / 15);
-  const paintH  = courtH * (5.8 / 14);
+  const paintW  = 4.9 * pxPerMW;
+  const paintH  = 5.8 * pxPerMH;
   const paintX0 = rimX - paintW / 2;
   const paintX1 = rimX + paintW / 2;
   const paintY1 = rimY + paintH;
 
-  const ftRadius    = courtW * (1.8  / 15);
-  const restrictedR = courtW * (1.25 / 15);
+  const ftRadius    = 1.8 * pxPerMW;
+  const restrictedR = 1.25 * pxPerMW;
 
-  const threeR       = courtH * 0.55;
-  const cornerOffset = courtW * 0.12;
+  const threeRx      = 6.75 * pxPerMW;
+  const threeRy      = 6.75 * pxPerMH;
+  const cornerOffset = 0.9 * pxPerMW;
   const leftCornerX  = x0 + cornerOffset;
   const rightCornerX = x1 - cornerOffset;
-  const dxCorner     = rimX - leftCornerX;
-  const dyCorner     = Math.sqrt(Math.max(0, threeR * threeR - dxCorner * dxCorner));
-  const arcEndY      = rimY + dyCorner;
+  const dx           = rimX - leftCornerX;
+  const ndx          = dx / threeRx;
+  const ndy          = Math.sqrt(Math.max(0, 1 - ndx * ndx));
+  const arcEndY      = rimY + ndy * threeRy;
 
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
@@ -105,11 +110,11 @@ function HalfCourtSVG({ width, height }) {
               fill="none" stroke={C.line} strokeWidth={lw} />
       <path d={`M ${rimX - restrictedR} ${rimY} A ${restrictedR} ${restrictedR} 0 0 1 ${rimX + restrictedR} ${rimY}`}
             fill="none" stroke={C.line} strokeWidth={lw} />
-      <line x1={leftCornerX}  y1={y0} x2={leftCornerX}  y2={arcEndY}
+      <line x1={leftCornerX} y1={y0} x2={leftCornerX} y2={arcEndY}
             stroke={C.line} strokeWidth={lw} />
       <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY}
             stroke={C.line} strokeWidth={lw} />
-      <path d={`M ${leftCornerX} ${arcEndY} A ${threeR} ${threeR} 0 0 0 ${rightCornerX} ${arcEndY}`}
+      <path d={`M ${leftCornerX} ${arcEndY} A ${threeRx} ${threeRy} 0 0 0 ${rightCornerX} ${arcEndY}`}
             fill="none" stroke={C.line} strokeWidth={lw} />
       <line x1={rimX - courtW * 0.1} y1={rimY - h * 0.015}
             x2={rimX + courtW * 0.1} y2={rimY - h * 0.015}
@@ -117,7 +122,8 @@ function HalfCourtSVG({ width, height }) {
       <circle cx={rimX} cy={rimY} r={courtW * 0.025}
               fill="none" stroke={C.basket} strokeWidth={lw * 1.5} />
       <circle cx={rimX} cy={y1} r={courtW * 0.1}
-              fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="4 4" />
+              fill="none" stroke={C.line} strokeWidth={lw}
+              strokeDasharray="4 4" />
     </svg>
   );
 }
