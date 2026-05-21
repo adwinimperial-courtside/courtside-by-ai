@@ -102,16 +102,6 @@ const ownerItems = [
     icon: Users
   },
   {
-    title: "User Management",
-    url: createPageUrl("UserManagement"),
-    icon: Users
-  },
-  {
-    title: "User Roles",
-    url: createPageUrl("UserRoles"),
-    icon: UserCog
-  },
-  {
     title: "Analytics",
     url: createPageUrl("Analytics"),
     icon: LineChart
@@ -127,16 +117,6 @@ const ownerItems = [
     icon: Settings2
   },
 
-  {
-    title: "Roster User Matching",
-    url: createPageUrl("RosterUserMatching"),
-    icon: Link2
-  },
-  {
-    title: "All Players",
-    url: createPageUrl("AllPlayersView"),
-    icon: Users
-  },
   {
     title: "Reports",
     url: createPageUrl("Reports"),
