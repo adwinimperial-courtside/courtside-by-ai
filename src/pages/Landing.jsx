@@ -19,13 +19,6 @@ export default function Landing() {
     queryFn: () => base44.auth.me(),
   });
 
-  const { data: platformStatsData = [], isLoading: statsLoading } = useQuery({
-    queryKey: ['platformStats'],
-    queryFn: () => base44.entities.PlatformStats.list(),
-    staleTime: 3600000,
-  });
-  const stats = platformStatsData[0];
-
   const role = currentUser?.user_type;
   const firstName = currentUser?.full_name?.split(" ")[0] || null;
 
@@ -141,9 +134,9 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-0 text-center">
             {[
-              { number: statsLoading ? "…" : (stats?.games_count ?? 500) + "+", label: "Games logged" },
-              { number: statsLoading ? "…" : (stats?.leagues_count ?? 20) + "+", label: "Leagues" },
-              { number: statsLoading ? "…" : (stats?.users_count ?? 200) + "+", label: "Users" },
+              { number: "500+", label: "Games logged" },
+              { number: "20+", label: "Leagues" },
+              { number: "200+", label: "Users" },
             ].map((stat, idx) => (
               <div key={idx} className={`flex-1 ${idx > 0 ? "sm:border-l sm:border-slate-200" : ""}`}>
                 <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>

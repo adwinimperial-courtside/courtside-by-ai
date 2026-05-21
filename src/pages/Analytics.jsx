@@ -45,12 +45,9 @@ function RoleBadge({ role }) {
 }
 
 export default function Analytics() {
-  const [activeTab, setActiveTab] = useState("User Activity");
   const [userSearch, setUserSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchFocused, setSearchFocused] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const [refreshMessage, setRefreshMessage] = useState(null);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -83,32 +80,6 @@ export default function Analytics() {
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "user_history", email: selectedUser?.email }).then(r => r.data),
     enabled: !!selectedUser?.email && isAdmin,
   });
-
-  const { data: platformStatsData = [], isLoading: loadingPlatformStats, refetch: refetchPlatformStats } = useQuery({
-    queryKey: ["platformStats"],
-    queryFn: () => base44.entities.PlatformStats.list(),
-    enabled: isAdmin,
-    staleTime: 60000,
-  });
-  const platformStats = platformStatsData[0];
-
-  const handleRefreshStats = async () => {
-    setRefreshing(true);
-    setRefreshMessage(null);
-    try {
-      const res = await base44.functions.invoke('refreshPlatformStats', {});
-      if (res.data.updated) {
-        setRefreshMessage({ type: 'success', text: 'Stats updated!' });
-        refetchPlatformStats();
-      } else {
-        setRefreshMessage({ type: 'info', text: "Already up to date — counts haven't grown by 10 yet" });
-      }
-    } catch (err) {
-      setRefreshMessage({ type: 'error', text: err.message || 'Failed to refresh stats' });
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   if (currentUser && !isAdmin) {
     return (
@@ -145,78 +116,11 @@ export default function Analytics() {
               <p className="text-slate-600 text-sm">Login activity & user engagement</p>
             </div>
           </div>
-          {activeTab === "User Activity" && (
-            <Button variant="outline" size="sm" onClick={() => refetchToday()} className="gap-2 text-slate-600">
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
-          )}
+          <Button variant="outline" size="sm" onClick={() => refetchToday()} className="gap-2 text-slate-600">
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
         </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-slate-200">
-          {["User Activity", "Platform Stats"].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-                activeTab === tab
-                  ? "border-[#F26B1F] text-[#F26B1F]"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Platform Stats Tab */}
-        {activeTab === "Platform Stats" && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { value: platformStats?.games_count, label: "Games logged" },
-                { value: platformStats?.leagues_count, label: "Leagues" },
-                { value: platformStats?.users_count, label: "Users" },
-              ].map(({ value, label }) => (
-                <Card key={label} className="border-slate-200 shadow-sm">
-                  <CardContent className="p-6 text-center">
-                    <div className="text-4xl font-bold text-[#F26B1F]">
-                      {loadingPlatformStats ? "…" : (value ?? "—")}
-                    </div>
-                    <div className="text-sm text-slate-500 mt-2">{label}</div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <p className="text-sm text-slate-500">
-                Last updated:{" "}
-                <span className="font-medium text-slate-700">
-                  {platformStats?.last_updated ? formatDateTime(platformStats.last_updated) : "Never"}
-                </span>
-              </p>
-              <Button onClick={handleRefreshStats} disabled={refreshing} className="gap-2 bg-[#F26B1F] hover:bg-[#d95e1a] text-white">
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-                Refresh Stats
-              </Button>
-            </div>
-
-            {refreshMessage && (
-              <div className={`rounded-lg px-4 py-3 text-sm font-medium ${
-                refreshMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
-                refreshMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
-                'bg-slate-50 text-slate-600 border border-slate-200'
-              }`}>
-                {refreshMessage.text}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* User Activity Tab */}
-        {activeTab !== "Platform Stats" && (<>
 
         {/* Today summary KPIs */}
         <div className="grid grid-cols-2 gap-3">
@@ -379,6 +283,7 @@ export default function Analytics() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 className="pl-9"
               />
+              {/* Search dropdown */}
               {searchFocused && userSearch.length >= 1 && (
                 <div className="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
                   {loadingSearch ? (
@@ -451,7 +356,6 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        </>)}
       </div>
     </div>
   );
