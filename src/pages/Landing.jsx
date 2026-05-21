@@ -9,7 +9,8 @@ import {
   User,
   GitBranch,
   Clock,
-  RefreshCw
+  RefreshCw,
+  SlidersHorizontal
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
@@ -153,6 +154,13 @@ export default function Landing() {
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">What's New</div>
           <div className="space-y-3">
             {[
+              ...(role === "league_admin" || role === "app_admin" ? [{
+                icon: SlidersHorizontal,
+                bg: "bg-orange-100",
+                color: "#F26B1F",
+                title: "Award Settings",
+                desc: "Customise how MVP, DPOY and Player of the Game are calculated for your league",
+              }] : []),
               {
                 icon: GitBranch,
                 bg: "bg-green-100",
