@@ -170,6 +170,13 @@ export default function LeagueAwardSettings() {
     staleTime: 0,
   });
 
+  const { data: appAdmins = [] } = useQuery({
+    queryKey: ["appAdminUsers"],
+    queryFn: () => base44.entities.User.filter({ user_type: "app_admin" }),
+    staleTime: 300000,
+  });
+  const appAdminEmails = new Set(appAdmins.map(u => u.email));
+
   const effectiveLogLeagueId = logLeagueId || selectedLeagueId;
   const { data: auditLogs = [] } = useQuery({
     queryKey: ["awardSettingsLog", effectiveLogLeagueId],
@@ -321,10 +328,10 @@ export default function LeagueAwardSettings() {
                   </SelectContent>
                 </Select>
               </div>
-              {savedRecord && currentUser && !(
-                savedRecord.updated_by_role === "app_admin" ||
-                (currentUser.user_type === "app_admin" && 
-                 savedRecord.updated_by === currentUser.email)
+              {savedRecord && currentUser && (
+                currentUser.user_type === "app_admin" ||
+                (currentUser.user_type === "league_admin" && 
+                 !appAdminEmails.has(savedRecord.updated_by))
               ) && (
                 <div className="text-right text-xs text-slate-400 flex-shrink-0">
                   <p>Last saved by <span className="font-medium text-slate-600">{savedRecord.updated_by || "—"}</span></p>
