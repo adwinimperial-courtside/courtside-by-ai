@@ -87,14 +87,14 @@ function HalfCourtSVG({ width, height }) {
   const paintY1 = rimY + paintH;
   
   // Free-Throw Circle: 1.8m radius, centered on FT line
-  const ftRadius = (paintW / 2); // centered on paint width
+  const ftRadius = courtW * (1.8 / 15); // 1.8m / 15m court width
   const ftCy = paintY1;
   
   // Restricted Area: small semicircle from rim
   const restrictedR = courtW * 0.04;
   
   // 3-Point Arc: 6.75m from rim center (realistic distance)
-  const threeRadius = courtH * 0.65;
+  const threeRadius = courtH * (6.75 / 14);
   
   return (
     <svg width={w} height={h} style={{ display: "block" }}>
@@ -129,13 +129,30 @@ function HalfCourtSVG({ width, height }) {
         fill="none" stroke={C.line} strokeWidth={lw} 
       />
       
-      {/* 3-Point Arc: centered at rim with constant radius */}
-      <path
-        d={`M ${rimX - threeRadius} ${rimY} A ${threeRadius} ${threeRadius} 0 0 1 ${rimX + threeRadius} ${rimY}`}
-        fill="none"
-        stroke={C.line}
-        strokeWidth={lw}
-      />
+      {/* 3-Point Line: corner straight portions + arc */}
+      {(() => {
+        const cornerOffset = courtW * (0.9 / 15);
+        const leftCornerX = x0 + cornerOffset;
+        const rightCornerX = x1 - cornerOffset;
+        const dxCorner = Math.abs(rimX - leftCornerX);
+        const dyCorner = Math.sqrt(Math.max(0, threeRadius * threeRadius - dxCorner * dxCorner));
+        const arcEndY = rimY + dyCorner;
+        return (
+          <>
+            {/* Left corner straight line */}
+            <line x1={leftCornerX} y1={y0} x2={leftCornerX} y2={arcEndY} stroke={C.line} strokeWidth={lw} />
+            {/* Right corner straight line */}
+            <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY} stroke={C.line} strokeWidth={lw} />
+            {/* 3-point arc (large arc going away from basket) */}
+            <path
+              d={`M ${leftCornerX} ${arcEndY} A ${threeRadius} ${threeRadius} 0 1 0 ${rightCornerX} ${arcEndY}`}
+              fill="none"
+              stroke={C.line}
+              strokeWidth={lw}
+            />
+          </>
+        );
+      })()}
       
       {/* Sidelines connecting 3-point corners to court boundary */}
       <line x1={x0} y1={y0} x2={x0} y2={y1} stroke={C.line} strokeWidth={lw} />
