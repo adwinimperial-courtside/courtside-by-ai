@@ -146,6 +146,24 @@ export default function LeagueAwardSettings() {
     staleTime: 60000,
   });
 
+  const { data: myLeagueIdentities = [], isLoading: identitiesLoading } = useQuery({
+    queryKey: ["myLeagueIdentities", currentUser?.id],
+    queryFn: () => base44.entities.UserLeagueIdentity.filter({ user_id: currentUser.id }),
+    enabled: !!currentUser?.id && currentUser?.user_type !== "app_admin",
+    staleTime: 60000,
+  });
+
+  const visibleLeagues = (() => {
+    if (currentUser?.user_type === "app_admin") return leagues;
+    if (identitiesLoading) return [];
+    const nonAdminLeagueIds = myLeagueIdentities
+      .filter(i => i.role !== "league_admin")
+      .map(i => i.league_id);
+    const assignedIds = currentUser?.assigned_league_ids || [];
+    const adminIds = assignedIds.filter(id => !nonAdminLeagueIds.includes(id));
+    return leagues.filter(l => adminIds.includes(l.id));
+  })();
+
   const { data: existingSettings = [] } = useQuery({
     queryKey: ["awardSettings"],
     queryFn: () => base44.entities.AwardSettings.list(),
@@ -254,12 +272,12 @@ export default function LeagueAwardSettings() {
 
   const savedRecord = existingSettings.find(s => s.league_id === selectedLeagueId);
 
-  if (currentUser && currentUser.user_type !== "app_admin") {
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <Trophy className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-          <p className="text-slate-500 font-medium">Access restricted to app administrators.</p>
+          <p className="text-slate-500 font-medium">Access restricted to league administrators and above.</p>
         </div>
       </div>
     );
@@ -296,7 +314,7 @@ export default function LeagueAwardSettings() {
                     <SelectValue placeholder="Choose a league..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {leagues.map(l => (
+                    {visibleLeagues.map(l => (
                       <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
                     ))}
                   </SelectContent>

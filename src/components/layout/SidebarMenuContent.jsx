@@ -64,6 +64,11 @@ const adminItems = [
     title: "Admin Tools",
     url: createPageUrl("AdminTools"),
     icon: Settings
+  },
+  {
+    title: "Award Settings",
+    url: createPageUrl("LeagueAwardSettings"),
+    icon: SlidersHorizontal
   }
 ];
 
@@ -121,11 +126,6 @@ const ownerItems = [
     title: "Roster User Matching",
     url: createPageUrl("RosterUserMatching"),
     icon: Link2
-  },
-  {
-    title: "Award Settings",
-    url: createPageUrl("LeagueAwardSettings"),
-    icon: SlidersHorizontal
   },
   {
     title: "All Players",
