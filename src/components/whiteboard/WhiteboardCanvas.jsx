@@ -72,24 +72,21 @@ function HalfCourtSVG({ width, height }) {
   const x1 = x0 + courtW;
   const y1 = y0 + courtH;
 
-  const pxPerMW = courtW / 15;
-  const pxPerMH = courtH / 14;
-
   const rimX = w / 2;
-  const rimY = y0;
+  const rimY = y0 + courtH * 0.08;
 
-  const paintW  = 4.9 * pxPerMW;
-  const paintH  = 5.8 * pxPerMH;
+  const paintW  = courtW * 0.327;
+  const paintH  = courtH * 0.35;
   const paintX0 = rimX - paintW / 2;
   const paintX1 = rimX + paintW / 2;
   const paintY1 = rimY + paintH;
 
-  const ftRadius    = 1.8 * pxPerMW;
-  const restrictedR = 1.25 * pxPerMW;
+  const ftRadius    = courtW * 0.12;
+  const restrictedR = courtW * 0.06;
 
-  const threeRx      = 6.75 * pxPerMW;
-  const threeRy      = 6.75 * pxPerMH;
-  const cornerOffset = 0.9 * pxPerMW;
+  const threeRx      = courtW * 0.45;
+  const threeRy      = courtH * 0.50;
+  const cornerOffset = courtW * 0.06;
   const leftCornerX  = x0 + cornerOffset;
   const rightCornerX = x1 - cornerOffset;
   const dx           = rimX - leftCornerX;
@@ -102,28 +99,40 @@ function HalfCourtSVG({ width, height }) {
       <rect width={w} height={h} fill={C.courtBg} rx={6} />
       <rect x={x0} y={y0} width={courtW} height={courtH}
             fill="none" stroke={C.line} strokeWidth={lw} rx={4} />
-      <rect x={paintX0} y={rimY} width={paintW} height={paintH}
+      <rect x={paintX0} y={y0} width={paintW} height={paintY1 - y0}
             fill={C.paintFill} stroke={C.line} strokeWidth={lw} />
       <line x1={paintX0} y1={paintY1} x2={paintX1} y2={paintY1}
             stroke={C.line} strokeWidth={lw} />
-      <circle cx={rimX} cy={paintY1} r={ftRadius}
-              fill="none" stroke={C.line} strokeWidth={lw} />
-      <path d={`M ${rimX - restrictedR} ${rimY} A ${restrictedR} ${restrictedR} 0 0 1 ${rimX + restrictedR} ${rimY}`}
+
+      {/* FT circle: solid half inside paint, dashed half outside */}
+      <path d={`M ${rimX - ftRadius} ${paintY1} A ${ftRadius} ${ftRadius} 0 0 1 ${rimX + ftRadius} ${paintY1}`}
             fill="none" stroke={C.line} strokeWidth={lw} />
+      <path d={`M ${rimX - ftRadius} ${paintY1} A ${ftRadius} ${ftRadius} 0 0 0 ${rimX + ftRadius} ${paintY1}`}
+            fill="none" stroke={C.line} strokeWidth={lw} strokeDasharray="5 4" />
+
+      {/* Restricted area */}
+      <path d={`M ${rimX - restrictedR} ${y0} A ${restrictedR} ${restrictedR} 0 0 1 ${rimX + restrictedR} ${y0}`}
+            fill="none" stroke={C.line} strokeWidth={lw} />
+
+      {/* 3-point line */}
       <line x1={leftCornerX} y1={y0} x2={leftCornerX} y2={arcEndY}
             stroke={C.line} strokeWidth={lw} />
       <line x1={rightCornerX} y1={y0} x2={rightCornerX} y2={arcEndY}
             stroke={C.line} strokeWidth={lw} />
       <path d={`M ${leftCornerX} ${arcEndY} A ${threeRx} ${threeRy} 0 0 0 ${rightCornerX} ${arcEndY}`}
             fill="none" stroke={C.line} strokeWidth={lw} />
-      <line x1={rimX - courtW * 0.1} y1={rimY - h * 0.015}
-            x2={rimX + courtW * 0.1} y2={rimY - h * 0.015}
+
+      {/* Backboard */}
+      <line x1={rimX - courtW * 0.06} y1={rimY - courtH * 0.01}
+            x2={rimX + courtW * 0.06} y2={rimY - courtH * 0.01}
             stroke={C.basket} strokeWidth={lw * 2} />
-      <circle cx={rimX} cy={rimY} r={courtW * 0.025}
+      {/* Basket */}
+      <circle cx={rimX} cy={rimY} r={courtW * 0.02}
               fill="none" stroke={C.basket} strokeWidth={lw * 1.5} />
-      <circle cx={rimX} cy={y1} r={courtW * 0.1}
-              fill="none" stroke={C.line} strokeWidth={lw}
-              strokeDasharray="4 4" />
+
+      {/* Center court half-circle at bottom */}
+      <path d={`M ${rimX - courtW * 0.12} ${y1} A ${courtW * 0.12} ${courtW * 0.12} 0 0 1 ${rimX + courtW * 0.12} ${y1}`}
+            fill="none" stroke={C.line} strokeWidth={lw} />
     </svg>
   );
 }
