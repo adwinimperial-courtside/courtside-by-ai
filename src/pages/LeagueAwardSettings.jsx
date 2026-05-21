@@ -272,15 +272,6 @@ export default function LeagueAwardSettings() {
   };
 
   const savedRecord = existingSettings.find(s => s.league_id === selectedLeagueId);
-  const [savedByUserRole, setSavedByUserRole] = useState(null);
-
-  useEffect(() => {
-    if (savedRecord?.updated_by && !savedRecord.updated_by_role) {
-      base44.entities.User.filter({ email: savedRecord.updated_by }).then(users => {
-        if (users.length > 0) setSavedByUserRole(users[0].user_type || null);
-      }).catch(() => {});
-    }
-  }, [savedRecord?.updated_by, savedRecord?.updated_by_role]);
 
   if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
     return (
@@ -330,7 +321,7 @@ export default function LeagueAwardSettings() {
                   </SelectContent>
                 </Select>
               </div>
-              {savedRecord && (savedRecord.updated_by_role !== "app_admin" && savedByUserRole !== "app_admin") && (
+              {savedRecord && savedRecord.updated_by_role !== "app_admin" && currentUser?.user_type !== "app_admin" && (
                 <div className="text-xs text-slate-400 flex-shrink-0">
                   <p>Last saved by <span className="font-medium text-slate-600">{savedRecord.updated_by || "—"}</span></p>
                   <p>{savedRecord.updated_at ? format(new Date(savedRecord.updated_at), "MMM d, yyyy HH:mm") : "—"}</p>
