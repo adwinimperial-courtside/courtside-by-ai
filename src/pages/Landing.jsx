@@ -159,7 +159,7 @@ export default function Landing() {
                 bg: "bg-orange-100",
                 color: "#F26B1F",
                 title: "Award Settings",
-                desc: "Customise how MVP, DPOY and Player of the Game are calculated for your league",
+                desc: "Customise how MVP, DPOY, Mythical 5 and Player of the Game are calculated for your league",
               }] : []),
               {
                 icon: GitBranch,
