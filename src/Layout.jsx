@@ -15,6 +15,7 @@ import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 import RegistrationGate from "@/components/registration/RegistrationGate";
 import PlayerIdentityModal from "@/components/registration/PlayerIdentityModal";
+import UpdateNameModal from "@/components/registration/UpdateNameModal";
 import ConsentReminderModal from "@/components/registration/ConsentReminderModal";
 import { createPageUrl } from "./utils";
 
@@ -26,6 +27,7 @@ export default function Layout({ children }) {
   const [isLoading, setIsLoading] = useState(true);
   const [showPlayerIdentity, setShowPlayerIdentity] = useState(false);
   const [showConsentReminder, setShowConsentReminder] = useState(false);
+  const [showUpdateName, setShowUpdateName] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState("bug");
   const [feedbackDesc, setFeedbackDesc] = useState("");
@@ -44,6 +46,12 @@ export default function Layout({ children }) {
       window.location.href = 'https://courtside-by-ai.com' + window.location.pathname + window.location.search;
       return;
     }
+
+  const isInvalidName = (name) => {
+    if (!name) return true;
+    const trimmed = name.trim();
+    return trimmed.length < 2 || !trimmed.includes(' ') || /^[_\-\.]+$/.test(trimmed);
+  };
 
     const fetchUser = async () => {
       try {
@@ -66,6 +74,11 @@ export default function Layout({ children }) {
           }
           hasLoggedLoginEventRef.current = true;
           sessionStartTimeRef.current = Date.now();
+        }
+
+        // Check if user has an invalid name
+        if (user && isInvalidName(user.full_name) && user.user_type !== 'app_admin') {
+          setShowUpdateName(true);
         }
 
         // Check if user has no assigned leagues and redirect to LeagueSelection (only for approved non-new users)
@@ -298,6 +311,15 @@ export default function Layout({ children }) {
           )}
         </DialogContent>
       </Dialog>
+      {showUpdateName && (
+        <UpdateNameModal
+          user={currentUser}
+          onComplete={() => {
+            setShowUpdateName(false);
+            window.location.reload();
+          }}
+        />
+      )}
       {showPlayerIdentity && (
         <PlayerIdentityModal
           user={currentUser}
