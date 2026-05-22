@@ -23,6 +23,7 @@ import PeoplePage from './pages/People';
 import OwnerLeagueLeadersPage from './pages/OwnerLeagueLeaders';
 import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsOfUsePage from './pages/TermsOfUse';
+import OverlayPage from './pages/Overlay';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -75,6 +76,7 @@ const AuthenticatedApp = () => {
         <Route path="/People" element={<LayoutWrapper currentPageName="People"><PeoplePage /></LayoutWrapper>} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms-of-use" element={<TermsOfUsePage />} />
+        <Route path="/overlay" element={<OverlayPage />} />
         <Route path="*" element={<PageNotFound />} />
       </Routes>
     </LayoutWrapper>
