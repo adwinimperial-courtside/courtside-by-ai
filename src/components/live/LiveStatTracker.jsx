@@ -552,7 +552,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleCopyOverlayUrl = () => {
-    const overlayUrl = window.location.origin + '/overlay?gameId=' + game.id;
+    const overlayUrl = window.location.origin + '/api/functions/gameOverlay?gameId=' + game.id;
     navigator.clipboard.writeText(overlayUrl);
     setOverlayCopied(true);
     setTimeout(() => setOverlayCopied(false), 2000);
