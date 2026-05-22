@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const { requestId, userId, leagueIds, requested_roles } = await req.json();
+    const { requestId, userId, leagueIds, requested_roles, player_matches } = await req.json();
 
     // Determine highest role across all requested leagues
     const rolePriority = { league_admin: 4, coach: 3, player: 2, viewer: 1 };
@@ -26,14 +26,23 @@ Deno.serve(async (req) => {
       user_type: highestRole
     });
 
-    // Create UserLeagueIdentity records with per-league roles
+    // Create UserLeagueIdentity records with per-league roles and player matches
     for (const leagueId of leagueIds) {
       const role = requested_roles?.[leagueId] || "viewer";
+      const match = player_matches?.[leagueId];
       await base44.asServiceRole.entities.UserLeagueIdentity.create({
         user_id: userId,
         league_id: leagueId,
         role: role,
-        match_status: "pending"
+        team_id: match?.teamId || null,
+        matched_player_id: match?.playerId || null,
+        matched_player_name: match?.playerName || null,
+        match_status: match ? "matched" : "unmatched",
+        match_confidence: match?.confidence || null,
+        match_method: match ? "manual_admin" : "none",
+        matched_at: match ? new Date().toISOString() : null,
+        matched_by: user.email || "app_admin",
+        identity_status: match ? "completed" : "pending",
       });
     }
 
