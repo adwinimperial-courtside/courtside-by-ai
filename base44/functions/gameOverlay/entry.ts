@@ -136,6 +136,40 @@ ${logoUrl ? `
   const appId = '${appId}';
   const serverUrl = '${serverUrl}';
 
+  let clockRunning = false;
+  let clockSeconds = 0;
+  let clockInterval = null;
+
+  function parseTime(t) {
+    if (!t) return 0;
+    const parts = t.split(':');
+    if (parts.length === 2) {
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    }
+    return parseInt(t) || 0;
+  }
+
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m + ':' + String(sec).padStart(2, '0');
+  }
+
+  function startLocalClock() {
+    if (clockInterval) clearInterval(clockInterval);
+    clockInterval = setInterval(() => {
+      if (clockRunning && clockSeconds > 0) {
+        clockSeconds--;
+        document.getElementById('game-time').textContent = formatTime(clockSeconds);
+      }
+    }, 1000);
+  }
+
+  // Initialize from server-side embedded data
+  clockSeconds = parseTime('${d.timeLeft || "0:00"}');
+  clockRunning = false;
+  startLocalClock();
+
   console.log('Overlay init — appId:', appId, 'serverUrl:', serverUrl);
 
   if (!appId || !serverUrl) {
@@ -151,9 +185,19 @@ ${logoUrl ? `
       client.entities.Game.subscribe((event) => {
         if (event.id !== gameId || !event.data) return;
         const g = event.data;
+
+        // Update scores
         document.getElementById('home-score').textContent = g.home_score ?? 0;
         document.getElementById('away-score').textContent = g.away_score ?? 0;
-        document.getElementById('game-time').textContent = g.clock_time_left || '—';
+
+        // Sync clock
+        clockRunning = g.clock_running === true;
+        if (g.clock_time_left) {
+          clockSeconds = parseTime(g.clock_time_left);
+          document.getElementById('game-time').textContent = g.clock_time_left;
+        }
+
+        // Update period
         const t = g.period_type === 'halves' ? 'H' : 'Q';
         document.getElementById('game-period').textContent = t + (g.clock_period || 1);
       });
