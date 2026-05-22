@@ -10,8 +10,10 @@ export default function NoLeagueUsers() {
   const queryClient = useQueryClient();
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkSuccess, setBulkSuccess] = useState(false);
+  const [bulkError, setBulkError] = useState("");
   const [sendingIds, setSendingIds] = useState({});
   const [successIds, setSuccessIds] = useState({});
+  const [sendErrors, setSendErrors] = useState({});
   const [expandedHistory, setExpandedHistory] = useState({});
 
   const { data, isLoading } = useQuery({
@@ -35,25 +37,36 @@ export default function NoLeagueUsers() {
     if (noLeagueUsers.length === 0) return;
     setBulkSending(true);
     setBulkSuccess(false);
-    await base44.functions.invoke("sendNoLeagueReminderEmail", {
-      userIds: noLeagueUsers.map((u) => u.id),
-    });
-    setBulkSending(false);
-    setBulkSuccess(true);
-    queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
-    setTimeout(() => setBulkSuccess(false), 4000);
+    setBulkError("");
+    try {
+      await base44.functions.invoke("sendNoLeagueReminderEmail", {
+        userIds: noLeagueUsers.map((u) => u.id),
+      });
+      setBulkSuccess(true);
+      queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
+      setTimeout(() => setBulkSuccess(false), 5000);
+    } catch (err) {
+      setBulkError("Failed to send reminders: " + (err.message || "Unknown error"));
+    } finally {
+      setBulkSending(false);
+    }
   };
 
   const handleSendOne = async (userId) => {
     setSendingIds((prev) => ({ ...prev, [userId]: true }));
-    setSuccessIds((prev) => ({ ...prev, [userId]: false }));
-    await base44.functions.invoke("sendNoLeagueReminderEmail", {
-      userIds: [userId],
-    });
-    setSendingIds((prev) => ({ ...prev, [userId]: false }));
-    setSuccessIds((prev) => ({ ...prev, [userId]: true }));
-    queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
-    setTimeout(() => setSuccessIds((prev) => ({ ...prev, [userId]: false })), 4000);
+    setSendErrors((prev) => ({ ...prev, [userId]: "" }));
+    try {
+      await base44.functions.invoke("sendNoLeagueReminderEmail", {
+        userIds: [userId],
+      });
+      setSuccessIds((prev) => ({ ...prev, [userId]: true }));
+      queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
+      setTimeout(() => setSuccessIds((prev) => ({ ...prev, [userId]: false })), 4000);
+    } catch (err) {
+      setSendErrors((prev) => ({ ...prev, [userId]: "Failed to send" }));
+    } finally {
+      setSendingIds((prev) => ({ ...prev, [userId]: false }));
+    }
   };
 
   const toggleHistory = (userId) => {
@@ -115,6 +128,7 @@ export default function NoLeagueUsers() {
           {bulkSending ? "Sending..." : bulkSuccess ? "✓ Reminders sent!" : "Send Reminder to All"}
         </Button>
       </div>
+      {bulkError && <p className="text-sm text-red-600 mt-2">{bulkError}</p>}
 
       {/* User list */}
       <div className="space-y-2">
@@ -178,6 +192,9 @@ export default function NoLeagueUsers() {
                   </Button>
                 </div>
               </div>
+              {sendErrors[user.id] && (
+                <p className="text-xs text-red-500 mt-1 pl-13">{sendErrors[user.id]}</p>
+              )}
 
               {/* Expanded history */}
               {isExpanded && logs.length > 0 && (
