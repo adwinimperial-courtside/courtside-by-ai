@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
-import { Mail, CheckCircle, Loader2 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Mail, CheckCircle, Loader2, History, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
 export default function NoLeagueUsers() {
+  const queryClient = useQueryClient();
   const [bulkSending, setBulkSending] = useState(false);
   const [bulkSuccess, setBulkSuccess] = useState(false);
-  const [sendingIds, setSendingIds] = useState({}); // { [userId]: true }
-  const [successIds, setSuccessIds] = useState({}); // { [userId]: true }
+  const [sendingIds, setSendingIds] = useState({});
+  const [successIds, setSuccessIds] = useState({});
+  const [expandedHistory, setExpandedHistory] = useState({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["noLeagueUsers"],
@@ -18,7 +20,16 @@ export default function NoLeagueUsers() {
     staleTime: 30000,
   });
 
+  const { data: reminderLogs = [] } = useQuery({
+    queryKey: ["reminderLogs"],
+    queryFn: () => base44.entities.ReminderLog.list("-sent_at", 1000),
+    staleTime: 30000,
+  });
+
   const noLeagueUsers = data?.data?.users || data?.users || [];
+
+  const getLogsForUser = (userId) =>
+    reminderLogs.filter((log) => log.user_id === userId);
 
   const handleSendAll = async () => {
     if (noLeagueUsers.length === 0) return;
@@ -29,6 +40,7 @@ export default function NoLeagueUsers() {
     });
     setBulkSending(false);
     setBulkSuccess(true);
+    queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
     setTimeout(() => setBulkSuccess(false), 4000);
   };
 
@@ -40,17 +52,17 @@ export default function NoLeagueUsers() {
     });
     setSendingIds((prev) => ({ ...prev, [userId]: false }));
     setSuccessIds((prev) => ({ ...prev, [userId]: true }));
+    queryClient.invalidateQueries({ queryKey: ["reminderLogs"] });
     setTimeout(() => setSuccessIds((prev) => ({ ...prev, [userId]: false })), 4000);
+  };
+
+  const toggleHistory = (userId) => {
+    setExpandedHistory((prev) => ({ ...prev, [userId]: !prev[userId] }));
   };
 
   const getInitials = (name) => {
     if (!name) return "?";
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
   const roleColors = {
@@ -106,46 +118,80 @@ export default function NoLeagueUsers() {
 
       {/* User list */}
       <div className="space-y-2">
-        {noLeagueUsers.map((user) => (
-          <div
-            key={user.id}
-            className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm flex-shrink-0">
-                {getInitials(user.full_name)}
+        {noLeagueUsers.map((user) => {
+          const logs = getLogsForUser(user.id);
+          const lastLog = logs[0];
+          const isExpanded = expandedHistory[user.id];
+
+          return (
+            <div
+              key={user.id}
+              className="bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm flex-shrink-0">
+                    {getInitials(user.full_name)}
+                  </div>
+                  <div>
+                    <div className="font-semibold text-slate-900 text-sm">{user.full_name}</div>
+                    <div className="text-xs text-slate-500">{user.email}</div>
+                    {logs.length > 0 && (
+                      <button
+                        onClick={() => toggleHistory(user.id)}
+                        className="flex items-center gap-1 mt-0.5 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                      >
+                        <History className="w-3 h-3" />
+                        Reminded {logs.length} {logs.length === 1 ? "time" : "times"} · Last:{" "}
+                        {format(new Date(lastLog.sent_at), "MMM d, yyyy h:mm a")}
+                        {isExpanded ? (
+                          <ChevronUp className="w-3 h-3 ml-0.5" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3 ml-0.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Badge className={roleColors[user.user_type] || roleColors.viewer}>
+                    {user.user_type || "viewer"}
+                  </Badge>
+                  <span className="text-xs text-slate-400 hidden sm:block">
+                    {user.created_date ? format(new Date(user.created_date), "MMM d, yyyy") : "—"}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={sendingIds[user.id] || successIds[user.id]}
+                    onClick={() => handleSendOne(user.id)}
+                    className="gap-1.5 text-xs"
+                  >
+                    {sendingIds[user.id] ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : successIds[user.id] ? (
+                      <CheckCircle className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Mail className="w-3 h-3" />
+                    )}
+                    {successIds[user.id] ? "Sent!" : "Send Reminder"}
+                  </Button>
+                </div>
               </div>
-              <div>
-                <div className="font-semibold text-slate-900 text-sm">{user.full_name}</div>
-                <div className="text-xs text-slate-500">{user.email}</div>
-              </div>
+
+              {/* Expanded history */}
+              {isExpanded && logs.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-slate-100 space-y-1 pl-13">
+                  {logs.map((log) => (
+                    <div key={log.id} className="text-xs text-slate-500">
+                      {format(new Date(log.sent_at), "MMM d, yyyy h:mm a")} — sent by {log.sent_by}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className="flex items-center gap-3">
-              <Badge className={roleColors[user.user_type] || roleColors.viewer}>
-                {user.user_type || "viewer"}
-              </Badge>
-              <span className="text-xs text-slate-400 hidden sm:block">
-                {user.created_date ? format(new Date(user.created_date), "MMM d, yyyy") : "—"}
-              </span>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={sendingIds[user.id] || successIds[user.id]}
-                onClick={() => handleSendOne(user.id)}
-                className="gap-1.5 text-xs"
-              >
-                {sendingIds[user.id] ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : successIds[user.id] ? (
-                  <CheckCircle className="w-3 h-3 text-green-600" />
-                ) : (
-                  <Mail className="w-3 h-3" />
-                )}
-                {successIds[user.id] ? "Sent!" : "Send Reminder"}
-              </Button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

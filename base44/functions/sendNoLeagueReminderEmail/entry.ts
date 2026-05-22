@@ -25,6 +25,13 @@ Deno.serve(async (req) => {
         subject: "Join a league on Courtside by AI 🏀",
         body: `Hi ${targetUser.full_name || 'there'},\n\nYour Courtside by AI account is ready!\n\nYou haven't joined a league yet. Log in now to browse available leagues and request access — it only takes a few seconds:\n\n👉 https://courtside-by-ai.com\n\nOnce you're in, select the leagues you want to join and choose your role. Your request will be reviewed and you'll be notified when approved.\n\nSee you on the court!\nThe Courtside by AI Team`,
       });
+      await base44.asServiceRole.entities.ReminderLog.create({
+        user_id: targetUser.id,
+        user_email: targetUser.email,
+        user_name: targetUser.full_name || "",
+        sent_at: new Date().toISOString(),
+        sent_by: user.email || "app_admin",
+      });
       results.push({ userId, email: targetUser.email, sent: true });
     }
 

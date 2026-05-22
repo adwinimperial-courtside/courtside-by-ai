@@ -1,0 +1,32 @@
+{
+  "name": "ReminderLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Full name of the user"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the reminder was sent"
+    },
+    "sent_by": {
+      "type": "string",
+      "description": "Email of the app_admin who sent it"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email",
+    "sent_at"
+  ]
+}
