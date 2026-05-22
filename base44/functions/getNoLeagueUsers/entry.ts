@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
 
     const filteredUsers = users.filter(
       (u) =>
-        u.application_status === 'Approved' &&
         (!u.assigned_league_ids || u.assigned_league_ids.length === 0) &&
         u.user_type !== 'app_admin'
     );
