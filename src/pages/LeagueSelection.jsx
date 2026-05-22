@@ -18,6 +18,7 @@ import { createPageUrl } from "../utils";
 export default function LeagueSelection() {
   const navigate = useNavigate();
   const [selectedLeagues, setSelectedLeagues] = useState([]);
+  const [leagueRoles, setLeagueRoles] = useState({});
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
   const [notApprovedMessage, setNotApprovedMessage] = useState("");
@@ -39,6 +40,7 @@ export default function LeagueSelection() {
         user_email: currentUser.email,
         user_name: currentUser.full_name,
         requested_league_ids: leagueIds,
+        requested_roles: leagueRoles,
         status: "pending"
       });
     },
@@ -51,11 +53,19 @@ export default function LeagueSelection() {
   });
 
   const handleToggleLeague = (leagueId) => {
-    setSelectedLeagues(prev => 
-      prev.includes(leagueId)
-        ? prev.filter(id => id !== leagueId)
-        : [...prev, leagueId]
-    );
+    setSelectedLeagues(prev => {
+      if (prev.includes(leagueId)) {
+        setLeagueRoles(r => { const next = { ...r }; delete next[leagueId]; return next; });
+        return prev.filter(id => id !== leagueId);
+      } else {
+        setLeagueRoles(r => ({ ...r, [leagueId]: "viewer" }));
+        return [...prev, leagueId];
+      }
+    });
+  };
+
+  const handleRoleSelect = (leagueId, role) => {
+    setLeagueRoles(prev => ({ ...prev, [leagueId]: role }));
   };
 
   const handleSubmit = () => {
@@ -107,22 +117,55 @@ export default function LeagueSelection() {
           </div>
 
           <div className="space-y-3 mb-6">
-            {leagues.map(league => (
-              <div
-                key={league.id}
-                className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer border-2 border-transparent hover:border-orange-200"
-                onClick={() => handleToggleLeague(league.id)}
-              >
-                <Checkbox
-                  checked={selectedLeagues.includes(league.id)}
-                  onCheckedChange={() => handleToggleLeague(league.id)}
-                />
-                <div className="flex-1">
-                  <div className="font-semibold text-slate-900">{league.name}</div>
-                  <div className="text-sm text-slate-600">{league.season}</div>
+            {leagues.map(league => {
+              const isSelected = selectedLeagues.includes(league.id);
+              const role = leagueRoles[league.id] || "viewer";
+              const roles = [
+                { value: "player", label: "Player", emoji: "🏀" },
+                { value: "coach",  label: "Coach",  emoji: "📋" },
+                { value: "viewer", label: "Viewer", emoji: "👁" },
+              ];
+              return (
+                <div
+                  key={league.id}
+                  className={`rounded-lg border-2 transition-colors ${isSelected ? "border-orange-400 bg-orange-50" : "border-transparent bg-slate-50 hover:bg-slate-100 hover:border-orange-200"}`}
+                >
+                  <div
+                    className="flex items-center gap-3 p-4 cursor-pointer"
+                    onClick={() => handleToggleLeague(league.id)}
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => handleToggleLeague(league.id)}
+                    />
+                    <div className="flex-1">
+                      <div className="font-semibold text-slate-900">{league.name}</div>
+                      <div className="text-sm text-slate-600">{league.season}</div>
+                    </div>
+                  </div>
+                  {isSelected && (
+                    <div className="px-4 pb-4">
+                      <p className="text-xs text-slate-500 mb-2 font-medium">Select your role:</p>
+                      <div className="flex gap-2">
+                        {roles.map(r => (
+                          <button
+                            key={r.value}
+                            onClick={() => handleRoleSelect(league.id, r.value)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border-2 transition-colors ${
+                              role === r.value
+                                ? "border-orange-500 bg-orange-500 text-white"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-orange-300"
+                            }`}
+                          >
+                            <span>{r.emoji}</span> {r.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <Button
@@ -145,10 +188,9 @@ export default function LeagueSelection() {
             </div>
             <AlertDialogTitle className="text-center text-xl">Request Submitted Successfully!</AlertDialogTitle>
             <AlertDialogDescription className="text-center space-y-4 pt-4">
-              <div className="flex items-center justify-center gap-2 text-slate-700">
-                <Clock className="w-5 h-5 text-orange-600" />
-                <p>Your request will be reviewed within 10 minutes.</p>
-              </div>
+              <p className="text-slate-700">
+                Your request has been submitted! The league organiser will review it shortly. You'll be notified once approved.
+              </p>
               <p className="text-slate-600">
                 Click the button below to check if your request has been approved.
               </p>

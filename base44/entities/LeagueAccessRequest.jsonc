@@ -1,0 +1,44 @@
+{
+  "name": "LeagueAccessRequest",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Reference to the user"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Name of the user"
+    },
+    "requested_league_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "League IDs requested by user"
+    },
+    "requested_roles": {
+      "type": "object",
+      "description": "Map of league_id to requested role (player, coach, viewer)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Request status"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email",
+    "requested_league_ids"
+  ]
+}
