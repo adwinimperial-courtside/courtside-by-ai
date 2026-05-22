@@ -81,6 +81,7 @@ import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
+import Overlay from './pages/Overlay';
 import __Layout from './Layout.jsx';
 
 
@@ -119,6 +120,7 @@ export const PAGES = {
     "FixManualStats": FixManualStats,
     "RosterUserMatching": RosterUserMatching,
     "LeagueAwardSettings": LeagueAwardSettings,
+    "Overlay": Overlay,
 }
 
 export const pagesConfig = {
