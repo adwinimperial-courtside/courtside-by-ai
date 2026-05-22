@@ -12,18 +12,13 @@ export default function NoLeagueUsers() {
   const [sendingIds, setSendingIds] = useState({}); // { [userId]: true }
   const [successIds, setSuccessIds] = useState({}); // { [userId]: true }
 
-  const { data: allUsers = [], isLoading } = useQuery({
-    queryKey: ["allUsersNoLeague"],
-    queryFn: () => base44.entities.User.list(),
+  const { data, isLoading } = useQuery({
+    queryKey: ["noLeagueUsers"],
+    queryFn: () => base44.functions.invoke("getNoLeagueUsers", {}),
     staleTime: 30000,
   });
 
-  const noLeagueUsers = allUsers.filter(
-    (u) =>
-      u.application_status === "Approved" &&
-      (!u.assigned_league_ids || u.assigned_league_ids.length === 0) &&
-      u.user_type !== "app_admin"
-  );
+  const noLeagueUsers = data?.data?.users || data?.users || [];
 
   const handleSendAll = async () => {
     if (noLeagueUsers.length === 0) return;
