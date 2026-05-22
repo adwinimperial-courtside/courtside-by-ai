@@ -552,7 +552,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleCopyOverlayUrl = () => {
-    const overlayUrl = window.location.origin + '/api/functions/gameOverlay?gameId=' + game.id;
+    const prodUrl = window.location.hostname === 'courtside-by-ai.base44.app'
+      ? window.location.origin
+      : 'https://courtside-by-ai.base44.app';
+    const overlayUrl = prodUrl + '/api/functions/gameOverlay?gameId=' + game.id;
     navigator.clipboard.writeText(overlayUrl);
     setOverlayCopied(true);
     setTimeout(() => setOverlayCopied(false), 2000);
