@@ -1,7 +1,28 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 const normalizeName = (name) =>
-  (name || '').toLowerCase().trim().replace(/\s+/g, ' ');
+  (name || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\./g, '')
+    .replace(/,/g, '')
+    .replace(/\bde la\b/g, 'dela')
+    .replace(/\bde los\b/g, 'delos')
+    .replace(/\bde las\b/g, 'delas')
+    .replace(/\bsan \b/g, 'san')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const removeMiddleInitial = (name) =>
+  name.replace(/\b[a-z]\b\s/g, '').trim();
+
+const getFirstInitial = (name) =>
+  name.trim().split(' ')[0]?.charAt(0) || '';
+
+const getLastPart = (name) => {
+  const parts = name.trim().split(' ');
+  return parts.slice(1).join(' ');
+};
 
 Deno.serve(async (req) => {
   try {
@@ -30,29 +51,63 @@ Deno.serve(async (req) => {
     const matches = [];
 
     for (const u of noLeagueUsers) {
-      const normalizedUserName = normalizeName(u.full_name);
-      if (!normalizedUserName) continue;
+      const rawUserName = normalizeName(u.full_name);
+      const cleanUserName = removeMiddleInitial(rawUserName);
+      if (!rawUserName) continue;
+
+      const userMatches = new Set();
 
       for (const player of allPlayers) {
-        if (normalizeName(player.name) !== normalizedUserName) continue;
+        const rawPlayerName = normalizeName(player.name);
+        const cleanPlayerName = removeMiddleInitial(rawPlayerName);
 
         const team = teamMap[player.team_id];
         if (!team) continue;
         const league = leagueMap[team.league_id];
         if (!league) continue;
 
-        matches.push({
-          userId: u.id,
-          userName: u.full_name,
-          userEmail: u.email,
-          playerId: player.id,
-          playerName: player.name,
-          teamId: player.team_id,
-          teamName: team.name,
-          leagueId: team.league_id,
-          leagueName: league.name,
-          confidence: 'exact',
-        });
+        const matchKey = u.id + team.league_id;
+        if (userMatches.has(matchKey)) continue;
+
+        let confidence = null;
+
+        if (rawUserName === rawPlayerName) {
+          confidence = 'exact';
+        } else if (cleanUserName === cleanPlayerName) {
+          confidence = 'normalized';
+        } else {
+          const userInitial = getFirstInitial(rawUserName);
+          const userLast = getLastPart(rawUserName);
+          const playerInitial = getFirstInitial(rawPlayerName);
+          const playerLast = getLastPart(rawPlayerName);
+
+          if (
+            userLast === playerLast &&
+            userLast.length > 2 &&
+            (
+              (rawUserName.length <= 3 && userInitial === playerInitial) ||
+              (rawPlayerName.length <= 3 && userInitial === playerInitial)
+            )
+          ) {
+            confidence = 'initial';
+          }
+        }
+
+        if (confidence) {
+          userMatches.add(matchKey);
+          matches.push({
+            userId: u.id,
+            userName: u.full_name,
+            userEmail: u.email,
+            playerId: player.id,
+            playerName: player.name,
+            teamId: player.team_id,
+            teamName: team.name,
+            leagueId: team.league_id,
+            leagueName: league.name,
+            confidence,
+          });
+        }
       }
     }
 

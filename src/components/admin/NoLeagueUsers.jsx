@@ -89,8 +89,8 @@ export default function NoLeagueUsers() {
       const res = await base44.functions.invoke("runRosterMatchForUsers", {});
       const result = res.data || res;
       setRosterMatchResults(result);
-      // Pre-select all exact matches
-      const allKeys = new Set((result.matches || []).map(m => `${m.userId}:${m.leagueId}`));
+      // Pre-select only exact matches; normalized/initial require manual review
+      const allKeys = new Set((result.matches || []).filter(m => m.confidence === 'exact').map(m => `${m.userId}:${m.leagueId}`));
       setSelectedMatchKeys(allKeys);
     } catch (err) {
       setRosterMatchError("Failed to run roster match: " + (err.message || "Unknown error"));
@@ -276,7 +276,15 @@ export default function NoLeagueUsers() {
                           <div className="text-xs font-medium text-slate-700">{m.playerName}</div>
                           <div className="text-xs text-slate-500">{m.teamName} · {m.leagueName}</div>
                         </div>
-                        <Badge className="bg-green-100 text-green-800 text-xs flex-shrink-0">exact</Badge>
+                        {m.confidence === 'exact' && (
+                          <Badge className="bg-green-100 text-green-800 text-xs flex-shrink-0">Exact match</Badge>
+                        )}
+                        {m.confidence === 'normalized' && (
+                          <Badge title="Name spelling varies slightly — please verify" className="bg-amber-100 text-amber-800 text-xs flex-shrink-0 cursor-help">Normalized ⚠️</Badge>
+                        )}
+                        {m.confidence === 'initial' && (
+                          <Badge title="Matched by first initial — please verify" className="bg-amber-100 text-amber-800 text-xs flex-shrink-0 cursor-help">Initial ⚠️</Badge>
+                        )}
                       </div>
                     );
                   })}
