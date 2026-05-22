@@ -46,6 +46,16 @@ Deno.serve(async (req) => {
 
   const periodLabel = (d.periodType === 'halves' ? 'H' : 'Q') + d.period;
 
+  const rawTime = d.timeLeft || '0';
+  const initSeconds = rawTime.includes(':')
+    ? rawTime
+    : (() => {
+        const s = parseInt(rawTime) || 0;
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return m + ':' + String(sec).padStart(2, '0');
+      })();
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -117,7 +127,7 @@ ${logoUrl ? `
     <div class="team-score" id="home-score">${d.homeScore}</div>
     <div class="col-divider"></div>
     <div class="game-info">
-      <div class="game-time" id="game-time">${d.timeLeft || '—'}</div>
+      <div class="game-time" id="game-time">${initSeconds || '—'}</div>
       <div class="game-period" id="game-period">${periodLabel}</div>
     </div>
     <div class="period-sq"></div>
@@ -142,8 +152,9 @@ ${logoUrl ? `
 
   function parseTime(t) {
     if (!t) return 0;
-    const parts = t.split(':');
-    if (parts.length === 2) {
+    if (typeof t === 'number') return t;
+    if (String(t).includes(':')) {
+      const parts = String(t).split(':');
       return parseInt(parts[0]) * 60 + parseInt(parts[1]);
     }
     return parseInt(t) || 0;
@@ -166,7 +177,7 @@ ${logoUrl ? `
   }
 
   // Initialize from server-side embedded data
-  clockSeconds = parseTime('${d.timeLeft || "0:00"}');
+  clockSeconds = parseTime('${rawTime}');
   clockRunning = false;
   startLocalClock();
 
@@ -215,6 +226,7 @@ ${logoUrl ? `
     headers: {
       'Content-Type': 'text/html',
       'Access-Control-Allow-Origin': '*',
+      'Content-Security-Policy': "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;",
     }
   });
 });
