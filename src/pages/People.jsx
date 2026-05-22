@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Users, Key } from "lucide-react";
 import EnhancedUserManagement from "@/components/admin/EnhancedUserManagement";
 import PlayerIdentityAdmin from "@/components/admin/PlayerIdentityAdmin";
+import NoLeagueUsers from "@/components/admin/NoLeagueUsers";
 import UserRoles from "./UserRoles";
 import AllPlayersView from "./AllPlayersView";
 import RosterUserMatching from "./RosterUserMatching";
@@ -52,6 +53,14 @@ export default function People() {
             <TabsTrigger value="players" className="flex items-center gap-2">
               Players
             </TabsTrigger>
+            {currentUser?.user_type === "app_admin" && (
+              <TabsTrigger
+                value="no-league"
+                className="flex items-center gap-2 data-[state=active]:text-amber-600 data-[state=active]:border-amber-600"
+              >
+                ⚠️ No League
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* TAB 1: Users */}
@@ -88,6 +97,10 @@ export default function People() {
                 <RosterUserMatching />
               </TabsContent>
             </Tabs>
+          </TabsContent>
+          {/* TAB 4: No League */}
+          <TabsContent value="no-league">
+            <NoLeagueUsers />
           </TabsContent>
         </Tabs>
       </div>
