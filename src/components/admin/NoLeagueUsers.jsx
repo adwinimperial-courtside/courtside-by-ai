@@ -225,11 +225,19 @@ export default function NoLeagueUsers() {
 
         {rosterMatchResults && (
           <div className="space-y-3">
-            <div className="flex items-center gap-4 text-xs text-blue-800">
-              <span>Scanned: <strong>{rosterMatchResults.total}</strong></span>
-              <span>Exact matches: <strong>{rosterMatchResults.matches?.length || 0}</strong></span>
-              <span>No match: <strong>{rosterMatchResults.unmatched}</strong></span>
-            </div>
+            {(() => {
+              const exactCount = (rosterMatchResults.matches || []).filter(m => m.confidence === 'exact').length;
+              const mediumCount = (rosterMatchResults.matches || []).filter(m => m.confidence === 'normalized' || m.confidence === 'reversed').length;
+              const lowCount = (rosterMatchResults.matches || []).filter(m => m.confidence === 'initial').length;
+              return (
+                <div className="flex items-center gap-4 text-xs text-blue-800 flex-wrap">
+                  <span>Scanned: <strong>{rosterMatchResults.total}</strong></span>
+                  <span>✅ Exact: <strong>{exactCount}</strong></span>
+                  <span>⚠️ Needs review: <strong>{mediumCount + lowCount}</strong></span>
+                  <span>❌ No match: <strong>{rosterMatchResults.unmatched}</strong></span>
+                </div>
+              );
+            })()}
 
             {rosterMatchResults.matches?.length === 0 ? (
               <p className="text-sm text-slate-500">No exact name matches found.</p>
