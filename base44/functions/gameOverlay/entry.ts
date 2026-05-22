@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
 
   const periodLabel = (d.periodType === 'halves' ? 'H' : 'Q') + d.period;
 
-  const rawTime = d.timeLeft || '0';
+  const rawTime = String(d.timeLeft || '0');
   const initSeconds = rawTime.includes(':')
     ? rawTime
     : (() => {
