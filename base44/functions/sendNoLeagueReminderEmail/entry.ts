@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const user = await base44.auth.me();
 
-    if (user?.role !== 'admin') {
+    if (user?.user_type !== 'app_admin') {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
@@ -22,8 +22,8 @@ Deno.serve(async (req) => {
 
       await base44.asServiceRole.integrations.Core.SendEmail({
         to: targetUser.email,
-        subject: "You're approved — complete your league setup on Courtside by AI",
-        body: `Hi ${targetUser.full_name || 'there'},\n\nYour Courtside by AI account has been approved, but you haven't been assigned to a league yet.\n\nPlease log in and complete your league selection to get started:\nhttps://courtside-by-ai.com\n\nIf you believe this is an error or need help, please contact your league administrator.\n\nThe Courtside by AI Team`,
+        subject: "Join a league on Courtside by AI 🏀",
+        body: `Hi ${targetUser.full_name || 'there'},\n\nYour Courtside by AI account is ready!\n\nYou haven't joined a league yet. Log in now to browse available leagues and request access — it only takes a few seconds:\n\n👉 https://courtside-by-ai.com\n\nOnce you're in, select the leagues you want to join and choose your role. Your request will be reviewed and you'll be notified when approved.\n\nSee you on the court!\nThe Courtside by AI Team`,
       });
       results.push({ userId, email: targetUser.email, sent: true });
     }
