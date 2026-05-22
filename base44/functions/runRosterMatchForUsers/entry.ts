@@ -24,6 +24,14 @@ const getLastPart = (name) => {
   return parts.slice(1).join(' ');
 };
 
+const reverseNameOrder = (name) => {
+  const parts = name.trim().split(' ');
+  if (parts.length < 2) return name;
+  const first = parts[0];
+  const rest = parts.slice(1);
+  return [...rest, first].join(' ');
+};
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -75,19 +83,28 @@ Deno.serve(async (req) => {
           confidence = 'exact';
         } else if (cleanUserName === cleanPlayerName) {
           confidence = 'normalized';
+        } else if (
+          reverseNameOrder(rawUserName) === rawPlayerName ||
+          rawUserName === reverseNameOrder(rawPlayerName) ||
+          reverseNameOrder(cleanUserName) === cleanPlayerName ||
+          cleanUserName === reverseNameOrder(cleanPlayerName)
+        ) {
+          confidence = 'reversed';
         } else {
+          const userFirstPart = rawUserName.trim().split(' ')[0];
+          const playerFirstPart = rawPlayerName.trim().split(' ')[0];
+          const userIsInitial = userFirstPart.length === 1;
+          const playerIsInitial = playerFirstPart.length === 1;
           const userInitial = getFirstInitial(rawUserName);
-          const userLast = getLastPart(rawUserName);
           const playerInitial = getFirstInitial(rawPlayerName);
+          const userLast = getLastPart(rawUserName);
           const playerLast = getLastPart(rawPlayerName);
 
           if (
             userLast === playerLast &&
             userLast.length > 2 &&
-            (
-              (rawUserName.length <= 3 && userInitial === playerInitial) ||
-              (rawPlayerName.length <= 3 && userInitial === playerInitial)
-            )
+            userInitial === playerInitial &&
+            (userIsInitial || playerIsInitial)
           ) {
             confidence = 'initial';
           }

@@ -282,6 +282,9 @@ export default function NoLeagueUsers() {
                         {m.confidence === 'normalized' && (
                           <Badge title="Name spelling varies slightly — please verify" className="bg-amber-100 text-amber-800 text-xs flex-shrink-0 cursor-help">Normalized ⚠️</Badge>
                         )}
+                        {m.confidence === 'reversed' && (
+                          <Badge title="Same name but different order — please verify" className="bg-amber-100 text-amber-800 text-xs flex-shrink-0 cursor-help">Name order differs ⚠️</Badge>
+                        )}
                         {m.confidence === 'initial' && (
                           <Badge title="Matched by first initial — please verify" className="bg-amber-100 text-amber-800 text-xs flex-shrink-0 cursor-help">Initial ⚠️</Badge>
                         )}
