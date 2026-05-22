@@ -160,6 +160,15 @@ ${logoUrl ? `
   const initialData = await res.json();
   updateUI(initialData);
 
+  // Fallback poll every 5 seconds to stay in sync
+  setInterval(async () => {
+    try {
+      const r = await fetch(dataUrl);
+      const d = await r.json();
+      if (!d.error) updateUI(d);
+    } catch(e) {}
+  }, 5000);
+
   if (initialData.appId) {
     const base44 = createClient({
       appId: initialData.appId,
