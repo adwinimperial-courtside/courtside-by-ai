@@ -10,16 +10,15 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
-    const [game, allTeams] = await Promise.all([
-      base44.entities.Game.get(gameId),
-      base44.entities.Team.list('-created_date', 500),
-    ]);
+    const game = await base44.asServiceRole.entities.Game.get(gameId);
 
     console.log('Game found:', game?.id, 'home:', game?.home_score, 'away:', game?.away_score);
 
     if (!game) return Response.json(
       { error: 'Game not found' }, { status: 404 }
     );
+
+    const allTeams = await base44.asServiceRole.entities.Team.list('-created_date', 500);
 
     const homeTeam = allTeams.find(t => t.id === game.home_team_id);
     const awayTeam = allTeams.find(t => t.id === game.away_team_id);
