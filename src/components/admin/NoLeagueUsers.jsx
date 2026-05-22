@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Mail, CheckCircle, Loader2, History, ChevronDown, ChevronUp } from "lucide-react";
+import { Mail, CheckCircle, Loader2, History, ChevronDown, ChevronUp, Users, Play, CheckSquare, Square, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -15,6 +15,15 @@ export default function NoLeagueUsers() {
   const [successIds, setSuccessIds] = useState({});
   const [sendErrors, setSendErrors] = useState({});
   const [expandedHistory, setExpandedHistory] = useState({});
+
+  // Roster match state
+  const [rosterMatchRunning, setRosterMatchRunning] = useState(false);
+  const [rosterMatchResults, setRosterMatchResults] = useState(null);
+  const [rosterMatchError, setRosterMatchError] = useState("");
+  const [selectedMatchKeys, setSelectedMatchKeys] = useState(new Set());
+  const [applyingMatches, setApplyingMatches] = useState(false);
+  const [applySuccess, setApplySuccess] = useState(false);
+  const [applyError, setApplyError] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["noLeagueUsers"],
@@ -66,6 +75,57 @@ export default function NoLeagueUsers() {
       setSendErrors((prev) => ({ ...prev, [userId]: "Failed to send" }));
     } finally {
       setSendingIds((prev) => ({ ...prev, [userId]: false }));
+    }
+  };
+
+  const handleRunRosterMatch = async () => {
+    setRosterMatchRunning(true);
+    setRosterMatchError("");
+    setRosterMatchResults(null);
+    setSelectedMatchKeys(new Set());
+    setApplySuccess(false);
+    setApplyError("");
+    try {
+      const res = await base44.functions.invoke("runRosterMatchForUsers", {});
+      const result = res.data || res;
+      setRosterMatchResults(result);
+      // Pre-select all exact matches
+      const allKeys = new Set((result.matches || []).map(m => `${m.userId}:${m.leagueId}`));
+      setSelectedMatchKeys(allKeys);
+    } catch (err) {
+      setRosterMatchError("Failed to run roster match: " + (err.message || "Unknown error"));
+    } finally {
+      setRosterMatchRunning(false);
+    }
+  };
+
+  const toggleMatchKey = (key) => {
+    setSelectedMatchKeys(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleApplyMatches = async () => {
+    if (!rosterMatchResults) return;
+    const approvedMatches = (rosterMatchResults.matches || []).filter(
+      m => selectedMatchKeys.has(`${m.userId}:${m.leagueId}`)
+    );
+    if (approvedMatches.length === 0) return;
+    setApplyingMatches(true);
+    setApplyError("");
+    setApplySuccess(false);
+    try {
+      await base44.functions.invoke("applyRosterMatchForUsers", { approvedMatches });
+      setApplySuccess(true);
+      setRosterMatchResults(null);
+      queryClient.invalidateQueries({ queryKey: ["noLeagueUsers"] });
+    } catch (err) {
+      setApplyError("Failed to apply matches: " + (err.message || "Unknown error"));
+    } finally {
+      setApplyingMatches(false);
     }
   };
 
@@ -129,6 +189,114 @@ export default function NoLeagueUsers() {
         </Button>
       </div>
       {bulkError && <p className="text-sm text-red-600 mt-2">{bulkError}</p>}
+
+      {/* Roster Match Section */}
+      <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Bulk Roster Match
+            </p>
+            <p className="text-xs text-blue-700 mt-0.5">Scan these users against all player rosters by name</p>
+          </div>
+          <Button
+            onClick={handleRunRosterMatch}
+            disabled={rosterMatchRunning || applyingMatches}
+            className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            size="sm"
+          >
+            {rosterMatchRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+            {rosterMatchRunning ? "Scanning..." : "Run Roster Match"}
+          </Button>
+        </div>
+
+        {rosterMatchError && (
+          <p className="text-sm text-red-600 flex items-center gap-1">
+            <AlertCircle className="w-4 h-4" /> {rosterMatchError}
+          </p>
+        )}
+
+        {applySuccess && (
+          <p className="text-sm text-green-700 flex items-center gap-1">
+            <CheckCircle className="w-4 h-4" /> Matches applied successfully!
+          </p>
+        )}
+
+        {rosterMatchResults && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-4 text-xs text-blue-800">
+              <span>Scanned: <strong>{rosterMatchResults.total}</strong></span>
+              <span>Exact matches: <strong>{rosterMatchResults.matches?.length || 0}</strong></span>
+              <span>No match: <strong>{rosterMatchResults.unmatched}</strong></span>
+            </div>
+
+            {rosterMatchResults.matches?.length === 0 ? (
+              <p className="text-sm text-slate-500">No exact name matches found.</p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-slate-700">
+                    {selectedMatchKeys.size} of {rosterMatchResults.matches.length} selected
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedMatchKeys(new Set(rosterMatchResults.matches.map(m => `${m.userId}:${m.leagueId}`)))}
+                      className="text-xs text-blue-600 hover:underline"
+                    >Select all</button>
+                    <span className="text-slate-300">|</span>
+                    <button
+                      onClick={() => setSelectedMatchKeys(new Set())}
+                      className="text-xs text-blue-600 hover:underline"
+                    >Deselect all</button>
+                  </div>
+                </div>
+
+                <div className="max-h-72 overflow-y-auto space-y-1.5 pr-1">
+                  {rosterMatchResults.matches.map(m => {
+                    const key = `${m.userId}:${m.leagueId}`;
+                    const selected = selectedMatchKeys.has(key);
+                    return (
+                      <div
+                        key={key}
+                        onClick={() => toggleMatchKey(key)}
+                        className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                          selected ? "bg-white border-blue-300" : "bg-slate-50 border-slate-200 opacity-60"
+                        }`}
+                      >
+                        {selected
+                          ? <CheckSquare className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          : <Square className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                        }
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-slate-900 truncate">{m.userName}</div>
+                          <div className="text-xs text-slate-500 truncate">{m.userEmail}</div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs font-medium text-slate-700">{m.playerName}</div>
+                          <div className="text-xs text-slate-500">{m.teamName} · {m.leagueName}</div>
+                        </div>
+                        <Badge className="bg-green-100 text-green-800 text-xs flex-shrink-0">exact</Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <Button
+                  onClick={handleApplyMatches}
+                  disabled={selectedMatchKeys.size === 0 || applyingMatches}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white gap-2"
+                  size="sm"
+                >
+                  {applyingMatches ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                  {applyingMatches ? "Applying..." : `Apply ${selectedMatchKeys.size} Selected Match${selectedMatchKeys.size !== 1 ? "es" : ""}`}
+                </Button>
+                {applyError && <p className="text-sm text-red-600">{applyError}</p>}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* User list */}
       <div className="space-y-2">
