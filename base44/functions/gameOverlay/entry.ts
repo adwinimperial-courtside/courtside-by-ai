@@ -2,8 +2,9 @@ Deno.serve(async (req) => {
   const url = new URL(req.url);
   const gameId = url.searchParams.get('gameId') || '';
   const logoUrl = url.searchParams.get('logo') || '';
-  const baseUrl = url.origin;
-  const dataUrl = `${baseUrl}/api/functions/getGameOverlayData?gameId=${gameId}`;
+  const backendUrl = Deno.env.get('BASE44_BACKEND_URL') || url.origin;
+  const appId = Deno.env.get('BASE44_APP_ID') || '';
+  const dataUrl = `${backendUrl}/api/apps/${appId}/functions/getGameOverlayData?gameId=${gameId}`;
 
   const html = `<!DOCTYPE html>
 <html>

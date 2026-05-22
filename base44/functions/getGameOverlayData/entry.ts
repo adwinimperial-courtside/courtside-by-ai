@@ -10,6 +10,9 @@ Deno.serve(async (req) => {
 
     const base44 = createClientFromRequest(req);
 
+    console.log('APP_ID:', Deno.env.get('BASE44_APP_ID'));
+    console.log('BACKEND_URL:', Deno.env.get('BASE44_BACKEND_URL'));
+
     const game = await base44.asServiceRole.entities.Game.get(gameId);
 
     console.log('Game found:', game?.id, 'home:', game?.home_score, 'away:', game?.away_score);
