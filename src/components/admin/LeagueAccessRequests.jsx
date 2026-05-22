@@ -25,12 +25,19 @@ export default function LeagueAccessRequests() {
     queryFn: () => base44.entities.User.list(),
   });
 
+  const roleBadgeClass = {
+    player: "bg-blue-100 text-blue-800",
+    coach:  "bg-purple-100 text-purple-800",
+    viewer: "bg-slate-100 text-slate-700",
+  };
+
   const approveMutation = useMutation({
     mutationFn: async (request) => {
       await base44.functions.invoke('approveLeagueAccess', {
         requestId: request.id,
         userId: request.user_id,
-        leagueIds: request.requested_league_ids
+        leagueIds: request.requested_league_ids,
+        requested_roles: request.requested_roles || {}
       });
     },
     onSuccess: () => {
@@ -86,24 +93,24 @@ export default function LeagueAccessRequests() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700">Requested Leagues</label>
+              <label className="text-sm font-medium text-slate-700">Requested Leagues & Roles</label>
               <div className="mt-2 space-y-2">
                 {selectedRequest.requested_league_ids.map(leagueId => {
                   const league = leagues.find(l => l.id === leagueId);
+                  const role = selectedRequest.requested_roles?.[leagueId] ?? "viewer";
                   return league ? (
-                    <div key={leagueId} className="bg-slate-50 p-3 rounded-lg">
-                      <div className="font-medium text-slate-900">{league.name}</div>
-                      <div className="text-sm text-slate-600">{league.season}</div>
+                    <div key={leagueId} className="bg-slate-50 p-3 rounded-lg flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-slate-900">{league.name}</div>
+                        <div className="text-sm text-slate-600">{league.season}</div>
+                      </div>
+                      <Badge className={roleBadgeClass[role] || roleBadgeClass.viewer}>
+                        {role.charAt(0).toUpperCase() + role.slice(1)}
+                      </Badge>
                     </div>
                   ) : null;
                 })}
               </div>
-            </div>
-
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-sm text-amber-900">
-                <strong>Action:</strong> Upon approval, this user will be assigned as a <strong>Viewer</strong> with access to the selected leagues.
-              </p>
             </div>
           </div>
 

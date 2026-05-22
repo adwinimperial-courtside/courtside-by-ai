@@ -10,13 +10,32 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
     }
 
-    const { requestId, userId, leagueIds } = await req.json();
+    const { requestId, userId, leagueIds, requested_roles } = await req.json();
 
-    // Update user with assigned leagues and viewer type
+    // Determine highest role across all requested leagues
+    const rolePriority = { league_admin: 4, coach: 3, player: 2, viewer: 1 };
+    const roles = Object.values(requested_roles || {});
+    const highestRole = roles.reduce((best, r) =>
+      (rolePriority[r] || 0) > (rolePriority[best] || 0) ? r : best,
+      "viewer"
+    );
+
+    // Update user with assigned leagues and highest role
     await base44.asServiceRole.entities.User.update(userId, {
       assigned_league_ids: leagueIds,
-      user_type: "viewer"
+      user_type: highestRole
     });
+
+    // Create UserLeagueIdentity records with per-league roles
+    for (const leagueId of leagueIds) {
+      const role = requested_roles?.[leagueId] || "viewer";
+      await base44.asServiceRole.entities.UserLeagueIdentity.create({
+        user_id: userId,
+        league_id: leagueId,
+        role: role,
+        match_status: "pending"
+      });
+    }
 
     // Update request status
     await base44.entities.LeagueAccessRequest.update(requestId, {
