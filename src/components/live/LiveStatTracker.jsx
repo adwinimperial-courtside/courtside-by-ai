@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock, ArrowLeftRight, Link } from "lucide-react";
+import { ArrowLeft, Trophy, RefreshCw, X, Undo2, Activity, AlertTriangle, Clock, ArrowLeftRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 
@@ -43,7 +43,6 @@ const getDeviceName = () => {
 
 export default function LiveStatTracker({ game, homeTeam, awayTeam, players, existingStats: initialStats, onBack, onGameUpdate }) {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
-  const [overlayCopied, setOverlayCopied] = useState(false);
   const [showSubDialog, setShowSubDialog] = useState(false);
   const [homePlayersOut, setHomePlayersOut] = useState([]);
   const [awayPlayersOut, setAwayPlayersOut] = useState([]);
@@ -549,16 +548,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     } finally {
       isProcessingStatRef.current = false;
     }
-  };
-
-  const handleCopyOverlayUrl = () => {
-    const prodUrl = window.location.hostname === 'courtside-by-ai.base44.app'
-      ? window.location.origin
-      : 'https://courtside-by-ai.base44.app';
-    const overlayUrl = prodUrl + '/api/functions/gameOverlay?gameId=' + game.id;
-    navigator.clipboard.writeText(overlayUrl);
-    setOverlayCopied(true);
-    setTimeout(() => setOverlayCopied(false), 2000);
   };
 
   const resetSubDialog = () => {
@@ -1229,9 +1218,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-10 px-3 text-sm">
             <ArrowLeft className="w-4 h-4 mr-1" />Exit
           </Button>
-          <Button variant="outline" onClick={handleCopyOverlayUrl} className="h-10 px-3 text-sm border-slate-300 text-slate-600">
-            <Link className="w-4 h-4 mr-1" />{overlayCopied ? 'Copied!' : 'Copy Overlay URL'}
-          </Button>
           <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-10 px-3 text-sm text-white">
             <Trophy className="w-4 h-4 mr-1" />End Game
           </Button>
@@ -1297,9 +1283,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <div className="flex items-center justify-between mb-2 flex-shrink-0">
           <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-11 px-5">
             <ArrowLeft className="w-5 h-5 mr-2" />Exit
-          </Button>
-          <Button variant="outline" onClick={handleCopyOverlayUrl} className="h-11 px-5 border-slate-300 text-slate-600">
-            <Link className="w-4 h-4 mr-2" />{overlayCopied ? 'Copied!' : 'Copy Overlay URL'}
           </Button>
           <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-11 px-5 text-white">
             <Trophy className="w-5 h-5 mr-2" />End Game
