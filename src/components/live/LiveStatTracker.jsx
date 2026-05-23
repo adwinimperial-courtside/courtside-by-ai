@@ -49,6 +49,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [homePlayersIn, setHomePlayersIn] = useState([]);
   const [awayPlayersIn, setAwayPlayersIn] = useState([]);
   const [subStep, setSubStep] = useState('select_out');
+  const [subEntryMode, setSubEntryMode] = useState('multi'); // 'multi' or 'single'
   const [ejectedPlayer, setEjectedPlayer] = useState(null);
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -556,6 +557,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setHomePlayersIn([]);
     setAwayPlayersIn([]);
     setSubStep('select_out');
+    setSubEntryMode('multi');
   };
 
   const handleConfirmSubstitution = async () => {
@@ -1054,11 +1056,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 isDesktop: side !== undefined,
                 side,
                 onSubClick: (p) => {
-                  resetSubDialog();
-                  if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
-                  else setAwayPlayersOut([p]);
-                  setSubStep('select_in');
-                  setShowSubDialog(true);
+                resetSubDialog();
+                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
+                else setAwayPlayersOut([p]);
+                setSubEntryMode('single');
+                setSubStep('select_in');
+                setShowSubDialog(true);
                 }
               })}
             </div>
@@ -1134,7 +1137,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         {showSub && (
           <Button
-            onClick={() => { resetSubDialog(); setShowSubDialog(true); }}
+            onClick={() => { resetSubDialog(); setSubEntryMode('multi'); setShowSubDialog(true); }}
             className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -1377,6 +1380,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 resetSubDialog();
                 if (ejectedPlayer.team_id === game.home_team_id) setHomePlayersOut([ejectedPlayer]);
                 else setAwayPlayersOut([ejectedPlayer]);
+                setSubEntryMode('single');
                 setSubStep('select_in');
                 setShowSubDialog(true);
               }
@@ -1589,8 +1593,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             ) : (
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 h-12 border-slate-300"
-                  onClick={() => { setSubStep('select_out'); setHomePlayersIn([]); setAwayPlayersIn([]); }}>
-                  Back
+                  onClick={() => {
+                    if (subEntryMode === 'single') {
+                      setShowSubDialog(false);
+                      resetSubDialog();
+                    } else {
+                      setSubStep('select_out');
+                      setHomePlayersIn([]);
+                      setAwayPlayersIn([]);
+                    }
+                  }}>
+                  {subEntryMode === 'single' ? 'Cancel' : 'Back'}
                 </Button>
                 <Button
                   className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
