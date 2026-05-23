@@ -5,6 +5,7 @@ import PlayerMatchModal from "./PlayerMatchModal";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Check, X } from "lucide-react";
 
 const ROLE_LABELS = {
@@ -25,6 +26,7 @@ export default function UserApplicationsReview() {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState(null);
   const [matchingApp, setMatchingApp] = useState(null);
+  const [adminLeagueOverrides, setAdminLeagueOverrides] = useState({}); // appId -> leagueId
 
   const { data: applications = [], isLoading } = useQuery({
     queryKey: ['user_applications_pending'],
@@ -50,16 +52,29 @@ export default function UserApplicationsReview() {
 
     const roleName = ROLE_LABELS[application.requested_role];
     const userName = application.user_name || application.user_email;
+
+    // For league_admin with no league info, require admin to pick one
+    if (application.requested_role === 'league_admin' && !application.existing_league_id && !application.league_name) {
+      const overrideLeagueId = adminLeagueOverrides[application.id];
+      if (!overrideLeagueId) {
+        alert("Please select a league to assign this admin to before approving.");
+        return;
+      }
+    }
+
     if (!confirm(`Approve ${userName}'s application for ${roleName}?`)) return;
 
     setProcessingId(application.id);
     try {
+      const overrideLeagueId = adminLeagueOverrides[application.id];
       await base44.functions.invoke('approveUserApplication', {
         applicationId: application.id,
         action: 'approve',
+        ...(overrideLeagueId ? { override_league_id: overrideLeagueId } : {}),
       });
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.existing_league_id ? " User added to existing league." : ` League "${application.league_name}" has been created.`) : ""}`);
+      const overrideLeagueName = overrideLeagueId ? leagues.find(l => l.id === overrideLeagueId)?.name : null;
+      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.existing_league_id || overrideLeagueId ? ` User added to ${overrideLeagueName || "existing"} league.` : ` League "${application.league_name}" has been created.`) : ""}`);
     } catch (error) {
       alert("Failed to approve application: " + error.message);
     } finally {

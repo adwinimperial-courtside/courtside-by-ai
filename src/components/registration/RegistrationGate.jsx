@@ -93,13 +93,21 @@ export default function RegistrationGate({ user }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedRole !== "league_admin") {
-        if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
-        if (selectedRole === "player" || selectedRole === "coach") {
-          const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
-          if (missingTeam) { alert("Please select a team for each selected league."); return; }
-        }
+    if (selectedRole === "league_admin") {
+      if (adminLeagueMode === "new" && !formData.league_name?.trim()) {
+        alert("Please enter a league name."); return;
       }
+      if (adminLeagueMode === "existing" && !formData.existing_league_id) {
+        alert("Please select an existing league."); return;
+      }
+      if (!formData.country?.trim()) { alert("Please enter your country."); return; }
+    } else {
+      if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
+      if (selectedRole === "player" || selectedRole === "coach") {
+        const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
+        if (missingTeam) { alert("Please select a team for each selected league."); return; }
+      }
+    }
 
     setIsSubmitting(true);
     try {
@@ -116,11 +124,6 @@ export default function RegistrationGate({ user }) {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
         if (adminLeagueMode === "existing") {
-          if (!formData.existing_league_id) {
-            alert("Please select an existing league.");
-            setIsSubmitting(false);
-            return;
-          }
           applicationData.existing_league_id = formData.existing_league_id;
         } else {
           Object.assign(applicationData, {
