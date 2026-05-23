@@ -188,10 +188,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   }, [homeActiveCount, awayActiveCount]);
 
   useEffect(() => {
-    activePlayers.forEach(stat => {
-      if (!playerMinutesRef.current[stat.player_id]) {
+    // Hydrate minutes ref for ALL players with stat rows, not just active.
+    // This ensures bench players and previously-subbed-out players keep their
+    // minutes after a page reload. Use === undefined so a legitimate 0 is not
+    // re-loaded from DB on every effect run.
+    existingStats.forEach(stat => {
+      if (playerMinutesRef.current[stat.player_id] === undefined) {
         playerMinutesRef.current[stat.player_id] = stat.minutes_played ? stat.minutes_played * 60 : 0;
       }
+    });
+    // Clock-state tracking remains only for active (on-court) players.
+    activePlayers.forEach(stat => {
       if (!playerGameClockStateRef.current[stat.player_id] || playerGameClockStateRef.current[stat.player_id].period !== game.clock_period) {
         playerGameClockStateRef.current[stat.player_id] = {
           timeLeft: computeTimeLeft(game),
@@ -202,7 +209,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (existingStats.length > 0) {
       updateValidSnapshots(existingStats);
     }
-  }, [activePlayers, game.clock_time_left, game.clock_period, game.clock_running, game.clock_started_at]);
+  }, [activePlayers, existingStats, game.clock_time_left, game.clock_period, game.clock_running, game.clock_started_at]);
 
   const gameLog = gameLogs.map(log => {
     const player = players.find(p => p.id === log.player_id);
@@ -711,7 +718,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
           }
           playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
-          if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
+          // Don't wipe accumulated minutes. If the ref is missing (e.g. after
+          // a page reload), restore from DB via freshStats before defaulting to 0.
+          if (playerMinutesRef.current[playerInId] === undefined) {
+            const priorStat = freshStats.find(s => s.player_id === playerInId);
+            playerMinutesRef.current[playerInId] = priorStat?.minutes_played
+              ? priorStat.minutes_played * 60
+              : 0;
+          }
         }));
 
         // Sub log creation is non-fatal — if it fails after retries, the sub still succeeded
