@@ -479,7 +479,7 @@ export default function RegistrationGate({ user }) {
               }
               return (
                 <Button type="submit" disabled={isSubmitting || !canSubmit} className="w-full bg-orange-500 hover:bg-orange-600 mt-2 disabled:opacity-50">
-                  {isSubmitting ? "Submitting..." : "Submit Application"}
+                  {isSubmitting ? "Submitting..." : "SUBMIT — BUILD CHECK 7"}
                 </Button>
               );
             })()}
