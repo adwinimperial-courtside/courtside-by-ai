@@ -116,11 +116,13 @@ Deno.serve(async (req) => {
       const user = usersById[app.user_id] || usersByEmail[app.user_email];
 
       if (!user) {
-        // User not registered yet — still truly pending, skip
         continue;
       }
 
-      // User exists = they were approved via the Base44 dashboard. Send email.
+      // Only send email if the user has been fully approved (application_status = Approved)
+      if (user.application_status !== 'Approved') {
+        continue;
+      }
       const firstName = app.user_name?.split(' ')[0] || user.full_name?.split(' ')[0] || null;
       const emailTo = app.user_email;
 
