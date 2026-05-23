@@ -51,11 +51,15 @@ Deno.serve(async (req) => {
         // ORIGINAL flow: new user first application
         let assignedLeagueIds = [];
         if (application.requested_role === 'league_admin') {
-          const newLeague = await base44.asServiceRole.entities.League.create({
-            name: application.league_name,
-            season: application.season_start_date || 'TBD',
-          });
-          assignedLeagueIds = [newLeague.id];
+          if (application.existing_league_id) {
+            assignedLeagueIds = [application.existing_league_id];
+          } else {
+            const newLeague = await base44.asServiceRole.entities.League.create({
+              name: application.league_name,
+              season: application.season_start_date || 'TBD',
+            });
+            assignedLeagueIds = [newLeague.id];
+          }
         } else if (application.league_ids && application.league_ids.length > 0) {
           assignedLeagueIds = application.league_ids;
         } else if (application.league_id) {

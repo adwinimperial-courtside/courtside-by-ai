@@ -63,6 +63,7 @@ export default function RegistrationGate({ user }) {
   const [selectedTeam, setSelectedTeam] = useState("");
   const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
   const [consentData, setConsentData] = useState(null);
+  const [adminLeagueMode, setAdminLeagueMode] = useState("new");
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -113,13 +114,22 @@ export default function RegistrationGate({ user }) {
 
       if (selectedRole === "league_admin") {
         if (formData.full_name) applicationData.user_name = formData.full_name;
-        Object.assign(applicationData, {
-          country: formData.country,
-          league_name: formData.league_name,
-          season_start_date: formData.season_start_date,
-          number_of_teams: parseInt(formData.number_of_teams),
-          avg_players_per_team: parseInt(formData.avg_players_per_team),
-        });
+        applicationData.country = formData.country;
+        if (adminLeagueMode === "existing") {
+          if (!formData.existing_league_id) {
+            alert("Please select an existing league.");
+            setIsSubmitting(false);
+            return;
+          }
+          applicationData.existing_league_id = formData.existing_league_id;
+        } else {
+          Object.assign(applicationData, {
+            league_name: formData.league_name,
+            season_start_date: formData.season_start_date,
+            number_of_teams: parseInt(formData.number_of_teams),
+            avg_players_per_team: parseInt(formData.avg_players_per_team),
+          });
+        }
       } else {
         applicationData.country = formData.country;
         applicationData.league_id = selectedLeagues[0];
@@ -249,34 +259,67 @@ export default function RegistrationGate({ user }) {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {selectedRole === "league_admin" && (
-              <>
+              <div className="space-y-4">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAdminLeagueMode("new")}
+                    className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold transition-colors ${adminLeagueMode === "new" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
+                  >
+                    Create a new league
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAdminLeagueMode("existing")}
+                    className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold transition-colors ${adminLeagueMode === "existing" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
+                  >
+                    Join an existing league
+                  </button>
+                </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                   <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
                   <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">League Name *</label>
-                  <Input value={formData.league_name || ""} onChange={e => setFormData({ ...formData, league_name: e.target.value })} placeholder="e.g., Helsinki Basketball League" required />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700 mb-1 block">Season Start Date *</label>
-                  <Input type="date" value={formData.season_start_date || ""} onChange={e => setFormData({ ...formData, season_start_date: e.target.value })} required />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+                {adminLeagueMode === "new" && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">League Name</label>
+                      <Input value={formData.league_name || ""} onChange={e => setFormData({ ...formData, league_name: e.target.value })} placeholder="e.g., Helsinki Basketball League" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Season Start Date</label>
+                      <Input type="date" value={formData.season_start_date || ""} onChange={e => setFormData({ ...formData, season_start_date: e.target.value })} required />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Number of Teams</label>
+                        <Input type="number" min="2" value={formData.number_of_teams || ""} onChange={e => setFormData({ ...formData, number_of_teams: e.target.value })} placeholder="e.g., 8" required />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Avg Players/Team</label>
+                        <Input type="number" min="5" value={formData.avg_players_per_team || ""} onChange={e => setFormData({ ...formData, avg_players_per_team: e.target.value })} placeholder="e.g., 12" required />
+                      </div>
+                    </div>
+                  </>
+                )}
+                {adminLeagueMode === "existing" && (
                   <div>
-                    <label className="text-sm font-medium text-slate-700 mb-1 block">Number of Teams *</label>
-                    <Input type="number" min="2" value={formData.number_of_teams || ""} onChange={e => setFormData({ ...formData, number_of_teams: e.target.value })} placeholder="e.g., 8" required />
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Select League</label>
+                    <Select value={formData.existing_league_id || ""} onValueChange={v => setFormData({ ...formData, existing_league_id: v })}>
+                      <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
+                      <SelectContent>
+                        {leagues.map(l => (
+                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700 mb-1 block">Avg Players/Team *</label>
-                    <Input type="number" min="5" value={formData.avg_players_per_team || ""} onChange={e => setFormData({ ...formData, avg_players_per_team: e.target.value })} placeholder="e.g., 12" required />
-                  </div>
-                </div>
-              </>
+                )}
+              </div>
             )}
 
             {(selectedRole === "coach" || selectedRole === "viewer") && (

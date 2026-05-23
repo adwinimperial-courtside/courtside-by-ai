@@ -59,7 +59,7 @@ export default function UserApplicationsReview() {
         action: 'approve',
       });
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-      alert(`✅ Approved!${application.requested_role === "league_admin" ? ` League "${application.league_name}" has been created.` : ""}`);
+      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.existing_league_id ? " User added to existing league." : ` League "${application.league_name}" has been created.`) : ""}`);
     } catch (error) {
       alert("Failed to approve application: " + error.message);
     } finally {
@@ -151,10 +151,20 @@ export default function UserApplicationsReview() {
                     {app.requested_role === "league_admin" && (
                       <>
                         {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
-                        {app.league_name && <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>}
-                        {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
-                        {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
-                        {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
+                        {app.existing_league_id ? (
+                          <div>
+                            <span className="text-slate-500">Joining Existing League:</span>{" "}
+                            <span className="font-medium">{leagues.find(l => l.id === app.existing_league_id)?.name || app.existing_league_id}</span>
+                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Joining Existing</span>
+                          </div>
+                        ) : (
+                          <>
+                            {app.league_name && <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>}
+                            {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
+                            {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
+                            {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
+                          </>
+                        )}
                       </>
                     )}
                     {(app.requested_role === "coach" || app.requested_role === "viewer") && (
