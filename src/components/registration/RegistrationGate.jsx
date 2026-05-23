@@ -65,6 +65,7 @@ export default function RegistrationGate({ user }) {
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
+  const [debugInfo, setDebugInfo] = useState(null);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -162,9 +163,8 @@ export default function RegistrationGate({ user }) {
         }
       }
 
-      console.log("[DEBUG] selectedAdminLeagueId =", selectedAdminLeagueId);
-      console.log("[DEBUG] applicationData =", applicationData);
-      alert("DEBUG submitting:\n" + JSON.stringify(applicationData, null, 2));
+      setDebugInfo({ selectedAdminLeagueId, applicationData });
+      if (!window.confirm("About to submit — proceed?")) { setIsSubmitting(false); return; }
       await base44.entities.UserApplication.create(applicationData);
       await base44.auth.updateMe({
         application_status: "Pending",
@@ -466,6 +466,14 @@ export default function RegistrationGate({ user }) {
                 </>
               )}
 
+            {debugInfo && (
+              <div className="mt-4 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+                <div className="text-xs font-bold text-yellow-900 mb-1">DEBUG — last submit attempt</div>
+                <div className="text-xs text-yellow-900">selectedAdminLeagueId: <code>{JSON.stringify(debugInfo.selectedAdminLeagueId)}</code></div>
+                <pre className="text-xs text-yellow-900 mt-1 whitespace-pre-wrap break-all">{JSON.stringify(debugInfo.applicationData, null, 2)}</pre>
+              </div>
+            )}
+
             {(() => {
               let canSubmit = true;
               if (selectedRole === "league_admin") {
@@ -479,7 +487,7 @@ export default function RegistrationGate({ user }) {
               }
               return (
                 <Button type="submit" disabled={isSubmitting || !canSubmit} className="w-full bg-orange-500 hover:bg-orange-600 mt-2 disabled:opacity-50">
-                  {isSubmitting ? "Submitting..." : "SUBMIT — BUILD CHECK 7"}
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
                 </Button>
               );
             })()}
