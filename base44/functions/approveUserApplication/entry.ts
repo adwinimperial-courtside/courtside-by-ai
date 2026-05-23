@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { applicationId, action } = await req.json();
+    const { applicationId, action, override_league_id } = await req.json();
 
     // Fetch the application
     const application = await base44.asServiceRole.entities.UserApplication.get(applicationId);
@@ -51,7 +51,9 @@ Deno.serve(async (req) => {
         // ORIGINAL flow: new user first application
         let assignedLeagueIds = [];
         if (application.requested_role === 'league_admin') {
-          if (application.existing_league_id) {
+          if (override_league_id) {
+            assignedLeagueIds = [override_league_id];
+          } else if (application.existing_league_id) {
             assignedLeagueIds = [application.existing_league_id];
           } else {
             const newLeague = await base44.asServiceRole.entities.League.create({

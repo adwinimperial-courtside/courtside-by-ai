@@ -180,7 +180,22 @@ export default function UserApplicationsReview() {
                             {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
                           </>
                         ) : (
-                          <div><span className="text-slate-500">League:</span> <span className="font-medium text-slate-400 italic">Not specified</span></div>
+                          <div className="space-y-1">
+                            <div className="text-amber-600 text-xs font-medium">⚠️ No league specified — assign one before approving:</div>
+                            <Select
+                              value={adminLeagueOverrides[app.id] || ""}
+                              onValueChange={v => setAdminLeagueOverrides(prev => ({ ...prev, [app.id]: v }))}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Select a league…" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {leagues.map(l => (
+                                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         )}
                       </>
                     )}
