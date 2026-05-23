@@ -64,6 +64,7 @@ export default function RegistrationGate({ user }) {
   const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
+  const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -87,6 +88,7 @@ export default function RegistrationGate({ user }) {
     setSelectedLeagues([]);
     setSelectedTeam("");
     setLeagueTeamMap({});
+    setSelectedAdminLeagueId("");
     setStep("privacy_consent");
   };
 
@@ -97,7 +99,7 @@ export default function RegistrationGate({ user }) {
       if (adminLeagueMode === "new" && !formData.league_name?.trim()) {
         alert("Please enter a league name."); return;
       }
-      if (adminLeagueMode === "existing" && !formData.existing_league_id) {
+      if (adminLeagueMode === "existing" && !selectedAdminLeagueId) {
         alert("Please select an existing league."); return;
       }
       if (!formData.country?.trim()) { alert("Please enter your country."); return; }
@@ -124,8 +126,8 @@ export default function RegistrationGate({ user }) {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
         if (adminLeagueMode === "existing") {
-          applicationData.league_id = formData.existing_league_id;
-          applicationData.league_ids = [formData.existing_league_id];
+          applicationData.league_id = selectedAdminLeagueId;
+          applicationData.league_ids = [selectedAdminLeagueId];
         } else {
           Object.assign(applicationData, {
             league_name: formData.league_name,
@@ -313,7 +315,7 @@ export default function RegistrationGate({ user }) {
                 {adminLeagueMode === "existing" && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Select League</label>
-                    <Select value={formData.existing_league_id || ""} onValueChange={v => setFormData(prev => ({ ...prev, existing_league_id: v }))}>
+                    <Select value={selectedAdminLeagueId} onValueChange={v => setSelectedAdminLeagueId(v)}>
                       <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
                       <SelectContent>
                         {leagues.map(l => (
