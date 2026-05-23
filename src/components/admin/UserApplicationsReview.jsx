@@ -157,13 +157,15 @@ export default function UserApplicationsReview() {
                             <span className="font-medium">{leagues.find(l => l.id === app.existing_league_id)?.name || app.existing_league_id}</span>
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Joining Existing</span>
                           </div>
-                        ) : (
+                        ) : app.league_name ? (
                           <>
-                            {app.league_name && <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>}
+                            <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>
                             {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
                             {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
                             {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
                           </>
+                        ) : (
+                          <div><span className="text-slate-500">League:</span> <span className="font-medium text-slate-400 italic">Not specified</span></div>
                         )}
                       </>
                     )}
