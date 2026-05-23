@@ -166,10 +166,10 @@ export default function UserApplicationsReview() {
                     {app.requested_role === "league_admin" && (
                       <>
                         {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
-                        {app.existing_league_id ? (
+                        {app.league_id && !app.league_name ? (
                           <div>
                             <span className="text-slate-500">Joining Existing League:</span>{" "}
-                            <span className="font-medium">{leagues.find(l => l.id === app.existing_league_id)?.name || app.existing_league_id}</span>
+                            <span className="font-medium">{leagues.find(l => l.id === app.league_id)?.name || app.league_id}</span>
                             <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Joining Existing</span>
                           </div>
                         ) : app.league_name ? (

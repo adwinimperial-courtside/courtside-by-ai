@@ -53,8 +53,9 @@ Deno.serve(async (req) => {
         if (application.requested_role === 'league_admin') {
           if (override_league_id) {
             assignedLeagueIds = [override_league_id];
-          } else if (application.existing_league_id) {
-            assignedLeagueIds = [application.existing_league_id];
+          } else if (application.league_id && !application.league_name) {
+            // Joining an existing league — league_id is set, no league_name means no new league needed
+            assignedLeagueIds = [application.league_id];
           } else {
             const newLeague = await base44.asServiceRole.entities.League.create({
               name: application.league_name,

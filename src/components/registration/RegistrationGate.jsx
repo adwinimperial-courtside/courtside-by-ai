@@ -124,7 +124,8 @@ export default function RegistrationGate({ user }) {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
         if (adminLeagueMode === "existing") {
-          applicationData.existing_league_id = formData.existing_league_id;
+          applicationData.league_id = formData.existing_league_id;
+          applicationData.league_ids = [formData.existing_league_id];
         } else {
           Object.assign(applicationData, {
             league_name: formData.league_name,
