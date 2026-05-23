@@ -29,6 +29,36 @@ const STAT_TYPES = [
 ];
 
 
+// Detects rate-limit / 429 errors from base44/Supabase
+const isRateLimitError = (error) => {
+  if (!error) return false;
+  const msg = (error?.message || '').toLowerCase();
+  return (
+    msg.includes('rate limit') ||
+    msg.includes('429') ||
+    msg.includes('too many requests') ||
+    error?.status === 429 ||
+    error?.response?.status === 429
+  );
+};
+
+// Retries a function on rate-limit errors with exponential backoff: 250ms, 500ms, 1000ms, 2000ms
+const withRateLimitRetry = async (fn, maxRetries = 4) => {
+  let lastError;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error;
+      if (!isRateLimitError(error) || attempt === maxRetries) throw error;
+      const delay = 250 * Math.pow(2, attempt);
+      console.warn(`[LiveStat] Rate limited, retry ${attempt + 1}/${maxRetries} in ${delay}ms`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
+};
+
 const getDeviceName = () => {
   const ua = navigator.userAgent;
   if (/iPhone/.test(ua)) return 'iPhone';
@@ -219,6 +249,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
     },
+    retry: (failureCount, error) => isRateLimitError(error) && failureCount < 4,
+    retryDelay: attemptIndex => Math.min(250 * Math.pow(2, attemptIndex), 3000),
   });
 
   const createStatMutation = useMutation({
@@ -228,6 +260,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
     },
+    retry: (failureCount, error) => isRateLimitError(error) && failureCount < 4,
+    retryDelay: attemptIndex => Math.min(250 * Math.pow(2, attemptIndex), 3000),
   });
 
   const updateGameMutation = useMutation({
@@ -238,6 +272,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       queryClient.invalidateQueries({ queryKey: ['game', game.id] });
       onGameUpdate?.();
     },
+    retry: (failureCount, error) => isRateLimitError(error) && failureCount < 4,
+    retryDelay: attemptIndex => Math.min(250 * Math.pow(2, attemptIndex), 3000),
   });
 
   const updateTeamRecordMutation = useMutation({
@@ -257,6 +293,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
     },
+    retry: (failureCount, error) => isRateLimitError(error) && failureCount < 4,
+    retryDelay: attemptIndex => Math.min(250 * Math.pow(2, attemptIndex), 3000),
   });
 
   const deleteLogMutation = useMutation({
@@ -581,9 +619,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const currentComputedTimeLeft = computeTimeLeft(game);
       // Always fetch fresh stats to avoid stale cache causing > 5 players bug
       const freshStats = await Promise.race([
-        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        withRateLimitRetry(() => base44.entities.PlayerStats.filter({ game_id: game.id })),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Stats fetch timed out')), 10000)
+          setTimeout(() => reject(new Error('Stats fetch timed out')), 15000)
         )
       ]);
 
@@ -645,7 +683,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           return;
         }
 
-        for (const playerOut of actualPlayersOut) {
+        // Process all OUT players in parallel
+        await Promise.all(actualPlayersOut.map(async (playerOut) => {
           if (game.game_mode === 'timed' && game.clock_running) {
             const clockState = playerGameClockStateRef.current[playerOut.id];
             if (clockState && clockState.period === game.clock_period) {
@@ -661,9 +700,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
           }
           if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
-        }
+        }));
 
-        for (const playerInId of actualPlayersIn) {
+        // Process all IN players in parallel
+        await Promise.all(actualPlayersIn.map(async (playerInId) => {
           const inStat = freshStats.find(s => s.player_id === playerInId);
           if (inStat) {
             await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
@@ -672,8 +712,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           }
           playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
           if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
-        }
+        }));
 
+        // Sub log creation is non-fatal — if it fails after retries, the sub still succeeded
         const outNames = actualPlayersOut.map(p => p.name).join(', ');
         const inNames = actualPlayersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
         const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
@@ -683,34 +724,60 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           in_ids: actualPlayersIn,
           team_id: teamId
         });
-        await createLogMutation.mutateAsync({
-          game_id: game.id,
-          player_id: actualPlayersOut[0].id,
-          team_id: teamId,
-          stat_type: 'substitution',
-          stat_label: logData,
-          stat_points: 0,
-          stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
-          old_home_score: game.home_score || 0,
-          old_away_score: game.away_score || 0,
-          logged_by: currentUser?.email || '',
-          device_name: getDeviceName()
-        });
+        try {
+          await createLogMutation.mutateAsync({
+            game_id: game.id,
+            player_id: actualPlayersOut[0].id,
+            team_id: teamId,
+            stat_type: 'substitution',
+            stat_label: logData,
+            stat_points: 0,
+            stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
+            old_home_score: game.home_score || 0,
+            old_away_score: game.away_score || 0,
+            logged_by: currentUser?.email || '',
+            device_name: getDeviceName()
+          });
+        } catch (logError) {
+          console.warn('[LiveStat:sub] log creation failed, substitution still applied:', logError);
+        }
       };
 
       console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
 
-      await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
-      await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
-
-      // Validate lineup integrity after substitution
-      const postSubStats = await Promise.race([
-        base44.entities.PlayerStats.filter({ game_id: game.id }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Stats fetch timed out')), 10000)
-        )
+      await Promise.all([
+        processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id),
+        processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id),
       ]);
-      checkAndTriggerRepair(postSubStats);
+
+      // Compute expected post-sub state locally from freshStats + the operations we performed
+      const allOutIds = new Set([
+        ...capturedHomeOut.map(p => p.id),
+        ...capturedAwayOut.map(p => p.id)
+      ]);
+      const allInIds = new Set([...capturedHomeIn, ...capturedAwayIn]);
+
+      const expectedStats = freshStats.map(s => {
+        if (allOutIds.has(s.player_id)) return { ...s, is_starter: false, is_active: false };
+        if (allInIds.has(s.player_id)) return { ...s, is_starter: true, is_active: true };
+        return s;
+      });
+
+      // Add new IN players who had no existing stat row
+      const existingPlayerIds = new Set(freshStats.map(s => s.player_id));
+      [...allInIds].forEach(playerId => {
+        if (!existingPlayerIds.has(playerId)) {
+          const isHomeIn = capturedHomeIn.includes(playerId);
+          expectedStats.push({
+            player_id: playerId,
+            team_id: isHomeIn ? game.home_team_id : game.away_team_id,
+            is_starter: true,
+            is_active: true,
+          });
+        }
+      });
+
+      checkAndTriggerRepair(expectedStats);
 
       // Success — close dialog
       setShowSubDialog(false);
