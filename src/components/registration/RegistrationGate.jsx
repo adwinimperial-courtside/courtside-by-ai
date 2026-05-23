@@ -65,7 +65,6 @@ export default function RegistrationGate({ user }) {
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
-  const [debugInfo, setDebugInfo] = useState(null);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -163,8 +162,6 @@ export default function RegistrationGate({ user }) {
         }
       }
 
-      setDebugInfo({ selectedAdminLeagueId, applicationData });
-      if (!window.confirm("About to submit — proceed?")) { setIsSubmitting(false); return; }
       await base44.entities.UserApplication.create(applicationData);
       await base44.auth.updateMe({
         application_status: "Pending",
@@ -465,14 +462,6 @@ export default function RegistrationGate({ user }) {
                   )}
                 </>
               )}
-
-            {debugInfo && (
-              <div className="mt-4 p-3 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
-                <div className="text-xs font-bold text-yellow-900 mb-1">DEBUG — last submit attempt</div>
-                <div className="text-xs text-yellow-900">selectedAdminLeagueId: <code>{JSON.stringify(debugInfo.selectedAdminLeagueId)}</code></div>
-                <pre className="text-xs text-yellow-900 mt-1 whitespace-pre-wrap break-all">{JSON.stringify(debugInfo.applicationData, null, 2)}</pre>
-              </div>
-            )}
 
             {(() => {
               let canSubmit = true;
