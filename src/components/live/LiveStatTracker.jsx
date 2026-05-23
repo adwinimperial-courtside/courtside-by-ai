@@ -50,6 +50,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [awayPlayersIn, setAwayPlayersIn] = useState([]);
   const [subStep, setSubStep] = useState('select_out');
   const [subEntryMode, setSubEntryMode] = useState('multi'); // 'multi' or 'single'
+  const [subSaving, setSubSaving] = useState(false);
+  const [subError, setSubError] = useState(null);
   const [ejectedPlayer, setEjectedPlayer] = useState(null);
   const [ejectionReason, setEjectionReason] = useState('');
   const [showExitDialog, setShowExitDialog] = useState(false);
@@ -115,14 +117,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 50);
+      }, 500);
     });
 
     const unsubscribeLogs = base44.entities.GameLog.subscribe(() => {
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 50);
+      }, 500);
     });
     
     return () => {
@@ -558,21 +560,24 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setAwayPlayersIn([]);
     setSubStep('select_out');
     setSubEntryMode('multi');
+    setSubSaving(false);
+    setSubError(null);
   };
 
   const handleConfirmSubstitution = async () => {
     if (isSubmittingSubRef.current) return;
     isSubmittingSubRef.current = true;
 
-    // Capture selections and close dialog immediately to prevent double-tap
+    // Capture selections (keep dialog open until success or error)
     const capturedHomeOut = [...homePlayersOut];
     const capturedHomeIn = [...homePlayersIn];
     const capturedAwayOut = [...awayPlayersOut];
     const capturedAwayIn = [...awayPlayersIn];
-    setShowSubDialog(false);
-    resetSubDialog();
 
     try {
+      setSubSaving(true);
+      setSubError(null);
+
       const currentComputedTimeLeft = computeTimeLeft(game);
       // Always fetch fresh stats to avoid stale cache causing > 5 players bug
       const freshStats = await Promise.race([
@@ -582,11 +587,65 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         )
       ]);
 
+      // === PRE-FLIGHT VALIDATION ===
+      for (const p of capturedHomeOut) {
+        const s = freshStats.find(st => st.player_id === p.id);
+        if (!s || s.team_id !== game.home_team_id || s.is_starter !== true) {
+          throw new Error(`Cannot sub out ${p.name} — they're not currently on court. The lineup may have changed.`);
+        }
+      }
+      for (const p of capturedAwayOut) {
+        const s = freshStats.find(st => st.player_id === p.id);
+        if (!s || s.team_id !== game.away_team_id || s.is_starter !== true) {
+          throw new Error(`Cannot sub out ${p.name} — they're not currently on court. The lineup may have changed.`);
+        }
+      }
+      for (const pid of capturedHomeIn) {
+        const s = freshStats.find(st => st.player_id === pid);
+        if (s && s.is_starter === true) {
+          const pObj = players.find(p => p.id === pid);
+          throw new Error(`${pObj?.name || pid} is already on court.`);
+        }
+      }
+      for (const pid of capturedAwayIn) {
+        const s = freshStats.find(st => st.player_id === pid);
+        if (s && s.is_starter === true) {
+          const pObj = players.find(p => p.id === pid);
+          throw new Error(`${pObj?.name || pid} is already on court.`);
+        }
+      }
+      // Simulate post-sub counts
+      const homeStartersNow = freshStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
+      const awayStartersNow = freshStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
+      const homeResult = homeStartersNow - capturedHomeOut.length + capturedHomeIn.length;
+      const awayResult = awayStartersNow - capturedAwayOut.length + capturedAwayIn.length;
+      if (capturedHomeOut.length > 0 && homeResult !== 5) {
+        throw new Error(`Substitution would leave ${homeTeam?.name || 'Home'} with ${homeResult} players. Each team must have exactly 5.`);
+      }
+      if (capturedAwayOut.length > 0 && awayResult !== 5) {
+        throw new Error(`Substitution would leave ${awayTeam?.name || 'Away'} with ${awayResult} players. Each team must have exactly 5.`);
+      }
+
       const processTeamSub = async (playersOut, playersIn, teamId) => {
         if (playersOut.length === 0) return;
         const team = teamId === game.home_team_id ? homeTeam : awayTeam;
 
-        for (const playerOut of playersOut) {
+        // Idempotency: skip players already in target state
+        const actualPlayersOut = playersOut.filter(p => {
+          const s = freshStats.find(st => st.player_id === p.id);
+          return s && s.is_starter === true && s.team_id === teamId;
+        });
+        const actualPlayersIn = playersIn.filter(pid => {
+          const s = freshStats.find(st => st.player_id === pid);
+          return !s || s.is_starter !== true;
+        });
+
+        if (actualPlayersOut.length === 0 && actualPlayersIn.length === 0) {
+          console.log(`[LiveStat:sub] team=${teamId} — all changes already applied, skipping`);
+          return;
+        }
+
+        for (const playerOut of actualPlayersOut) {
           if (game.game_mode === 'timed' && game.clock_running) {
             const clockState = playerGameClockStateRef.current[playerOut.id];
             if (clockState && clockState.period === game.clock_period) {
@@ -604,7 +663,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
         }
 
-        for (const playerInId of playersIn) {
+        for (const playerInId of actualPlayersIn) {
           const inStat = freshStats.find(s => s.player_id === playerInId);
           if (inStat) {
             await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
@@ -615,18 +674,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           if (!playerMinutesRef.current[playerInId]) playerMinutesRef.current[playerInId] = 0;
         }
 
-        const outNames = playersOut.map(p => p.name).join(', ');
-        const inNames = playersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
+        const outNames = actualPlayersOut.map(p => p.name).join(', ');
+        const inNames = actualPlayersIn.map(id => players.find(p => p.id === id)?.name || 'Unknown').join(', ');
         const logLabel = `${team?.name}: OUT — ${outNames} | IN — ${inNames}`;
         const logData = JSON.stringify({
           display: logLabel,
-          out_ids: playersOut.map(p => p.id),
-          in_ids: playersIn,
+          out_ids: actualPlayersOut.map(p => p.id),
+          in_ids: actualPlayersIn,
           team_id: teamId
         });
         await createLogMutation.mutateAsync({
           game_id: game.id,
-          player_id: playersOut[0].id,
+          player_id: actualPlayersOut[0].id,
           team_id: teamId,
           stat_type: 'substitution',
           stat_label: logData,
@@ -652,12 +711,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         )
       ]);
       checkAndTriggerRepair(postSubStats);
+
+      // Success — close dialog
+      setShowSubDialog(false);
+      resetSubDialog();
     } catch (error) {
+      setSubError(error?.message || 'Substitution failed. Please try again.');
       console.error('Error during substitution:', error);
-      alert('Substitution failed. Please try again.');
     } finally {
       // CRITICAL: always reset the lock so future substitutions are not blocked
       isSubmittingSubRef.current = false;
+      setSubSaving(false);
     }
   };
 
@@ -1394,6 +1458,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       {/* Substitution Dialog */}
       <Dialog open={showSubDialog} onOpenChange={(open) => {
+        if (subSaving) return;
         if (!open) resetSubDialog();
         setShowSubDialog(open);
       }}>
@@ -1433,6 +1498,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
+            {subError && (
+              <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3 mb-2">
+                <p className="text-sm font-semibold text-red-700">⚠ {subError}</p>
+                <p className="text-xs text-red-500 mt-1">Your selections have been kept. Tap Confirm to retry, or Cancel to start over.</p>
+              </div>
+            )}
             {subStep === 'select_out' ? (
               <>
                 {/* HOME team */}
@@ -1593,6 +1664,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             ) : (
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 h-12 border-slate-300"
+                  disabled={subSaving}
                   onClick={() => {
                     if (subEntryMode === 'single') {
                       setShowSubDialog(false);
@@ -1607,10 +1679,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 </Button>
                 <Button
                   className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
-                  disabled={!isSubConfirmReady()}
+                  disabled={!isSubConfirmReady() || subSaving}
                   onClick={handleConfirmSubstitution}
                 >
-                  Confirm Substitution
+                  {subSaving ? 'Saving substitution...' : 'Confirm Substitution'}
                 </Button>
               </div>
             )}
