@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ export default function RegistrationGate({ user }) {
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
+  const selectedAdminLeagueIdRef = React.useRef("");
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -89,6 +90,7 @@ export default function RegistrationGate({ user }) {
     setSelectedTeam("");
     setLeagueTeamMap({});
     setSelectedAdminLeagueId("");
+    selectedAdminLeagueIdRef.current = "";
     setStep("privacy_consent");
   };
 
@@ -99,7 +101,7 @@ export default function RegistrationGate({ user }) {
       if (adminLeagueMode === "new" && !formData.league_name?.trim()) {
         alert("Please enter a league name."); return;
       }
-      if (adminLeagueMode === "existing" && !selectedAdminLeagueId) {
+      if (adminLeagueMode === "existing" && !selectedAdminLeagueIdRef.current) {
         alert("Please select an existing league."); return;
       }
       if (!formData.country?.trim()) { alert("Please enter your country."); return; }
@@ -126,8 +128,9 @@ export default function RegistrationGate({ user }) {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
         if (adminLeagueMode === "existing") {
-          applicationData.league_id = selectedAdminLeagueId;
-          applicationData.league_ids = [selectedAdminLeagueId];
+          const leagueId = selectedAdminLeagueIdRef.current || selectedAdminLeagueId;
+          applicationData.league_id = leagueId;
+          applicationData.league_ids = [leagueId];
         } else {
           Object.assign(applicationData, {
             league_name: formData.league_name,
@@ -315,7 +318,7 @@ export default function RegistrationGate({ user }) {
                 {adminLeagueMode === "existing" && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Select League</label>
-                    <Select value={selectedAdminLeagueId} onValueChange={v => setSelectedAdminLeagueId(v)}>
+                    <Select value={selectedAdminLeagueId} onValueChange={v => { selectedAdminLeagueIdRef.current = v; setSelectedAdminLeagueId(v); }}>
                       <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
                       <SelectContent>
                         {leagues.map(l => (
@@ -468,7 +471,7 @@ export default function RegistrationGate({ user }) {
               if (selectedRole === "league_admin") {
                 if (!formData.country?.trim()) canSubmit = false;
                 if (adminLeagueMode === "new" && !formData.league_name?.trim()) canSubmit = false;
-                if (adminLeagueMode === "existing" && !selectedAdminLeagueId) canSubmit = false;
+                if (adminLeagueMode === "existing" && !selectedAdminLeagueIdRef.current && !selectedAdminLeagueId) canSubmit = false;
               } else {
                 if (selectedLeagues.length === 0) canSubmit = false;
                 if ((selectedRole === "player" || selectedRole === "coach") && selectedLeagues.some(lid => !leagueTeamMap[lid])) canSubmit = false;
