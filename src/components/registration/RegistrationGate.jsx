@@ -282,30 +282,30 @@ export default function RegistrationGate({ user }) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-                  <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
+                  <Input value={formData.full_name || ""} onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Your full name" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
-                  <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
+                  <Input value={formData.country || ""} onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))} placeholder="e.g., Finland" required />
                 </div>
                 {adminLeagueMode === "new" && (
                   <>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">League Name</label>
-                      <Input value={formData.league_name || ""} onChange={e => setFormData({ ...formData, league_name: e.target.value })} placeholder="e.g., Helsinki Basketball League" required />
+                      <Input value={formData.league_name || ""} onChange={e => setFormData(prev => ({ ...prev, league_name: e.target.value }))} placeholder="e.g., Helsinki Basketball League" required />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Season Start Date</label>
-                      <Input type="date" value={formData.season_start_date || ""} onChange={e => setFormData({ ...formData, season_start_date: e.target.value })} required />
+                      <Input type="date" value={formData.season_start_date || ""} onChange={e => setFormData(prev => ({ ...prev, season_start_date: e.target.value }))} required />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Number of Teams</label>
-                        <Input type="number" min="2" value={formData.number_of_teams || ""} onChange={e => setFormData({ ...formData, number_of_teams: e.target.value })} placeholder="e.g., 8" required />
+                        <Input type="number" min="2" value={formData.number_of_teams || ""} onChange={e => setFormData(prev => ({ ...prev, number_of_teams: e.target.value }))} placeholder="e.g., 8" required />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Avg Players/Team</label>
-                        <Input type="number" min="5" value={formData.avg_players_per_team || ""} onChange={e => setFormData({ ...formData, avg_players_per_team: e.target.value })} placeholder="e.g., 12" required />
+                        <Input type="number" min="5" value={formData.avg_players_per_team || ""} onChange={e => setFormData(prev => ({ ...prev, avg_players_per_team: e.target.value }))} placeholder="e.g., 12" required />
                       </div>
                     </div>
                   </>
@@ -313,7 +313,7 @@ export default function RegistrationGate({ user }) {
                 {adminLeagueMode === "existing" && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Select League</label>
-                    <Select value={formData.existing_league_id || ""} onValueChange={v => setFormData({ ...formData, existing_league_id: v })}>
+                    <Select value={formData.existing_league_id || ""} onValueChange={v => setFormData(prev => ({ ...prev, existing_league_id: v }))}>
                       <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
                       <SelectContent>
                         {leagues.map(l => (
@@ -331,12 +331,12 @@ export default function RegistrationGate({ user }) {
                 {(selectedRole === "coach" || selectedRole === "viewer") && (
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
-                    <Input value={formData.full_name || ""} onChange={e => setFormData({ ...formData, full_name: e.target.value })} placeholder="Your full name" required />
+                    <Input value={formData.full_name || ""} onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Your full name" required />
                   </div>
                 )}
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
-                  <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
+                  <Input value={formData.country || ""} onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))} placeholder="e.g., Finland" required />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
@@ -396,16 +396,16 @@ export default function RegistrationGate({ user }) {
                 <>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Player Display Name *</label>
-                    <Input value={formData.display_name || ""} onChange={e => setFormData({ ...formData, display_name: e.target.value })} placeholder="Your name as it appears on the roster" required />
+                    <Input value={formData.display_name || ""} onChange={e => setFormData(prev => ({ ...prev, display_name: e.target.value }))} placeholder="Your name as it appears on the roster" required />
                     <p className="text-xs text-slate-400 mt-1">This is how your name will appear in stats, standings, and awards.</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Nickname / Handle <span className="font-normal text-slate-400">(optional)</span></label>
-                    <Input value={formData.handle || ""} onChange={e => setFormData({ ...formData, handle: e.target.value })} placeholder="e.g., The Flash" />
+                    <Input value={formData.handle || ""} onChange={e => setFormData(prev => ({ ...prev, handle: e.target.value }))} placeholder="e.g., The Flash" />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
-                    <Input value={formData.country || ""} onChange={e => setFormData({ ...formData, country: e.target.value })} placeholder="e.g., Finland" required />
+                    <Input value={formData.country || ""} onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))} placeholder="e.g., Finland" required />
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
