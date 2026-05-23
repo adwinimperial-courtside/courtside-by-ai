@@ -165,6 +165,7 @@ export default function RegistrationGate({ user }) {
       await base44.entities.UserApplication.create(applicationData);
       await base44.auth.updateMe({
         application_status: "Pending",
+        ...(formData.full_name?.trim() ? { full_name: formData.full_name.trim() } : {}),
         ...(consentData || {}),
       });
       setStep("pending");
