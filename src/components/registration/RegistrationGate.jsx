@@ -463,9 +463,23 @@ export default function RegistrationGate({ user }) {
                 </>
               )}
 
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-orange-500 hover:bg-orange-600 mt-2">
-              {isSubmitting ? "Submitting..." : "Submit Application"}
-            </Button>
+            {(() => {
+              let canSubmit = true;
+              if (selectedRole === "league_admin") {
+                if (!formData.country?.trim()) canSubmit = false;
+                if (adminLeagueMode === "new" && !formData.league_name?.trim()) canSubmit = false;
+                if (adminLeagueMode === "existing" && !selectedAdminLeagueId) canSubmit = false;
+              } else {
+                if (selectedLeagues.length === 0) canSubmit = false;
+                if ((selectedRole === "player" || selectedRole === "coach") && selectedLeagues.some(lid => !leagueTeamMap[lid])) canSubmit = false;
+                if (selectedRole === "player" && !formData.display_name?.trim()) canSubmit = false;
+              }
+              return (
+                <Button type="submit" disabled={isSubmitting || !canSubmit} className="w-full bg-orange-500 hover:bg-orange-600 mt-2 disabled:opacity-50">
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
+                </Button>
+              );
+            })()}
           </form>
         </div>
       </div>
