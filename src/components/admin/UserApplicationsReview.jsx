@@ -54,7 +54,7 @@ export default function UserApplicationsReview() {
     const userName = application.user_name || application.user_email;
 
     // For league_admin with no league info, require admin to pick one
-    if (application.requested_role === 'league_admin' && !application.existing_league_id && !application.league_name) {
+    if (application.requested_role === 'league_admin' && !application.league_id && !application.league_name) {
       const overrideLeagueId = adminLeagueOverrides[application.id];
       if (!overrideLeagueId) {
         alert("Please select a league to assign this admin to before approving.");
@@ -74,7 +74,7 @@ export default function UserApplicationsReview() {
       });
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
       const overrideLeagueName = overrideLeagueId ? leagues.find(l => l.id === overrideLeagueId)?.name : null;
-      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.existing_league_id || overrideLeagueId ? ` User added to ${overrideLeagueName || "existing"} league.` : ` League "${application.league_name}" has been created.`) : ""}`);
+      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.league_id || overrideLeagueId ? ` User added to ${overrideLeagueName || "existing"} league.` : ` League "${application.league_name}" has been created.`) : ""}`);
     } catch (error) {
       alert("Failed to approve application: " + error.message);
     } finally {
