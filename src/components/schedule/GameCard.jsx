@@ -236,7 +236,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
               <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 text-sm text-slate-600">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 flex-shrink-0" />
-                  <span>{liveGame.game_date ? format(new Date(liveGame.game_date), "MMM d, yyyy • h:mm a") : "Date TBD"}</span>
+                  <span>{(() => { try { const d = new Date(liveGame.game_date); return liveGame.game_date && !isNaN(d) ? format(d, "MMM d, yyyy • h:mm a") : "Date TBD"; } catch { return "Date TBD"; } })()}</span>
                 </div>
                 {liveGame.location && (
                   <div className="flex items-center gap-2">
