@@ -290,7 +290,7 @@ export default function StoryBuilder() {
       const prompt = `You are a lively grassroots basketball reporter writing a Facebook post-game story for a local league page. You write with energy, drama, and narrative flair — like a sportswriter who watched every possession and wants the reader to feel like they were courtside.
 
 GAME DATA:
-League Game — ${format(new Date(selectedGame.game_date), "MMMM d, yyyy")}
+League Game — ${selectedGame.game_date ? format(new Date(selectedGame.game_date), "MMMM d, yyyy") : "Unknown date"}
 Final Score: ${winnerTeam?.name} ${winnerScore} – ${loserTeam?.name} ${loserScore}
 Winner: ${winnerTeam?.name}
 Loser: ${loserTeam?.name}
@@ -402,7 +402,8 @@ MANDATORY RULES:
   const getGameLabel = (g) => {
     const home = teams.find(t => t.id === g.home_team_id);
     const away = teams.find(t => t.id === g.away_team_id);
-    return `${home?.name || "?"} vs ${away?.name || "?"} — ${format(new Date(g.game_date), "MMM d, yyyy")}`;
+    const dateStr = g.game_date ? format(new Date(g.game_date), "MMM d, yyyy") : "Unknown date";
+    return `${home?.name || "?"} vs ${away?.name || "?"} — ${dateStr}`;
   };
 
   return (
