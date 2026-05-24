@@ -16,7 +16,7 @@ import { base44 } from "@/api/base44Client";
 export default function EditGameSettingsDialog({ open, onOpenChange, game, onSaved }) {
   const existingPerPeriod = Array.isArray(game.game_rules?.periodMinutes) ? game.game_rules.periodMinutes : null;
   const [formData, setFormData] = useState({
-    game_date: game.game_date ? new Date(game.game_date).toISOString().slice(0, 16) : "",
+    game_date: (() => { try { const d = new Date(game.game_date); return game.game_date && !isNaN(d) ? d.toISOString().slice(0, 16) : ""; } catch { return ""; } })(),
     location: game.location || "",
     game_mode: game.game_mode || "timed",
     game_stage: game.game_stage || "regular",
