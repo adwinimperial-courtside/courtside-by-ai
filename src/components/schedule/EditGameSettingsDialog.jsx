@@ -26,6 +26,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
     overtime_minutes: game.overtime_minutes ?? 5,
     timeoutsPerSegment: game.game_rules?.timeoutsPerSegment ?? 2,
     teamFoulBonusThreshold: game.game_rules?.teamFoulBonusThreshold ?? 5,
+    personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
   });
   const [diffTimePeriod, setDiffTimePeriod] = useState(!!existingPerPeriod);
   const defaultPerPeriod = existingPerPeriod || Array((game.period_type || "quarters") === "quarters" ? 4 : 2).fill(game.period_minutes ?? 10);
@@ -71,7 +72,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
-    const { timeoutsPerSegment, teamFoulBonusThreshold, ...rest } = formData;
+    const { timeoutsPerSegment, teamFoulBonusThreshold, personalFoulLimit, ...rest } = formData;
     const payload = { ...rest };
     if (isTimed) {
       payload.period_count = periodCount;
@@ -79,6 +80,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
         ...(game.game_rules || {}),
         timeoutsPerSegment: diffTimeoutPeriod ? perPeriodTimeouts : timeoutsPerSegment,
         teamFoulBonusThreshold,
+        personalFoulLimit,
       };
       if (diffTimePeriod) {
         gameRules.periodMinutes = perPeriodMinutes;
@@ -312,6 +314,19 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
                       onChange={(e) => setFormData({ ...formData, teamFoulBonusThreshold: Number(e.target.value) })}
                       className="mt-1.5"
                     />
+                  </div>
+                  <div>
+                    <Label htmlFor="personalFoulLimit">Player Foul Limit</Label>
+                    <Input
+                      id="personalFoulLimit"
+                      type="number"
+                      min={1}
+                      max={10}
+                      value={formData.personalFoulLimit}
+                      onChange={(e) => setFormData({ ...formData, personalFoulLimit: Number(e.target.value) })}
+                      className="mt-1.5"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Fouls before a player is disqualified</p>
                   </div>
                 </div>
               </>
