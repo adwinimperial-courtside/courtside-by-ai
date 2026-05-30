@@ -251,6 +251,7 @@ export default function EnhancedUserManagement() {
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="video_admin">Video Admin</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -328,6 +329,7 @@ export default function EnhancedUserManagement() {
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
                 <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="video_admin">Video Admin</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-400 mt-1">Global fallback role. Set per-league roles below for more granular control.</p>

@@ -151,7 +151,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
-      const base = currentUser.user_type === "viewer"
+      const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
         ? navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title))
         : navigationItems;
       const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
@@ -168,7 +168,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     if (!currentUser) return [];
     if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems, overlayItem];
     if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems, overlayItem];
-    if (currentUser.user_type === "video_team") return [overlayItem];
+    if (currentUser.user_type === "video_admin") return [overlayItem];
     return [];
   };
 

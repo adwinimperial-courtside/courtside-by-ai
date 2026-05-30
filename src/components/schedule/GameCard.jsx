@@ -81,8 +81,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const { isLeagueAdmin, isAppAdmin } = useEffectiveRole(currentUser, game?.league_id);
   const isAdmin = isAppAdmin || isLeagueAdmin;
-  const isVideoTeam = currentUser?.user_type === "video_team";
-  const canAccessOverlay = isAppAdmin || isLeagueAdmin || isVideoTeam;
+  const isVideoAdmin = currentUser?.user_type === "video_admin";
+  const canAccessOverlay = isAppAdmin || isLeagueAdmin || isVideoAdmin;
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
 

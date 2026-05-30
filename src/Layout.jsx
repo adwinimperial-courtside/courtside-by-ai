@@ -161,6 +161,7 @@ export default function Layout({ children }) {
     if (currentUser.user_type === "app_admin") return <Shield className="w-4 h-4" />;
     if (currentUser.user_type === "league_admin") return <Trophy className="w-4 h-4" />;
     if (currentUser.user_type === "viewer") return <Eye className="w-4 h-4" />;
+    if (currentUser.user_type === "video_admin") return <Eye className="w-4 h-4" />;
     return null;
   };
 
@@ -171,7 +172,7 @@ export default function Layout({ children }) {
 
 
 
-  const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer";
+  const isViewerWithoutAdminAccess = currentUser?.user_type === "viewer" || currentUser?.user_type === "video_admin";
 
   // Show RegistrationGate for new users who haven't applied yet, or whose application is pending/rejected
   const needsRegistration = currentUser && (
