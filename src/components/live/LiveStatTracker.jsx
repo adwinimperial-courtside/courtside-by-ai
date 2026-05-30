@@ -1243,19 +1243,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
-          {hasLineupIssue && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
-              onClick={() => {
-                setQuickFixTeam(teamId);
-                setQuickFixSelection(teamPlayers.map(p => p.player_id || p.id));
-              }}
-            >
-              Fix
-            </Button>
-          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className={`h-6 px-2 text-xs ${hasLineupIssue ? 'text-orange-600 border-orange-300 hover:bg-orange-50' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}`}
+            onClick={() => {
+              setQuickFixTeam(teamId);
+              setQuickFixSelection(teamPlayers.map(p => p.player_id || p.id));
+            }}
+          >
+            Fix
+          </Button>
         </div>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
           {teamPlayers.map((player) => 
