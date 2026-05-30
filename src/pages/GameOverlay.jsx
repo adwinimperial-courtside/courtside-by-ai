@@ -123,32 +123,35 @@ export default function GameOverlayPage() {
       fontFamily: "'Segoe UI', 'Arial Black', Arial, sans-serif",
     }}>
 
-      {/* Logos — top right: league logo + app logo stacked */}
-      {(overlayLogo || leagueLogo) && (
+      {/* League Logo — top left */}
+      {leagueLogo && (
+        <div style={{
+          position: "absolute",
+          top: 18,
+          left: 18,
+          filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.6))",
+        }}>
+          <img
+            src={leagueLogo}
+            alt="League Logo"
+            style={{ width: 100, height: 100, objectFit: "contain", borderRadius: 16 }}
+          />
+        </div>
+      )}
+
+      {/* App Logo — top right */}
+      {overlayLogo && (
         <div style={{
           position: "absolute",
           top: 18,
           right: 18,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          gap: 10,
           filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.6))",
         }}>
-          {leagueLogo && (
-            <img
-              src={leagueLogo}
-              alt="League Logo"
-              style={{ width: 100, height: 100, objectFit: "contain", borderRadius: 16 }}
-            />
-          )}
-          {overlayLogo && (
-            <img
-              src={overlayLogo}
-              alt="App Logo"
-              style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 12 }}
-            />
-          )}
+          <img
+            src={overlayLogo}
+            alt="App Logo"
+            style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 12 }}
+          />
         </div>
       )}
 
