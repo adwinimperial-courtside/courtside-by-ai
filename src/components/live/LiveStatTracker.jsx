@@ -95,6 +95,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const playerGameClockStateRef = React.useRef({});
   const isSubmittingSubRef = React.useRef(false);
   const subCompletedAtRef = React.useRef(0);
+  const quickFixCompletedAtRef = React.useRef(0);
   const isProcessingStatRef = React.useRef(false);
   const lastStatClickTimeRef = React.useRef(0);
   const queryClient = useQueryClient();
@@ -191,6 +192,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (existingStats.length === 0) return;
     if (isSubmittingSubRef.current) return;
+    // Skip repair check for 3s after a quick fix completes to let cache settle
+    if (Date.now() - quickFixCompletedAtRef.current < 3000) return;
     // ALWAYS check lineup validity — don't skip, even after subs
     checkAndTriggerRepair(existingStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1597,6 +1600,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                   });
                 });
                 await Promise.all(updates);
+                quickFixCompletedAtRef.current = Date.now();
                 setQuickFixTeam(null);
                 setQuickFixSelection([]);
                 setRepairMode(null);
