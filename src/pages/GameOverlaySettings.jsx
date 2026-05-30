@@ -83,7 +83,7 @@ export default function GameOverlaySettingsPage() {
   const canAccess = (user) =>
     user?.user_type === "app_admin" ||
     user?.user_type === "league_admin" ||
-    user?.user_type === "video_team";
+    user?.user_type === "video_admin";
 
   useEffect(() => {
     const load = async () => {

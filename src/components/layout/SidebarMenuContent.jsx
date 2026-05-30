@@ -166,9 +166,18 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const getVisibleAdminItems = () => {
     if (!currentUser) return [];
-    if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems, overlayItem];
-    if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems, overlayItem];
-    if (currentUser.user_type === "video_admin") return [overlayItem];
+    if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems];
+    if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems];
+    return [];
+  };
+
+  const getVisibleVideoAdminItems = () => {
+    if (!currentUser) return [];
+    if (
+      currentUser.user_type === "app_admin" ||
+      currentUser.user_type === "league_admin" ||
+      currentUser.user_type === "video_admin"
+    ) return [overlayItem];
     return [];
   };
 
@@ -212,63 +221,87 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       </SidebarGroup>
 
       {getVisibleAdminItems().length > 0 && (
-        <>
-          <SidebarGroup>
-            <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
-              Admin
-            </SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {getVisibleAdminItems().map((item) =>
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                        location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
-                      }`}
-                    >
-                      <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
-                        <item.icon className="w-5 h-5" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+            Admin
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {getVisibleAdminItems().map((item) =>
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+                    }`}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
 
-          {getVisibleOwnerItems().length > 0 && (
-            <SidebarGroup>
-              <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
-                Owner
-              </SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {getVisibleOwnerItems().map((item) =>
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
-                          location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
-                        }`}
-                      >
-                        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
-                          <item.icon className="w-5 h-5" />
-                          <span>{item.title}</span>
-                          {item.title === "Requests" && pendingRequestsCount > 0 && (
-                            <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
-                          )}
+      {getVisibleVideoAdminItems().length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+            Video Admin
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {getVisibleVideoAdminItems().map((item) =>
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+                    }`}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
 
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          )}
-        </>
+      {getVisibleOwnerItems().length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+            Owner
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {getVisibleOwnerItems().map((item) =>
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+                    }`}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.title}</span>
+                      {item.title === "Requests" && pendingRequestsCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
       )}
     </SidebarContent>
   );
