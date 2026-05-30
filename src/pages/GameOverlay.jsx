@@ -168,8 +168,8 @@ export default function GameOverlayPage() {
               borderRadius: 4,
               letterSpacing: 1.5,
             }}>LIVE</div>
-            <span style={{ color: "#9ba3c2", fontSize: 11, fontWeight: 600, letterSpacing: 0.8 }}>
-              {leagueShort}
+            <span style={{ color: "#9ba3c2", fontSize: 11, fontWeight: 600, letterSpacing: 0.8, whiteSpace: "nowrap" }}>
+              COURTSIDE-BY-AI
             </span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
