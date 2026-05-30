@@ -1597,6 +1597,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 await Promise.all(updates);
                 setQuickFixTeam(null);
                 setQuickFixSelection([]);
+                setRepairMode(null); // close emergency repair modal if open
                 queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
               }}
             >
