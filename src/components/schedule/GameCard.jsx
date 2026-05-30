@@ -162,7 +162,11 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     gameLogs.forEach(log => {
       if (log.stat_type === 'substitution' || log.stat_type === 'timeout' || log.stat_type === 'ejection') return;
       if (!aggregated[log.player_id]) {
-        aggregated[log.player_id] = {};
+        aggregated[log.player_id] = {
+          points_2: 0, points_3: 0, free_throws: 0, free_throws_missed: 0,
+          offensive_rebounds: 0, defensive_rebounds: 0, assists: 0, steals: 0,
+          blocks: 0, turnovers: 0, fouls: 0, technical_fouls: 0, unsportsmanlike_fouls: 0
+        };
       }
       const statKey = log.stat_type;
       aggregated[log.player_id][statKey] = (aggregated[log.player_id][statKey] || 0) + Math.max(0, log.new_value - log.old_value);
@@ -172,26 +176,38 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const logAggregates = aggregateStatsFromLogs();
 
-  // Enrich PlayerStats with GameLog aggregates (GameLog is source of truth)
-  const enrichedStats = gamePlayerStats.map(s => {
-    const logStats = logAggregates[s.player_id] || {};
-    return {
-      ...s,
-      points_2: logStats.points_2 ?? s.points_2,
-      points_3: logStats.points_3 ?? s.points_3,
-      free_throws: logStats.free_throws ?? s.free_throws,
-      free_throws_missed: logStats.free_throws_missed ?? s.free_throws_missed,
-      offensive_rebounds: logStats.offensive_rebounds ?? s.offensive_rebounds,
-      defensive_rebounds: logStats.defensive_rebounds ?? s.defensive_rebounds,
-      assists: logStats.assists ?? s.assists,
-      steals: logStats.steals ?? s.steals,
-      blocks: logStats.blocks ?? s.blocks,
-      turnovers: logStats.turnovers ?? s.turnovers,
-      fouls: logStats.fouls ?? s.fouls,
-      technical_fouls: logStats.technical_fouls ?? s.technical_fouls,
-      unsportsmanlike_fouls: logStats.unsportsmanlike_fouls ?? s.unsportsmanlike_fouls,
-    };
+  // Sum stats across ALL PlayerStats rows for each player (handles multiple rows from subs)
+  // then override with GameLog aggregates (GameLog is source of truth)
+  const playerStatsMap = {};
+  gamePlayerStats.forEach(s => {
+    if (!playerStatsMap[s.player_id]) {
+      playerStatsMap[s.player_id] = {
+        ...s,
+        points_2: 0, points_3: 0, free_throws: 0, free_throws_missed: 0,
+        offensive_rebounds: 0, defensive_rebounds: 0, assists: 0, steals: 0,
+        blocks: 0, turnovers: 0, fouls: 0, technical_fouls: 0, unsportsmanlike_fouls: 0
+      };
+    }
+    playerStatsMap[s.player_id].points_2 += s.points_2 || 0;
+    playerStatsMap[s.player_id].points_3 += s.points_3 || 0;
+    playerStatsMap[s.player_id].free_throws += s.free_throws || 0;
+    playerStatsMap[s.player_id].free_throws_missed += s.free_throws_missed || 0;
+    playerStatsMap[s.player_id].offensive_rebounds += s.offensive_rebounds || 0;
+    playerStatsMap[s.player_id].defensive_rebounds += s.defensive_rebounds || 0;
+    playerStatsMap[s.player_id].assists += s.assists || 0;
+    playerStatsMap[s.player_id].steals += s.steals || 0;
+    playerStatsMap[s.player_id].blocks += s.blocks || 0;
+    playerStatsMap[s.player_id].turnovers += s.turnovers || 0;
+    playerStatsMap[s.player_id].fouls += s.fouls || 0;
+    playerStatsMap[s.player_id].technical_fouls += s.technical_fouls || 0;
+    playerStatsMap[s.player_id].unsportsmanlike_fouls += s.unsportsmanlike_fouls || 0;
   });
+
+  // Override with GameLog aggregates (source of truth)
+  const enrichedStats = Object.values(playerStatsMap).map(s => ({
+    ...s,
+    ...(logAggregates[s.player_id] || {})
+  }));
 
   const playersWithActions = new Set(gameLogs.map(log => log.player_id));
   const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true || playersWithActions.has(s.player_id);
