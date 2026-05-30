@@ -61,7 +61,7 @@ export default function DefaultWinnerDialog({ open, onOpenChange, game, homeTeam
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="bg-white w-[95vw] max-w-md">
+      <DialogContent className="bg-white w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-slate-900">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
