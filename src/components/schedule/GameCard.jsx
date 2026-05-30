@@ -148,7 +148,16 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
            (stat.unsportsmanlike_fouls || 0) > 0;
   };
   
-  const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true;
+  // Fetch GameLog to identify all players who had recorded actions
+  const { data: gameLogs = [] } = useQuery({
+    queryKey: ['gameLogs', liveGame.id],
+    queryFn: () => base44.entities.GameLog.filter({ game_id: liveGame.id }),
+    enabled: liveGame.status === 'completed' && isExpanded,
+    staleTime: 300000,
+  });
+
+  const playersWithActions = new Set(gameLogs.map(log => log.player_id));
+  const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true || playersWithActions.has(s.player_id);
   const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && shouldShowPlayer(s));
   const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && shouldShowPlayer(s));
   const players = gamePlayers;
