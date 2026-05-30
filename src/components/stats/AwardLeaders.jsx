@@ -64,40 +64,66 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
       };
     });
 
-    // Calculate MVP scores per player
+    // Calculate MVP scores per player — deduplicate multiple rows per player per game
     const playerMvpScores = {};
     leagueGames.forEach(game => {
       const gameStats = stats.filter(s => s.game_id === game.id);
+      
+      // Sum stats across all rows for each player in this game (handles subs creating multiple rows)
+      const playerTotalsInGame = {};
       gameStats.forEach(playerStat => {
         if (!didPlayerParticipate(playerStat)) return;
-        
-        if (!playerMvpScores[playerStat.player_id]) {
-          playerMvpScores[playerStat.player_id] = {
+        if (!playerTotalsInGame[playerStat.player_id]) {
+          playerTotalsInGame[playerStat.player_id] = {
+            points_2: 0, points_3: 0, free_throws: 0, offensive_rebounds: 0,
+            defensive_rebounds: 0, assists: 0, steals: 0, blocks: 0,
+            turnovers: 0, fouls: 0, technical_fouls: 0, unsportsmanlike_fouls: 0,
+            teamId: playerStat.team_id
+          };
+        }
+        playerTotalsInGame[playerStat.player_id].points_2 += playerStat.points_2 || 0;
+        playerTotalsInGame[playerStat.player_id].points_3 += playerStat.points_3 || 0;
+        playerTotalsInGame[playerStat.player_id].free_throws += playerStat.free_throws || 0;
+        playerTotalsInGame[playerStat.player_id].offensive_rebounds += playerStat.offensive_rebounds || 0;
+        playerTotalsInGame[playerStat.player_id].defensive_rebounds += playerStat.defensive_rebounds || 0;
+        playerTotalsInGame[playerStat.player_id].assists += playerStat.assists || 0;
+        playerTotalsInGame[playerStat.player_id].steals += playerStat.steals || 0;
+        playerTotalsInGame[playerStat.player_id].blocks += playerStat.blocks || 0;
+        playerTotalsInGame[playerStat.player_id].turnovers += playerStat.turnovers || 0;
+        playerTotalsInGame[playerStat.player_id].fouls += playerStat.fouls || 0;
+        playerTotalsInGame[playerStat.player_id].technical_fouls += playerStat.technical_fouls || 0;
+        playerTotalsInGame[playerStat.player_id].unsportsmanlike_fouls += playerStat.unsportsmanlike_fouls || 0;
+      });
+
+      // Now process each unique player once per game
+      Object.entries(playerTotalsInGame).forEach(([playerId, totals]) => {
+        if (!playerMvpScores[playerId]) {
+          playerMvpScores[playerId] = {
             gp: 0,
             sumGis: 0,
             sumTech: 0,
             sumUnsp: 0,
-            teamId: playerStat.team_id
+            teamId: totals.teamId
           };
         }
         // entry_type='digital' and not edited = double points_2; otherwise treat as raw points
         const isDigital = game.entry_type === 'digital' && !game.edited;
-        const pts = cfg.mvp_pts_weight * ((isDigital ? (playerStat.points_2 || 0) * 2 : (playerStat.points_2 || 0)) + ((playerStat.points_3 || 0) * 3) + (playerStat.free_throws || 0));
+        const pts = cfg.mvp_pts_weight * ((isDigital ? totals.points_2 * 2 : totals.points_2) + (totals.points_3 * 3) + totals.free_throws);
         const gis = pts +
-          cfg.mvp_oreb_weight * (playerStat.offensive_rebounds || 0) +
-          cfg.mvp_dreb_weight * (playerStat.defensive_rebounds || 0) +
-          cfg.mvp_ast_weight * (playerStat.assists || 0) +
-          cfg.mvp_stl_weight * (playerStat.steals || 0) +
-          cfg.mvp_blk_weight * (playerStat.blocks || 0) -
-          cfg.mvp_turnover_penalty * (playerStat.turnovers || 0) -
-          cfg.mvp_foul_penalty * (playerStat.fouls || 0) -
-          cfg.mvp_tech_penalty * (playerStat.technical_fouls || 0) -
-          cfg.mvp_unsportsmanlike_penalty * (playerStat.unsportsmanlike_fouls || 0);
+          cfg.mvp_oreb_weight * totals.offensive_rebounds +
+          cfg.mvp_dreb_weight * totals.defensive_rebounds +
+          cfg.mvp_ast_weight * totals.assists +
+          cfg.mvp_stl_weight * totals.steals +
+          cfg.mvp_blk_weight * totals.blocks -
+          cfg.mvp_turnover_penalty * totals.turnovers -
+          cfg.mvp_foul_penalty * totals.fouls -
+          cfg.mvp_tech_penalty * totals.technical_fouls -
+          cfg.mvp_unsportsmanlike_penalty * totals.unsportsmanlike_fouls;
 
-        playerMvpScores[playerStat.player_id].gp += 1;
-        playerMvpScores[playerStat.player_id].sumGis += gis;
-        playerMvpScores[playerStat.player_id].sumTech += playerStat.technical_fouls || 0;
-        playerMvpScores[playerStat.player_id].sumUnsp += playerStat.unsportsmanlike_fouls || 0;
+        playerMvpScores[playerId].gp += 1;
+        playerMvpScores[playerId].sumGis += gis;
+        playerMvpScores[playerId].sumTech += totals.technical_fouls;
+        playerMvpScores[playerId].sumUnsp += totals.unsportsmanlike_fouls;
       });
     });
 
@@ -165,36 +191,57 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
       teamGames[team.id] = leagueGames.filter(g => g.home_team_id === team.id || g.away_team_id === team.id).length;
     });
 
-    // Calculate DPOY scores (based on defensive stats)
+    // Calculate DPOY scores (based on defensive stats) — deduplicate multiple rows per player per game
     const playerDpoyScores = {};
     leagueGames.forEach(game => {
       const gameStats = stats.filter(s => s.game_id === game.id);
+      
+      // Sum defensive stats across all rows for each player in this game (handles subs creating multiple rows)
+      const playerTotalsInGame = {};
       gameStats.forEach(playerStat => {
         if (!didPlayerParticipate(playerStat)) return;
-        
-        if (!playerDpoyScores[playerStat.player_id]) {
-          playerDpoyScores[playerStat.player_id] = {
+        if (!playerTotalsInGame[playerStat.player_id]) {
+          playerTotalsInGame[playerStat.player_id] = {
+            steals: 0, blocks: 0, offensive_rebounds: 0, defensive_rebounds: 0,
+            fouls: 0, turnovers: 0, technical_fouls: 0, unsportsmanlike_fouls: 0,
+            teamId: playerStat.team_id
+          };
+        }
+        playerTotalsInGame[playerStat.player_id].steals += playerStat.steals || 0;
+        playerTotalsInGame[playerStat.player_id].blocks += playerStat.blocks || 0;
+        playerTotalsInGame[playerStat.player_id].offensive_rebounds += playerStat.offensive_rebounds || 0;
+        playerTotalsInGame[playerStat.player_id].defensive_rebounds += playerStat.defensive_rebounds || 0;
+        playerTotalsInGame[playerStat.player_id].fouls += playerStat.fouls || 0;
+        playerTotalsInGame[playerStat.player_id].turnovers += playerStat.turnovers || 0;
+        playerTotalsInGame[playerStat.player_id].technical_fouls += playerStat.technical_fouls || 0;
+        playerTotalsInGame[playerStat.player_id].unsportsmanlike_fouls += playerStat.unsportsmanlike_fouls || 0;
+      });
+
+      // Now process each unique player once per game
+      Object.entries(playerTotalsInGame).forEach(([playerId, totals]) => {
+        if (!playerDpoyScores[playerId]) {
+          playerDpoyScores[playerId] = {
             gp: 0,
             sumDefGis: 0,
             sumTech: 0,
             sumUnsp: 0,
-            teamId: playerStat.team_id
+            teamId: totals.teamId
           };
         }
         
-        const defGis = cfg.dpoy_stl_weight * (playerStat.steals || 0) +
-          cfg.dpoy_blk_weight * (playerStat.blocks || 0) +
-          cfg.dpoy_oreb_weight * (playerStat.offensive_rebounds || 0) +
-          cfg.dpoy_dreb_weight * (playerStat.defensive_rebounds || 0) -
-          cfg.dpoy_foul_penalty * (playerStat.fouls || 0) -
-          cfg.dpoy_turnover_penalty * (playerStat.turnovers || 0) -
-          cfg.dpoy_tech_penalty * (playerStat.technical_fouls || 0) -
-          cfg.dpoy_unsportsmanlike_penalty * (playerStat.unsportsmanlike_fouls || 0);
+        const defGis = cfg.dpoy_stl_weight * totals.steals +
+          cfg.dpoy_blk_weight * totals.blocks +
+          cfg.dpoy_oreb_weight * totals.offensive_rebounds +
+          cfg.dpoy_dreb_weight * totals.defensive_rebounds -
+          cfg.dpoy_foul_penalty * totals.fouls -
+          cfg.dpoy_turnover_penalty * totals.turnovers -
+          cfg.dpoy_tech_penalty * totals.technical_fouls -
+          cfg.dpoy_unsportsmanlike_penalty * totals.unsportsmanlike_fouls;
 
-        playerDpoyScores[playerStat.player_id].gp += 1;
-        playerDpoyScores[playerStat.player_id].sumDefGis += defGis;
-        playerDpoyScores[playerStat.player_id].sumTech += playerStat.technical_fouls || 0;
-        playerDpoyScores[playerStat.player_id].sumUnsp += playerStat.unsportsmanlike_fouls || 0;
+        playerDpoyScores[playerId].gp += 1;
+        playerDpoyScores[playerId].sumDefGis += defGis;
+        playerDpoyScores[playerId].sumTech += totals.technical_fouls;
+        playerDpoyScores[playerId].sumUnsp += totals.unsportsmanlike_fouls;
       });
     });
 
