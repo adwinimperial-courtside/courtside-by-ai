@@ -87,6 +87,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [repairMode, setRepairMode] = useState(null); // null or { teams: [...] }
+  const [quickFixTeam, setQuickFixTeam] = useState(null); // teamId for quick fix modal
+  const [quickFixSelection, setQuickFixSelection] = useState([]); // selected player IDs
   const lastValidLineupsRef = React.useRef({});
   const periodEndHandledRef = React.useRef(false);
   const playerMinutesRef = React.useRef({});
@@ -1224,6 +1226,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       : isHome
         ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
         : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
+    
+    const hasLineupIssue = teamPlayers.length !== 5;
+    const teamId = isHome ? game.home_team_id : game.away_team_id;
 
     return (
       <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden" style={borderStyle}>
@@ -1238,6 +1243,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
+          {hasLineupIssue && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-50"
+              onClick={() => {
+                setQuickFixTeam(teamId);
+                setQuickFixSelection(teamPlayers.map(p => p.player_id || p.id));
+              }}
+            >
+              Fix
+            </Button>
+          )}
         </div>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
           {teamPlayers.map((player) => 
@@ -1525,6 +1543,70 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           }}
         />
       )}
+
+      {/* Quick Fix Lineup Modal */}
+      <Dialog open={!!quickFixTeam} onOpenChange={(open) => { if (!open) { setQuickFixTeam(null); setQuickFixSelection([]); } }}>
+        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-md max-h-[80vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
+            <DialogTitle className="text-lg text-slate-900 font-bold">
+              Select 5 Players for {quickFixTeam === game.home_team_id ? homeTeam?.name : awayTeam?.name}
+            </DialogTitle>
+            <p className="text-xs text-slate-500 mt-1">Choose exactly 5 players to be on court.</p>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+            {(quickFixTeam === game.home_team_id ? homeBenchPlayers.concat(homeActivePlayers) : awayBenchPlayers.concat(awayActivePlayers)).map(player => {
+              const isSelected = quickFixSelection.includes(player.id);
+              return (
+                <button
+                  key={player.id}
+                  onClick={() => {
+                    if (isSelected) {
+                      setQuickFixSelection(prev => prev.filter(id => id !== player.id));
+                    } else if (quickFixSelection.length < 5) {
+                      setQuickFixSelection(prev => [...prev, player.id]);
+                    }
+                  }}
+                  disabled={!isSelected && quickFixSelection.length >= 5}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left
+                    ${quickFixSelection.length >= 5 && !isSelected ? 'opacity-40 cursor-not-allowed' : ''}
+                    ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-slate-300'}`}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0" 
+                    style={{ backgroundColor: quickFixTeam === game.home_team_id ? homeTeam?.color : awayTeam?.color }}>
+                    {player.jersey_number}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
+                  </div>
+                  {isSelected && <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
+                </button>
+              );
+            })}
+          </div>
+          <div className="px-4 pb-4 pt-2 border-t border-slate-100 flex-shrink-0 flex gap-2">
+            <Button variant="outline" className="flex-1 h-10 border-slate-300" onClick={() => { setQuickFixTeam(null); setQuickFixSelection([]); }}>Cancel</Button>
+            <Button 
+              className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              disabled={quickFixSelection.length !== 5}
+              onClick={async () => {
+                const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+                const updates = freshStats
+                  .filter(s => s.team_id === quickFixTeam)
+                  .map(s => updateStatMutation.mutateAsync({ 
+                    statId: s.id, 
+                    updates: { is_starter: quickFixSelection.includes(s.player_id), is_active: quickFixSelection.includes(s.player_id) } 
+                  }));
+                await Promise.all(updates);
+                setQuickFixTeam(null);
+                setQuickFixSelection([]);
+                queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+              }}
+            >
+              Confirm ({quickFixSelection.length}/5)
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Exit Confirmation Dialog */}
       <Dialog open={showExitDialog} onOpenChange={setShowExitDialog}>
