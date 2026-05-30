@@ -136,7 +136,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
         
         if (!player || !team || !teamData) return null;
 
-        const effectiveGp = Math.min(data.gp, teamData.gamesPlayed);
+        const effectiveGp = data.gp;
         const avgGis = effectiveGp > 0 ? data.sumGis / effectiveGp : 0;
         const gpPct = teamData.gamesPlayed > 0 ? effectiveGp / teamData.gamesPlayed : 0;
         const eligible = gpPct >= cfg.mvp_min_games_percent / 100;
@@ -253,8 +253,8 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
 
         if (!player || !team || tg === undefined || data.gp === 0 || tg === 0) return null;
 
-        const effectiveGp = Math.min(data.gp, tg);
-        const gpPct = effectiveGp / tg;
+        const effectiveGp = data.gp;
+        const gpPct = data.gp / tg;
         const eligible = gpPct >= cfg.dpoy_min_games_percent / 100;
 
         if (!eligible) return null;
