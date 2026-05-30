@@ -147,6 +147,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const unsubscribeStats = base44.entities.PlayerStats.subscribe(() => {
       clearTimeout(timeoutStats);
       timeoutStats = setTimeout(() => {
+        // Skip real-time invalidation while a substitution is in-flight or
+        // for 4 seconds after one completes — we already set the cache optimistically
+        // and an early re-fetch can restore stale is_starter=true for the outgoing player
+        if (isSubmittingSubRef.current) return;
+        if (Date.now() - subCompletedAtRef.current < 4000) return;
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
       }, 500);
     });
@@ -816,9 +821,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }
       });
 
-      // Force cache refresh immediately so bench/active lists are accurate for next sub
+      // Force cache to the expected post-sub state immediately
       queryClient.setQueryData(['playerStats', game.id], expectedStats);
-      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      // Delay the server re-fetch so it doesn't race against DB writes
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+      }, 4000);
 
       // Clear any stale repair mode — sub succeeded, lineup is now valid
       setRepairMode(null);
