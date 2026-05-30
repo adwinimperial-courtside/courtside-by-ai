@@ -148,8 +148,9 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
            (stat.unsportsmanlike_fouls || 0) > 0;
   };
   
-  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && hasPlayerStats(s));
-  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && hasPlayerStats(s));
+  const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true;
+  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && shouldShowPlayer(s));
+  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && shouldShowPlayer(s));
   const players = gamePlayers;
 
   const calcLiveScore = (teamId, stats) =>
