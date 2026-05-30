@@ -114,8 +114,17 @@ export default function GameLogPage() {
     const player = players.find(p => p.id === log.player_id);
     const team = teams.find(t => t.id === log.team_id);
     const added = log.new_value > log.old_value;
+    const safeDate = (dateStr) => {
+      if (!dateStr) return "";
+      try {
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? "" : format(d, "HH:mm:ss");
+      } catch {
+        return "";
+      }
+    };
     return {
-      Time: log.created_date ? format(new Date(log.created_date), "HH:mm:ss") : "",
+      Time: safeDate(log.created_date),
       Player: player?.name || "Unknown",
       Jersey: player?.jersey_number ?? "",
       Team: team?.name || "",
@@ -212,9 +221,18 @@ export default function GameLogPage() {
             {games.map(g => {
               const home = teams.find(t => t.id === g.home_team_id);
               const away = teams.find(t => t.id === g.away_team_id);
+              const safeGameDate = (() => {
+                if (!g.game_date) return "";
+                try {
+                  const d = new Date(g.game_date);
+                  return isNaN(d.getTime()) ? "" : format(d, "MMM d, yyyy");
+                } catch {
+                  return "";
+                }
+              })();
               return (
                 <SelectItem key={g.id} value={g.id}>
-                  {home?.name} vs {away?.name} – {format(new Date(g.game_date), "MMM d, yyyy")}
+                  {home?.name} vs {away?.name} – {safeGameDate}
                 </SelectItem>
               );
             })}
@@ -234,8 +252,16 @@ export default function GameLogPage() {
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge className="bg-slate-100 text-slate-700">
-                  {format(new Date(selectedGame.game_date), "MMM d, yyyy • h:mm a")}
-                </Badge>
+                    {(() => {
+                      if (!selectedGame.game_date) return "Date TBD";
+                      try {
+                        const d = new Date(selectedGame.game_date);
+                        return isNaN(d.getTime()) ? "Date TBD" : format(d, "MMM d, yyyy • h:mm a");
+                      } catch {
+                        return "Date TBD";
+                      }
+                    })()}
+                  </Badge>
                 <Badge className={
                   selectedGame.status === "completed" ? "bg-green-100 text-green-800" :
                   selectedGame.status === "in_progress" ? "bg-orange-100 text-orange-800" :
@@ -345,12 +371,20 @@ export default function GameLogPage() {
                           <User className="w-3 h-3" />
                           <span>{log.logged_by || "Unknown"}</span>
                         </div>
-                        {log.created_date && (
-                          <div className="flex items-center gap-1 text-xs text-slate-400">
-                            <Clock className="w-3 h-3" />
-                            <span>{format(new Date(log.created_date), "HH:mm:ss")}</span>
-                          </div>
-                        )}
+                        {log.created_date && (() => {
+                           try {
+                             const d = new Date(log.created_date);
+                             if (!isNaN(d.getTime())) {
+                               return (
+                                 <div className="flex items-center gap-1 text-xs text-slate-400">
+                                   <Clock className="w-3 h-3" />
+                                   <span>{format(d, "HH:mm:ss")}</span>
+                                 </div>
+                               );
+                             }
+                           } catch {}
+                           return null;
+                         })()}
                       </div>
                     </div>
                   </div>
