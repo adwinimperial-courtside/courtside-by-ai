@@ -4,7 +4,20 @@
   "properties": {
     "logo_url": {
       "type": "string",
-      "description": "URL to the overlay logo image"
+      "description": "URL to the overlay logo image (top-right)"
+    },
+    "league_logo_url": {
+      "type": "string",
+      "description": "URL to the league logo image (top-left)"
+    },
+    "ticker_text": {
+      "type": "string",
+      "description": "Scrolling ticker text for advertisements and announcements"
+    },
+    "ticker_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the ticker is shown on the overlay"
     }
   },
   "required": []

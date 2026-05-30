@@ -15,6 +15,8 @@ export default function GameOverlayPage() {
   const [league, setLeague] = useState(null);
   const [overlayLogo, setOverlayLogo] = useState(null);
   const [leagueLogo, setLeagueLogo] = useState(null);
+  const [tickerText, setTickerText] = useState("");
+  const [tickerEnabled, setTickerEnabled] = useState(false);
   const [clockDisplay, setClockDisplay] = useState("0:00");
   const clockRef = useRef(null);
 
@@ -28,6 +30,8 @@ export default function GameOverlayPage() {
       setGame(g);
       if (settings?.[0]?.logo_url) setOverlayLogo(settings[0].logo_url);
       if (settings?.[0]?.league_logo_url) setLeagueLogo(settings[0].league_logo_url);
+      if (settings?.[0]?.ticker_text) setTickerText(settings[0].ticker_text);
+      setTickerEnabled(settings?.[0]?.ticker_enabled !== false && !!settings?.[0]?.ticker_text);
 
       const [ht, at, lg] = await Promise.all([
         base44.entities.Team.get(g.home_team_id),
@@ -152,6 +156,59 @@ export default function GameOverlayPage() {
             alt="App Logo"
             style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 12 }}
           />
+        </div>
+      )}
+
+      {/* Ticker — bottom full width */}
+      {tickerEnabled && tickerText && (
+        <div style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 38,
+          background: "rgba(10, 12, 22, 0.95)",
+          borderTop: "2px solid #f97316",
+          display: "flex",
+          alignItems: "center",
+          overflow: "hidden",
+        }}>
+          {/* LIVE label */}
+          <div style={{
+            background: "#f97316",
+            color: "#fff",
+            fontSize: 11,
+            fontWeight: 800,
+            padding: "0 14px",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            letterSpacing: 1.5,
+            flexShrink: 0,
+            whiteSpace: "nowrap",
+          }}>
+            📢 TICKER
+          </div>
+          {/* Scrolling text */}
+          <div style={{ overflow: "hidden", flex: 1, height: "100%", display: "flex", alignItems: "center" }}>
+            <style>{`
+              @keyframes ticker-scroll {
+                0%   { transform: translateX(100%); }
+                100% { transform: translateX(-100%); }
+              }
+            `}</style>
+            <span style={{
+              display: "inline-block",
+              whiteSpace: "nowrap",
+              color: "#ffffff",
+              fontSize: 15,
+              fontWeight: 600,
+              letterSpacing: 0.5,
+              animation: "ticker-scroll 20s linear infinite",
+            }}>
+              {tickerText}&nbsp;&nbsp;&nbsp;★&nbsp;&nbsp;&nbsp;{tickerText}
+            </span>
+          </div>
         </div>
       )}
 

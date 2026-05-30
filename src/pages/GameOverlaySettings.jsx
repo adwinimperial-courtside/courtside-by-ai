@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MonitorPlay, Upload, CheckCircle, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 
 function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload }) {
   return (
@@ -71,6 +73,8 @@ export default function GameOverlaySettingsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
   const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
+  const [tickerText, setTickerText] = useState("");
+  const [tickerEnabled, setTickerEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
   const [uploading, setUploading] = useState(null); // "logo" | "league_logo" | null
   const [saving, setSaving] = useState(false);
@@ -90,6 +94,8 @@ export default function GameOverlaySettingsPage() {
       if (settings?.[0]) {
         setLogoUrl(settings[0].logo_url || null);
         setLeagueLogoUrl(settings[0].league_logo_url || null);
+        setTickerText(settings[0].ticker_text || "");
+        setTickerEnabled(settings[0].ticker_enabled !== false);
         setSettingsId(settings[0].id);
       }
     };
@@ -108,7 +114,7 @@ export default function GameOverlaySettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const data = { logo_url: logoUrl, league_logo_url: leagueLogoUrl };
+    const data = { logo_url: logoUrl, league_logo_url: leagueLogoUrl, ticker_text: tickerText, ticker_enabled: tickerEnabled };
     if (settingsId) {
       await base44.entities.OverlaySettings.update(settingsId, data);
     } else {
@@ -177,6 +183,45 @@ export default function GameOverlaySettingsPage() {
               onUpload={handleFileUpload}
             />
 
+            <Button
+              onClick={handleSave}
+              disabled={saving || !!uploading}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {saved ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Saved!
+                </>
+              ) : saving ? "Saving..." : "Save Settings"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card className="border-slate-200 mb-6">
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold text-slate-800">Ticker / Announcements</h2>
+            <p className="text-sm text-slate-500">A scrolling text bar at the bottom of the overlay for ads and announcements.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-700">Enable Ticker</p>
+                <p className="text-xs text-slate-400">Show or hide the ticker on the overlay</p>
+              </div>
+              <Switch checked={tickerEnabled} onCheckedChange={setTickerEnabled} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-1">Ticker Text</p>
+              <Textarea
+                placeholder="e.g. Welcome to the game! Sponsored by ACME Corp. • Half-time show at 8pm • Follow us @leaguename"
+                value={tickerText}
+                onChange={(e) => setTickerText(e.target.value)}
+                className="resize-none"
+                rows={3}
+              />
+              <p className="text-xs text-slate-400 mt-1">The text will scroll continuously across the bottom of the screen.</p>
+            </div>
             <Button
               onClick={handleSave}
               disabled={saving || !!uploading}
