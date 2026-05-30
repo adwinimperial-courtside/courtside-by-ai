@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import DefaultWinnerDialog from "./DefaultWinnerDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings, AlertTriangle, RotateCcw } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings, AlertTriangle, RotateCcw, MonitorPlay, Copy, Check } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -23,6 +23,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const [liveGame, setLiveGame] = useState(game);
   const [showEditSettings, setShowEditSettings] = useState(false);
   const [showDefaultDialog, setShowDefaultDialog] = useState(false);
+  const [showOverlayCopied, setShowOverlayCopied] = useState(false);
   const [showPOGSpotlight, setShowPOGSpotlight] = useState(false);
   const [reopenConfirm, setReopenConfirm] = useState(false);
   const [reopening, setReopening] = useState(false);
@@ -80,6 +81,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const { isLeagueAdmin, isAppAdmin } = useEffectiveRole(currentUser, game?.league_id);
   const isAdmin = isAppAdmin || isLeagueAdmin;
+  const isVideoTeam = currentUser?.user_type === "video_team";
+  const canAccessOverlay = isAppAdmin || isLeagueAdmin || isVideoTeam;
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
 
@@ -335,6 +338,24 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                       className="w-full sm:w-auto border-orange-500 text-orange-600 hover:bg-orange-50"
                     >
                       Continue
+                    </Button>
+                  )}
+                  {canAccessOverlay && (
+                    <Button
+                      onClick={() => {
+                        const url = `${window.location.origin}/GameOverlay?gameId=${liveGame.id}`;
+                        navigator.clipboard.writeText(url);
+                        setShowOverlayCopied(true);
+                        setTimeout(() => setShowOverlayCopied(false), 2000);
+                      }}
+                      variant="outline"
+                      className="w-full sm:w-auto border-purple-400 text-purple-600 hover:bg-purple-50"
+                    >
+                      {showOverlayCopied ? (
+                        <><Check className="w-4 h-4 mr-2" />Copied!</>
+                      ) : (
+                        <><MonitorPlay className="w-4 h-4 mr-2" />Overlay</>
+                      )}
                     </Button>
                   )}
                 </>

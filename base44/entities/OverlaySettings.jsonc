@@ -1,0 +1,11 @@
+{
+  "name": "OverlaySettings",
+  "type": "object",
+  "properties": {
+    "logo_url": {
+      "type": "string",
+      "description": "URL to the overlay logo image"
+    }
+  },
+  "required": []
+}
