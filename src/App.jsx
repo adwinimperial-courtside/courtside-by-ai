@@ -58,30 +58,34 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Render the main app
+  // Render the main app — overlay is layout-free
   return (
-    <LayoutWrapper currentPageName={mainPageKey}>
-      <Routes>
-        <Route path="/" element={<Landing />} handle={{ pageName: "Landing" }} />
-        {Object.entries(Pages).map(([path, Page]) => (
-          <Route key={path} path={`/${path}`} element={<Page />} handle={{ pageName: path }} />
-        ))}
-        <Route path="/AllPlayersView" element={<LayoutWrapper currentPageName="AllPlayersView"><AllPlayersViewPage /></LayoutWrapper>} />
-        <Route path="/LeagueUsers" element={<LayoutWrapper currentPageName="LeagueUsers"><LeagueUsersPage /></LayoutWrapper>} />
-        <Route path="/StoryBuilder" element={<LayoutWrapper currentPageName="StoryBuilder"><StoryBuilderPage /></LayoutWrapper>} />
-        <Route path="/ApplyForLeague" element={<LayoutWrapper currentPageName="ApplyForLeague"><ApplyForLeaguePage /></LayoutWrapper>} />
-        <Route path="/RegularSeasonRecap" element={<LayoutWrapper currentPageName="RegularSeasonRecap"><RegularSeasonRecapPage /></LayoutWrapper>} />
-        <Route path="/OwnerLeagueLeaders" element={<LayoutWrapper currentPageName="OwnerLeagueLeaders"><OwnerLeagueLeadersPage /></LayoutWrapper>} />
-        <Route path="/System" element={<LayoutWrapper currentPageName="System"><SystemPage /></LayoutWrapper>} />
-        <Route path="/Reports" element={<LayoutWrapper currentPageName="Reports"><ReportsPage /></LayoutWrapper>} />
-        <Route path="/People" element={<LayoutWrapper currentPageName="People"><PeoplePage /></LayoutWrapper>} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms-of-use" element={<TermsOfUsePage />} />
-        <Route path="/GameOverlay" element={<GameOverlayPage />} />
-        <Route path="/GameOverlaySettings" element={<LayoutWrapper currentPageName="GameOverlaySettings"><GameOverlaySettingsPage /></LayoutWrapper>} />
-        <Route path="*" element={<PageNotFound />} />
-      </Routes>
-    </LayoutWrapper>
+    <Routes>
+      <Route path="/GameOverlay" element={<GameOverlayPage />} />
+      <Route path="*" element={
+        <LayoutWrapper currentPageName={mainPageKey}>
+          <Routes>
+            <Route path="/" element={<Landing />} handle={{ pageName: "Landing" }} />
+            {Object.entries(Pages).map(([path, Page]) => (
+              <Route key={path} path={`/${path}`} element={<Page />} handle={{ pageName: path }} />
+            ))}
+            <Route path="/AllPlayersView" element={<LayoutWrapper currentPageName="AllPlayersView"><AllPlayersViewPage /></LayoutWrapper>} />
+            <Route path="/LeagueUsers" element={<LayoutWrapper currentPageName="LeagueUsers"><LeagueUsersPage /></LayoutWrapper>} />
+            <Route path="/StoryBuilder" element={<LayoutWrapper currentPageName="StoryBuilder"><StoryBuilderPage /></LayoutWrapper>} />
+            <Route path="/ApplyForLeague" element={<LayoutWrapper currentPageName="ApplyForLeague"><ApplyForLeaguePage /></LayoutWrapper>} />
+            <Route path="/RegularSeasonRecap" element={<LayoutWrapper currentPageName="RegularSeasonRecap"><RegularSeasonRecapPage /></LayoutWrapper>} />
+            <Route path="/OwnerLeagueLeaders" element={<LayoutWrapper currentPageName="OwnerLeagueLeaders"><OwnerLeagueLeadersPage /></LayoutWrapper>} />
+            <Route path="/System" element={<LayoutWrapper currentPageName="System"><SystemPage /></LayoutWrapper>} />
+            <Route path="/Reports" element={<LayoutWrapper currentPageName="Reports"><ReportsPage /></LayoutWrapper>} />
+            <Route path="/People" element={<LayoutWrapper currentPageName="People"><PeoplePage /></LayoutWrapper>} />
+            <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+            <Route path="/terms-of-use" element={<TermsOfUsePage />} />
+            <Route path="/GameOverlaySettings" element={<LayoutWrapper currentPageName="GameOverlaySettings"><GameOverlaySettingsPage /></LayoutWrapper>} />
+            <Route path="*" element={<PageNotFound />} />
+          </Routes>
+        </LayoutWrapper>
+      } />
+    </Routes>
   );
 };
 
