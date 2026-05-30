@@ -725,7 +725,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         // Process all IN players in parallel
         await Promise.all(actualPlayersIn.map(async (playerInId) => {
-          const inStat = freshStats.find(s => s.player_id === playerInId);
+          let inStat = freshStats.find(s => s.player_id === playerInId);
+          if (!inStat) {
+            // Double-check DB directly before creating — prevents duplicate rows if freshStats missed it
+            const dbCheck = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
+            inStat = dbCheck?.[0] || null;
+          }
           if (inStat) {
             await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
           } else {
