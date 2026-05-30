@@ -118,6 +118,22 @@ export default function GameOverlayPage() {
     </div>
   );
 
+  // Foul dots: up to 5 shown, filled yellow/amber when accumulated
+  const MAX_FOUL_DOTS = 5;
+  const FoulDots = ({ fouls }) => (
+    <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+      {Array.from({ length: MAX_FOUL_DOTS }).map((_, i) => (
+        <div key={i} style={{
+          width: 7,
+          height: 7,
+          borderRadius: "50%",
+          backgroundColor: i < fouls ? "#facc15" : "rgba(255,255,255,0.1)",
+          border: `1px solid ${i < fouls ? "#facc15" : "rgba(255,255,255,0.15)"}`,
+        }} />
+      ))}
+    </div>
+  );
+
   return (
     <div style={{
       position: "fixed",
@@ -324,25 +340,26 @@ export default function GameOverlayPage() {
           </div>
         </div>
 
-        {/* Footer: Timeouts + Fouls — single compact row */}
+        {/* Footer: Timeouts + Fouls rows */}
         <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "3px 10px",
+          padding: "5px 10px",
           background: "rgba(12, 14, 24, 0.98)",
           borderTop: "1px solid rgba(255,255,255,0.06)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {/* Timeouts row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <TimeoutDots left={homeTimeoutsLeft} total={totalTimeouts} />
-            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600 }}>F{homeFouls}</span>
-          </div>
-          <span style={{ color: "rgba(255,255,255,0.15)", fontSize: 8, fontWeight: 600, letterSpacing: 1 }}>
-            TO · F
-          </span>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexDirection: "row-reverse" }}>
+            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>TIMEOUTS</span>
             <TimeoutDots left={awayTimeoutsLeft} total={totalTimeouts} />
-            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600 }}>F{awayFouls}</span>
+          </div>
+          {/* Fouls row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <FoulDots fouls={homeFouls} />
+            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>FOULS</span>
+            <FoulDots fouls={awayFouls} />
           </div>
         </div>
       </div>
