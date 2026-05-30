@@ -156,50 +156,10 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
     staleTime: 300000,
   });
 
-  // Build stats from GameLog for accurate player performance
-  const statsFromGameLog = {};
-  gameLogs.forEach(log => {
-    const key = `${log.player_id}-${log.team_id}`;
-    if (!statsFromGameLog[key]) {
-      statsFromGameLog[key] = {
-        player_id: log.player_id,
-        team_id: log.team_id,
-        points_2: 0,
-        points_3: 0,
-        free_throws: 0,
-        free_throws_missed: 0,
-        offensive_rebounds: 0,
-        defensive_rebounds: 0,
-        assists: 0,
-        steals: 0,
-        blocks: 0,
-        turnovers: 0,
-        fouls: 0,
-        technical_fouls: 0,
-        unsportsmanlike_fouls: 0,
-      };
-    }
-    const s = statsFromGameLog[key];
-    if (log.stat_type === 'points_2') s.points_2 = log.new_value || 0;
-    else if (log.stat_type === 'points_3') s.points_3 = log.new_value || 0;
-    else if (log.stat_type === 'free_throws') s.free_throws = log.new_value || 0;
-    else if (log.stat_type === 'free_throws_missed') s.free_throws_missed = log.new_value || 0;
-    else if (log.stat_type === 'offensive_rebounds') s.offensive_rebounds = log.new_value || 0;
-    else if (log.stat_type === 'defensive_rebounds') s.defensive_rebounds = log.new_value || 0;
-    else if (log.stat_type === 'assists') s.assists = log.new_value || 0;
-    else if (log.stat_type === 'steals') s.steals = log.new_value || 0;
-    else if (log.stat_type === 'blocks') s.blocks = log.new_value || 0;
-    else if (log.stat_type === 'turnovers') s.turnovers = log.new_value || 0;
-    else if (log.stat_type === 'fouls') s.fouls = log.new_value || 0;
-    else if (log.stat_type === 'technical_fouls') s.technical_fouls = log.new_value || 0;
-    else if (log.stat_type === 'unsportsmanlike_fouls') s.unsportsmanlike_fouls = log.new_value || 0;
-  });
-
   const playersWithActions = new Set(gameLogs.map(log => log.player_id));
-  const playerStats = Object.values(statsFromGameLog).length > 0 ? Object.values(statsFromGameLog) : gamePlayerStats;
-  const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true;
-  const homePlayerStats = playerStats.filter(s => s.team_id === liveGame.home_team_id && shouldShowPlayer(s));
-  const awayPlayerStats = playerStats.filter(s => s.team_id === liveGame.away_team_id && shouldShowPlayer(s));
+  const shouldShowPlayer = (s) => hasPlayerStats(s) || s.did_play === true || s.is_starter === true || playersWithActions.has(s.player_id);
+  const homePlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.home_team_id && shouldShowPlayer(s));
+  const awayPlayerStats = gamePlayerStats.filter(s => s.team_id === liveGame.away_team_id && shouldShowPlayer(s));
   const players = gamePlayers;
 
   const calcLiveScore = (teamId, stats) =>
