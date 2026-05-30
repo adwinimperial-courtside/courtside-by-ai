@@ -73,7 +73,8 @@ export default function LiveGamePage() {
       return [...(homePlayers || []), ...(awayPlayers || [])];
     },
     enabled: !!game?.home_team_id && !!game?.away_team_id,
-    staleTime: 300000,
+    staleTime: 60000,
+    refetchOnWindowFocus: true,
     retry: 3,
     retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });

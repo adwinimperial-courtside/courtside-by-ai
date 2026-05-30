@@ -1241,6 +1241,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 isDesktop: side !== undefined,
                 side,
                 onSubClick: (p) => {
+                queryClient.invalidateQueries({ queryKey: ['players', game.home_team_id, game.away_team_id] });
                 resetSubDialog();
                 if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
                 else setAwayPlayersOut([p]);
@@ -1322,7 +1323,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
         {showSub && (
           <Button
-            onClick={() => { resetSubDialog(); setSubEntryMode('multi'); setShowSubDialog(true); }}
+            onClick={() => { queryClient.invalidateQueries({ queryKey: ['players', game.home_team_id, game.away_team_id] }); resetSubDialog(); setSubEntryMode('multi'); setShowSubDialog(true); }}
             className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
           >
             <RefreshCw className="w-4 h-4 mr-2" />
