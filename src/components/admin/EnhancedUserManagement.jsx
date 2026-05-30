@@ -373,6 +373,7 @@ export default function EnhancedUserManagement() {
                             <SelectItem value="coach">Coach</SelectItem>
                             <SelectItem value="player">Player</SelectItem>
                             <SelectItem value="viewer">Viewer</SelectItem>
+                            <SelectItem value="video_admin">Video Admin</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
