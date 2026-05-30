@@ -1588,12 +1588,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               disabled={quickFixSelection.length !== 5}
               onClick={async () => {
                 const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-                const updates = freshStats
-                  .filter(s => s.team_id === quickFixTeam)
-                  .map(s => base44.entities.PlayerStats.update(s.id, { 
-                    is_starter: quickFixSelection.includes(s.player_id), 
-                    is_active: quickFixSelection.includes(s.player_id) 
-                  }));
+                const allTeamStats = freshStats.filter(s => s.team_id === quickFixTeam);
+                const updates = allTeamStats.map(s => {
+                  const isSelected = quickFixSelection.includes(s.player_id);
+                  return base44.entities.PlayerStats.update(s.id, { 
+                    is_starter: isSelected, 
+                    is_active: isSelected
+                  });
+                });
                 await Promise.all(updates);
                 setQuickFixTeam(null);
                 setQuickFixSelection([]);
