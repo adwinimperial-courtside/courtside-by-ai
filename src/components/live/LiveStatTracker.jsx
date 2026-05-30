@@ -726,15 +726,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         // Process all IN players in parallel
         await Promise.all(actualPlayersIn.map(async (playerInId) => {
           let inStat = freshStats.find(s => s.player_id === playerInId);
-          if (!inStat) {
-            // Double-check DB directly before creating — prevents duplicate rows if freshStats missed it
-            const dbCheck = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
-            inStat = dbCheck?.[0] || null;
-          }
           if (inStat) {
             await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
           } else {
-            await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+            // Before creating, do a targeted DB check to prevent duplicate rows
+            // (freshStats may have missed this player if they were recently added)
+            try {
+              const existing = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
+              if (existing && existing.length > 0) {
+                inStat = existing[0];
+                await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
+              } else {
+                await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+              }
+            } catch {
+              await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+            }
           }
           playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
           // Don't wipe accumulated minutes. If the ref is missing (e.g. after
