@@ -189,11 +189,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (existingStats.length === 0) return;
     if (isSubmittingSubRef.current) return;
-    // Skip repair check for 3 seconds after a sub completes — the cache is still settling
-    if (Date.now() - subCompletedAtRef.current < 3000) return;
+    // ALWAYS check lineup validity — don't skip, even after subs
     checkAndTriggerRepair(existingStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [homeActiveCount, awayActiveCount]);
+  }, [homeActiveCount, awayActiveCount, existingStats]);
 
   useEffect(() => {
     // Hydrate minutes ref for ALL players with stat rows, not just active.
