@@ -14,6 +14,7 @@ export default function GameOverlayPage() {
   const [awayTeam, setAwayTeam] = useState(null);
   const [league, setLeague] = useState(null);
   const [overlayLogo, setOverlayLogo] = useState(null);
+  const [leagueLogo, setLeagueLogo] = useState(null);
   const [clockDisplay, setClockDisplay] = useState("0:00");
   const clockRef = useRef(null);
 
@@ -26,6 +27,7 @@ export default function GameOverlayPage() {
       ]);
       setGame(g);
       if (settings?.[0]?.logo_url) setOverlayLogo(settings[0].logo_url);
+      if (settings?.[0]?.league_logo_url) setLeagueLogo(settings[0].league_logo_url);
 
       const [ht, at, lg] = await Promise.all([
         base44.entities.Team.get(g.home_team_id),
@@ -121,19 +123,32 @@ export default function GameOverlayPage() {
       fontFamily: "'Segoe UI', 'Arial Black', Arial, sans-serif",
     }}>
 
-      {/* Logo — top right */}
-      {overlayLogo && (
+      {/* Logos — top right: league logo + app logo stacked */}
+      {(overlayLogo || leagueLogo) && (
         <div style={{
           position: "absolute",
           top: 18,
           right: 18,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          gap: 10,
           filter: "drop-shadow(0 4px 16px rgba(0,0,0,0.6))",
         }}>
-          <img
-            src={overlayLogo}
-            alt="Logo"
-            style={{ width: 100, height: 100, objectFit: "contain", borderRadius: 16 }}
-          />
+          {leagueLogo && (
+            <img
+              src={leagueLogo}
+              alt="League Logo"
+              style={{ width: 100, height: 100, objectFit: "contain", borderRadius: 16 }}
+            />
+          )}
+          {overlayLogo && (
+            <img
+              src={overlayLogo}
+              alt="App Logo"
+              style={{ width: 80, height: 80, objectFit: "contain", borderRadius: 12 }}
+            />
+          )}
         </div>
       )}
 
