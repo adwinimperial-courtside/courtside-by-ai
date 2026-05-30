@@ -86,7 +86,7 @@ export default function GameOverlayPage() {
   const awayFouls = game.away_team_fouls?.[foulPeriod] || 0;
 
   const shortName = (name) => (name || "???").substring(0, 4).toUpperCase();
-  const leagueShort = (league?.name || "LEAGUE").substring(0, 14).toUpperCase();
+  const leagueShort = (league?.name || "LEAGUE").substring(0, 20).toUpperCase();
 
   const TeamColorBox = ({ color }) => (
     <div style={{
@@ -142,7 +142,7 @@ export default function GameOverlayPage() {
         position: "absolute",
         bottom: 30,
         right: 30,
-        width: 340,
+        width: 460,
         borderRadius: 14,
         overflow: "hidden",
         boxShadow: "0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5)",
@@ -154,7 +154,7 @@ export default function GameOverlayPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "8px 14px",
+          padding: "8px 16px",
           background: "rgba(12, 14, 24, 0.97)",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}>
@@ -194,7 +194,7 @@ export default function GameOverlayPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "12px 16px",
+          padding: "8px 16px",
           background: "rgba(18, 20, 32, 0.97)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
         }}>
@@ -224,7 +224,7 @@ export default function GameOverlayPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "12px 16px",
+          padding: "8px 16px",
           background: "rgba(22, 24, 38, 0.97)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -280,8 +280,8 @@ export default function GameOverlayPage() {
           background: "rgba(8, 10, 18, 0.99)",
           borderTop: "1px solid rgba(255,255,255,0.05)",
         }}>
-          <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, letterSpacing: 2, fontWeight: 700 }}>
-            COURTSIDE BY AI
+          <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, letterSpacing: 2, fontWeight: 700, whiteSpace: "nowrap" }}>
+            COURTSIDE&nbsp;BY&nbsp;AI
           </span>
         </div>
       </div>
