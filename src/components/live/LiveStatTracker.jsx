@@ -1628,11 +1628,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           {/* Body */}
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
             {subError && (
-              <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3 mb-2">
-                <p className="text-sm font-semibold text-red-700">⚠ {subError}</p>
-                <p className="text-xs text-red-500 mt-1">Your selections have been kept. Tap Confirm to retry, or Cancel to start over.</p>
-              </div>
-            )}
+               <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3 mb-2">
+                 <p className="text-sm font-semibold text-red-700">⚠ {subError}</p>
+                 <p className="text-xs text-red-500 mt-1">Your selections have been kept. Tap Confirm to retry, or Cancel to start over.</p>
+                 <Button
+                   size="sm"
+                   variant="outline"
+                   className="mt-2 w-full border-red-300 text-red-600 hover:bg-red-100"
+                   onClick={async () => {
+                     const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+                     const activeHomeIds = new Set(freshStats.filter(s => s.team_id === game.home_team_id && s.is_starter).map(s => s.player_id));
+                     const activeAwayIds = new Set(freshStats.filter(s => s.team_id === game.away_team_id && s.is_starter).map(s => s.player_id));
+                     setHomePlayersOut(prev => prev.filter(p => activeHomeIds.has(p.id)));
+                     setAwayPlayersOut(prev => prev.filter(p => activeAwayIds.has(p.id)));
+                     setSubError(null);
+                   }}
+                 >
+                   Reload Lineup
+                 </Button>
+               </div>
+             )}
             {subStep === 'select_out' ? (
               <>
                 {/* HOME team */}
