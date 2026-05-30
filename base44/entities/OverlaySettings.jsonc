@@ -2,13 +2,21 @@
   "name": "OverlaySettings",
   "type": "object",
   "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "Owner user ID \u2014 one record per user"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Selected league for this overlay configuration"
+    },
     "logo_url": {
       "type": "string",
-      "description": "URL to the overlay logo image (top-right)"
+      "description": "URL to the overlay logo image (app/sponsor logo)"
     },
     "league_logo_url": {
       "type": "string",
-      "description": "URL to the league logo image (top-left)"
+      "description": "URL to the league logo image"
     },
     "ticker_text": {
       "type": "string",

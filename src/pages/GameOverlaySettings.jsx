@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { MonitorPlay, Upload, CheckCircle, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload }) {
   return (
@@ -71,14 +72,17 @@ function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpl
 
 export default function GameOverlaySettingsPage() {
   const [currentUser, setCurrentUser] = useState(null);
+  const [leagues, setLeagues] = useState([]);
+  const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [logoUrl, setLogoUrl] = useState(null);
   const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
   const [tickerText, setTickerText] = useState("");
   const [tickerEnabled, setTickerEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
-  const [uploading, setUploading] = useState(null); // "logo" | "league_logo" | null
+  const [uploading, setUploading] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const canAccess = (user) =>
     user?.user_type === "app_admin" ||
@@ -89,15 +93,29 @@ export default function GameOverlaySettingsPage() {
     const load = async () => {
       const user = await base44.auth.me();
       setCurrentUser(user);
-      if (!canAccess(user)) return;
-      const settings = await base44.entities.OverlaySettings.list("-created_date", 1);
-      if (settings?.[0]) {
-        setLogoUrl(settings[0].logo_url || null);
-        setLeagueLogoUrl(settings[0].league_logo_url || null);
-        setTickerText(settings[0].ticker_text || "");
-        setTickerEnabled(settings[0].ticker_enabled !== false);
-        setSettingsId(settings[0].id);
+      if (!canAccess(user)) { setLoading(false); return; }
+
+      // Load all leagues, then filter by assigned leagues for non-app-admins
+      const allLeagues = await base44.entities.League.list("name");
+      let visibleLeagues = allLeagues;
+      if (user.user_type !== "app_admin") {
+        const assignedIds = user.assigned_league_ids || [];
+        visibleLeagues = allLeagues.filter(l => assignedIds.includes(l.id));
       }
+      setLeagues(visibleLeagues);
+
+      // Load this user's own overlay settings
+      const allSettings = await base44.entities.OverlaySettings.list("-created_date", 50);
+      const mySettings = allSettings.find(s => s.user_id === user.id || s.created_by_id === user.id);
+      if (mySettings) {
+        setLogoUrl(mySettings.logo_url || null);
+        setLeagueLogoUrl(mySettings.league_logo_url || null);
+        setTickerText(mySettings.ticker_text || "");
+        setTickerEnabled(mySettings.ticker_enabled !== false);
+        setSettingsId(mySettings.id);
+        setSelectedLeagueId(mySettings.league_id || "");
+      }
+      setLoading(false);
     };
     load();
   }, []);
@@ -114,7 +132,14 @@ export default function GameOverlaySettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    const data = { logo_url: logoUrl, league_logo_url: leagueLogoUrl, ticker_text: tickerText, ticker_enabled: tickerEnabled };
+    const data = {
+      user_id: currentUser.id,
+      league_id: selectedLeagueId || null,
+      logo_url: logoUrl,
+      league_logo_url: leagueLogoUrl,
+      ticker_text: tickerText,
+      ticker_enabled: tickerEnabled,
+    };
     if (settingsId) {
       await base44.entities.OverlaySettings.update(settingsId, data);
     } else {
@@ -126,7 +151,7 @@ export default function GameOverlaySettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  if (!currentUser) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
@@ -151,14 +176,35 @@ export default function GameOverlaySettingsPage() {
           </div>
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Game Overlay</h1>
-            <p className="text-slate-500 text-sm">Configure your OBS live game overlay</p>
+            <p className="text-slate-500 text-sm">Configure your personal OBS live game overlay</p>
           </div>
         </div>
+
+        {/* League Selector */}
+        <Card className="border-slate-200 mb-6">
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold text-slate-800">League</h2>
+            <p className="text-sm text-slate-500">Select the league this overlay configuration is for.</p>
+          </CardHeader>
+          <CardContent>
+            <Select value={selectedLeagueId || "none"} onValueChange={(v) => setSelectedLeagueId(v === "none" ? "" : v)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a league..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— No league selected —</SelectItem>
+                {leagues.map(l => (
+                  <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </CardContent>
+        </Card>
 
         <Card className="border-slate-200 mb-6">
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-slate-800">Overlay Logos</h2>
-            <p className="text-sm text-slate-500">Both logos will appear in the top-right corner of the overlay.</p>
+            <p className="text-sm text-slate-500">These logos will appear on your personal overlay.</p>
           </CardHeader>
           <CardContent className="space-y-6">
             <LogoUploadBlock
@@ -188,12 +234,7 @@ export default function GameOverlaySettingsPage() {
               disabled={saving || !!uploading}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {saved ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Saved!
-                </>
-              ) : saving ? "Saving..." : "Save Settings"}
+              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
             </Button>
           </CardContent>
         </Card>
@@ -227,12 +268,7 @@ export default function GameOverlaySettingsPage() {
               disabled={saving || !!uploading}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {saved ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Saved!
-                </>
-              ) : saving ? "Saving..." : "Save Settings"}
+              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
             </Button>
           </CardContent>
         </Card>

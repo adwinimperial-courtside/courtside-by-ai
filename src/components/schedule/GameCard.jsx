@@ -343,7 +343,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   {canAccessOverlay && (
                     <Button
                       onClick={() => {
-                        const url = `${window.location.origin}/GameOverlay?gameId=${liveGame.id}`;
+                        const uid = currentUser?.id || "";
+                        const url = `${window.location.origin}/GameOverlay?gameId=${liveGame.id}&userId=${uid}`;
                         navigator.clipboard.writeText(url);
                         setShowOverlayCopied(true);
                         setTimeout(() => setShowOverlayCopied(false), 2000);

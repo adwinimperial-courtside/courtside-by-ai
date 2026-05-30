@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 export default function GameOverlayPage() {
   const params = new URLSearchParams(window.location.search);
   const gameId = params.get("gameId");
+  const userId = params.get("userId");
 
   const [game, setGame] = useState(null);
   const [homeTeam, setHomeTeam] = useState(null);
@@ -23,15 +24,28 @@ export default function GameOverlayPage() {
   useEffect(() => {
     if (!gameId) return;
     const loadData = async () => {
-      const [g, settings] = await Promise.all([
+      const [g, allSettings] = await Promise.all([
         base44.entities.Game.get(gameId),
-        base44.entities.OverlaySettings.list("-created_date", 1),
+        base44.entities.OverlaySettings.list("-created_date", 50),
       ]);
       setGame(g);
-      if (settings?.[0]?.logo_url) setOverlayLogo(settings[0].logo_url);
-      if (settings?.[0]?.league_logo_url) setLeagueLogo(settings[0].league_logo_url);
-      if (settings?.[0]?.ticker_text) setTickerText(settings[0].ticker_text);
-      setTickerEnabled(settings?.[0]?.ticker_enabled !== false && !!settings?.[0]?.ticker_text);
+
+      // Find settings: prefer matching userId param, then fall back to league match, then first
+      let settings = null;
+      if (userId) {
+        settings = allSettings.find(s => s.user_id === userId || s.created_by_id === userId);
+      }
+      if (!settings) {
+        settings = allSettings.find(s => s.league_id === g.league_id);
+      }
+      if (!settings && allSettings.length > 0) {
+        settings = allSettings[0];
+      }
+
+      if (settings?.logo_url) setOverlayLogo(settings.logo_url);
+      if (settings?.league_logo_url) setLeagueLogo(settings.league_logo_url);
+      if (settings?.ticker_text) setTickerText(settings.ticker_text);
+      setTickerEnabled(settings?.ticker_enabled !== false && !!settings?.ticker_text);
 
       const [ht, at, lg] = await Promise.all([
         base44.entities.Team.get(g.home_team_id),
