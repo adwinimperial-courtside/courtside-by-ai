@@ -4,11 +4,75 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MonitorPlay, Upload, CheckCircle, Trash2 } from "lucide-react";
 
+function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium text-slate-700">{label}</p>
+        <p className="text-xs text-slate-400">{hint}</p>
+      </div>
+      {value ? (
+        <div className="flex items-center gap-4">
+          <img
+            src={value}
+            alt={label}
+            className="w-20 h-20 object-contain rounded-xl border border-slate-200 bg-slate-50 p-2"
+          />
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRemove}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Remove
+            </Button>
+            <label>
+              <Button variant="outline" size="sm" asChild>
+                <span className="cursor-pointer">
+                  <Upload className="w-4 h-4 mr-2" />
+                  {uploading === field ? "Uploading..." : "Replace"}
+                </span>
+              </Button>
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => onUpload(e, field)}
+                disabled={!!uploading}
+              />
+            </label>
+          </div>
+        </div>
+      ) : (
+        <label className="block">
+          <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-6 cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors">
+            <Upload className="w-7 h-7 text-slate-400 mb-2" />
+            <span className="text-sm text-slate-600 font-medium">
+              {uploading === field ? "Uploading..." : "Click to upload"}
+            </span>
+            <span className="text-xs text-slate-400 mt-1">PNG, JPG, WebP — transparent background recommended</span>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => onUpload(e, field)}
+            disabled={!!uploading}
+          />
+        </label>
+      )}
+    </div>
+  );
+}
+
 export default function GameOverlaySettingsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
+  const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
   const [settingsId, setSettingsId] = useState(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(null); // "logo" | "league_logo" | null
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -25,35 +89,36 @@ export default function GameOverlaySettingsPage() {
       const settings = await base44.entities.OverlaySettings.list("-created_date", 1);
       if (settings?.[0]) {
         setLogoUrl(settings[0].logo_url || null);
+        setLeagueLogoUrl(settings[0].league_logo_url || null);
         setSettingsId(settings[0].id);
       }
     };
     load();
   }, []);
 
-  const handleFileUpload = async (e) => {
+  const handleFileUpload = async (e, field) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setUploading(true);
+    setUploading(field);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setLogoUrl(file_url);
-    setUploading(false);
+    if (field === "logo") setLogoUrl(file_url);
+    else setLeagueLogoUrl(file_url);
+    setUploading(null);
   };
 
   const handleSave = async () => {
     setSaving(true);
+    const data = { logo_url: logoUrl, league_logo_url: leagueLogoUrl };
     if (settingsId) {
-      await base44.entities.OverlaySettings.update(settingsId, { logo_url: logoUrl });
+      await base44.entities.OverlaySettings.update(settingsId, data);
     } else {
-      const created = await base44.entities.OverlaySettings.create({ logo_url: logoUrl });
+      const created = await base44.entities.OverlaySettings.create(data);
       setSettingsId(created.id);
     }
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
-
-  const handleRemoveLogo = () => setLogoUrl(null);
 
   if (!currentUser) {
     return (
@@ -86,66 +151,35 @@ export default function GameOverlaySettingsPage() {
 
         <Card className="border-slate-200 mb-6">
           <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">Overlay Logo</h2>
-            <p className="text-sm text-slate-500">Upload a logo to display in the top-right corner of the overlay.</p>
+            <h2 className="font-semibold text-slate-800">Overlay Logos</h2>
+            <p className="text-sm text-slate-500">Both logos will appear in the top-right corner of the overlay.</p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {logoUrl ? (
-              <div className="flex items-center gap-4">
-                <img
-                  src={logoUrl}
-                  alt="Overlay Logo"
-                  className="w-20 h-20 object-contain rounded-xl border border-slate-200 bg-slate-50 p-2"
-                />
-                <div className="flex flex-col gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRemoveLogo}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Remove Logo
-                  </Button>
-                  <label>
-                    <Button variant="outline" size="sm" asChild>
-                      <span className="cursor-pointer">
-                        <Upload className="w-4 h-4 mr-2" />
-                        {uploading ? "Uploading..." : "Replace Logo"}
-                      </span>
-                    </Button>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileUpload}
-                      disabled={uploading}
-                    />
-                  </label>
-                </div>
-              </div>
-            ) : (
-              <label className="block">
-                <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-8 cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors">
-                  <Upload className="w-8 h-8 text-slate-400 mb-2" />
-                  <span className="text-sm text-slate-600 font-medium">
-                    {uploading ? "Uploading..." : "Click to upload logo"}
-                  </span>
-                  <span className="text-xs text-slate-400 mt-1">PNG, JPG, WebP — transparent background recommended</span>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileUpload}
-                  disabled={uploading}
-                />
-              </label>
-            )}
+          <CardContent className="space-y-6">
+            <LogoUploadBlock
+              label="App / Sponsor Logo"
+              hint="E.g. Courtside by AI or a sponsor logo"
+              value={logoUrl}
+              field="logo"
+              uploading={uploading}
+              onRemove={() => setLogoUrl(null)}
+              onUpload={handleFileUpload}
+            />
+
+            <div className="border-t border-slate-100" />
+
+            <LogoUploadBlock
+              label="League Logo"
+              hint="Your league's official logo"
+              value={leagueLogoUrl}
+              field="league_logo"
+              uploading={uploading}
+              onRemove={() => setLeagueLogoUrl(null)}
+              onUpload={handleFileUpload}
+            />
 
             <Button
               onClick={handleSave}
-              disabled={saving || uploading}
+              disabled={saving || !!uploading}
               className="bg-purple-600 hover:bg-purple-700 text-white"
             >
               {saved ? (
