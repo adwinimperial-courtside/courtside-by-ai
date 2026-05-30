@@ -659,16 +659,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           throw new Error(`${pObj?.name || pid} is already on court.`);
         }
       }
-      // Simulate post-sub counts
+      // Simulate post-sub counts — only validate if the pre-sub count looks sane (exactly 5)
+      // If it's already corrupted (>5 or <5), skip the count check and let the sub fix it
       const homeStartersNow = freshStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
       const awayStartersNow = freshStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
-      const homeResult = homeStartersNow - capturedHomeOut.length + capturedHomeIn.length;
-      const awayResult = awayStartersNow - capturedAwayOut.length + capturedAwayIn.length;
-      if (capturedHomeOut.length > 0 && homeResult !== 5) {
-        throw new Error(`Substitution would leave ${homeTeam?.name || 'Home'} with ${homeResult} players. Each team must have exactly 5.`);
+      if (capturedHomeOut.length > 0 && homeStartersNow === 5) {
+        const homeResult = homeStartersNow - capturedHomeOut.length + capturedHomeIn.length;
+        if (homeResult !== 5) {
+          throw new Error(`Substitution would leave ${homeTeam?.name || 'Home'} with ${homeResult} players. Each team must have exactly 5.`);
+        }
       }
-      if (capturedAwayOut.length > 0 && awayResult !== 5) {
-        throw new Error(`Substitution would leave ${awayTeam?.name || 'Away'} with ${awayResult} players. Each team must have exactly 5.`);
+      if (capturedAwayOut.length > 0 && awayStartersNow === 5) {
+        const awayResult = awayStartersNow - capturedAwayOut.length + capturedAwayIn.length;
+        if (awayResult !== 5) {
+          throw new Error(`Substitution would leave ${awayTeam?.name || 'Away'} with ${awayResult} players. Each team must have exactly 5.`);
+        }
       }
 
       const processTeamSub = async (playersOut, playersIn, teamId) => {
