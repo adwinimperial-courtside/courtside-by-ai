@@ -92,6 +92,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const playerMinutesRef = React.useRef({});
   const playerGameClockStateRef = React.useRef({});
   const isSubmittingSubRef = React.useRef(false);
+  const subCompletedAtRef = React.useRef(0);
   const isProcessingStatRef = React.useRef(false);
   const lastStatClickTimeRef = React.useRef(0);
   const queryClient = useQueryClient();
@@ -183,6 +184,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (existingStats.length === 0) return;
     if (isSubmittingSubRef.current) return;
+    // Skip repair check for 3 seconds after a sub completes — the cache is still settling
+    if (Date.now() - subCompletedAtRef.current < 3000) return;
     checkAndTriggerRepair(existingStats);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homeActiveCount, awayActiveCount]);
@@ -801,11 +804,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }
       });
 
-      checkAndTriggerRepair(expectedStats);
-
       // Force cache refresh immediately so bench/active lists are accurate for next sub
       queryClient.setQueryData(['playerStats', game.id], expectedStats);
       queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+
+      // Clear any stale repair mode — sub succeeded, lineup is now valid
+      setRepairMode(null);
+      // Stamp completion time so the repair-check useEffect skips for 3s while cache settles
+      subCompletedAtRef.current = Date.now();
 
       // Success — close dialog
       setShowSubDialog(false);
