@@ -1590,14 +1590,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
                 const updates = freshStats
                   .filter(s => s.team_id === quickFixTeam)
-                  .map(s => updateStatMutation.mutateAsync({ 
-                    statId: s.id, 
-                    updates: { is_starter: quickFixSelection.includes(s.player_id), is_active: quickFixSelection.includes(s.player_id) } 
+                  .map(s => base44.entities.PlayerStats.update(s.id, { 
+                    is_starter: quickFixSelection.includes(s.player_id), 
+                    is_active: quickFixSelection.includes(s.player_id) 
                   }));
                 await Promise.all(updates);
                 setQuickFixTeam(null);
                 setQuickFixSelection([]);
-                setRepairMode(null); // close emergency repair modal if open
+                setRepairMode(null);
                 queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
               }}
             >
