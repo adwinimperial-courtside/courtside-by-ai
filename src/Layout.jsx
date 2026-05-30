@@ -235,6 +235,12 @@ export default function Layout({ children }) {
         submitted_at: new Date().toISOString(),
         status: "new",
       });
+      // Send email notification
+      await base44.integrations.Core.SendEmail({
+        to: "adwin.imperial@gmail.com",
+        subject: `[Courtside by AI] New ${feedbackType === "bug" ? "Bug Report" : "Suggestion"} from ${currentUser?.full_name || currentUser?.email}`,
+        body: `<p><strong>Type:</strong> ${feedbackType === "bug" ? "Bug Report" : "Suggestion"}</p><p><strong>From:</strong> ${currentUser?.full_name || ""} (${currentUser?.email || ""})</p><p><strong>Page:</strong> ${window.location.pathname}</p><p><strong>Role:</strong> ${currentUser?.user_type || ""}</p><hr/><p><strong>Description:</strong></p><p>${feedbackDesc.trim()}</p>`,
+      });
       setFeedbackSuccess(true);
       setTimeout(() => setShowFeedback(false), 2000);
     } catch {
