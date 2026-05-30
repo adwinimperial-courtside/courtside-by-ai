@@ -96,14 +96,48 @@ export default function GameOverlayPage() {
     return p <= total ? `Q${p}` : `OT${p - total}`;
   };
 
-  const foulPeriod = String(game.clock_period || 1);
-  const totalTimeouts = game.game_rules?.timeouts_per_period ?? game.game_rules?.timeouts_per_half ?? 3;
-  const homeTimeoutsUsed = game.home_timeouts?.[foulPeriod] || 0;
-  const awayTimeoutsUsed = game.away_timeouts?.[foulPeriod] || 0;
-  const homeTimeoutsLeft = Math.max(0, totalTimeouts - homeTimeoutsUsed);
-  const awayTimeoutsLeft = Math.max(0, totalTimeouts - awayTimeoutsUsed);
-  const homeFouls = game.home_team_fouls?.[foulPeriod] || 0;
-  const awayFouls = game.away_team_fouls?.[foulPeriod] || 0;
+  const period = game.clock_period || 1;
+  const periodType = game.period_type || "quarters";
+  const totalPeriods = game.period_count || (periodType === "halves" ? 2 : 4);
+
+  // Foul key — matches ScoreHeader's getFoulResetPeriodKey
+  const getFoulKey = (p) => {
+    if (p > totalPeriods) return String(p);
+    if (periodType === "halves") return p === 1 ? "h1" : "h2";
+    return String(p);
+  };
+  const foulKey = getFoulKey(period);
+
+  // Timeout segment key — matches ScoreHeader's getSegment
+  const getSegment = (p) => {
+    if (p > totalPeriods) return "OVERTIME";
+    if (periodType === "halves") return p === 1 ? "FIRST_HALF" : "SECOND_HALF";
+    return p <= 2 ? "FIRST_HALF" : "SECOND_HALF";
+  };
+  const segmentKey = getSegment(period);
+
+  // Timeout allowance — matches ScoreHeader's getSegmentAllowance
+  const getSegmentAllowance = () => {
+    const configured = game.game_rules?.timeoutsPerSegment;
+    if (Array.isArray(configured)) {
+      const idx = period - 1;
+      if (idx >= 0 && idx < configured.length) return configured[idx];
+      return 1;
+    }
+    if (configured != null) return configured;
+    if (segmentKey === "OVERTIME") return 1;
+    if (segmentKey === "FIRST_HALF") return 2;
+    if (periodType === "halves") return 2;
+    return 3;
+  };
+  const segmentAllowance = getSegmentAllowance();
+
+  const homeTimeoutsUsed = game.home_timeouts?.[segmentKey] || 0;
+  const awayTimeoutsUsed = game.away_timeouts?.[segmentKey] || 0;
+  const homeTimeoutsLeft = Math.max(0, segmentAllowance - homeTimeoutsUsed);
+  const awayTimeoutsLeft = Math.max(0, segmentAllowance - awayTimeoutsUsed);
+  const homeFouls = game.home_team_fouls?.[foulKey] || 0;
+  const awayFouls = game.away_team_fouls?.[foulKey] || 0;
 
   const shortName = (name) => (name || "???").substring(0, 4).toUpperCase();
   const leagueShort = (league?.name || "LEAGUE").substring(0, 20).toUpperCase();
@@ -365,9 +399,9 @@ export default function GameOverlayPage() {
         }}>
           {/* Timeouts row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <TimeoutDots left={homeTimeoutsLeft} total={totalTimeouts} />
+            <TimeoutDots left={homeTimeoutsLeft} total={segmentAllowance} />
             <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>TIMEOUTS</span>
-            <TimeoutDots left={awayTimeoutsLeft} total={totalTimeouts} />
+            <TimeoutDots left={awayTimeoutsLeft} total={segmentAllowance} />
           </div>
           {/* Fouls row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
