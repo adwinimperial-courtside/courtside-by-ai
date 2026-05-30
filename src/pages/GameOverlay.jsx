@@ -96,23 +96,23 @@ export default function GameOverlayPage() {
 
   const TeamColorBox = ({ color }) => (
     <div style={{
-      width: 28,
-      height: 28,
-      borderRadius: 6,
+      width: 16,
+      height: 16,
+      borderRadius: 4,
       backgroundColor: color || "#888",
       flexShrink: 0,
     }} />
   );
 
   const TimeoutDots = ({ left, total }) => (
-    <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+    <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
       {Array.from({ length: Math.max(total, 1) }).map((_, i) => (
         <div key={i} style={{
-          width: 10,
-          height: 10,
+          width: 7,
+          height: 7,
           borderRadius: "50%",
           backgroundColor: i < left ? "#f97316" : "rgba(255,255,255,0.15)",
-          border: "1px solid rgba(255,255,255,0.25)",
+          border: "1px solid rgba(255,255,255,0.2)",
         }} />
       ))}
     </div>
@@ -212,152 +212,138 @@ export default function GameOverlayPage() {
         </div>
       )}
 
-      {/* Scorebug — bottom right, broadcast-style */}
+      {/* Scorebug — bottom right, broadcast-style compact */}
       <div style={{
         position: "absolute",
-        bottom: 30,
-        right: 30,
-        width: 460,
-        borderRadius: 14,
+        bottom: tickerEnabled && tickerText ? 46 : 20,
+        right: 20,
+        width: 280,
+        borderRadius: 8,
         overflow: "hidden",
-        boxShadow: "0 8px 40px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.5)",
-        border: "1px solid rgba(255,255,255,0.1)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
+        border: "1px solid rgba(255,255,255,0.08)",
       }}>
 
-        {/* Header bar: LIVE + League + Period + Clock */}
+        {/* Header bar: LIVE + Period + Clock */}
         <div style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "8px 16px",
-          background: "rgba(12, 14, 24, 0.97)",
+          padding: "4px 10px",
+          background: "rgba(12, 14, 24, 0.98)",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{
               background: "#e53e3e",
               color: "#fff",
-              fontSize: 10,
+              fontSize: 8,
               fontWeight: 800,
-              padding: "2px 7px",
-              borderRadius: 4,
-              letterSpacing: 1.5,
+              padding: "1px 5px",
+              borderRadius: 3,
+              letterSpacing: 1.2,
             }}>LIVE</div>
-            <span style={{ color: "#9ba3c2", fontSize: 11, fontWeight: 600, letterSpacing: 0.8, whiteSpace: "nowrap" }}>
+            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600, letterSpacing: 0.6, whiteSpace: "nowrap" }}>
               COURTSIDE-BY-AI
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <span style={{
               color: "#f97316",
-              fontSize: 13,
+              fontSize: 11,
               fontWeight: 800,
-              letterSpacing: 0.5,
+              letterSpacing: 0.4,
             }}>{periodLabel()}</span>
             <span style={{
               color: "#ffffff",
-              fontSize: 20,
+              fontSize: 15,
               fontWeight: 900,
-              letterSpacing: 1,
+              letterSpacing: 0.5,
               fontVariantNumeric: "tabular-nums",
             }}>{clockDisplay}</span>
           </div>
         </div>
 
-        {/* Home Team Row */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 16px",
-          background: "rgba(18, 20, 32, 0.97)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <TeamColorBox color={homeTeam.color} />
+        {/* Teams + Scores */}
+        <div style={{ background: "rgba(18, 20, 32, 0.98)" }}>
+          {/* Home Team Row */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "5px 10px",
+            borderBottom: "1px solid rgba(255,255,255,0.05)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <TeamColorBox color={homeTeam.color} />
+              <span style={{
+                color: "#f0f4ff",
+                fontSize: 14,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}>{shortName(homeTeam.name)}</span>
+            </div>
             <span style={{
-              color: "#f0f4ff",
+              color: "#ffffff",
               fontSize: 22,
-              fontWeight: 800,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-            }}>{shortName(homeTeam.name)}</span>
+              fontWeight: 900,
+              letterSpacing: -0.5,
+              fontVariantNumeric: "tabular-nums",
+              minWidth: 36,
+              textAlign: "right",
+            }}>{game.home_score || 0}</span>
           </div>
-          <span style={{
-            color: "#ffffff",
-            fontSize: 36,
-            fontWeight: 900,
-            letterSpacing: -1,
-            fontVariantNumeric: "tabular-nums",
-            minWidth: 52,
-            textAlign: "right",
-          }}>{game.home_score || 0}</span>
+
+          {/* Away Team Row */}
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "5px 10px",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <TeamColorBox color={awayTeam.color} />
+              <span style={{
+                color: "#f0f4ff",
+                fontSize: 14,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}>{shortName(awayTeam.name)}</span>
+            </div>
+            <span style={{
+              color: "#ffffff",
+              fontSize: 22,
+              fontWeight: 900,
+              letterSpacing: -0.5,
+              fontVariantNumeric: "tabular-nums",
+              minWidth: 36,
+              textAlign: "right",
+            }}>{game.away_score || 0}</span>
+          </div>
         </div>
 
-        {/* Away Team Row */}
+        {/* Footer: Timeouts + Fouls — single compact row */}
         <div style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "8px 16px",
-          background: "rgba(22, 24, 38, 0.97)",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <TeamColorBox color={awayTeam.color} />
-            <span style={{
-              color: "#f0f4ff",
-              fontSize: 22,
-              fontWeight: 800,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-            }}>{shortName(awayTeam.name)}</span>
-          </div>
-          <span style={{
-            color: "#ffffff",
-            fontSize: 36,
-            fontWeight: 900,
-            letterSpacing: -1,
-            fontVariantNumeric: "tabular-nums",
-            minWidth: 52,
-            textAlign: "right",
-          }}>{game.away_score || 0}</span>
-        </div>
-
-        {/* Footer: Timeouts + Fouls */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 16px",
+          padding: "3px 10px",
           background: "rgba(12, 14, 24, 0.98)",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
         }}>
-          {/* Home side */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <TimeoutDots left={homeTimeoutsLeft} total={totalTimeouts} />
-            <span style={{ color: "#9ba3c2", fontSize: 11, fontWeight: 600 }}>F {homeFouls}</span>
+            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600 }}>F{homeFouls}</span>
           </div>
-          {/* Center divider label */}
-          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, fontWeight: 600, letterSpacing: 1 }}>
+          <span style={{ color: "rgba(255,255,255,0.15)", fontSize: 8, fontWeight: 600, letterSpacing: 1 }}>
             TO · F
           </span>
-          {/* Away side */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexDirection: "row-reverse" }}>
             <TimeoutDots left={awayTimeoutsLeft} total={totalTimeouts} />
-            <span style={{ color: "#9ba3c2", fontSize: 11, fontWeight: 600 }}>F {awayFouls}</span>
+            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600 }}>F{awayFouls}</span>
           </div>
-        </div>
-
-        {/* Branding strip */}
-        <div style={{
-          textAlign: "center",
-          padding: "4px 10px",
-          background: "rgba(8, 10, 18, 0.99)",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-        }}>
-          <span style={{ color: "rgba(255,255,255,0.3)", fontSize: 9, letterSpacing: 2, fontWeight: 700, whiteSpace: "nowrap" }}>
-            COURTSIDE&nbsp;BY&nbsp;AI
-          </span>
         </div>
       </div>
     </div>
