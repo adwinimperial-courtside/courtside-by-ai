@@ -645,16 +645,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           throw new Error(`Cannot sub out ${p.name} — they're not currently on court. The lineup may have changed.`);
         }
       }
+      // Only block "already on court" if they're not simultaneously being subbed out
+      // (handles half-executed state from a previous failed sub)
+      const allOutIds = new Set([
+        ...capturedHomeOut.map(p => p.id),
+        ...capturedAwayOut.map(p => p.id),
+      ]);
       for (const pid of capturedHomeIn) {
         const s = freshStats.find(st => st.player_id === pid);
-        if (s && s.is_starter === true) {
+        if (s && s.is_starter === true && !allOutIds.has(pid)) {
           const pObj = players.find(p => p.id === pid);
           throw new Error(`${pObj?.name || pid} is already on court.`);
         }
       }
       for (const pid of capturedAwayIn) {
         const s = freshStats.find(st => st.player_id === pid);
-        if (s && s.is_starter === true) {
+        if (s && s.is_starter === true && !allOutIds.has(pid)) {
           const pObj = players.find(p => p.id === pid);
           throw new Error(`${pObj?.name || pid} is already on court.`);
         }
@@ -764,20 +770,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
 
-      await Promise.all([
-        processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id),
-        processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id),
-      ]);
+      // Process sequentially to avoid race conditions when both teams sub simultaneously
+      await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
+      await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
 
       // Compute expected post-sub state locally from freshStats + the operations we performed
-      const allOutIds = new Set([
+      const allSubOutIds = new Set([
         ...capturedHomeOut.map(p => p.id),
         ...capturedAwayOut.map(p => p.id)
       ]);
       const allInIds = new Set([...capturedHomeIn, ...capturedAwayIn]);
 
       const expectedStats = freshStats.map(s => {
-        if (allOutIds.has(s.player_id)) return { ...s, is_starter: false, is_active: false };
+        if (allSubOutIds.has(s.player_id)) return { ...s, is_starter: false, is_active: false };
         if (allInIds.has(s.player_id)) return { ...s, is_starter: true, is_active: true };
         return s;
       });
@@ -798,6 +803,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       checkAndTriggerRepair(expectedStats);
 
+      // Force cache refresh immediately so bench/active lists are accurate for next sub
+      queryClient.setQueryData(['playerStats', game.id], expectedStats);
+      queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+
       // Success — close dialog
       setShowSubDialog(false);
       resetSubDialog();
@@ -813,14 +822,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const togglePlayerOut = (player, teamId) => {
     if (teamId === game.home_team_id) {
-      setHomePlayersOut(prev =>
-        prev.some(p => p.id === player.id) ? prev.filter(p => p.id !== player.id) : [...prev, player]
-      );
+      const alreadyOut = homePlayersOut.some(p => p.id === player.id);
+      const newOut = alreadyOut
+        ? homePlayersOut.filter(p => p.id !== player.id)
+        : [...homePlayersOut, player];
+      setHomePlayersOut(newOut);
+      // Always reset the IN list when OUT selection changes — stale IN selections cause count errors
       setHomePlayersIn([]);
     } else {
-      setAwayPlayersOut(prev =>
-        prev.some(p => p.id === player.id) ? prev.filter(p => p.id !== player.id) : [...prev, player]
-      );
+      const alreadyOut = awayPlayersOut.some(p => p.id === player.id);
+      const newOut = alreadyOut
+        ? awayPlayersOut.filter(p => p.id !== player.id)
+        : [...awayPlayersOut, player];
+      setAwayPlayersOut(newOut);
       setAwayPlayersIn([]);
     }
   };
@@ -1092,11 +1106,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const isEligibleReplacement = (playerId) => !isDisqualified(playerId);
 
+  // Bench = not currently is_starter=true in the latest stats
+  // Use a Set for fast lookup; fall back to activePlayerIds if no stat row exists
+  const activePlayerIdSet = new Set(activePlayerIds);
   const homeBenchPlayers = players.filter(p => 
-    p.team_id === game.home_team_id && !activePlayerIds.includes(p.id)
+    p.team_id === game.home_team_id && !activePlayerIdSet.has(p.id)
   );
   const awayBenchPlayers = players.filter(p => 
-    p.team_id === game.away_team_id && !activePlayerIds.includes(p.id)
+    p.team_id === game.away_team_id && !activePlayerIdSet.has(p.id)
   );
 
   const PlayerButton = ({ player, teamColor, onSubClick, isDesktop, side }) => {
