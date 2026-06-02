@@ -79,8 +79,8 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
 
         for (const stat of teamStats) {
           const shouldBeActive = activeSet.has(stat.player_id);
-          if (stat.is_starter !== shouldBeActive) {
-            await base44.entities.PlayerStats.update(stat.id, { is_starter: shouldBeActive });
+          if (stat.is_active !== shouldBeActive) {
+            await base44.entities.PlayerStats.update(stat.id, { is_active: shouldBeActive });
           }
         }
 
@@ -91,7 +91,8 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
               game_id: game.id,
               player_id: playerId,
               team_id: teamId,
-              is_starter: true,
+              is_starter: false,
+              is_active: true,
               minutes_played: 0,
             });
           }
