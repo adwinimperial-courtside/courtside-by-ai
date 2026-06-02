@@ -870,11 +870,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     isSubmittingSubRef.current = true;
     const currentComputedTimeLeft = computeTimeLeft(game);
 
-    // Use the live cache we already have — no upfront network fetch (this was the main delay)
     const outStat = existingStats.find(s => s.player_id === outPlayer.id);
     const inStat  = existingStats.find(s => s.player_id === inPlayerId);
 
-    // Accrue the outgoing player's minutes; set the incoming player's clock anchor
     if (game.game_mode === 'timed' && game.clock_running) {
       const clockState = playerGameClockStateRef.current[outPlayer.id];
       if (clockState && clockState.period === game.clock_period) {
@@ -889,8 +887,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
     const outMinutes = Math.round(((playerMinutesRef.current[outPlayer.id] || 0) / 60) * 100) / 100;
 
-    // Optimistic UI update — instant
-    const snapshot = queryClient.getQueryData(['playerStats', game.id]);
+    // Build the substitution log payload once (used for both the optimistic feed insert and the DB write)
+    const team = teamId === game.home_team_id ? homeTeam : awayTeam;
+    const inName = players.find(p => p.id === inPlayerId)?.name || 'Unknown';
+    const logLabel = `${team?.name}: OUT — ${outPlayer.name} | IN — ${inName}`;
+    const logData = JSON.stringify({ display: logLabel, out_ids: [outPlayer.id], in_ids: [inPlayerId], team_id: teamId });
+    const logPayload = {
+      game_id: game.id, player_id: outPlayer.id, team_id: teamId,
+      stat_type: 'substitution', stat_label: logData, stat_points: 0,
+      stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
+      old_home_score: game.home_score || 0, old_away_score: game.away_score || 0,
+      logged_by: currentUser?.email || '', device_name: getDeviceName()
+    };
+
+    // Optimistic updates — both the lineup AND the activity feed update instantly
+    const statsSnapshot = queryClient.getQueryData(['playerStats', game.id]);
+    const logsSnapshot  = queryClient.getQueryData(['gameLogs', game.id]);
     queryClient.setQueryData(['playerStats', game.id], prev => {
       const next = (prev || []).map(s => {
         if (s.player_id === outPlayer.id) return { ...s, is_active: false, minutes_played: outMinutes };
@@ -900,42 +912,32 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (!inStat) next.push({ player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
       return next;
     });
+    queryClient.setQueryData(['gameLogs', game.id], prev => [
+      { id: `temp-${Date.now()}`, created_date: new Date().toISOString(), ...logPayload },
+      ...(prev || [])
+    ]);
     setArmedOutIds(prev => { const n = new Set(prev); n.delete(outPlayer.id); return n; });
     if (selectedPlayer?.id === outPlayer.id) setSelectedPlayer(null);
     setPulsePlayerId(inPlayerId);
     setTimeout(() => setPulsePlayerId(prev => (prev === inPlayerId ? null : prev)), 300);
 
-    // Persist OUT + IN in parallel; release the lock as soon as they settle
-    let ok = false;
+    // Writes — stat OUT, stat IN, and the log all fire together
     try {
       const writes = [];
       if (outStat) writes.push(updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_active: false, minutes_played: outMinutes } }));
       if (inStat)  writes.push(updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } }));
       else         writes.push(createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 }));
+      writes.push(createLogMutation.mutateAsync(logPayload));
       await Promise.all(writes);
       subCompletedAtRef.current = Date.now();
-      ok = true;
     } catch (error) {
-      if (snapshot !== undefined) queryClient.setQueryData(['playerStats', game.id], snapshot);
+      if (statsSnapshot !== undefined) queryClient.setQueryData(['playerStats', game.id], statsSnapshot);
+      if (logsSnapshot  !== undefined) queryClient.setQueryData(['gameLogs', game.id], logsSnapshot);
       setArmedOutIds(prev => { const n = new Set(prev); n.add(outPlayer.id); return n; });
       setPulsePlayerId(null);
       console.error('[LiveStat:quickswap]', error);
     } finally {
       isSubmittingSubRef.current = false;
-    }
-
-    // Activity log — fire-and-forget so it never delays the next substitution
-    if (ok) {
-      const team = teamId === game.home_team_id ? homeTeam : awayTeam;
-      const inName = players.find(p => p.id === inPlayerId)?.name || 'Unknown';
-      const logData = JSON.stringify({ display: `${team?.name}: OUT — ${outPlayer.name} | IN — ${inName}`, out_ids: [outPlayer.id], in_ids: [inPlayerId], team_id: teamId });
-      createLogMutation.mutateAsync({
-        game_id: game.id, player_id: outPlayer.id, team_id: teamId,
-        stat_type: 'substitution', stat_label: logData, stat_points: 0,
-        stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
-        old_home_score: game.home_score || 0, old_away_score: game.away_score || 0,
-        logged_by: currentUser?.email || '', device_name: getDeviceName()
-      }).catch(err => console.warn('[LiveStat:quickswap] log failed, swap still applied:', err));
     }
   };
 
