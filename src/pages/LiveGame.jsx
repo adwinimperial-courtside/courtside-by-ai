@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -102,7 +102,10 @@ export default function LiveGamePage() {
   });
 
   // Merge optimistic clock overrides (cleared when real-time sync arrives)
-  const mergedGame = game && gameOverride ? { ...game, ...gameOverride } : game;
+  const mergedGame = useMemo(
+    () => game && gameOverride ? { ...game, ...gameOverride } : game,
+    [game, gameOverride]
+  );
 
   // When server syncs new clock state, clear the override
   useEffect(() => {
