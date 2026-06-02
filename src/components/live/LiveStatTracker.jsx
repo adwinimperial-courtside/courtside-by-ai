@@ -139,7 +139,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
-    queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date'),
+    queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date', 50),
     staleTime: 5000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
