@@ -112,10 +112,10 @@ export default function LeaguesPage() {
   const isLeagueAdmin = currentUser?.user_type === 'league_admin';
   const isAppAdmin = currentUser?.user_type === 'app_admin';
 
-  // For league_admin, only show their assigned leagues
-  const assignedLeagues = isLeagueAdmin
-    ? leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id))
-    : leagues;
+  // app_admin sees all leagues; everyone else only sees their assigned leagues
+  const assignedLeagues = isAppAdmin
+    ? leagues
+    : leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id));
 
   const visibleLeagues = searchQuery.trim()
     ? assignedLeagues.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.season || "").toLowerCase().includes(searchQuery.toLowerCase()))
