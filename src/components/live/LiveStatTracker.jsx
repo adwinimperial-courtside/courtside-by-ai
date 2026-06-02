@@ -140,7 +140,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const { data: gameLogs = [] } = useQuery({
     queryKey: ['gameLogs', game.id],
     queryFn: () => base44.entities.GameLog.filter({ game_id: game.id }, '-created_date', 50),
-    staleTime: 5000,
+    staleTime: 10000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
@@ -157,14 +157,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         if (isSubmittingSubRef.current) return;
         if (Date.now() - subCompletedAtRef.current < 4000) return;
         queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
-      }, 500);
+      }, 2000);
     });
 
     const unsubscribeLogs = base44.entities.GameLog.subscribe(() => {
       clearTimeout(timeoutLogs);
       timeoutLogs = setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['gameLogs', game.id] });
-      }, 500);
+      }, 2000);
     });
     
     return () => {
