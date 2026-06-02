@@ -1231,9 +1231,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     .filter(p => p.team_id === game.away_team_id && activePlayerIds.includes(p.id))
     .sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0));
 
-  const homeArmedCount = homeActivePlayers.filter(p => armedOutIds.has(p.id)).length;
-  const awayArmedCount = awayActivePlayers.filter(p => armedOutIds.has(p.id)).length;
-
   const isDisqualified = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
     if (!stats) return false;
@@ -1256,7 +1253,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     p.team_id === game.away_team_id && !activePlayerIdSet.has(p.id)
   );
 
-  const PlayerButton = ({ player, teamColor, onSubClick, isDesktop, side }) => {
+  const PlayerButton = ({ player, teamColor, isDesktop, side }) => {
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
@@ -1389,15 +1386,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                 teamColor: team?.color,
                 isDesktop: side !== undefined,
                 side,
-                onSubClick: (p) => {
-                queryClient.invalidateQueries({ queryKey: ['players', game.home_team_id, game.away_team_id] });
-                resetSubDialog();
-                if (p.team_id === game.home_team_id) setHomePlayersOut([p]);
-                else setAwayPlayersOut([p]);
-                setSubEntryMode('single');
-                setSubStep('select_in');
-                setShowSubDialog(true);
-                }
               })}
             </div>
           )}
@@ -1480,15 +1468,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           })}
         </div>
 
-        {showSub && (
-          <Button
-            onClick={() => { queryClient.invalidateQueries({ queryKey: ['players', game.home_team_id, game.away_team_id] }); resetSubDialog(); setSubEntryMode('multi'); setShowSubDialog(true); }}
-            className={`w-full ${large ? 'h-12' : 'h-10'} bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-sm shadow-lg mt-auto`}
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Make Substitution
-          </Button>
-        )}
       </div>
     );
   };
