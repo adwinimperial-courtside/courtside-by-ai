@@ -11,6 +11,8 @@ import ScoreHeader from "./ScoreHeader";
 import EndOfPeriodModal from "./EndOfPeriodModal";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 import EmergencyLineupRepair from "./EmergencyLineupRepair";
+import BenchDrawer from "./BenchDrawer";
+import SubstitutionDialog from "./SubstitutionDialog";
 
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
@@ -87,6 +89,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [repairMode, setRepairMode] = useState(null); // null or { teams: [...] }
+  const [armedOutIds, setArmedOutIds] = useState(() => new Set());
+  const [pulsePlayerId, setPulsePlayerId] = useState(null);
   const lastValidLineupsRef = React.useRef({});
   const periodEndHandledRef = React.useRef(false);
   const playerMinutesRef = React.useRef({});
@@ -845,6 +849,114 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     }
   };
 
+  const toggleArmedOut = (playerId) => {
+    if (repairMode) return;
+    setArmedOutIds(prev => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      return next;
+    });
+  };
+
+  const handleQuickSwap = async (teamId, outPlayer, inPlayerId) => {
+    if (isSubmittingSubRef.current) return;
+    if (repairMode) return;
+    isSubmittingSubRef.current = true;
+
+    const teamActives = teamId === game.home_team_id ? homeActivePlayers : awayActivePlayers;
+    if (!teamActives.find(p => p.id === outPlayer.id)) { isSubmittingSubRef.current = false; return; }
+    if (teamActives.find(p => p.id === inPlayerId))    { isSubmittingSubRef.current = false; return; }
+
+    const currentComputedTimeLeft = computeTimeLeft(game);
+
+    const snapshot = queryClient.getQueryData(['playerStats', game.id]);
+    queryClient.setQueryData(['playerStats', game.id], prev =>
+      (prev || []).map(s => {
+        if (s.player_id === outPlayer.id) return { ...s, is_active: false };
+        if (s.player_id === inPlayerId)   return { ...s, is_active: true };
+        return s;
+      })
+    );
+
+    setArmedOutIds(prev => { const next = new Set(prev); next.delete(outPlayer.id); return next; });
+    setPulsePlayerId(inPlayerId);
+    setTimeout(() => setPulsePlayerId(prev => (prev === inPlayerId ? null : prev)), 300);
+
+    try {
+      const freshStats = await withRateLimitRetry(() => base44.entities.PlayerStats.filter({ game_id: game.id }));
+
+      if (game.game_mode === 'timed' && game.clock_running) {
+        const clockState = playerGameClockStateRef.current[outPlayer.id];
+        if (clockState && clockState.period === game.clock_period) {
+          const elapsed = clockState.timeLeft - currentComputedTimeLeft;
+          playerMinutesRef.current[outPlayer.id] = (playerMinutesRef.current[outPlayer.id] || 0) + elapsed;
+        }
+      }
+      playerGameClockStateRef.current[outPlayer.id] = null;
+
+      const outStat = freshStats.find(s => s.player_id === outPlayer.id);
+      if (outStat) {
+        const totalMinutes = Math.round(((playerMinutesRef.current[outPlayer.id] || 0) / 60) * 100) / 100;
+        await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_active: false, minutes_played: totalMinutes } });
+      }
+      if (selectedPlayer?.id === outPlayer.id) setSelectedPlayer(null);
+
+      const inStat = freshStats.find(s => s.player_id === inPlayerId);
+      if (inStat) {
+        await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } });
+      } else {
+        await createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
+      }
+      playerGameClockStateRef.current[inPlayerId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
+      if (playerMinutesRef.current[inPlayerId] === undefined) {
+        playerMinutesRef.current[inPlayerId] = inStat?.minutes_played ? inStat.minutes_played * 60 : 0;
+      }
+
+      const team = teamId === game.home_team_id ? homeTeam : awayTeam;
+      const inName = players.find(p => p.id === inPlayerId)?.name || 'Unknown';
+      const logLabel = `${team?.name}: OUT — ${outPlayer.name} | IN — ${inName}`;
+      const logData = JSON.stringify({ display: logLabel, out_ids: [outPlayer.id], in_ids: [inPlayerId], team_id: teamId });
+      try {
+        await createLogMutation.mutateAsync({
+          game_id: game.id, player_id: outPlayer.id, team_id: teamId,
+          stat_type: 'substitution', stat_label: logData, stat_points: 0,
+          stat_color: teamId === game.home_team_id ? 'bg-blue-600' : 'bg-red-600',
+          old_home_score: game.home_score || 0, old_away_score: game.away_score || 0,
+          logged_by: currentUser?.email || '', device_name: getDeviceName()
+        });
+      } catch (logError) {
+        console.warn('[LiveStat:quickswap] log failed, swap still applied:', logError);
+      }
+
+      const expectedStats = (freshStats || []).map(s => {
+        if (s.player_id === outPlayer.id) return { ...s, is_active: false };
+        if (s.player_id === inPlayerId)   return { ...s, is_active: true };
+        return s;
+      });
+      if (!freshStats.find(s => s.player_id === inPlayerId)) {
+        expectedStats.push({ player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true });
+      }
+      queryClient.setQueryData(['playerStats', game.id], expectedStats);
+      setTimeout(() => queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] }), 4000);
+      subCompletedAtRef.current = Date.now();
+    } catch (error) {
+      if (snapshot !== undefined) queryClient.setQueryData(['playerStats', game.id], snapshot);
+      setArmedOutIds(prev => { const next = new Set(prev); next.add(outPlayer.id); return next; });
+      setPulsePlayerId(null);
+      console.error('[LiveStat:quickswap]', error);
+    } finally {
+      isSubmittingSubRef.current = false;
+    }
+  };
+
+  const handleBenchPick = (teamId, inPlayerId) => {
+    const teamActives = teamId === game.home_team_id ? homeActivePlayers : awayActivePlayers;
+    const firstArmed = teamActives.find(p => armedOutIds.has(p.id));
+    if (!firstArmed) return;
+    handleQuickSwap(teamId, firstArmed, inPlayerId);
+  };
+
   const togglePlayerOut = (player, teamId) => {
     if (teamId === game.home_team_id) {
       const alreadyOut = homePlayersOut.some(p => p.id === player.id);
@@ -1119,6 +1231,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     .filter(p => p.team_id === game.away_team_id && activePlayerIds.includes(p.id))
     .sort((a, b) => (a.jersey_number || 0) - (b.jersey_number || 0));
 
+  const homeArmedCount = homeActivePlayers.filter(p => armedOutIds.has(p.id)).length;
+  const awayArmedCount = awayActivePlayers.filter(p => armedOutIds.has(p.id)).length;
+
   const isDisqualified = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
     if (!stats) return false;
@@ -1145,13 +1260,15 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const playerStats = existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
+    const isArmed = armedOutIds.has(player.id);
+    const isPulsing = pulsePlayerId === player.id;
 
     const isHome = side === 'home';
     const subColor = isHome
       ? 'border-blue-400 text-blue-600 hover:bg-blue-50'
       : 'border-red-400 text-red-600 hover:bg-red-50';
 
-    const desktopStyle = isDesktop
+    let desktopStyle = isDesktop
       ? isSelected
         ? {
             backgroundColor: `${teamColor}0E`,
@@ -1169,47 +1286,68 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           ? { backgroundColor: '#fff7ed', borderColor: '#e2e8f0' }
           : { borderColor: '#e2e8f0' };
 
+    if (isArmed) {
+      desktopStyle = { ...desktopStyle, backgroundColor: '#fef2f2', borderColor: '#ef4444', borderWidth: '2px' };
+    }
+
     return (
-      <motion.button
-        whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
-        onClick={() => setSelectedPlayer(player)}
-        className={`w-full rounded-xl border-2 ${isDesktop ? 'p-2 hover:shadow-md' : 'p-1.5'} ${!isDesktop && (isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100')}`}
-        style={desktopStyle}
-      >
-        <div className="flex flex-col items-center gap-0.5">
-          <div className="flex items-center justify-between w-full gap-0.5">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0" style={{ backgroundColor: teamColor || '#64748b' }}>
-              {player.jersey_number}
-            </div>
-            <button
-              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border bg-white text-[8px] font-bold leading-none flex-shrink-0 transition-colors ${subColor}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSubClick(player);
-              }}
-            >
-              <ArrowLeftRight className="w-2 h-2" />
-              SUB
-            </button>
-          </div>
-          <p className="font-semibold text-slate-900 text-[10px] truncate leading-tight w-full text-center">{player.name}</p>
-          {playerStats && (
-            <div className="w-full pt-0.5 border-t border-slate-200">
-              <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
-              <div className="flex justify-around mt-0.5">
-                {isDesktop && (
-                  <>
-                    <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
-                    <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
-                  </>
-                )}
-                <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
-                <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
+      <div className="relative">
+        <motion.button
+          whileTap={{ scale: isDesktop ? 0.98 : 0.92 }}
+          onClick={() => setSelectedPlayer(player)}
+          className={`w-full rounded-xl border-2 ${isDesktop ? 'p-2 hover:shadow-md' : 'p-1.5'} ${!isDesktop && (isSelected ? 'ring-2 ring-offset-1 hover:bg-slate-100' : 'hover:bg-slate-100')}`}
+          style={desktopStyle}
+        >
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="flex items-center justify-between w-full gap-0.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0" style={{ backgroundColor: teamColor || '#64748b' }}>
+                {player.jersey_number}
               </div>
+              <button
+                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full border text-[8px] font-bold leading-none flex-shrink-0 transition-colors ${isArmed ? 'text-white border-white' : `bg-white ${subColor}`}`}
+                style={isArmed ? { backgroundColor: '#dc2626', borderColor: 'white' } : {}}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleArmedOut(player.id);
+                }}
+              >
+                <ArrowLeftRight className="w-2 h-2" />
+                SUB
+              </button>
             </div>
-          )}
-        </div>
-      </motion.button>
+            <p className="font-semibold text-slate-900 text-[10px] truncate leading-tight w-full text-center">{player.name}</p>
+            {playerStats && (
+              <div className="w-full pt-0.5 border-t border-slate-200">
+                <p className="text-xs font-bold text-slate-900 text-center leading-none">{totalPoints} <span className="text-[9px] font-normal text-slate-500">PTS</span></p>
+                <div className="flex justify-around mt-0.5">
+                  {isDesktop && (
+                    <>
+                      <span className="text-[9px] text-slate-500">{(playerStats.offensive_rebounds||0)+(playerStats.defensive_rebounds||0)}R</span>
+                      <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
+                    </>
+                  )}
+                  <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
+                  <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
+                </div>
+              </div>
+            )}
+            {isArmed && (
+              <div className="w-full mt-0.5 rounded-b-lg text-center text-white" style={{ backgroundColor: '#ef4444', fontSize: 10, padding: '2px 0' }}>
+                Pick from bench ↓
+              </div>
+            )}
+          </div>
+        </motion.button>
+        {isPulsing && (
+          <motion.div
+            key={`pulse-${player.id}`}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 rounded-xl pointer-events-none ring-4 ring-green-400"
+          />
+        )}
+      </div>
     );
   };
 
@@ -1421,6 +1559,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
         <div className="mt-3 space-y-3">
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
+          {homeArmedCount > 0 && (
+            <BenchDrawer
+              benchPlayers={homeBenchPlayers.filter(p => !isDisqualified(p.id))}
+              armedCount={homeArmedCount}
+              existingStats={existingStats}
+              onPickBenchPlayer={(inId) => handleBenchPick(game.home_team_id, inId)}
+            />
+          )}
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
@@ -1468,6 +1614,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           </div>
           {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
+          {awayArmedCount > 0 && (
+            <BenchDrawer
+              benchPlayers={awayBenchPlayers.filter(p => !isDisqualified(p.id))}
+              armedCount={awayArmedCount}
+              existingStats={existingStats}
+              onPickBenchPlayer={(inId) => handleBenchPick(game.away_team_id, inId)}
+            />
+          )}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             {ActivityLog({ compact: false })}
           </div>
@@ -1490,8 +1644,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
 
         <div className="flex gap-3 flex-1 min-h-0">
-          <div className="w-[25%] flex-shrink-0 min-h-0">
+          <div className="w-[25%] flex-shrink-0 min-h-0 flex flex-col gap-2">
             {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600", side: "home" })}
+            {homeArmedCount > 0 && (
+              <BenchDrawer
+                benchPlayers={homeBenchPlayers.filter(p => !isDisqualified(p.id))}
+                armedCount={homeArmedCount}
+                existingStats={existingStats}
+                onPickBenchPlayer={(inId) => handleBenchPick(game.home_team_id, inId)}
+              />
+            )}
           </div>
 
           <div className="w-[50%] flex-shrink-0 flex flex-col min-h-0">
@@ -1503,8 +1665,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           </div>
 
-          <div className="w-[25%] flex-shrink-0 min-h-0">
+          <div className="w-[25%] flex-shrink-0 min-h-0 flex flex-col gap-2">
             {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600", side: "away" })}
+            {awayArmedCount > 0 && (
+              <BenchDrawer
+                benchPlayers={awayBenchPlayers.filter(p => !isDisqualified(p.id))}
+                armedCount={awayArmedCount}
+                existingStats={existingStats}
+                onPickBenchPlayer={(inId) => handleBenchPick(game.away_team_id, inId)}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1586,253 +1756,39 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       </Dialog>
 
       {/* Substitution Dialog */}
-      <Dialog open={showSubDialog} onOpenChange={(open) => {
-        if (subSaving) return;
-        if (!open) resetSubDialog();
-        setShowSubDialog(open);
-      }}>
-        <DialogContent className="bg-white text-slate-900 border-slate-200 w-[95vw] max-w-xl max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden">
-          {/* Header */}
-          <div className="px-5 pt-5 pb-3 border-b border-slate-100 flex-shrink-0">
-            <DialogTitle className="text-xl text-slate-900 font-bold">
-              {subStep === 'select_out' ? 'Select Players to Take Out' : 'Select Replacement Players'}
-            </DialogTitle>
-            {subStep === 'select_out' ? (
-              <div className="flex items-center gap-4 mt-1.5">
-                {homePlayersOut.length > 0 && (
-                  <span className="text-sm font-semibold text-blue-600">Home: {homePlayersOut.length} out</span>
-                )}
-                {awayPlayersOut.length > 0 && (
-                  <span className="text-sm font-semibold text-red-600">Away: {awayPlayersOut.length} out</span>
-                )}
-                {homePlayersOut.length === 0 && awayPlayersOut.length === 0 && (
-                  <span className="text-sm text-slate-400">Tap on-court players from either or both teams</span>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 mt-1.5">
-                {homePlayersOut.length > 0 && (
-                  <span className={`text-sm font-semibold ${homePlayersIn.length === homePlayersOut.length ? 'text-green-600' : 'text-blue-600'}`}>
-                    Home: {homePlayersIn.length}/{homePlayersOut.length}
-                  </span>
-                )}
-                {awayPlayersOut.length > 0 && (
-                  <span className={`text-sm font-semibold ${awayPlayersIn.length === awayPlayersOut.length ? 'text-green-600' : 'text-red-600'}`}>
-                    Away: {awayPlayersIn.length}/{awayPlayersOut.length}
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Body */}
-          <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
-            {subError && (
-               <div className="bg-red-50 border-2 border-red-300 rounded-xl px-4 py-3 mb-2">
-                 <p className="text-sm font-semibold text-red-700">⚠ {subError}</p>
-                 <p className="text-xs text-red-500 mt-1">Your selections have been kept. Tap Confirm to retry, or Cancel to start over.</p>
-                 <Button
-                   size="sm"
-                   variant="outline"
-                   className="mt-2 w-full border-red-300 text-red-600 hover:bg-red-100"
-                   onClick={async () => {
-                     const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-                     const activeHomeIds = new Set(freshStats.filter(s => s.team_id === game.home_team_id && s.is_active).map(s => s.player_id));
-                     const activeAwayIds = new Set(freshStats.filter(s => s.team_id === game.away_team_id && s.is_active).map(s => s.player_id));
-                     setHomePlayersOut(prev => prev.filter(p => activeHomeIds.has(p.id)));
-                     setAwayPlayersOut(prev => prev.filter(p => activeAwayIds.has(p.id)));
-                     setSubError(null);
-                   }}
-                 >
-                   Reload Lineup
-                 </Button>
-               </div>
-             )}
-            {subStep === 'select_out' ? (
-              <>
-                {/* HOME team */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-blue-600">{homeTeam?.name?.[0]}</div>
-                    <span className="font-bold text-blue-700 text-sm">{homeTeam?.name}</span>
-                    <span className="ml-auto text-xs text-blue-500 font-semibold">{homePlayersOut.length} selected</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {homeActivePlayers.map(player => {
-                      const isSelected = homePlayersOut.some(p => p.id === player.id);
-                      return (
-                        <button key={player.id} onClick={() => togglePlayerOut(player, game.home_team_id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                            ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                            <p className="text-xs text-slate-500">{player.position}</p>
-                          </div>
-                          {isSelected && <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* AWAY team */}
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 rounded-md flex items-center justify-center text-xs text-white font-bold bg-red-600">{awayTeam?.name?.[0]}</div>
-                    <span className="font-bold text-red-700 text-sm">{awayTeam?.name}</span>
-                    <span className="ml-auto text-xs text-red-500 font-semibold">{awayPlayersOut.length} selected</span>
-                  </div>
-                  <div className="space-y-1.5">
-                    {awayActivePlayers.map(player => {
-                      const isSelected = awayPlayersOut.some(p => p.id === player.id);
-                      return (
-                        <button key={player.id} onClick={() => togglePlayerOut(player, game.away_team_id)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                            ${isSelected ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                            <p className="text-xs text-slate-500">{player.position}</p>
-                          </div>
-                          {isSelected && <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* HOME replacements */}
-                {homePlayersOut.length > 0 && (
-                  <div>
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-2">
-                      <p className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1.5">Home — Coming Out</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {homePlayersOut.map(p => (
-                          <div key={p.id} className="flex items-center gap-1 bg-white border border-blue-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-blue-600">{p.jersey_number}</div>
-                            <span className="text-xs font-semibold text-slate-800">{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs font-bold text-blue-700 mb-1.5 px-1">Select {homePlayersOut.length} Home replacement{homePlayersOut.length > 1 ? 's' : ''} ({homePlayersIn.length}/{homePlayersOut.length})</p>
-                    {homeBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
-                      <p className="text-center text-red-500 py-3 text-xs font-semibold">No eligible home bench players.</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {homeBenchPlayers.map(player => {
-                          if (!isEligibleReplacement(player.id)) return null;
-                          const isSelected = homePlayersIn.includes(player.id);
-                          const limitReached = !isSelected && homePlayersIn.length >= homePlayersOut.length;
-                          const pStats = existingStats.find(s => s.player_id === player.id);
-                          return (
-                            <button key={player.id} disabled={limitReached}
-                              onClick={() => togglePlayerIn(player.id, game.home_team_id)}
-                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                                ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
-                                  isSelected ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white hover:border-blue-300 hover:bg-blue-50/40'}`}>
-                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                                <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
-                              </div>
-                              {isSelected && <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* AWAY replacements */}
-                {awayPlayersOut.length > 0 && (
-                  <div>
-                    <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-2">
-                      <p className="text-xs font-bold text-red-600 uppercase tracking-wide mb-1.5">Away — Coming Out</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {awayPlayersOut.map(p => (
-                          <div key={p.id} className="flex items-center gap-1 bg-white border border-red-200 rounded-lg px-2 py-0.5">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs bg-red-600">{p.jersey_number}</div>
-                            <span className="text-xs font-semibold text-slate-800">{p.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-xs font-bold text-red-700 mb-1.5 px-1">Select {awayPlayersOut.length} Away replacement{awayPlayersOut.length > 1 ? 's' : ''} ({awayPlayersIn.length}/{awayPlayersOut.length})</p>
-                    {awayBenchPlayers.filter(p => isEligibleReplacement(p.id)).length === 0 ? (
-                      <p className="text-center text-red-500 py-3 text-xs font-semibold">No eligible away bench players.</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {awayBenchPlayers.map(player => {
-                          if (!isEligibleReplacement(player.id)) return null;
-                          const isSelected = awayPlayersIn.includes(player.id);
-                          const limitReached = !isSelected && awayPlayersIn.length >= awayPlayersOut.length;
-                          const pStats = existingStats.find(s => s.player_id === player.id);
-                          return (
-                            <button key={player.id} disabled={limitReached}
-                              onClick={() => togglePlayerIn(player.id, game.away_team_id)}
-                              className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left
-                                ${limitReached ? 'opacity-40 cursor-not-allowed border-slate-200 bg-white' :
-                                  isSelected ? 'border-red-500 bg-red-50' : 'border-slate-200 bg-white hover:border-red-300 hover:bg-red-50/40'}`}>
-                              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                                <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
-                              </div>
-                              {isSelected && <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-
-          {/* Sticky footer */}
-          <div className="px-4 pb-4 pt-2 border-t border-slate-100 flex-shrink-0">
-            {subStep === 'select_out' ? (
-              <Button
-                className="w-full h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold text-base shadow"
-                disabled={homePlayersOut.length === 0 && awayPlayersOut.length === 0}
-                onClick={() => setSubStep('select_in')}
-              >
-                Next: Select Replacements ({homePlayersOut.length + awayPlayersOut.length} out)
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 h-12 border-slate-300"
-                  disabled={subSaving}
-                  onClick={() => {
-                    if (subEntryMode === 'single') {
-                      setShowSubDialog(false);
-                      resetSubDialog();
-                    } else {
-                      setSubStep('select_out');
-                      setHomePlayersIn([]);
-                      setAwayPlayersIn([]);
-                    }
-                  }}>
-                  {subEntryMode === 'single' ? 'Cancel' : 'Back'}
-                </Button>
-                <Button
-                  className="flex-1 h-12 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold"
-                  disabled={!isSubConfirmReady() || subSaving}
-                  onClick={handleConfirmSubstitution}
-                >
-                  {subSaving ? 'Saving substitution...' : 'Confirm Substitution'}
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <SubstitutionDialog
+        open={showSubDialog}
+        onOpenChange={setShowSubDialog}
+        subStep={subStep}
+        subSaving={subSaving}
+        subError={subError}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        homeActivePlayers={homeActivePlayers}
+        awayActivePlayers={awayActivePlayers}
+        homeBenchPlayers={homeBenchPlayers}
+        awayBenchPlayers={awayBenchPlayers}
+        homePlayersOut={homePlayersOut}
+        awayPlayersOut={awayPlayersOut}
+        homePlayersIn={homePlayersIn}
+        awayPlayersIn={awayPlayersIn}
+        isEligibleReplacement={isEligibleReplacement}
+        existingStats={existingStats}
+        game={game}
+        subEntryMode={subEntryMode}
+        isSubConfirmReady={isSubConfirmReady}
+        setSubStep={setSubStep}
+        setHomePlayersOut={setHomePlayersOut}
+        setAwayPlayersOut={setAwayPlayersOut}
+        setHomePlayersIn={setHomePlayersIn}
+        setAwayPlayersIn={setAwayPlayersIn}
+        setSubError={setSubError}
+        setShowSubDialog={setShowSubDialog}
+        resetSubDialog={resetSubDialog}
+        togglePlayerOut={togglePlayerOut}
+        togglePlayerIn={togglePlayerIn}
+        handleConfirmSubstitution={handleConfirmSubstitution}
+      />
     </div>
   );
 }
