@@ -1354,7 +1354,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const teamBench = (panelTeamId === game.home_team_id ? homeBenchPlayers : awayBenchPlayers).filter(p => !isDisqualified(p.id));
 
     return (
-      <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col overflow-y-auto" style={borderStyle}>
+      <div className="bg-white border border-slate-200 rounded-2xl p-2 flex flex-col overflow-y-auto" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0 overflow-hidden"
@@ -1396,7 +1396,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const StatPanel = ({ large, showSub = true }) => {
     const btnH = large ? 'h-[4.5rem]' : 'h-14';
     return (
-      <div className={`bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl flex flex-col ${large && !showSub ? 'p-2' : 'p-3 h-full'}`}>
+      <div className={`bg-gradient-to-r from-indigo-100/95 to-purple-100/95 border-2 border-indigo-300/50 rounded-2xl flex flex-col ${large && !showSub ? 'p-2' : 'p-3 h-full'}`}>
         <div className={`flex items-center justify-center gap-3 ${large ? 'mb-1.5' : 'mb-3'}`}>
           {selectedPlayer ? (
             <>
@@ -1462,7 +1462,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const ActivityLog = ({ compact = false }) => (
-    <div className={`flex flex-col overflow-hidden h-full ${compact ? '' : 'bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3'}`}>
+    <div className={`flex flex-col overflow-hidden h-full ${compact ? '' : 'bg-white/95 border border-slate-200 rounded-2xl p-3'}`}>
       <div className={`flex items-center gap-2 flex-shrink-0 ${compact ? 'px-2 py-1 border-b border-slate-200 mb-1' : 'mb-3 pb-3 border-b border-slate-200'}`}>
         <Activity className="w-3.5 h-3.5 text-indigo-500" />
         <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wide">Game Activity</h3>
@@ -1541,7 +1541,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
         <div className="mt-3 space-y-3">
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
-          <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
+          <div className="bg-gradient-to-r from-indigo-100/95 to-purple-100/95 border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
                 <>
@@ -1588,7 +1588,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           </div>
           {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
-          <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
+          <div className="bg-white/95 border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             {ActivityLog({ compact: false })}
           </div>
         </div>
@@ -1618,7 +1618,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <div className="flex-shrink-0">
               {StatPanel({ large: true, showSub: false })}
             </div>
-            <div className="flex-1 min-h-0 bg-white/50 backdrop-blur border border-slate-200 rounded-xl overflow-hidden">
+            <div className="flex-1 min-h-0 bg-white/95 border border-slate-200 rounded-xl overflow-hidden">
               {ActivityLog({ compact: true })}
             </div>
           </div>
