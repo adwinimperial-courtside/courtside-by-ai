@@ -1363,8 +1363,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         ? { borderRight: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint }
         : { borderLeft: `${borderWidth} solid ${accentColor}`, backgroundColor: bgTint };
 
+    const panelTeamId = team?.id;
+    const teamArmedCount = teamPlayers.filter(p => armedOutIds.has(p.id)).length;
+    const teamBench = (panelTeamId === game.home_team_id ? homeBenchPlayers : awayBenchPlayers).filter(p => !isDisqualified(p.id));
+
     return (
-      <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col h-full overflow-hidden" style={borderStyle}>
+      <div className="backdrop-blur border border-slate-200 rounded-2xl p-2 flex flex-col overflow-y-auto" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0 overflow-hidden"
@@ -1377,7 +1381,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
-        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:flex-1 min-[900px]:min-h-0 min-[900px]:gap-0.5 min-[900px]:content-start">
+        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-0.5 min-[900px]:content-start">
           {teamPlayers.map((player) => 
             <div key={player.id}>
               {PlayerButton({
@@ -1398,6 +1402,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           )}
         </div>
+        {teamArmedCount > 0 && (
+          <div className="mt-2 flex-shrink-0">
+            <BenchDrawer
+              benchPlayers={teamBench}
+              armedCount={teamArmedCount}
+              existingStats={existingStats}
+              onPickBenchPlayer={(inId) => handleBenchPick(panelTeamId, inId)}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -1559,14 +1573,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
         <div className="mt-3 space-y-3">
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
-          {homeArmedCount > 0 && (
-            <BenchDrawer
-              benchPlayers={homeBenchPlayers.filter(p => !isDisqualified(p.id))}
-              armedCount={homeArmedCount}
-              existingStats={existingStats}
-              onPickBenchPlayer={(inId) => handleBenchPick(game.home_team_id, inId)}
-            />
-          )}
           <div className="bg-gradient-to-r from-indigo-100/50 to-purple-100/50 backdrop-blur border-2 border-indigo-300/50 rounded-2xl p-3">
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
@@ -1614,14 +1620,6 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           </div>
           {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600" })}
-          {awayArmedCount > 0 && (
-            <BenchDrawer
-              benchPlayers={awayBenchPlayers.filter(p => !isDisqualified(p.id))}
-              armedCount={awayArmedCount}
-              existingStats={existingStats}
-              onPickBenchPlayer={(inId) => handleBenchPick(game.away_team_id, inId)}
-            />
-          )}
           <div className="bg-white/60 backdrop-blur border border-slate-200 rounded-2xl p-3" style={{ minHeight: '200px' }}>
             {ActivityLog({ compact: false })}
           </div>
@@ -1644,16 +1642,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
 
         <div className="flex gap-3 flex-1 min-h-0">
-          <div className="w-[25%] flex-shrink-0 min-h-0 flex flex-col gap-2">
+          <div className="w-[25%] flex-shrink-0 min-h-0">
             {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600", side: "home" })}
-            {homeArmedCount > 0 && (
-              <BenchDrawer
-                benchPlayers={homeBenchPlayers.filter(p => !isDisqualified(p.id))}
-                armedCount={homeArmedCount}
-                existingStats={existingStats}
-                onPickBenchPlayer={(inId) => handleBenchPick(game.home_team_id, inId)}
-              />
-            )}
           </div>
 
           <div className="w-[50%] flex-shrink-0 flex flex-col min-h-0">
@@ -1665,16 +1655,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             </div>
           </div>
 
-          <div className="w-[25%] flex-shrink-0 min-h-0 flex flex-col gap-2">
+          <div className="w-[25%] flex-shrink-0 min-h-0">
             {TeamPanel({ team: awayTeam, activePlayers: awayActivePlayers, borderColor: "border-l-red-300", labelColor: "text-red-600", side: "away" })}
-            {awayArmedCount > 0 && (
-              <BenchDrawer
-                benchPlayers={awayBenchPlayers.filter(p => !isDisqualified(p.id))}
-                armedCount={awayArmedCount}
-                existingStats={existingStats}
-                onPickBenchPlayer={(inId) => handleBenchPick(game.away_team_id, inId)}
-              />
-            )}
           </div>
         </div>
       </div>
