@@ -171,11 +171,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     };
   }, [game.id, queryClient]);
 
-  const activePlayers = existingStats.filter(s => s.is_starter);
+  const activePlayers = existingStats.filter(s => s.is_active);
   const activePlayerIds = activePlayers.map(s => s.player_id);
 
-  const homeActiveCount = existingStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
-  const awayActiveCount = existingStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
+  const homeActiveCount = existingStats.filter(s => s.team_id === game.home_team_id && s.is_active).length;
+  const awayActiveCount = existingStats.filter(s => s.team_id === game.away_team_id && s.is_active).length;
 
   const _totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
   const currentPeriod = game.clock_period ?? 1;
@@ -439,7 +439,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
     for (const teamId of teamIds) {
       const teamPlayers = players.filter(p => p.team_id === teamId);
-      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_starter).map(s => s.player_id));
+      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_active).map(s => s.player_id));
       const activePls = teamPlayers.filter(p => activeIds.has(p.id));
       const activeCount = activePls.length;
       const benchPls = teamPlayers.filter(p => !activeIds.has(p.id));
@@ -474,7 +474,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const teamIds = [game.home_team_id, game.away_team_id];
     for (const teamId of teamIds) {
       const teamPlayers = players.filter(p => p.team_id === teamId);
-      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_starter).map(s => s.player_id));
+      const activeIds = new Set(freshStats.filter(s => s.team_id === teamId && s.is_active).map(s => s.player_id));
       const activePls = teamPlayers.filter(p => activeIds.has(p.id));
       const activeCount = activePls.length;
       const benchPls = teamPlayers.filter(p => !activeIds.has(p.id));
@@ -642,13 +642,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       // === PRE-FLIGHT VALIDATION ===
       for (const p of capturedHomeOut) {
         const s = freshStats.find(st => st.player_id === p.id);
-        if (!s || s.team_id !== game.home_team_id || s.is_starter !== true) {
+        if (!s || s.team_id !== game.home_team_id || s.is_active !== true) {
           throw new Error(`Cannot sub out ${p.name} — they're not currently on court. The lineup may have changed.`);
         }
       }
       for (const p of capturedAwayOut) {
         const s = freshStats.find(st => st.player_id === p.id);
-        if (!s || s.team_id !== game.away_team_id || s.is_starter !== true) {
+        if (!s || s.team_id !== game.away_team_id || s.is_active !== true) {
           throw new Error(`Cannot sub out ${p.name} — they're not currently on court. The lineup may have changed.`);
         }
       }
@@ -660,22 +660,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       ]);
       for (const pid of capturedHomeIn) {
         const s = freshStats.find(st => st.player_id === pid);
-        if (s && s.is_starter === true && !allOutIds.has(pid)) {
+        if (s && s.is_active === true && !allOutIds.has(pid)) {
           const pObj = players.find(p => p.id === pid);
           throw new Error(`${pObj?.name || pid} is already on court.`);
         }
       }
       for (const pid of capturedAwayIn) {
         const s = freshStats.find(st => st.player_id === pid);
-        if (s && s.is_starter === true && !allOutIds.has(pid)) {
+        if (s && s.is_active === true && !allOutIds.has(pid)) {
           const pObj = players.find(p => p.id === pid);
           throw new Error(`${pObj?.name || pid} is already on court.`);
         }
       }
       // Simulate post-sub counts — only validate if the pre-sub count looks sane (exactly 5)
       // If it's already corrupted (>5 or <5), skip the count check and let the sub fix it
-      const homeStartersNow = freshStats.filter(s => s.team_id === game.home_team_id && s.is_starter).length;
-      const awayStartersNow = freshStats.filter(s => s.team_id === game.away_team_id && s.is_starter).length;
+      const homeStartersNow = freshStats.filter(s => s.team_id === game.home_team_id && s.is_active).length;
+      const awayStartersNow = freshStats.filter(s => s.team_id === game.away_team_id && s.is_active).length;
       if (capturedHomeOut.length > 0 && homeStartersNow === 5) {
         const homeResult = homeStartersNow - capturedHomeOut.length + capturedHomeIn.length;
         if (homeResult !== 5) {
@@ -696,11 +696,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         // Idempotency: skip players already in target state
         const actualPlayersOut = playersOut.filter(p => {
           const s = freshStats.find(st => st.player_id === p.id);
-          return s && s.is_starter === true && s.team_id === teamId;
+          return s && s.is_active === true && s.team_id === teamId;
         });
         const actualPlayersIn = playersIn.filter(pid => {
           const s = freshStats.find(st => st.player_id === pid);
-          return !s || s.is_starter !== true;
+          return !s || s.is_active !== true;
         });
 
         if (actualPlayersOut.length === 0 && actualPlayersIn.length === 0) {
@@ -722,7 +722,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           if (outStat) {
             const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
             const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
-            await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_starter: false, is_active: false, minutes_played: totalMinutes } });
+            await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_active: false, minutes_played: totalMinutes } });
           }
           if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
         }));
@@ -731,7 +731,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         await Promise.all(actualPlayersIn.map(async (playerInId) => {
           let inStat = freshStats.find(s => s.player_id === playerInId);
           if (inStat) {
-            await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
+            await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } });
           } else {
             // Before creating, do a targeted DB check to prevent duplicate rows
             // (freshStats may have missed this player if they were recently added)
@@ -739,12 +739,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               const existing = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
               if (existing && existing.length > 0) {
                 inStat = existing[0];
-                await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_starter: true, is_active: true } });
+                await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } });
               } else {
-                await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+                await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
               }
             } catch {
-              await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: true, is_active: true, minutes_played: 0 });
+              await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
             }
           }
           playerGameClockStateRef.current[playerInId] = { timeLeft: currentComputedTimeLeft, period: game.clock_period };
@@ -801,8 +801,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       const allInIds = new Set([...capturedHomeIn, ...capturedAwayIn]);
 
       const expectedStats = freshStats.map(s => {
-        if (allSubOutIds.has(s.player_id)) return { ...s, is_starter: false, is_active: false };
-        if (allInIds.has(s.player_id)) return { ...s, is_starter: true, is_active: true };
+        if (allSubOutIds.has(s.player_id)) return { ...s, is_active: false };
+        if (allInIds.has(s.player_id)) return { ...s, is_active: true };
         return s;
       });
 
@@ -814,7 +814,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           expectedStats.push({
             player_id: playerId,
             team_id: isHomeIn ? game.home_team_id : game.away_team_id,
-            is_starter: true,
+            is_starter: false,
             is_active: true,
           });
         }
@@ -1637,8 +1637,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                    className="mt-2 w-full border-red-300 text-red-600 hover:bg-red-100"
                    onClick={async () => {
                      const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-                     const activeHomeIds = new Set(freshStats.filter(s => s.team_id === game.home_team_id && s.is_starter).map(s => s.player_id));
-                     const activeAwayIds = new Set(freshStats.filter(s => s.team_id === game.away_team_id && s.is_starter).map(s => s.player_id));
+                     const activeHomeIds = new Set(freshStats.filter(s => s.team_id === game.home_team_id && s.is_active).map(s => s.player_id));
+                     const activeAwayIds = new Set(freshStats.filter(s => s.team_id === game.away_team_id && s.is_active).map(s => s.player_id));
                      setHomePlayersOut(prev => prev.filter(p => activeHomeIds.has(p.id)));
                      setAwayPlayersOut(prev => prev.filter(p => activeAwayIds.has(p.id)));
                      setSubError(null);
