@@ -1,0 +1,32 @@
+{
+  "name": "LoginEvent",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "ID of the user who logged in"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Full name of the user"
+    },
+    "user_type": {
+      "type": "string",
+      "description": "Role/type of the user"
+    },
+    "logged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of the login"
+    }
+  },
+  "required": [
+    "user_id",
+    "user_email",
+    "logged_at"
+  ]
+}

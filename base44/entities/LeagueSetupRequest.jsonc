@@ -1,0 +1,37 @@
+{
+  "name": "LeagueSetupRequest",
+  "type": "object",
+  "properties": {
+    "league_name": {
+      "type": "string",
+      "description": "Name of the league"
+    },
+    "contact_person": {
+      "type": "string",
+      "description": "Name of the contact person"
+    },
+    "email": {
+      "type": "string",
+      "description": "Contact email"
+    },
+    "message": {
+      "type": "string",
+      "description": "Request message"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "done"
+      ],
+      "default": "pending",
+      "description": "Request status"
+    }
+  },
+  "required": [
+    "league_name",
+    "contact_person",
+    "email",
+    "message"
+  ]
+}

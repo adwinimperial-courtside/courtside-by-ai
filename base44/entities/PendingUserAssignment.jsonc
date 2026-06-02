@@ -1,0 +1,35 @@
+{
+  "name": "PendingUserAssignment",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Email of the invited user"
+    },
+    "user_type": {
+      "type": "string",
+      "enum": [
+        "app_admin",
+        "league_admin",
+        "viewer"
+      ],
+      "description": "Pre-assigned user type"
+    },
+    "assigned_league_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Pre-assigned league IDs"
+    },
+    "applied": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether assignment has been applied to actual user"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}

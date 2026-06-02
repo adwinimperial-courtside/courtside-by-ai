@@ -1,0 +1,34 @@
+{
+  "name": "DeletionLog",
+  "type": "object",
+  "properties": {
+    "entity_type": {
+      "type": "string",
+      "description": "Type of entity deleted (e.g., Game)"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the deleted entity"
+    },
+    "entity_details": {
+      "type": "string",
+      "description": "Details about the deleted entity"
+    },
+    "deleted_by": {
+      "type": "string",
+      "description": "Email of user who deleted the entity"
+    },
+    "deletion_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the entity was deleted"
+    }
+  },
+  "required": [
+    "entity_type",
+    "entity_id",
+    "entity_details",
+    "deleted_by",
+    "deletion_date"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "name": "TacticalBriefing",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team"
+    },
+    "opponent_id": {
+      "type": "string",
+      "description": "Reference to the opponent team"
+    },
+    "briefing_content": {
+      "type": "string",
+      "description": "Generated tactical briefing content"
+    },
+    "generated_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the briefing was generated"
+    },
+    "team_data": {
+      "type": "object",
+      "description": "Team statistics used for generation"
+    },
+    "opponent_data": {
+      "type": "object",
+      "description": "Opponent statistics used for generation"
+    }
+  },
+  "required": [
+    "league_id",
+    "team_id",
+    "opponent_id",
+    "briefing_content",
+    "generated_date"
+  ]
+}

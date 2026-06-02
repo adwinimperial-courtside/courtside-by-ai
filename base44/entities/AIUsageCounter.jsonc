@@ -1,0 +1,101 @@
+{
+  "name": "AIUsageCounter",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "month_year": {
+      "type": "string",
+      "description": "Format: YYYY-MM"
+    },
+    "briefings_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of AI briefings generated this month"
+    },
+    "monthly_limit": {
+      "type": "number",
+      "default": 5,
+      "description": "Monthly limit for AI briefings"
+    }
+  },
+  "required": [
+    "league_id",
+    "month_year"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}",
+      "data.league_id": {
+        "$in": "{{user.data.assigned_league_ids}}"
+      },
+      "$or": [
+        {
+          "user_condition": {
+            "user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "user_type": "app_admin"
+          }
+        },
+        {
+          "data.league_id": {
+            "$in": "{{user.data.assigned_league_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "created_by": "{{user.email}}",
+      "data.league_id": {
+        "$in": "{{user.data.assigned_league_ids}}"
+      },
+      "$or": [
+        {
+          "user_condition": {
+            "user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "created_by": "{{user.email}}",
+      "data.league_id": {
+        "$in": "{{user.data.assigned_league_ids}}"
+      },
+      "$or": [
+        {
+          "user_condition": {
+            "user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "user_type": "league_admin"
+          }
+        }
+      ]
+    }
+  }
+}

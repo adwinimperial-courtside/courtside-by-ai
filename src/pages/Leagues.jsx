@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, ArrowRight } from "lucide-react";
+import { Plus, Trophy, ArrowRight, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
@@ -12,6 +13,7 @@ import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 export default function LeaguesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -64,15 +66,19 @@ export default function LeaguesPage() {
   const isAppAdmin = currentUser?.user_type === 'app_admin';
 
   // For league_admin, only show their assigned leagues
-  const visibleLeagues = isLeagueAdmin
+  const assignedLeagues = isLeagueAdmin
     ? leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id))
     : leagues;
 
+  const visibleLeagues = searchQuery.trim()
+    ? assignedLeagues.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.season || "").toLowerCase().includes(searchQuery.toLowerCase()))
+    : assignedLeagues;
+
   React.useEffect(() => {
-    if (currentUser && visibleLeagues.length === 1 && !currentUser.default_league_id) {
-      setDefaultLeagueMutation.mutate(visibleLeagues[0].id);
+    if (currentUser && assignedLeagues.length === 1 && !currentUser.default_league_id) {
+      setDefaultLeagueMutation.mutate(assignedLeagues[0].id);
     }
-  }, [visibleLeagues, currentUser, setDefaultLeagueMutation]);
+  }, [assignedLeagues, currentUser, setDefaultLeagueMutation]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
@@ -96,6 +102,16 @@ export default function LeaguesPage() {
                Create League
              </Button>
            )}
+        </div>
+
+        <div className="relative mb-6 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Search leagues..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {isLoading ? (

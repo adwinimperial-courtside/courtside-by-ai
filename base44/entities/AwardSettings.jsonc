@@ -12,7 +12,7 @@
     },
     "mvp_pts_weight": {
       "type": "number",
-      "default": 1.0
+      "default": 1
     },
     "mvp_oreb_weight": {
       "type": "number",
@@ -20,7 +20,7 @@
     },
     "mvp_dreb_weight": {
       "type": "number",
-      "default": 1.0
+      "default": 1
     },
     "mvp_ast_weight": {
       "type": "number",
@@ -32,11 +32,11 @@
     },
     "mvp_blk_weight": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "mvp_turnover_penalty": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "mvp_foul_penalty": {
       "type": "number",
@@ -44,11 +44,11 @@
     },
     "mvp_tech_penalty": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "mvp_unsportsmanlike_penalty": {
       "type": "number",
-      "default": 4.0
+      "default": 4
     },
     "mvp_avg_gis_weight": {
       "type": "number",
@@ -56,27 +56,27 @@
     },
     "mvp_gp_percent_weight": {
       "type": "number",
-      "default": 20.0
+      "default": 20
     },
     "mvp_team_win_percent_weight": {
       "type": "number",
-      "default": 20.0
+      "default": 20
     },
     "mvp_min_games_percent": {
       "type": "number",
-      "default": 60.0
+      "default": 60
     },
     "mvp_tech_final_penalty": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "mvp_unsp_final_penalty": {
       "type": "number",
-      "default": 5.0
+      "default": 5
     },
     "dpoy_stl_weight": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "dpoy_blk_weight": {
       "type": "number",
@@ -88,7 +88,7 @@
     },
     "dpoy_dreb_weight": {
       "type": "number",
-      "default": 1.0
+      "default": 1
     },
     "dpoy_foul_penalty": {
       "type": "number",
@@ -96,35 +96,35 @@
     },
     "dpoy_turnover_penalty": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "dpoy_tech_penalty": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "dpoy_unsportsmanlike_penalty": {
       "type": "number",
-      "default": 4.0
+      "default": 4
     },
     "dpoy_gp_percent_weight": {
       "type": "number",
-      "default": 10.0
+      "default": 10
     },
     "dpoy_min_games_percent": {
       "type": "number",
-      "default": 60.0
+      "default": 60
     },
     "dpoy_tech_final_penalty": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "dpoy_unsp_final_penalty": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "pog_pts_weight": {
       "type": "number",
-      "default": 1.0
+      "default": 1
     },
     "pog_oreb_weight": {
       "type": "number",
@@ -132,7 +132,7 @@
     },
     "pog_dreb_weight": {
       "type": "number",
-      "default": 1.0
+      "default": 1
     },
     "pog_ast_weight": {
       "type": "number",
@@ -144,11 +144,11 @@
     },
     "pog_blk_weight": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "pog_turnover_penalty": {
       "type": "number",
-      "default": 2.0
+      "default": 2
     },
     "pog_foul_penalty": {
       "type": "number",
@@ -156,11 +156,11 @@
     },
     "pog_tech_penalty": {
       "type": "number",
-      "default": 3.0
+      "default": 3
     },
     "pog_unsportsmanlike_penalty": {
       "type": "number",
-      "default": 4.0
+      "default": 4
     },
     "pog_winning_team_only": {
       "type": "boolean",
@@ -187,5 +187,40 @@
   },
   "required": [
     "league_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

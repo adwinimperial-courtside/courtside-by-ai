@@ -1,0 +1,127 @@
+{
+  "name": "GameLog",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "Reference to the game"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "Reference to the player"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team"
+    },
+    "stat_type": {
+      "type": "string",
+      "description": "Type of stat (points_2, points_3, assists, etc.)"
+    },
+    "stat_label": {
+      "type": "string",
+      "description": "Display label for the stat"
+    },
+    "stat_points": {
+      "type": "number",
+      "default": 0,
+      "description": "Points value of the stat"
+    },
+    "stat_color": {
+      "type": "string",
+      "description": "Color class for the stat button"
+    },
+    "player_stat_id": {
+      "type": "string",
+      "description": "Reference to the PlayerStats record"
+    },
+    "old_value": {
+      "type": "number",
+      "description": "Value before the action"
+    },
+    "new_value": {
+      "type": "number",
+      "description": "Value after the action"
+    },
+    "old_home_score": {
+      "type": "number",
+      "default": 0
+    },
+    "old_away_score": {
+      "type": "number",
+      "default": 0
+    },
+    "logged_by": {
+      "type": "string",
+      "description": "Email of the user who recorded the stat"
+    },
+    "device_name": {
+      "type": "string",
+      "description": "Device/browser name of the user who recorded the stat"
+    }
+  },
+  "required": [
+    "game_id",
+    "player_id",
+    "team_id",
+    "stat_type"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    }
+  }
+}

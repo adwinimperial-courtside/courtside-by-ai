@@ -1,26 +1,38 @@
 {
-  "name": "League",
+  "name": "Player",
   "type": "object",
   "properties": {
     "name": {
       "type": "string",
-      "description": "Name of the league"
+      "description": "Player full name"
     },
-    "season": {
+    "team_id": {
       "type": "string",
-      "description": "Season year (e.g., 2024-2025)"
+      "description": "Reference to the team"
     },
-    "description": {
+    "jersey_number": {
+      "type": "number",
+      "description": "Player jersey number"
+    },
+    "position": {
       "type": "string",
-      "description": "League description"
+      "enum": [
+        "PG",
+        "SG",
+        "SF",
+        "PF",
+        "C"
+      ],
+      "description": "Player position"
     }
   },
   "required": [
     "name",
-    "season"
+    "team_id",
+    "jersey_number"
   ],
   "rls": {
-    "delete": {
+    "create": {
       "$or": [
         {
           "user_condition": {
@@ -35,6 +47,20 @@
       ]
     },
     "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
       "$or": [
         {
           "user_condition": {

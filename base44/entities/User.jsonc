@@ -64,5 +64,13 @@
       "type": "string",
       "description": "Version identifier of the consent accepted, e.g. 2026-04-privacy-consent-v1"
     }
-  }
+  },
+  "required": [
+    "user_type",
+    "application_status",
+    "display_name",
+    "privacy_terms_accepted_at",
+    "marketing_email_consent_at",
+    "consent_version"
+  ]
 }
