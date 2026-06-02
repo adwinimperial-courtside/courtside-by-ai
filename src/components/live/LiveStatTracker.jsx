@@ -349,7 +349,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       if (updates.length > 0) {
         Promise.all(updates).catch(() => {});
       }
-    }, 10000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [game.clock_running, game.game_mode, game.clock_started_at, game.clock_time_left, game.clock_period, activePlayers, updateStatMutation]);
