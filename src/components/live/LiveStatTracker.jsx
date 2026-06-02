@@ -1145,12 +1145,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     
     for (const playerId of (out_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: true, is_active: true } }));
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_active: true } }));
     }
     
     for (const playerId of (in_ids || [])) {
       const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_starter: false, is_active: false } }));
+      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_active: false } }));
     }
     
     await Promise.all([
