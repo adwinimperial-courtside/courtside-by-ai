@@ -1,13 +1,14 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Calendar, Star } from "lucide-react";
+import { Trophy, Users, Calendar, Star, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 
-export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues }) {
+export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues, onEdit, onDelete }) {
   const isViewer = userType === "viewer";
+  const canManage = onEdit && onDelete;
 
   const cardContent = (
     <Card className="group hover:shadow-2xl transition-all duration-300 border-0 overflow-hidden cursor-pointer bg-gradient-to-br from-indigo-50 to-blue-50">
@@ -23,8 +24,26 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
                <span>{league.season}</span>
              </div>
            </div>
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg">
-            <Trophy className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => { e.preventDefault(); onEdit(league); }}
+                  className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-orange-50 hover:border-orange-300 text-slate-500 hover:text-orange-600 transition-colors"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={(e) => { e.preventDefault(); onDelete(league); }}
+                  className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-red-50 hover:border-red-300 text-slate-500 hover:text-red-600 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
           </div>
         </div>
       </CardHeader>

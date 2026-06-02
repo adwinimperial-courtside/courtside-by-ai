@@ -2,18 +2,22 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Trophy, ArrowRight, Search } from "lucide-react";
+import { Plus, Trophy, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import LeagueCard from "../components/leagues/LeagueCard";
 import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
+import EditLeagueDialog from "../components/leagues/EditLeagueDialog";
 
 export default function LeaguesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingLeague, setEditingLeague] = useState(null);
+  const [deletingLeague, setDeletingLeague] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -52,6 +56,22 @@ export default function LeaguesPage() {
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
       setShowCreateDialog(false);
+    },
+  });
+
+  const editLeagueMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.League.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      setEditingLeague(null);
+    },
+  });
+
+  const deleteLeagueMutation = useMutation({
+    mutationFn: (id) => base44.entities.League.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      setDeletingLeague(null);
     },
   });
 
@@ -132,16 +152,21 @@ export default function LeaguesPage() {
            </div>
          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleLeagues.map((league) => (
-                <LeagueCard 
-                  key={league.id} 
-                  league={league} 
-                  userType={currentUser?.user_type}
-                  isDefault={currentUser?.default_league_id === league.id}
-                  onSetDefault={isLeagueAdmin || visibleLeagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
-                  multipleLeagues={visibleLeagues.length > 1}
-                />
-              ))}
+              {visibleLeagues.map((league) => {
+                const canManageLeague = isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
+                return (
+                  <LeagueCard 
+                    key={league.id} 
+                    league={league} 
+                    userType={currentUser?.user_type}
+                    isDefault={currentUser?.default_league_id === league.id}
+                    onSetDefault={isLeagueAdmin || visibleLeagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
+                    multipleLeagues={visibleLeagues.length > 1}
+                    onEdit={canManageLeague ? setEditingLeague : null}
+                    onDelete={canManageLeague ? setDeletingLeague : null}
+                  />
+                );
+              })}
             </div>
           )}
 
@@ -151,6 +176,34 @@ export default function LeaguesPage() {
           onSubmit={(data) => createLeagueMutation.mutate(data)}
           isLoading={createLeagueMutation.isPending}
         />
+
+        <EditLeagueDialog
+          open={!!editingLeague}
+          onOpenChange={(open) => { if (!open) setEditingLeague(null); }}
+          league={editingLeague}
+          onSubmit={(data) => editLeagueMutation.mutate({ id: editingLeague.id, data })}
+          isLoading={editLeagueMutation.isPending}
+        />
+
+        <AlertDialog open={!!deletingLeague} onOpenChange={(open) => { if (!open) setDeletingLeague(null); }}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete League</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete <strong>{deletingLeague?.name}</strong>? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => deleteLeagueMutation.mutate(deletingLeague.id)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
