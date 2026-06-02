@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import LeagueCard from "../components/leagues/LeagueCard";
 import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 import EditLeagueDialog from "../components/leagues/EditLeagueDialog";
+import DeleteLeagueDialog from "../components/leagues/DeleteLeagueDialog";
 
 export default function LeaguesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -60,7 +60,24 @@ export default function LeaguesPage() {
   });
 
   const editLeagueMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.League.update(id, data),
+    mutationFn: async ({ id, data }) => {
+      const original = editingLeague;
+      await base44.entities.League.update(id, data);
+      // Build changes list
+      const fields = ["name", "season", "description"];
+      const changes = fields
+        .filter(f => (original[f] || "") !== (data[f] || ""))
+        .map(f => ({ field: f, old_value: original[f] || "", new_value: data[f] || "" }));
+      await base44.entities.LeagueAuditLog.create({
+        action: "edit",
+        league_id: id,
+        league_name: data.name || original.name,
+        performed_by: currentUser?.email || "",
+        performed_by_name: currentUser?.full_name || "",
+        performed_at: new Date().toISOString(),
+        changes,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
       setEditingLeague(null);
@@ -68,7 +85,17 @@ export default function LeaguesPage() {
   });
 
   const deleteLeagueMutation = useMutation({
-    mutationFn: (id) => base44.entities.League.delete(id),
+    mutationFn: async (league) => {
+      await base44.entities.League.delete(league.id);
+      await base44.entities.LeagueAuditLog.create({
+        action: "delete",
+        league_id: league.id,
+        league_name: league.name,
+        performed_by: currentUser?.email || "",
+        performed_by_name: currentUser?.full_name || "",
+        performed_at: new Date().toISOString(),
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
       setDeletingLeague(null);
@@ -185,25 +212,13 @@ export default function LeaguesPage() {
           isLoading={editLeagueMutation.isPending}
         />
 
-        <AlertDialog open={!!deletingLeague} onOpenChange={(open) => { if (!open) setDeletingLeague(null); }}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete League</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete <strong>{deletingLeague?.name}</strong>? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => deleteLeagueMutation.mutate(deletingLeague.id)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <DeleteLeagueDialog
+          open={!!deletingLeague}
+          onOpenChange={(open) => { if (!open) setDeletingLeague(null); }}
+          league={deletingLeague}
+          onConfirm={() => deleteLeagueMutation.mutate(deletingLeague)}
+          isLoading={deleteLeagueMutation.isPending}
+        />
       </div>
     </div>
   );

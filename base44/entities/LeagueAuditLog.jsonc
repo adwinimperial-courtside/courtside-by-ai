@@ -1,0 +1,64 @@
+{
+  "name": "LeagueAuditLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "edit",
+        "delete"
+      ],
+      "description": "Type of action performed"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "Cached league name at time of action"
+    },
+    "performed_by": {
+      "type": "string",
+      "description": "Email of the user who performed the action"
+    },
+    "performed_by_name": {
+      "type": "string",
+      "description": "Full name of the user who performed the action"
+    },
+    "performed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the action was performed"
+    },
+    "changes": {
+      "type": "array",
+      "description": "List of changed fields (for edit actions)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "old_value": {
+            "type": "string"
+          },
+          "new_value": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional context or reason"
+    }
+  },
+  "required": [
+    "action",
+    "league_id",
+    "league_name",
+    "performed_by",
+    "performed_at"
+  ]
+}
