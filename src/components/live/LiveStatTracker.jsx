@@ -623,7 +623,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }));
       }
 
-      await Promise.all(promises);
+      // Don't let a hung connection freeze the tracker. If the writes haven't
+      // settled in 15s, stop waiting so the scorekeeper can keep going. The
+      // writes keep trying in the background; the live refresh reconciles.
+      await Promise.race([
+        Promise.all(promises),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('STAT_WRITE_TIMEOUT')), 15000))
+      ]);
 
       if (ejectionLog) {
         setEjectedPlayer(selectedPlayer);
@@ -631,15 +637,22 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         setSelectedPlayer(null);
       }
     } catch (error) {
-      // ROLLBACK — a write failed, put the number back and tell the scorekeeper.
-      if (previousStats !== undefined) {
-        queryClient.setQueryData(['playerStats', game.id], previousStats);
+      if (error?.message === 'STAT_WRITE_TIMEOUT') {
+        // Slow, not failed. The save may still land and the live refresh will
+        // reconcile — so KEEP the number on screen and just free the tracker.
+        setStatError('Saving is slow — still trying in the background.');
+        setTimeout(() => setStatError(null), 3000);
+      } else {
+        // A real failure — roll the number (and the feed entry) back.
+        if (previousStats !== undefined) {
+          queryClient.setQueryData(['playerStats', game.id], previousStats);
+        }
+        if (previousLogs !== undefined) {
+          queryClient.setQueryData(['gameLogs', game.id], previousLogs);
+        }
+        setStatError('Could not record that stat — tap it again.');
+        setTimeout(() => setStatError(null), 2500);
       }
-      if (previousLogs !== undefined) {
-        queryClient.setQueryData(['gameLogs', game.id], previousLogs);
-      }
-      setStatError('Could not record that stat — tap it again.');
-      setTimeout(() => setStatError(null), 2500);
       console.error('Error recording stat:', error);
     } finally {
       isProcessingStatRef.current = false;
