@@ -121,6 +121,10 @@
     },
     "role_in_league": {
       "type": "string"
+    },
+    "phone_verified": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

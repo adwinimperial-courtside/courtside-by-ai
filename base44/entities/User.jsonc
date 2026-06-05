@@ -10,67 +10,18 @@
       ],
       "default": "user"
     },
-    "user_type": {
-      "type": "string",
-      "enum": [
-        "app_admin",
-        "league_admin",
-        "coach",
-        "player",
-        "viewer",
-        "user"
-      ]
+    "phone": {
+      "type": "string"
     },
-    "application_status": {
-      "type": "string",
-      "enum": [
-        "Pending",
-        "Approved",
-        "Rejected"
-      ]
-    },
-    "assigned_league_ids": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": []
-    },
-    "display_name": {
-      "type": "string",
-      "description": "Official basketball/player name"
-    },
-    "privacy_terms_accepted": {
+    "phone_verified": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether the user has accepted the Terms of Use and Privacy Policy"
+      "default": false
     },
-    "privacy_terms_accepted_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when privacy terms were accepted"
+    "phone_verify_code": {
+      "type": "string"
     },
-    "marketing_email_consent": {
-      "type": "boolean",
-      "default": false,
-      "description": "Whether the user opted in to marketing emails"
-    },
-    "marketing_email_consent_at": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when marketing consent was given"
-    },
-    "consent_version": {
-      "type": "string",
-      "description": "Version identifier of the consent accepted, e.g. 2026-04-privacy-consent-v1"
+    "phone_verify_expires": {
+      "type": "string"
     }
-  },
-  "required": [
-    "user_type",
-    "application_status",
-    "display_name",
-    "privacy_terms_accepted_at",
-    "marketing_email_consent_at",
-    "consent_version"
-  ]
+  }
 }
