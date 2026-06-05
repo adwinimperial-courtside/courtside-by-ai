@@ -529,6 +529,31 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       )
     );
 
+    // Build the activity-feed log entry once, and drop it into the feed cache
+    // instantly so the game activity box updates with no delay. The real DB
+    // write happens below; when it refreshes, it replaces this temp entry.
+    const statLogPayload = {
+      game_id: game.id,
+      player_id: selectedPlayer.id,
+      team_id: selectedPlayer.team_id,
+      stat_type: statType.key,
+      stat_label: statType.label,
+      stat_points: statType.points,
+      stat_color: statType.color,
+      player_stat_id: playerStat.id,
+      old_value: currentValue,
+      new_value: currentValue + 1,
+      old_home_score: oldScores.home,
+      old_away_score: oldScores.away,
+      logged_by: currentUser?.email || '',
+      device_name: getDeviceName()
+    };
+    const previousLogs = queryClient.getQueryData(['gameLogs', game.id]);
+    queryClient.setQueryData(['gameLogs', game.id], prev => [
+      { id: `temp-${Date.now()}`, created_date: new Date().toISOString(), ...statLogPayload },
+      ...(prev || [])
+    ]);
+
     try {
       const gameUpdates = {};
 
@@ -558,22 +583,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
       }
 
-      promises.push(createLogMutation.mutateAsync({
-        game_id: game.id,
-        player_id: selectedPlayer.id,
-        team_id: selectedPlayer.team_id,
-        stat_type: statType.key,
-        stat_label: statType.label,
-        stat_points: statType.points,
-        stat_color: statType.color,
-        player_stat_id: playerStat.id,
-        old_value: currentValue,
-        new_value: currentValue + 1,
-        old_home_score: oldScores.home,
-        old_away_score: oldScores.away,
-        logged_by: currentUser?.email || '',
-        device_name: getDeviceName()
-      }));
+      promises.push(createLogMutation.mutateAsync(statLogPayload));
 
       let ejectionLog = null;
       if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
@@ -624,6 +634,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       // ROLLBACK — a write failed, put the number back and tell the scorekeeper.
       if (previousStats !== undefined) {
         queryClient.setQueryData(['playerStats', game.id], previousStats);
+      }
+      if (previousLogs !== undefined) {
+        queryClient.setQueryData(['gameLogs', game.id], previousLogs);
       }
       setStatError('Could not record that stat — tap it again.');
       setTimeout(() => setStatError(null), 2500);
