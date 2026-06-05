@@ -103,6 +103,24 @@
       "type": "boolean",
       "default": false,
       "description": "True if the approval email has been sent to the user"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "preferred_channel": {
+      "type": "string"
+    },
+    "league_type": {
+      "type": "string"
+    },
+    "heard_from": {
+      "type": "string"
+    },
+    "league_fb_page": {
+      "type": "string"
+    },
+    "role_in_league": {
+      "type": "string"
     }
   },
   "required": [

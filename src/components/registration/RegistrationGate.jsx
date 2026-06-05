@@ -125,9 +125,11 @@ export default function RegistrationGate({ user }) {
       if (selectedRole === "league_admin") {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
+        if (formData.phone) applicationData.phone = formData.phone;
         if (adminLeagueMode === "existing") {
           applicationData.league_id = selectedAdminLeagueId;
           applicationData.league_ids = [selectedAdminLeagueId];
+          if (formData.role_in_league) applicationData.role_in_league = formData.role_in_league;
         } else {
           Object.assign(applicationData, {
             league_name: formData.league_name,
@@ -135,6 +137,10 @@ export default function RegistrationGate({ user }) {
             number_of_teams: parseInt(formData.number_of_teams),
             avg_players_per_team: parseInt(formData.avg_players_per_team),
           });
+          if (formData.preferred_channel) applicationData.preferred_channel = formData.preferred_channel;
+          if (formData.league_type) applicationData.league_type = formData.league_type;
+          if (formData.heard_from) applicationData.heard_from = formData.heard_from;
+          if (formData.league_fb_page) applicationData.league_fb_page = formData.league_fb_page;
         }
       } else {
         applicationData.country = formData.country;
@@ -273,14 +279,14 @@ export default function RegistrationGate({ user }) {
                     onClick={() => setAdminLeagueMode("new")}
                     className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold transition-colors ${adminLeagueMode === "new" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
                   >
-                    Create a new league
+                    I'm starting a new league
                   </button>
                   <button
                     type="button"
                     onClick={() => setAdminLeagueMode("existing")}
                     className={`flex-1 p-3 rounded-lg border-2 text-sm font-semibold transition-colors ${adminLeagueMode === "existing" ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}
                   >
-                    Join an existing league
+                    I help run a league already on Courtside
                   </button>
                 </div>
                 <div>
@@ -311,20 +317,61 @@ export default function RegistrationGate({ user }) {
                         <Input type="number" min="5" value={formData.avg_players_per_team || ""} onChange={e => setFormData(prev => ({ ...prev, avg_players_per_team: e.target.value }))} placeholder="e.g., 12" required />
                       </div>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
+                      <Input value={formData.phone || ""} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="e.g., +63 917 555 0142" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Best way to reach you</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[["whatsapp","WhatsApp"],["messenger","Messenger"],["email","Email"],["call","Call"]].map(([val,lbl]) => (
+                          <button key={val} type="button" onClick={() => setFormData(prev => ({ ...prev, preferred_channel: val }))} className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${formData.preferred_channel === val ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">League type</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[["recreational","Recreational"],["competitive","Competitive"],["corporate","Corporate"],["school","School"]].map(([val,lbl]) => (
+                          <button key={val} type="button" onClick={() => setFormData(prev => ({ ...prev, league_type: val }))} className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${formData.league_type === val ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">How did you hear about us?</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[["facebook_group","Facebook group"],["referral","Referral"],["search","Search"],["another_league","Another league"],["other","Other"]].map(([val,lbl]) => (
+                          <button key={val} type="button" onClick={() => setFormData(prev => ({ ...prev, heard_from: val }))} className={`px-3 py-2 rounded-lg border-2 text-sm font-medium transition-colors ${formData.heard_from === val ? "border-orange-500 bg-orange-50 text-orange-700" : "border-slate-200 text-slate-600 hover:border-slate-300"}`}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">League Facebook page <span className="text-slate-400 font-normal">(optional)</span></label>
+                      <Input value={formData.league_fb_page || ""} onChange={e => setFormData(prev => ({ ...prev, league_fb_page: e.target.value }))} placeholder="facebook.com/yourleague" />
+                    </div>
                   </>
                 )}
                 {adminLeagueMode === "existing" && (
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Select League</label>
-                    <Select value={selectedAdminLeagueId} onValueChange={v => setSelectedAdminLeagueId(v)}>
-                      <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
-                      <SelectContent>
-                        {leagues.map(l => (
-                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Which league?</label>
+                      <Select value={selectedAdminLeagueId} onValueChange={v => setSelectedAdminLeagueId(v)}>
+                        <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
+                        <SelectContent>
+                          {leagues.map(l => (
+                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Your role in this league</label>
+                      <Input value={formData.role_in_league || ""} onChange={e => setFormData(prev => ({ ...prev, role_in_league: e.target.value }))} placeholder="e.g., Stats keeper, assistant organizer" />
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3">
+                      <p className="text-sm text-blue-800">We'll send your request to the league's owner to approve.</p>
+                    </div>
+                  </>
                 )}
               </div>
             )}
