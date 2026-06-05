@@ -91,6 +91,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [repairMode, setRepairMode] = useState(null); // null or { teams: [...] }
   const [armedOutIds, setArmedOutIds] = useState(() => new Set());
   const [pulsePlayerId, setPulsePlayerId] = useState(null);
+  const [statError, setStatError] = useState(null);
   const lastValidLineupsRef = React.useRef({});
   const periodEndHandledRef = React.useRef(false);
   const playerMinutesRef = React.useRef({});
@@ -496,24 +497,41 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleStatClick = async (statType) => {
-    if (isProcessingStatRef.current) return;
+    const now = Date.now();
+    // 300ms guard stops accidental double-taps from double-counting; the
+    // in-flight lock stops a tap landing mid-write from being half-applied.
+    if (isProcessingStatRef.current || now - lastStatClickTimeRef.current < 300) return;
     if (!selectedPlayer) return;
 
     const playerStatCached = existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStatCached) return;
 
+    lastStatClickTimeRef.current = now;
     isProcessingStatRef.current = true;
+    setStatError(null);
+
+    const playerStat = playerStatCached;
+    const currentValue = playerStat[statType.key] || 0;
+    const updates = { [statType.key]: currentValue + 1 };
+
+    const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
+    const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
+    const oldScores = { home: currentHomeScore, away: currentAwayScore };
+
+    // OPTIMISTIC UPDATE
+    // Bump the number in the local cache right now. The player card points
+    // and the scoreboard both add up from this cache, so both update on the
+    // next frame — no waiting for the server. Snapshot first so we can undo.
+    const previousStats = queryClient.getQueryData(['playerStats', game.id]);
+    queryClient.setQueryData(['playerStats', game.id], prev =>
+      (prev || []).map(s =>
+        s.id === playerStat.id ? { ...s, [statType.key]: currentValue + 1 } : s
+      )
+    );
+
     try {
-      const playerStat = playerStatCached;
-      const currentValue = playerStat[statType.key] || 0;
-      const updates = { [statType.key]: currentValue + 1 };
-
-      const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
-      const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
-      const oldScores = { home: currentHomeScore, away: currentAwayScore };
-
       const gameUpdates = {};
-      
+
       if (statCountsAsTeamFoul(statType.key)) {
         const isHome = selectedPlayer.team_id === game.home_team_id;
         const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
@@ -603,6 +621,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         setSelectedPlayer(null);
       }
     } catch (error) {
+      // ROLLBACK — a write failed, put the number back and tell the scorekeeper.
+      if (previousStats !== undefined) {
+        queryClient.setQueryData(['playerStats', game.id], previousStats);
+      }
+      setStatError('Could not record that stat — tap it again.');
+      setTimeout(() => setStatError(null), 2500);
       console.error('Error recording stat:', error);
     } finally {
       isProcessingStatRef.current = false;
@@ -1529,6 +1553,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 min-[900px]:h-screen min-[900px]:overflow-hidden">
+      {statError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-red-600 text-white text-sm font-semibold px-4 py-2 rounded-lg shadow-lg">
+          {statError}
+        </div>
+      )}
 
       {/* ── MOBILE LAYOUT (< 900px) ── */}
       <div className="min-[900px]:hidden max-w-[1400px] mx-auto px-3 py-3 pb-10">
