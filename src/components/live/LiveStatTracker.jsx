@@ -92,6 +92,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const [armedOutIds, setArmedOutIds] = useState(() => new Set());
   const [pulsePlayerId, setPulsePlayerId] = useState(null);
   const [statError, setStatError] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState('green');
+  const pingFailRef = useRef(0);
+  const conn = {
+    green:  { label: 'Connected',           cls: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
+    yellow: { label: 'Slow connection',     cls: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+    red:    { label: 'Offline — reconnect', cls: 'bg-red-100 text-red-700',     dot: 'bg-red-500' },
+  }[connectionStatus] || { label: 'Connected', cls: 'bg-green-100 text-green-700', dot: 'bg-green-500' };
   const lastValidLineupsRef = React.useRef({});
   const periodEndHandledRef = React.useRef(false);
   const playerMinutesRef = React.useRef({});
@@ -113,9 +120,33 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     base44.auth.me().then(setCurrentUser).catch(() => {});
   }, []);
 
+  useEffect(() => {
+    const goOffline = () => { pingFailRef.current = 99; setConnectionStatus('red'); };
+    const goOnline  = () => { pingFailRef.current = 0;  setConnectionStatus('yellow'); };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    if (!navigator.onLine) goOffline();
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
+
   const { data: liveGame = game } = useQuery({
     queryKey: ['game', game.id],
-    queryFn: () => base44.entities.Game.get(game.id),
+    queryFn: async () => {
+      const start = Date.now();
+      try {
+        const result = await base44.entities.Game.get(game.id);
+        pingFailRef.current = 0;
+        setConnectionStatus(Date.now() - start < 1500 ? 'green' : 'yellow');
+        return result;
+      } catch (err) {
+        pingFailRef.current += 1;
+        setConnectionStatus(pingFailRef.current >= 2 ? 'red' : 'yellow');
+        throw err;
+      }
+    },
     staleTime: 0,
     refetchInterval: (data) => {
       const isRunning = data?.clock_running ?? game.clock_running;
@@ -1591,6 +1622,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-10 px-3 text-sm">
             <ArrowLeft className="w-4 h-4 mr-1" />Exit
           </Button>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${conn.cls}`}>
+            <span className={`w-2 h-2 rounded-full ${conn.dot}`} />
+            {conn.label}
+          </div>
           <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-10 px-3 text-sm text-white">
             <Trophy className="w-4 h-4 mr-1" />End Game
           </Button>
@@ -1657,6 +1692,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <Button variant="ghost" onClick={() => setShowExitDialog(true)} className="text-slate-600 hover:bg-slate-200/50 h-11 px-5">
             <ArrowLeft className="w-5 h-5 mr-2" />Exit
           </Button>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${conn.cls}`}>
+            <span className={`w-2.5 h-2.5 rounded-full ${conn.dot}`} />
+            {conn.label}
+          </div>
           <Button onClick={handleEndGame} className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 h-11 px-5 text-white">
             <Trophy className="w-5 h-5 mr-2" />End Game
           </Button>
