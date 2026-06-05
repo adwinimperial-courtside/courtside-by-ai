@@ -60,6 +60,9 @@ Deno.serve(async (req) => {
             const newLeague = await base44.asServiceRole.entities.League.create({
               name: application.league_name,
               season: application.season_start_date || 'TBD',
+              owner_user_id: application.user_id,
+              owner_email: application.user_email,
+              owner_name: application.user_name,
             });
             assignedLeagueIds = [newLeague.id];
           }

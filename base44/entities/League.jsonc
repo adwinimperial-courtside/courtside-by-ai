@@ -13,6 +13,18 @@
     "description": {
       "type": "string",
       "description": "League description"
+    },
+    "owner_user_id": {
+      "type": "string",
+      "description": "User ID of the league owner"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the league owner"
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "Name of the league owner"
     }
   },
   "required": [

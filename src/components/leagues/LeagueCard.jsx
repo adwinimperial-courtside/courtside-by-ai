@@ -55,6 +55,10 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
         )}
         {userType === 'app_admin' && (
           <div className="mb-4 p-3 bg-slate-50 rounded-lg text-sm space-y-1 border border-slate-200">
+            <p className="text-slate-800">
+              <span className="font-medium">Owner:</span> {league.owner_name || league.owner_email || league.created_by || "Unknown"}
+              {league.owner_name && league.owner_email ? ` (${league.owner_email})` : ""}
+            </p>
             <p className="text-slate-600">
               <span className="font-medium">Created by:</span> {league.created_by}
             </p>

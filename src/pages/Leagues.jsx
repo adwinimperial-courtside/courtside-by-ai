@@ -40,7 +40,12 @@ export default function LeaguesPage() {
 
   const createLeagueMutation = useMutation({
     mutationFn: async (leagueData) => {
-      const newLeague = await base44.entities.League.create(leagueData);
+      const ownerInfo = currentUser ? {
+        owner_user_id: currentUser.id,
+        owner_email: currentUser.email,
+        owner_name: currentUser.full_name,
+      } : {};
+      const newLeague = await base44.entities.League.create({ ...leagueData, ...ownerInfo });
       
       // If user is league_admin, add the new league to their assigned leagues
       if (currentUser?.user_type === 'league_admin') {
