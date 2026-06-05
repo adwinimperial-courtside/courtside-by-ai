@@ -65,42 +65,6 @@ export default function RegistrationGate({ user }) {
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
-  const [phoneVerified, setPhoneVerified] = useState(false);
-  const [verifyStep, setVerifyStep] = useState("idle");
-  const [verifyCode, setVerifyCode] = useState("");
-  const [sendingCode, setSendingCode] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyError, setVerifyError] = useState("");
-
-  const handleSendCode = async () => {
-    setVerifyError("");
-    setSendingCode(true);
-    try {
-      const res = await base44.functions.invoke("sendPhoneCode", { phone: formData.phone });
-      const body = res?.data ?? res;
-      if (body?.ok) { setVerifyStep("sent"); }
-      else { setVerifyError(body?.error || "Couldn't send the code. Try again."); }
-    } catch (e) {
-      setVerifyError("Couldn't send the code. Check the number and try again.");
-    } finally {
-      setSendingCode(false);
-    }
-  };
-
-  const handleVerifyCode = async () => {
-    setVerifyError("");
-    setVerifying(true);
-    try {
-      const res = await base44.functions.invoke("verifyPhoneCode", { code: verifyCode });
-      const body = res?.data ?? res;
-      if (body?.ok) { setPhoneVerified(true); setVerifyStep("idle"); }
-      else { setVerifyError(body?.error || "That code didn't work."); }
-    } catch (e) {
-      setVerifyError("Couldn't verify the code. Try again.");
-    } finally {
-      setVerifying(false);
-    }
-  };
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -162,7 +126,6 @@ export default function RegistrationGate({ user }) {
         if (formData.full_name) applicationData.user_name = formData.full_name;
         applicationData.country = formData.country;
         if (formData.phone) applicationData.phone = formData.phone;
-        applicationData.phone_verified = phoneVerified;
         if (adminLeagueMode === "existing") {
           applicationData.league_id = selectedAdminLeagueId;
           applicationData.league_ids = [selectedAdminLeagueId];
@@ -356,26 +319,7 @@ export default function RegistrationGate({ user }) {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
-                      <div className="flex gap-2">
-                        <Input value={formData.phone || ""} onChange={e => { setFormData(prev => ({ ...prev, phone: e.target.value })); setPhoneVerified(false); setVerifyStep("idle"); }} placeholder="e.g., +63 917 555 0142" disabled={phoneVerified} />
-                        {!phoneVerified && (
-                          <Button type="button" variant="outline" disabled={sendingCode || !formData.phone} onClick={handleSendCode}>
-                            {sendingCode ? "Sending…" : (verifyStep === "sent" ? "Resend" : "Send code")}
-                          </Button>
-                        )}
-                      </div>
-                      {phoneVerified && (
-                        <p className="text-sm font-medium text-green-600 mt-1">✓ Number verified</p>
-                      )}
-                      {!phoneVerified && verifyStep === "sent" && (
-                        <div className="mt-2 flex gap-2">
-                          <Input value={verifyCode} onChange={e => setVerifyCode(e.target.value)} placeholder="6-digit code" maxLength={6} />
-                          <Button type="button" disabled={verifying || verifyCode.length < 4} onClick={handleVerifyCode} className="bg-orange-500 hover:bg-orange-600 text-white">
-                            {verifying ? "Verifying…" : "Verify"}
-                          </Button>
-                        </div>
-                      )}
-                      {verifyError && <p className="text-sm text-red-600 mt-1">{verifyError}</p>}
+                      <Input value={formData.phone || ""} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="e.g., +63 917 555 0142" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Best way to reach you</label>
@@ -572,7 +516,6 @@ export default function RegistrationGate({ user }) {
               if (selectedRole === "league_admin") {
                 if (!formData.country?.trim()) canSubmit = false;
                 if (adminLeagueMode === "new" && !formData.league_name?.trim()) canSubmit = false;
-                if (selectedRole === "league_admin" && adminLeagueMode === "new" && !phoneVerified) canSubmit = false;
                 if (adminLeagueMode === "existing" && !selectedAdminLeagueId) canSubmit = false;
               } else {
                 if (selectedLeagues.length === 0) canSubmit = false;
