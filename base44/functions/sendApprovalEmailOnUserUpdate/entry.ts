@@ -99,38 +99,9 @@ function buildEmailHtml(firstName) {
 </html>`;
 }
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-    const payload = await req.json();
-
-    const newStatus = payload.data?.application_status;
-    const oldStatus = payload.old_data?.application_status;
-
-    // Only fire when application_status transitions TO Approved
-    if (newStatus !== 'Approved' || oldStatus === 'Approved') {
-      return Response.json({ skipped: true, reason: 'Not a new approval' });
-    }
-
-    const userEmail = payload.data?.email;
-    const userName = payload.data?.full_name;
-
-    if (!userEmail) {
-      return Response.json({ error: 'No email found on user record' }, { status: 400 });
-    }
-
-    const firstName = userName?.split(' ')[0] || null;
-    const htmlBody = buildEmailHtml(firstName);
-
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: userEmail,
-      subject: "Your Courtside by AI access has been approved 🎉",
-      body: htmlBody,
-      from_name: "Courtside by AI",
-    });
-
-    return Response.json({ success: true, sent_to: userEmail });
-  } catch (error) {
-    return Response.json({ error: error.message }, { status: 500 });
-  }
+Deno.serve(async (_req) => {
+  // DISABLED: the welcome email is sent only by the request-page approval
+  // (approveUserApplication -> sendAccessApprovedEmail). This duplicate sender
+  // is turned off to prevent double or premature emails.
+  return Response.json({ skipped: true, reason: 'Disabled - approval email handled by approveUserApplication' });
 });

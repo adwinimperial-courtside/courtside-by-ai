@@ -143,19 +143,12 @@ Deno.serve(async (req) => {
     const application = payload.data || payload.application;
     const eventType = payload.event?.type;
 
-    // Only send for a genuine approval. Entity automations include an event type:
-    // never send on create (a new application is Pending, not approved), and on
-    // update only when status transitions TO Approved. A direct call from
-    // approveUserApplication has no event type and is the trusted approval path.
+    // Send ONLY when called directly by the request-page approval
+    // (approveUserApplication). Entity automations always pass an event type,
+    // so we never send from those — the welcome email can come only from an
+    // explicit admin approval. This prevents premature and duplicate emails.
     if (eventType) {
-      if (eventType !== 'update') {
-        return Response.json({ skipped: true, reason: 'Not an approval (create or other event)' });
-      }
-      const newStatus = payload.data?.status;
-      const oldStatus = payload.old_data?.status;
-      if (newStatus !== 'Approved' || oldStatus === 'Approved') {
-        return Response.json({ skipped: true, reason: 'Not a new approval' });
-      }
+      return Response.json({ skipped: true, reason: 'Email is only sent by the request-page approval, not by automations' });
     }
 
     // Skip if email already sent (prevent double-send)

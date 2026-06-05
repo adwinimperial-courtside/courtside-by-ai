@@ -83,68 +83,9 @@ function buildEmailHtml(firstName) {
 </html>`;
 }
 
-Deno.serve(async (req) => {
-  try {
-    const base44 = createClientFromRequest(req);
-
-    // Find all pending, non-additional applications that haven't had an email sent
-    const allPending = await base44.asServiceRole.entities.UserApplication.list();
-    const toCheck = allPending.filter(a =>
-      a.status === 'Pending' &&
-      !a.is_additional_request &&
-      !a.approval_email_sent
-    );
-
-    if (toCheck.length === 0) {
-      return Response.json({ skipped: true, reason: 'No pending applications to process' });
-    }
-
-    // Get all registered users indexed by user_id
-    const allUsers = await base44.asServiceRole.entities.User.list();
-    const usersById = {};
-    const usersByEmail = {};
-    allUsers.forEach(u => {
-      usersById[u.id] = u;
-      usersByEmail[u.email] = u;
-    });
-
-    const results = [];
-
-    for (const app of toCheck) {
-      // Check if this user has been registered (approved via Base44 dashboard)
-      // When Base44 approves a pending request, the user gets created/registered in our system
-      const user = usersById[app.user_id] || usersByEmail[app.user_email];
-
-      if (!user) {
-        continue;
-      }
-
-      // Only send email if the user has been fully approved (application_status = Approved)
-      if (user.application_status !== 'Approved') {
-        continue;
-      }
-      const firstName = app.user_name?.split(' ')[0] || user.full_name?.split(' ')[0] || null;
-      const emailTo = app.user_email;
-
-      await base44.asServiceRole.integrations.Core.SendEmail({
-        to: emailTo,
-        subject: "Welcome to Courtside by AI — built for everyone in the game 🏀",
-        body: buildEmailHtml(firstName),
-        from_name: "Courtside by AI",
-      });
-
-      // Mark email as sent — do NOT change status, admin still needs to approve role/league in app
-      await base44.asServiceRole.entities.UserApplication.update(app.id, {
-        approval_email_sent: true,
-      });
-
-      results.push({ email: emailTo, name: app.user_name, action: 'email_sent' });
-      console.log(`[INFO] Approval email sent to ${emailTo}`);
-    }
-
-    return Response.json({ success: true, processed: results.length, results });
-  } catch (error) {
-    console.error('[ERROR]', error.message);
-    return Response.json({ error: error.message }, { status: 500 });
-  }
+Deno.serve(async (_req) => {
+  // DISABLED: the welcome email is sent only by the request-page approval
+  // (approveUserApplication -> sendAccessApprovedEmail). This background scanner
+  // is turned off to prevent duplicate or unexpected emails.
+  return Response.json({ skipped: true, reason: 'Disabled - approval email handled by approveUserApplication' });
 });
