@@ -108,6 +108,11 @@
       "default": false,
       "description": "True if the approval email has been sent to the user"
     },
+    "decline_email_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True if the decline email has been sent to the user"
+    },
     "phone": {
       "type": "string"
     },

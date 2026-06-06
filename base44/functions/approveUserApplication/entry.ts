@@ -171,10 +171,27 @@ async function sendWelcomeOnce(base44, application) {
   } catch (emailErr) { console.error('Email failed:', emailErr.message); }
 }
 
+// DECLINE_EMAIL_V1 — notify the applicant once when their request is fully declined
+async function sendDeclineOnce(base44, application) {
+  if (application.decline_email_sent) return;
+  try {
+    await base44.asServiceRole.functions.invoke('sendDeclinedEmail', {
+      application: {
+        id: application.id,
+        user_email: application.user_email,
+        user_name: application.user_name,
+        status: 'Rejected',
+        decline_email_sent: false,
+      }
+    });
+  } catch (emailErr) { console.error('Decline email failed:', emailErr.message); }
+}
+
 async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider) {
   if (action === 'reject') {
     try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
-    await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Rejected' });
+    await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Rejected', decline_email_sent: true });
+    await sendDeclineOnce(base44, application);
     return Response.json({ success: true, action: 'rejected' });
   }
   let assignedLeagueIds = [];
@@ -308,6 +325,7 @@ Deno.serve(async (req) => {
 
     const appUpdate = { league_decisions: decisions, status: newStatus };
     if (anyNewApproval && !application.approval_email_sent) appUpdate.approval_email_sent = true;
+    if (newStatus === 'Rejected' && !application.decline_email_sent) appUpdate.decline_email_sent = true;
     await base44.asServiceRole.entities.UserApplication.update(application.id, appUpdate);
 
     if (applicantUser) {
@@ -318,6 +336,7 @@ Deno.serve(async (req) => {
     }
 
     if (anyNewApproval && !application.approval_email_sent) await sendWelcomeOnce(base44, application);
+    if (newStatus === 'Rejected' && !application.decline_email_sent) await sendDeclineOnce(base44, application);
 
     return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length, conflicts });
   } catch (error) {
