@@ -93,6 +93,7 @@ Deno.serve(async (req) => {
           user_id: app.user_id || '', team_id: app.team_id || '',
           is_additional_request: !!app.is_additional_request, current_user_type: app.current_user_type || '',
           display_name: app.display_name || '', handle: app.handle || '',
+          jersey_number: app.jersey_number || '', match_suggestions: app.match_suggestions || [],
           league_id: app.league_id || '', league_name: app.league_name || '',
           league_ids: app.league_ids || [], league_team_pairs: app.league_team_pairs || [],
           season_start_date: app.season_start_date || '', number_of_teams: app.number_of_teams || null,

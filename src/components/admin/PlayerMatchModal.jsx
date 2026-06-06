@@ -1,118 +1,133 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, User, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Check, X, User, AlertTriangle } from "lucide-react";
 
-// Simple fuzzy score: how well does `candidate` match `query`
-function fuzzyScore(query, candidate) {
-  if (!query || !candidate) return 0;
-  const q = query.toLowerCase().trim();
-  const c = candidate.toLowerCase().trim();
-  if (c === q) return 100;
-  if (c.includes(q) || q.includes(c)) return 80;
-  // Character overlap score
-  const qChars = q.split("");
-  let matches = 0;
-  let pos = 0;
-  for (const ch of qChars) {
-    const idx = c.indexOf(ch, pos);
-    if (idx !== -1) { matches++; pos = idx + 1; }
-  }
-  return Math.round((matches / Math.max(q.length, c.length)) * 60);
-}
+// PLAYER_MATCH_MODAL_V2 — known-team roster only, server-side identity write, on-page errors
 
-function getBestScore(player, displayName, handle) {
-  const scores = [
-    fuzzyScore(displayName, player.name),
-    handle ? fuzzyScore(handle, player.name) : 0,
-  ];
-  return Math.max(...scores);
-}
+const CONFIDENCE_META = {
+  strong: { cls: "bg-green-100 text-green-700", label: "Strong match" },
+  number_match_name_differs: { cls: "bg-amber-100 text-amber-700", label: "⚠ Number matches, name differs" },
+  name_match_number_differs: { cls: "bg-amber-100 text-amber-700", label: "Name matches, number differs" },
+  ambiguous: { cls: "bg-amber-100 text-amber-700", label: "Multiple possible — pick one" },
+  none: { cls: "bg-slate-100 text-slate-600", label: "No suggestion — pick manually" },
+};
 
 export default function PlayerMatchModal({ application, leagues, teams, onClose, onApproved }) {
   const queryClient = useQueryClient();
-  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
-  const [search, setSearch] = useState("");
+  const [selections, setSelections] = useState({}); // team_id -> player_id
+  const [banner, setBanner] = useState(null); // { type, text }
   const [isProcessing, setIsProcessing] = useState(false);
-
-  // Collect all team IDs from the application
-  const teamIds = useMemo(() => {
-    if (application.league_team_pairs?.length > 0) {
-      return application.league_team_pairs.map(p => p.team_id).filter(Boolean);
-    }
-    return application.team_id ? [application.team_id] : [];
-  }, [application]);
+  const [initialized, setInitialized] = useState(false);
 
   const pairs = useMemo(() => {
-    if (application.league_team_pairs?.length > 0) return application.league_team_pairs;
+    if (application.league_team_pairs?.length > 0) {
+      return application.league_team_pairs.filter(p => p && p.team_id);
+    }
     if (application.league_id && application.team_id) {
       return [{ league_id: application.league_id, team_id: application.team_id }];
     }
     return [];
   }, [application]);
 
-  const { data: players = [], isLoading } = useQuery({
-    queryKey: ['players_for_teams', teamIds.join(",")],
-    queryFn: () => base44.entities.Player.list(),
+  const teamIds = useMemo(() => pairs.map(p => p.team_id), [pairs]);
+
+  const suggestionsByTeam = useMemo(() => {
+    const map = {};
+    (application.match_suggestions || []).forEach(s => { if (s && s.team_id) map[s.team_id] = s; });
+    return map;
+  }, [application]);
+
+  // Fetch ONLY the rosters for the known teams (small, no pagination risk)
+  const { data: rostersByTeam = {}, isLoading } = useQuery({
+    queryKey: ['roster_for_teams', teamIds.join(",")],
+    queryFn: async () => {
+      const arrays = await Promise.all(teamIds.map(tid => base44.entities.Player.filter({ team_id: tid })));
+      const out = {};
+      teamIds.forEach((tid, i) => { out[tid] = Array.isArray(arrays[i]) ? arrays[i] : []; });
+      return out;
+    },
     enabled: teamIds.length > 0,
   });
 
-  const teamPlayers = useMemo(() => {
-    return players.filter(p => teamIds.includes(p.team_id));
-  }, [players, teamIds]);
+  // Pre-select the suggested player for each team once rosters arrive (only if it really exists on the roster)
+  useEffect(() => {
+    if (initialized || isLoading || teamIds.length === 0) return;
+    const init = {};
+    teamIds.forEach(tid => {
+      const sug = suggestionsByTeam[tid];
+      const roster = rostersByTeam[tid] || [];
+      if (sug && sug.suggested_player_id && roster.some(p => p.id === sug.suggested_player_id)) {
+        init[tid] = sug.suggested_player_id;
+      }
+    });
+    setSelections(init);
+    setInitialized(true);
+  }, [initialized, isLoading, teamIds, suggestionsByTeam, rostersByTeam]);
 
-  const rankedPlayers = useMemo(() => {
-    const query = search.trim() || application.display_name || "";
-    const handle = application.handle || "";
-    return [...teamPlayers]
-      .map(p => ({ ...p, score: getBestScore(p, query, search ? "" : handle) }))
-      .sort((a, b) => b.score - a.score);
-  }, [teamPlayers, search, application.display_name, application.handle]);
+  const allSelected = teamIds.length > 0 && teamIds.every(tid => selections[tid]);
 
-  const handleMatchAndApprove = async () => {
-    if (!selectedPlayerId) return;
+  const handleApprove = async () => {
+    if (!allSelected) return;
     setIsProcessing(true);
+    setBanner(null);
     try {
-      // Approve the application
-      await base44.functions.invoke('approveUserApplication', {
-        applicationId: application.id,
-        action: 'approve',
-      });
-
-      // Create UserLeagueIdentity records for each pair
-      const selectedPlayer = players.find(p => p.id === selectedPlayerId);
-      for (const pair of pairs) {
-        const existing = await base44.entities.UserLeagueIdentity.filter({
-          user_id: application.user_id,
-          league_id: pair.league_id,
-        });
-        const identityData = {
-          user_id: application.user_id,
+      const player_matches = pairs.map(pair => {
+        const pid = selections[pair.team_id];
+        const roster = rostersByTeam[pair.team_id] || [];
+        const player = roster.find(p => p.id === pid);
+        return {
           league_id: pair.league_id,
           team_id: pair.team_id,
-          matched_player_id: selectedPlayerId,
-          matched_player_name: selectedPlayer?.name || application.display_name,
-          match_status: "matched",
-          match_method: "manual_admin",
-          matched_at: new Date().toISOString(),
-          matched_by: "admin",
+          matched_player_id: pid,
+          matched_player_name: player?.name || application.display_name || "",
         };
-        if (existing?.length > 0) {
-          await base44.entities.UserLeagueIdentity.update(existing[0].id, identityData);
-        } else {
-          await base44.entities.UserLeagueIdentity.create(identityData);
-        }
+      });
+
+      const res = await base44.functions.invoke('approveUserApplication', {
+        applicationId: application.id,
+        action: 'approve',
+        player_matches,
+      });
+      const data = res?.data || {};
+      const conflicts = Array.isArray(data.conflicts) ? data.conflicts : [];
+
+      if (conflicts.length > 0) {
+        const msgs = conflicts.map(c => {
+          const league = leagues.find(l => l.id === c.league_id);
+          if (c.reason === 'already_claimed') {
+            return `${league?.name || c.league_id}: that roster player is already linked to another user${c.claimed_by ? ` (${c.claimed_by})` : ''}.`;
+          }
+          return `${league?.name || c.league_id}: ${c.reason}.`;
+        });
+        setBanner({ type: 'error', text: `Could not approve — ${msgs.join(' ')} Pick a different roster player or decline.` });
+        setIsProcessing(false);
+        return;
       }
 
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
+      queryClient.invalidateQueries({ queryKey: ['review_requests'] });
       onApproved();
     } catch (error) {
-      alert("Failed: " + error.message);
-    } finally {
+      setBanner({ type: 'error', text: "Failed to approve: " + (error?.message || "unknown error") });
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDecline = async () => {
+    if (!window.confirm("Decline this player application? The applicant will not be granted access.")) return;
+    setIsProcessing(true);
+    setBanner(null);
+    try {
+      await base44.functions.invoke('approveUserApplication', { applicationId: application.id, action: 'reject' });
+      queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
+      queryClient.invalidateQueries({ queryKey: ['review_requests'] });
+      onApproved();
+    } catch (error) {
+      setBanner({ type: 'error', text: "Failed to decline: " + (error?.message || "unknown error") });
       setIsProcessing(false);
     }
   };
@@ -123,98 +138,92 @@ export default function PlayerMatchModal({ application, leagues, teams, onClose,
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <User className="w-5 h-5 text-orange-500" />
-            Match Player Identity
+            Confirm Player
           </DialogTitle>
         </DialogHeader>
 
-        {/* Applicant info */}
-        <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-sm space-y-1 mb-2">
+        <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-sm space-y-1">
           <div><span className="text-slate-500">Applicant:</span> <span className="font-medium">{application.user_name}</span></div>
-          {application.display_name && <div><span className="text-slate-500">Display Name:</span> <span className="font-medium">{application.display_name}</span></div>}
+          {application.display_name && <div><span className="text-slate-500">Claimed name:</span> <span className="font-medium">{application.display_name}</span></div>}
+          <div><span className="text-slate-500">Claimed jersey:</span> <span className="font-medium">#{application.jersey_number || "—"}</span></div>
           {application.handle && <div><span className="text-slate-500">Nickname:</span> <span className="font-medium">{application.handle}</span></div>}
-          <div className="pt-1 space-y-0.5">
-            {pairs.map((pair, i) => {
+        </div>
+
+        {banner && (
+          <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${banner.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{banner.text}</span>
+          </div>
+        )}
+
+        <div className="max-h-[22rem] overflow-y-auto space-y-3">
+          {isLoading ? (
+            <p className="text-slate-400 text-sm text-center py-4">Loading rosters...</p>
+          ) : (
+            pairs.map((pair, idx) => {
               const league = leagues.find(l => l.id === pair.league_id);
               const team = teams.find(t => t.id === pair.team_id);
+              const roster = rostersByTeam[pair.team_id] || [];
+              const sug = suggestionsByTeam[pair.team_id];
+              const suggestedId = sug?.suggested_player_id || null;
+              const meta = CONFIDENCE_META[sug?.confidence] || CONFIDENCE_META.none;
+              const sorted = [...roster].sort((a, b) => {
+                if (a.id === suggestedId) return -1;
+                if (b.id === suggestedId) return 1;
+                return (parseInt(a.jersey_number) || 999) - (parseInt(b.jersey_number) || 999);
+              });
               return (
-                <div key={i} className="text-xs text-slate-500">
-                  {league?.name} · <span className="font-medium text-slate-700">{team?.name}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input
-            placeholder="Search players..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-
-        {/* Player list */}
-        <div className="max-h-64 overflow-y-auto space-y-1 mt-1">
-          {isLoading ? (
-            <p className="text-slate-400 text-sm text-center py-4">Loading players...</p>
-          ) : rankedPlayers.length === 0 ? (
-            <p className="text-slate-400 text-sm text-center py-4">No players found on this team</p>
-          ) : (
-            rankedPlayers.map(player => {
-              const team = teams.find(t => t.id === player.team_id);
-              const isSelected = selectedPlayerId === player.id;
-              return (
-                <div
-                  key={player.id}
-                  onClick={() => setSelectedPlayerId(player.id)}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer border transition-all ${
-                    isSelected
-                      ? "bg-orange-50 border-orange-300"
-                      : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <div>
-                    <p className="font-medium text-sm text-slate-900">{player.name}</p>
-                    <p className="text-xs text-slate-500">#{player.jersey_number} · {team?.name}</p>
+                <div key={idx} className="border border-slate-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-slate-600">{league?.name} · <span className="text-slate-800">{team?.name}</span></p>
+                    <Badge className={`text-xs ${meta.cls}`}>{meta.label}</Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {player.score >= 60 && (
-                      <Badge className="bg-green-100 text-green-700 text-xs">Strong match</Badge>
-                    )}
-                    {player.score >= 30 && player.score < 60 && (
-                      <Badge className="bg-yellow-100 text-yellow-700 text-xs">Possible</Badge>
-                    )}
-                    {isSelected && <Check className="w-4 h-4 text-orange-500" />}
-                  </div>
+                  {sug?.reason && <p className="text-xs text-slate-500 mb-2">{sug.reason}</p>}
+                  {roster.length === 0 ? (
+                    <p className="text-slate-400 text-sm py-2">No players on this team's roster yet. Add the player to the roster first, then approve.</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {sorted.map(player => {
+                        const isSelected = selections[pair.team_id] === player.id;
+                        const isSuggested = player.id === suggestedId;
+                        return (
+                          <div
+                            key={player.id}
+                            onClick={() => setSelections(prev => ({ ...prev, [pair.team_id]: player.id }))}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer border transition-all ${isSelected ? "bg-orange-50 border-orange-300" : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50"}`}
+                          >
+                            <div>
+                              <p className="font-medium text-sm text-slate-900">{player.name}</p>
+                              <p className="text-xs text-slate-500">#{player.jersey_number || "—"}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isSuggested && <Badge className="bg-orange-100 text-orange-700 text-xs">Suggested</Badge>}
+                              {isSelected && <Check className="w-4 h-4 text-orange-500" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               );
             })
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            onClick={handleMatchAndApprove}
-            disabled={!selectedPlayerId || isProcessing}
-            className="flex-1 bg-green-600 hover:bg-green-700"
-          >
+        <div className="flex gap-2 pt-1">
+          <Button onClick={handleApprove} disabled={!allSelected || isProcessing} className="flex-1 bg-green-600 hover:bg-green-700">
             <Check className="w-4 h-4 mr-1" />
-            {isProcessing ? "Processing..." : "Match & Approve"}
+            {isProcessing ? "Processing..." : "Confirm & Approve"}
           </Button>
-          <Button
-            onClick={onClose}
-            variant="outline"
-            disabled={isProcessing}
-            className="flex-1"
-          >
+          <Button onClick={handleDecline} variant="outline" disabled={isProcessing} className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
             <X className="w-4 h-4 mr-1" />
-            Ignore
+            Decline
           </Button>
         </div>
+        <Button onClick={onClose} variant="ghost" disabled={isProcessing} className="w-full text-slate-500">
+          Cancel (decide later)
+        </Button>
       </DialogContent>
     </Dialog>
   );
