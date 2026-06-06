@@ -81,6 +81,52 @@ async function grantLeague(base44, application, applicantUser, leagueId, role) {
   }
 }
 
+// PLAYER_CLAIM_GUARD_V1 — atomically (best-effort on base44) claim a roster player for the applicant
+async function claimRosterPlayer(base44, application, leagueId, match) {
+  const playerId = match && match.matched_player_id;
+  const teamId = (match && match.team_id) || null;
+  if (!playerId) return { ok: false, reason: 'no_player_selected' };
+
+  let existingClaims = [];
+  try {
+    existingClaims = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+      league_id: leagueId, matched_player_id: playerId,
+    });
+  } catch (_e) { existingClaims = []; }
+  const conflict = (existingClaims || []).find(r => r.user_id && r.user_id !== application.user_id);
+  if (conflict) {
+    return { ok: false, reason: 'already_claimed', claimed_by: conflict.matched_player_name || conflict.user_id || '' };
+  }
+
+  const identityData = {
+    user_id: application.user_id,
+    league_id: leagueId,
+    team_id: teamId,
+    role: 'player',
+    matched_player_id: playerId,
+    matched_player_name: (match && match.matched_player_name) || null,
+    match_status: 'matched',
+    match_confidence: 'high',
+    match_method: 'manual_admin',
+    identity_status: 'completed',
+    matched_by: 'approval',
+    matched_at: new Date().toISOString(),
+  };
+  try {
+    const found = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+      user_id: application.user_id, league_id: leagueId,
+    });
+    if (found && found.length > 0) {
+      await base44.asServiceRole.entities.UserLeagueIdentity.update(found[0].id, identityData);
+    } else {
+      await base44.asServiceRole.entities.UserLeagueIdentity.create(identityData);
+    }
+  } catch (_idErr) {
+    return { ok: false, reason: 'identity_write_failed' };
+  }
+  return { ok: true };
+}
+
 async function writeLog(base44, application, leagueId, decision, decider) {
   const leagueName = await getLeagueName(base44, leagueId);
   try {
@@ -171,6 +217,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { applicationId, action, override_league_id } = body;
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
+    const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
     if (action !== 'approve' && action !== 'reject') return Response.json({ error: 'Invalid action' }, { status: 400 });
 
     const application = await base44.asServiceRole.entities.UserApplication.get(applicationId);
@@ -215,10 +262,24 @@ Deno.serve(async (req) => {
     try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { applicantUser = null; }
 
     let anyNewApproval = false;
+    const conflicts = [];
     for (const lid of decideLeagueIds) {
       const entry = decisions.find(d => d.league_id === lid);
       if (!entry) continue;
       if (entry.decision === 'approved' || entry.decision === 'rejected') continue;
+
+      // PLAYER_CLAIM_GUARD — confirmed roster match must be claimed before this league is approved
+      if (action === 'approve' && role === 'player' && playerMatches) {
+        const matchForLeague = playerMatches.find(m => m && m.league_id === lid && m.matched_player_id) || null;
+        if (matchForLeague) {
+          const claim = await claimRosterPlayer(base44, application, lid, matchForLeague);
+          if (!claim.ok) {
+            conflicts.push({ league_id: lid, reason: claim.reason, claimed_by: claim.claimed_by || '' });
+            continue; // leave this league pending; do not approve
+          }
+        }
+      }
+
       entry.decision = action === 'approve' ? 'approved' : 'rejected';
       entry.decided_by_email = decider.email;
       entry.decided_by_name = decider.name;
@@ -249,7 +310,7 @@ Deno.serve(async (req) => {
 
     if (anyNewApproval && !application.approval_email_sent) await sendWelcomeOnce(base44, application);
 
-    return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length });
+    return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length, conflicts });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
