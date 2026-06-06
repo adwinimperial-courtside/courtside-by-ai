@@ -37,12 +37,12 @@ export default function UserApplicationsReview() {
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
-    enabled: isAppAdmin,
+    enabled: !!reviewData,
   });
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    enabled: isAppAdmin,
+    enabled: !!reviewData,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['review_requests'] });

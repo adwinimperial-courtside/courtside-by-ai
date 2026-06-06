@@ -87,6 +87,15 @@ async function claimRosterPlayer(base44, application, leagueId, match) {
   const teamId = (match && match.team_id) || null;
   if (!playerId) return { ok: false, reason: 'no_player_selected' };
 
+  // LA_PLAYER_APPROVAL_V1 — confirm the chosen player belongs to this team in THIS league
+  let rosterPlayer = null;
+  try { rosterPlayer = await base44.asServiceRole.entities.Player.get(playerId); } catch (_e) {}
+  if (!rosterPlayer) return { ok: false, reason: 'player_not_found' };
+  if (teamId && rosterPlayer.team_id !== teamId) return { ok: false, reason: 'player_team_mismatch' };
+  let rosterTeam = null;
+  try { rosterTeam = await base44.asServiceRole.entities.Team.get(rosterPlayer.team_id); } catch (_e) {}
+  if (!rosterTeam || rosterTeam.league_id !== leagueId) return { ok: false, reason: 'player_outside_league' };
+
   let existingClaims = [];
   try {
     existingClaims = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
@@ -246,7 +255,7 @@ Deno.serve(async (req) => {
     if (decideLeagueIds.length === 0) return Response.json({ error: 'No valid leagues to decide' }, { status: 400 });
 
     if (isLeagueAdmin) {
-      if (role !== 'coach' && role !== 'viewer') return Response.json({ error: 'Forbidden: league admins can only decide coach or viewer requests' }, { status: 403 });
+      if (role !== 'coach' && role !== 'viewer' && role !== 'player') return Response.json({ error: 'Forbidden: league admins can only decide coach, viewer, or player requests' }, { status: 403 });
       const outside = decideLeagueIds.filter(id => !callerLeagueIds.includes(id));
       if (outside.length > 0) return Response.json({ error: 'Forbidden: you can only decide requests for your own leagues' }, { status: 403 });
     }

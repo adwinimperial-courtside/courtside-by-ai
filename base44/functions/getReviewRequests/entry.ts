@@ -55,22 +55,42 @@ Deno.serve(async (req) => {
       const targets = getTargetLeagueIds(app);
 
       if (isLeagueAdmin) {
-        if (role !== 'coach' && role !== 'viewer') continue;
+        // LA_PLAYER_APPROVAL_V1 — league admins can now also see player requests for their teams
+        if (role !== 'coach' && role !== 'viewer' && role !== 'player') continue;
         const myTargets = targets.filter(lid => myLeagueIds.includes(lid));
         if (myTargets.length === 0) continue;
         const myLeagues = []; let anyPending = false;
         for (const lid of myTargets) {
           const d = decisionFor(app, lid);
           if (d.decision === 'pending') anyPending = true;
-          myLeagues.push({ league_id: lid, league_name: await leagueName(lid), decision: d.decision });
+          let team = null;
+          if (role === 'player') {
+            let tid = null;
+            if (Array.isArray(app.league_team_pairs)) { const p = app.league_team_pairs.find(pp => pp && pp.league_id === lid); if (p) tid = p.team_id; }
+            if (!tid && app.league_id === lid) tid = app.team_id;
+            team = tid ? { team_id: tid, team_name: await teamName(tid) } : null;
+          }
+          myLeagues.push({ league_id: lid, league_name: await leagueName(lid), decision: d.decision, decided_by_name: d.decided_by_name || '', decided_by_type: d.decided_by_type || '', team });
         }
         if (!anyPending) continue;
-        out.push({
+        const laOut = {
           id: app.id, user_name: app.user_name || '', user_email: app.user_email || '',
           requested_role: role, applied_at: app.applied_at || app.created_date || '', country: app.country || '',
           leagues: myLeagues,
           can_decide: myLeagues.filter(l => l.decision === 'pending').map(l => l.league_id),
-        });
+        };
+        if (role === 'player') {
+          const myTeamIds = myLeagues.map(l => l.team && l.team.team_id).filter(Boolean);
+          laOut.user_id = app.user_id || '';
+          laOut.display_name = app.display_name || '';
+          laOut.handle = app.handle || '';
+          laOut.jersey_number = app.jersey_number || '';
+          laOut.match_suggestions = (Array.isArray(app.match_suggestions) ? app.match_suggestions : []).filter(s => s && myTeamIds.includes(s.team_id));
+          laOut.league_team_pairs = (Array.isArray(app.league_team_pairs) ? app.league_team_pairs : []).filter(p => p && myLeagueIds.includes(p.league_id));
+          laOut.league_id = myLeagueIds.includes(app.league_id) ? (app.league_id || '') : '';
+          laOut.team_id = myLeagueIds.includes(app.league_id) ? (app.team_id || '') : '';
+        }
+        out.push(laOut);
       } else {
         const leagues = [];
         for (const lid of targets) {
