@@ -82,6 +82,10 @@
       "type": "string",
       "description": "Nickname or player handle (optional). Players only."
     },
+    "jersey_number": {
+      "type": "string",
+      "description": "Player's jersey number. Players only."
+    },
     "player_name_status": {
       "type": "string",
       "enum": [

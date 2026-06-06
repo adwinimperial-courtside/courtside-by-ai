@@ -159,6 +159,7 @@ export default function RegistrationGate({ user }) {
         if (selectedRole === "player") {
           applicationData.display_name = formData.display_name;
           applicationData.handle = formData.handle || "";
+          applicationData.jersey_number = (formData.jersey_number || "").trim();
           applicationData.player_name_status = formData.display_name ? "completed" : "missing";
           applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
           applicationData.league_team_pairs = selectedLeagues.map(lid => ({
@@ -449,6 +450,12 @@ export default function RegistrationGate({ user }) {
                     <Input value={formData.display_name || ""} onChange={e => setFormData(prev => ({ ...prev, display_name: e.target.value }))} placeholder="Your name as it appears on the roster" required />
                     <p className="text-xs text-slate-400 mt-1">This is how your name will appear in stats, standings, and awards.</p>
                   </div>
+                  {/* JERSEY_FIELD_V1 */}
+                  <div>
+                    <label className="text-sm font-medium text-slate-700 mb-1 block">Jersey Number *</label>
+                    <Input value={formData.jersey_number || ""} onChange={e => setFormData(prev => ({ ...prev, jersey_number: e.target.value }))} placeholder="e.g., 23" maxLength={3} required />
+                    <p className="text-xs text-slate-400 mt-1">Enter your name and jersey number exactly as your team lists them. We'll try to match you to your team's roster automatically. If we can't, a league organizer will review your request — you'll get an email once you're approved.</p>
+                  </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-1 block">Nickname / Handle <span className="font-normal text-slate-400">(optional)</span></label>
                     <Input value={formData.handle || ""} onChange={e => setFormData(prev => ({ ...prev, handle: e.target.value }))} placeholder="e.g., The Flash" />
@@ -521,6 +528,7 @@ export default function RegistrationGate({ user }) {
                 if (selectedLeagues.length === 0) canSubmit = false;
                 if ((selectedRole === "player" || selectedRole === "coach") && selectedLeagues.some(lid => !leagueTeamMap[lid])) canSubmit = false;
                 if (selectedRole === "player" && !formData.display_name?.trim()) canSubmit = false;
+                if (selectedRole === "player" && !formData.jersey_number?.trim()) canSubmit = false;
               }
               return (
                 <Button type="submit" disabled={isSubmitting || !canSubmit} className="w-full bg-orange-500 hover:bg-orange-600 mt-2 disabled:opacity-50">
