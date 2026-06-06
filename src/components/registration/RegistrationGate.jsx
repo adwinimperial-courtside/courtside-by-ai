@@ -169,7 +169,12 @@ export default function RegistrationGate({ user }) {
         }
       }
 
-      await base44.entities.UserApplication.create(applicationData);
+      const createdApp = await base44.entities.UserApplication.create(applicationData);
+      // SUGGEST_PLAYER_MATCH_CALL — best-effort; never block signup if it fails
+      if (selectedRole === "player" && createdApp?.id) {
+        try { await base44.functions.invoke("suggestPlayerMatch", { applicationId: createdApp.id }); }
+        catch (e) { console.error("suggestPlayerMatch failed (non-blocking):", e?.message); }
+      }
       await base44.auth.updateMe({
         application_status: "Pending",
         ...(formData.full_name?.trim() ? { full_name: formData.full_name.trim() } : {}),

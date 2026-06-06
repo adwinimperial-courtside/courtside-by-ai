@@ -130,6 +130,17 @@
       "type": "boolean",
       "default": false
     },
+    "match_suggestions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "Roster match suggestions for player signups. Each entry: league_id, team_id, team_name, claimed_name, claimed_jersey, suggested_player_id, suggested_player_name, suggested_jersey, confidence, reason."
+    },
+    "match_suggested_at": {
+      "type": "string",
+      "description": "ISO timestamp of when match suggestions were last generated."
+    },
     "league_decisions": {
       "type": "array",
       "default": [],
