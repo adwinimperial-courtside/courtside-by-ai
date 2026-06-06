@@ -25,6 +25,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicy';
 import TermsOfUsePage from './pages/TermsOfUse';
 import GameOverlayPage from './pages/GameOverlay';
 import GameOverlaySettingsPage from './pages/GameOverlaySettings';
+import CommandCenterPage from './pages/CommandCenter';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -81,6 +82,7 @@ const AuthenticatedApp = () => {
             <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
             <Route path="/terms-of-use" element={<TermsOfUsePage />} />
             <Route path="/GameOverlaySettings" element={<LayoutWrapper currentPageName="GameOverlaySettings"><GameOverlaySettingsPage /></LayoutWrapper>} />
+            <Route path="/CommandCenter" element={<LayoutWrapper currentPageName="CommandCenter"><CommandCenterPage /></LayoutWrapper>} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </LayoutWrapper>

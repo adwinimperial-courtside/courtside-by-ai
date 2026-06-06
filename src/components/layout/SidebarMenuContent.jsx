@@ -98,6 +98,11 @@ const leagueAdminItems = [
 
 const ownerItems = [
   {
+    title: "Command Center",
+    url: createPageUrl("CommandCenter"),
+    icon: MonitorPlay
+  },
+  {
     title: "Requests",
     url: createPageUrl("RequestManagement"),
     icon: ClipboardList
