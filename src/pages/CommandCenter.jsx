@@ -8,17 +8,46 @@ import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Ke
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
   const isAdmin = currentUser?.user_type === "app_admin";
-  const [loadSecondary, setLoadSecondary] = React.useState(false);
-  React.useEffect(() => { const t = setTimeout(() => setLoadSecondary(true), 1200); return () => clearTimeout(t); }, []);
+  // Page through every record so counts are exact (never capped at 500).
+  const listAll = async (entity, sort) => {
+    const PAGE = 5000;
+    let all = [], skip = 0;
+    while (true) {
+      const page = await base44.entities[entity].list(sort, PAGE, skip);
+      all = all.concat(page);
+      if (page.length < PAGE) break;
+      skip += PAGE;
+    }
+    return all;
+  };
 
-  const { data: leagues = [] } = useQuery({ queryKey: ["cc_leagues"], queryFn: () => base44.entities.League.list("-created_date", 200), enabled: isAdmin, staleTime: 60000 });
-  const { data: teams = [] } = useQuery({ queryKey: ["cc_teams"], queryFn: () => base44.entities.Team.list("-created_date", 500), enabled: isAdmin, staleTime: 60000 });
-  const { data: players = [] } = useQuery({ queryKey: ["cc_players"], queryFn: () => base44.entities.Player.list("-created_date", 500), enabled: isAdmin && loadSecondary, staleTime: 120000 });
-  const { data: games = [] } = useQuery({ queryKey: ["cc_games"], queryFn: () => base44.entities.Game.list("-game_date", 500), enabled: isAdmin, staleTime: 30000, refetchInterval: 60000 });
-  const { data: applications = [] } = useQuery({ queryKey: ["cc_apps"], queryFn: () => base44.entities.UserApplication.list(), enabled: isAdmin, staleTime: 30000, refetchInterval: 60000 });
-  const { data: users = [] } = useQuery({ queryKey: ["cc_users"], queryFn: () => base44.entities.User.list("-created_date", 500), enabled: isAdmin && loadSecondary, staleTime: 120000 });
-  const { data: auditLogs = [] } = useQuery({ queryKey: ["cc_audit"], queryFn: () => base44.entities.LeagueAuditLog.list("-performed_at", 50), enabled: isAdmin && loadSecondary, staleTime: 60000 });
-  const { data: deletions = [] } = useQuery({ queryKey: ["cc_deletions"], queryFn: () => base44.entities.DeletionLog.list("-deletion_date", 30), enabled: isAdmin && loadSecondary, staleTime: 60000 });
+  const { data: cc = {} } = useQuery({
+    queryKey: ["cc_all"],
+    enabled: isAdmin,
+    staleTime: 30000,
+    refetchInterval: 60000,
+    queryFn: async () => {
+      // One request at a time — true totals with zero request burst.
+      const leagues = await listAll("League", "-created_date");
+      const teams = await listAll("Team", "-created_date");
+      const players = await listAll("Player", "-created_date");
+      const games = await listAll("Game", "-game_date");
+      const applications = await listAll("UserApplication", "-created_date");
+      const users = await listAll("User", "-created_date");
+      const auditLogs = await listAll("LeagueAuditLog", "-performed_at");
+      const deletions = await listAll("DeletionLog", "-deletion_date");
+      return { leagues, teams, players, games, applications, users, auditLogs, deletions };
+    },
+  });
+
+  const leagues = cc.leagues || [];
+  const teams = cc.teams || [];
+  const players = cc.players || [];
+  const games = cc.games || [];
+  const applications = cc.applications || [];
+  const users = cc.users || [];
+  const auditLogs = cc.auditLogs || [];
+  const deletions = cc.deletions || [];
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name || "TBD";
   const leagueName = (id) => leagues.find((l) => l.id === id)?.name || "Unknown league";
