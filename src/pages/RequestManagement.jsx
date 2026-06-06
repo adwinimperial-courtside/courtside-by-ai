@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
+import ApprovalLogView from "../components/admin/ApprovalLogView";
 
 export default function RequestManagement() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -45,6 +46,7 @@ export default function RequestManagement() {
 
         <div className="grid gap-8">
           <UserApplicationsReview />
+          {currentUser?.user_type === "app_admin" && <ApprovalLogView />}
         </div>
       </div>
     </div>
