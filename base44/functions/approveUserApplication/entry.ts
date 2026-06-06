@@ -1,137 +1,255 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+// APPROVAL_V2_PER_LEAGUE marker
+const ROLE_PRIORITY = { app_admin: 5, league_admin: 4, coach: 3, player: 2, viewer: 1 };
+function highestRole(a, b) {
+  const pa = ROLE_PRIORITY[a] || 0;
+  const pb = ROLE_PRIORITY[b] || 0;
+  return pa >= pb ? a : b;
+}
+
+function getTargetLeagueIds(application) {
+  const role = application.requested_role;
+  const ids = new Set();
+  if (role === 'player') {
+    if (Array.isArray(application.league_team_pairs)) {
+      application.league_team_pairs.forEach(p => { if (p && p.league_id) ids.add(p.league_id); });
+    }
+    if (application.league_id) ids.add(application.league_id);
+  } else {
+    if (Array.isArray(application.league_ids) && application.league_ids.length) {
+      application.league_ids.forEach(id => { if (id) ids.add(id); });
+    } else if (application.league_id) {
+      ids.add(application.league_id);
+    }
+  }
+  return Array.from(ids);
+}
+
+async function getLeagueName(base44, leagueId) {
+  try {
+    const lg = await base44.asServiceRole.entities.League.get(leagueId);
+    return (lg && lg.name) ? lg.name : leagueId;
+  } catch (_e) { return leagueId; }
+}
+
+async function grantLeague(base44, application, applicantUser, leagueId, role) {
+  const existing = applicantUser || {};
+  const existingLeagueIds = Array.isArray(existing.assigned_league_ids) ? existing.assigned_league_ids : [];
+  const mergedLeagueIds = Array.from(new Set([...existingLeagueIds, leagueId]));
+  const userUpdate = { assigned_league_ids: mergedLeagueIds, application_status: 'Approved' };
+  if (existing.user_type !== 'app_admin') {
+    userUpdate.user_type = highestRole(existing.user_type || 'viewer', role);
+  }
+  if (role === 'player') {
+    const existingPairs = Array.isArray(existing.league_team_pairs) ? existing.league_team_pairs : [];
+    let teamId = null;
+    if (Array.isArray(application.league_team_pairs)) {
+      const p = application.league_team_pairs.find(pp => pp && pp.league_id === leagueId);
+      if (p) teamId = p.team_id || null;
+    }
+    if (!teamId && application.league_id === leagueId) teamId = application.team_id || null;
+    const mergedPairs = [...existingPairs];
+    if (teamId && !mergedPairs.find(ep => ep.league_id === leagueId)) {
+      mergedPairs.push({ league_id: leagueId, team_id: teamId });
+    }
+    userUpdate.league_team_pairs = mergedPairs;
+  }
+  try {
+    await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
+  } catch (_e) { /* user may not exist yet */ }
+
+  if (role === 'coach' || role === 'viewer') {
+    try {
+      const found = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+        user_id: application.user_id, league_id: leagueId,
+      });
+      const identityData = {
+        user_id: application.user_id,
+        league_id: leagueId,
+        role: role,
+        identity_status: 'completed',
+        matched_by: 'approval',
+        matched_at: new Date().toISOString(),
+      };
+      if (found && found.length > 0) {
+        await base44.asServiceRole.entities.UserLeagueIdentity.update(found[0].id, identityData);
+      } else {
+        await base44.asServiceRole.entities.UserLeagueIdentity.create(identityData);
+      }
+    } catch (idErr) { console.error('Identity upsert failed:', idErr.message); }
+  }
+}
+
+async function writeLog(base44, application, leagueId, decision, decider) {
+  const leagueName = await getLeagueName(base44, leagueId);
+  try {
+    await base44.asServiceRole.entities.ApprovalLog.create({
+      application_id: application.id,
+      applicant_name: application.user_name || '',
+      applicant_email: application.user_email || '',
+      requested_role: application.requested_role,
+      league_id: leagueId,
+      league_name: leagueName,
+      decision: decision,
+      approved_by_email: decider.email,
+      approved_by_name: decider.name,
+      approver_type: decider.type,
+      decided_at: decider.at,
+      notes: '',
+    });
+  } catch (logErr) { console.error('ApprovalLog write failed:', logErr.message); }
+}
+
+async function sendWelcomeOnce(base44, application) {
+  if (application.approval_email_sent) return;
+  try {
+    await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
+      application: {
+        id: application.id,
+        user_email: application.user_email,
+        user_name: application.user_name,
+        status: 'Approved',
+        approval_email_sent: false,
+      }
+    });
+  } catch (emailErr) { console.error('Email failed:', emailErr.message); }
+}
+
+async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider) {
+  if (action === 'reject') {
+    try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
+    await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Rejected' });
+    return Response.json({ success: true, action: 'rejected' });
+  }
+  let assignedLeagueIds = [];
+  let createdLeagueId = null;
+  if (override_league_id) {
+    assignedLeagueIds = [override_league_id];
+  } else if (application.league_id && !application.league_name) {
+    assignedLeagueIds = [application.league_id];
+  } else {
+    const newLeague = await base44.asServiceRole.entities.League.create({
+      name: application.league_name,
+      season: application.season_start_date || 'TBD',
+      owner_user_id: application.user_id,
+      owner_email: application.user_email,
+      owner_name: application.user_name,
+    });
+    assignedLeagueIds = [newLeague.id];
+    createdLeagueId = newLeague.id;
+  }
+  let existing = null;
+  try { existing = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) {}
+  const existingLeagueIds = Array.isArray(existing && existing.assigned_league_ids) ? existing.assigned_league_ids : [];
+  const mergedLeagueIds = Array.from(new Set([...existingLeagueIds, ...assignedLeagueIds]));
+  const userUpdate = { assigned_league_ids: mergedLeagueIds, application_status: 'Approved' };
+  if (!existing || existing.user_type !== 'app_admin') userUpdate.user_type = 'league_admin';
+  try { await base44.asServiceRole.entities.User.update(application.user_id, userUpdate); } catch (_e) {}
+  await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Approved', approval_email_sent: true });
+  for (const lid of assignedLeagueIds) {
+    await writeLog(base44, application, lid, 'approved', decider);
+  }
+  await sendWelcomeOnce(base44, application);
+  return Response.json({ success: true, action: 'approved' });
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const user = await base44.auth.me();
+    const me = await base44.auth.me();
+    if (!me) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
-    if (!user || user.role !== 'admin') {
-      return Response.json({ error: 'Forbidden' }, { status: 403 });
-    }
+    let caller;
+    try { caller = await base44.asServiceRole.entities.User.get(me.id); } catch (_e) { caller = me; }
+    const callerType = caller && caller.user_type;
+    const isAppAdmin = me.role === 'admin' || callerType === 'app_admin';
+    const isLeagueAdmin = callerType === 'league_admin';
+    if (!isAppAdmin && !isLeagueAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const callerLeagueIds = Array.isArray(caller && caller.assigned_league_ids) ? caller.assigned_league_ids : [];
 
-    const { applicationId, action, override_league_id } = await req.json();
+    const body = await req.json();
+    const { applicationId, action, override_league_id } = body;
+    const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
+    if (action !== 'approve' && action !== 'reject') return Response.json({ error: 'Invalid action' }, { status: 400 });
 
-    // Fetch the application
     const application = await base44.asServiceRole.entities.UserApplication.get(applicationId);
-    if (!application) {
-      return Response.json({ error: 'Application not found' }, { status: 404 });
+    if (!application) return Response.json({ error: 'Application not found' }, { status: 404 });
+
+    const decider = {
+      email: (caller && caller.email) || me.email || '',
+      name: (caller && (caller.full_name || caller.name)) || me.full_name || me.email || '',
+      type: isAppAdmin ? 'app_admin' : 'league_admin',
+      at: new Date().toISOString(),
+    };
+
+    const role = application.requested_role;
+
+    if (role === 'league_admin') {
+      if (!isAppAdmin) return Response.json({ error: 'Forbidden: only an app admin can approve league admin requests' }, { status: 403 });
+      return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider);
     }
 
-    if (action === 'approve') {
+    const targetLeagueIds = getTargetLeagueIds(application);
+    if (targetLeagueIds.length === 0) return Response.json({ error: 'Application has no target leagues' }, { status: 400 });
 
-      if (application.is_additional_request) {
-        // ADDITIONAL request: merge league access, do NOT overwrite user_type or application_status
-        let newLeagueIds = [];
-        if (application.league_ids && application.league_ids.length > 0) {
-          newLeagueIds = application.league_ids;
-        } else if (application.league_id) {
-          newLeagueIds = [application.league_id];
-        }
+    let decideLeagueIds = (requestedLeagueIds && requestedLeagueIds.length)
+      ? requestedLeagueIds.filter(id => targetLeagueIds.includes(id))
+      : targetLeagueIds.slice();
+    if (decideLeagueIds.length === 0) return Response.json({ error: 'No valid leagues to decide' }, { status: 400 });
 
-        const currentUserData = await base44.asServiceRole.entities.User.get(application.user_id);
-        const existingLeagueIds = currentUserData?.assigned_league_ids || [];
-        const mergedLeagueIds = [...new Set([...existingLeagueIds, ...newLeagueIds])];
-
-        const userUpdate = { assigned_league_ids: mergedLeagueIds };
-
-        if (application.requested_role === 'player') {
-          const existingPairs = currentUserData?.league_team_pairs || [];
-          const newPairs = application.league_team_pairs ||
-            (application.team_id && newLeagueIds[0] ? [{ league_id: newLeagueIds[0], team_id: application.team_id }] : []);
-          const mergedPairs = [...existingPairs];
-          newPairs.forEach(np => {
-            if (!mergedPairs.find(ep => ep.league_id === np.league_id)) mergedPairs.push(np);
-          });
-          userUpdate.league_team_pairs = mergedPairs;
-        }
-
-        await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
-
-      } else {
-        // ORIGINAL flow: new user first application
-        let assignedLeagueIds = [];
-        if (application.requested_role === 'league_admin') {
-          if (override_league_id) {
-            assignedLeagueIds = [override_league_id];
-          } else if (application.league_id && !application.league_name) {
-            // Joining an existing league — league_id is set, no league_name means no new league needed
-            assignedLeagueIds = [application.league_id];
-          } else {
-            const newLeague = await base44.asServiceRole.entities.League.create({
-              name: application.league_name,
-              season: application.season_start_date || 'TBD',
-              owner_user_id: application.user_id,
-              owner_email: application.user_email,
-              owner_name: application.user_name,
-            });
-            assignedLeagueIds = [newLeague.id];
-          }
-        } else if (application.league_ids && application.league_ids.length > 0) {
-          assignedLeagueIds = application.league_ids;
-        } else if (application.league_id) {
-          assignedLeagueIds = [application.league_id];
-        }
-
-        const userUpdate = {
-          user_type: application.requested_role,
-          application_status: 'Approved',
-          assigned_league_ids: assignedLeagueIds,
-        };
-        if (application.requested_role === 'player' && application.league_team_pairs) {
-          userUpdate.league_team_pairs = application.league_team_pairs;
-        } else if (application.requested_role === 'player' && application.team_id) {
-          userUpdate.league_team_pairs = [{ league_id: assignedLeagueIds[0], team_id: application.team_id }];
-        }
-
-        try {
-          await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
-        } catch (err) {
-          // User doesn't exist yet
-        }
-      }
-
-      await base44.asServiceRole.entities.UserApplication.update(applicationId, {
-        status: 'Approved',
-        approval_email_sent: true,
-      });
-
-      // Send approval email directly (automation won't fire on service role updates)
-      try {
-        await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
-          application: {
-            id: application.id,
-            user_email: application.user_email,
-            user_name: application.user_name,
-            status: 'Approved',
-            approval_email_sent: false,
-          }
-        });
-      } catch (emailErr) {
-        // Don't fail the approval if email fails
-        console.error('Failed to send approval email:', emailErr.message);
-      }
-
-      return Response.json({ success: true, action: 'approved' });
-
-    } else if (action === 'reject') {
-      try {
-        await base44.asServiceRole.entities.User.update(application.user_id, {
-          application_status: 'Rejected',
-        });
-      } catch (err) {
-        // User may not exist yet in the system — that's fine, just update the application
-        console.warn('Could not update user record on reject (user may not exist yet):', err.message);
-      }
-
-      await base44.asServiceRole.entities.UserApplication.update(applicationId, {
-        status: 'Rejected',
-      });
-
-      return Response.json({ success: true, action: 'rejected' });
+    if (isLeagueAdmin) {
+      if (role !== 'coach' && role !== 'viewer') return Response.json({ error: 'Forbidden: league admins can only decide coach or viewer requests' }, { status: 403 });
+      const outside = decideLeagueIds.filter(id => !callerLeagueIds.includes(id));
+      if (outside.length > 0) return Response.json({ error: 'Forbidden: you can only decide requests for your own leagues' }, { status: 403 });
     }
 
-    return Response.json({ error: 'Invalid action' }, { status: 400 });
+    let decisions = Array.isArray(application.league_decisions) ? application.league_decisions.map(d => ({ ...d })) : [];
+    targetLeagueIds.forEach(lid => {
+      if (!decisions.find(d => d.league_id === lid)) {
+        decisions.push({ league_id: lid, decision: 'pending', decided_by_email: '', decided_by_name: '', decided_by_type: '', decided_at: '' });
+      }
+    });
 
+    let applicantUser = null;
+    try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { applicantUser = null; }
+
+    let anyNewApproval = false;
+    for (const lid of decideLeagueIds) {
+      const entry = decisions.find(d => d.league_id === lid);
+      if (!entry) continue;
+      if (entry.decision === 'approved' || entry.decision === 'rejected') continue;
+      entry.decision = action === 'approve' ? 'approved' : 'rejected';
+      entry.decided_by_email = decider.email;
+      entry.decided_by_name = decider.name;
+      entry.decided_by_type = decider.type;
+      entry.decided_at = decider.at;
+      if (action === 'approve') {
+        anyNewApproval = true;
+        await grantLeague(base44, application, applicantUser, lid, role);
+        try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) {}
+      }
+      await writeLog(base44, application, lid, entry.decision, decider);
+    }
+
+    const anyPending = decisions.some(d => d.decision === 'pending');
+    const anyApprovedOverall = decisions.some(d => d.decision === 'approved');
+    let newStatus = anyPending ? 'Pending' : (anyApprovedOverall ? 'Approved' : 'Rejected');
+
+    const appUpdate = { league_decisions: decisions, status: newStatus };
+    if (anyNewApproval && !application.approval_email_sent) appUpdate.approval_email_sent = true;
+    await base44.asServiceRole.entities.UserApplication.update(application.id, appUpdate);
+
+    if (applicantUser) {
+      try {
+        if (anyApprovedOverall) await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Approved' });
+        else if (!anyPending) await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' });
+      } catch (_e) {}
+    }
+
+    if (anyNewApproval && !application.approval_email_sent) await sendWelcomeOnce(base44, application);
+
+    return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
