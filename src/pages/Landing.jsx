@@ -11,7 +11,10 @@ import {
   Clock,
   RefreshCw,
   SlidersHorizontal,
-  MessageSquare
+  MessageSquare,
+  UserCheck,
+  Zap,
+  Wifi
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
@@ -136,9 +139,10 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-0 text-center">
             {[
-              { number: "270+", label: "Games logged" },
-              { number: "20+", label: "Leagues" },
-              { number: "200+", label: "Users" },
+              { number: "900+", label: "Completed games" },
+              { number: "30+", label: "Leagues" },
+              { number: "230+", label: "Users" },
+              { number: "200+", label: "Teams" },
             ].map((stat, idx) => (
               <div key={idx} className={`flex-1 ${idx > 0 ? "sm:border-l sm:border-slate-200" : ""}`}>
                 <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>
@@ -157,18 +161,47 @@ export default function Landing() {
             {[
               ...(role === "league_admin" || role === "app_admin" ? [
                 {
+                  icon: UserCheck,
+                  bg: "bg-blue-100",
+                  color: "#3B82F6",
+                  title: "User Requests",
+                  desc: "When someone asks to join one of your leagues, you can review and approve them yourself — right from the sidebar",
+                },
+                {
+                  icon: Zap,
+                  bg: "bg-orange-100",
+                  color: "#F26B1F",
+                  title: "Faster live stat tracking",
+                  desc: "Every tap registers instantly — the score, player cards and activity feed update the moment you tap, with no waiting on the network",
+                },
+                {
+                  icon: Wifi,
+                  bg: "bg-green-100",
+                  color: "#16A34A",
+                  title: "Reliable on slow connections",
+                  desc: "Built for shaky gym Wi-Fi: stats keep saving in the background, the tracker won't freeze if your signal drops, and a live badge shows green, yellow or red for your connection",
+                },
+                {
+                  icon: RefreshCw,
+                  bg: "bg-amber-100",
+                  color: "#D97706",
+                  title: "Improved substitutions",
+                  badge: "Most requested",
+                  desc: "Rebuilt by popular demand: tap SUB on a player, then tap a benched player to swap them in — a clean one-tap substitution, with each player's fouls shown on their chip and an instant undo if you tap the wrong name",
+                },
+                {
                   icon: SlidersHorizontal,
                   bg: "bg-orange-100",
                   color: "#F26B1F",
                   title: "Award Settings",
-                  desc: "Customise how MVP, DPOY, Mythical 5 and Player of the Game are calculated for your league",
+                  desc: "Decide what matters in your league — tune the formulas behind MVP, DPOY, the Mythical 5 and Player of the Game to fit your style of play",
                 },
                 {
                   icon: MessageSquare,
                   bg: "bg-purple-100",
                   color: "#7C3AED",
                   title: "Report a Bug or Suggestion",
-                  desc: "Use the button at the bottom of the sidebar to send us feedback directly from the app",
+                  desc: "Spotted something off, or have an idea? Send it to us straight from the button at the bottom of the sidebar — we read every one",
                 },
               ] : []),
               {
@@ -176,21 +209,14 @@ export default function Landing() {
                 bg: "bg-green-100",
                 color: "#16A34A",
                 title: "Bracket-based standings",
-                desc: "Split your league into groups with separate standings per bracket",
+                desc: "Running pools or divisions? Split your league into brackets, each with its own standings table",
               },
               {
                 icon: Clock,
                 bg: "bg-blue-100",
                 color: "#3B82F6",
                 title: "Per-period game rules",
-                desc: "Set different time, timeouts, and foul limits per quarter or half",
-              },
-              {
-                icon: RefreshCw,
-                bg: "bg-amber-100",
-                color: "#D97706",
-                title: "Improved substitutions",
-                desc: "Faster, more reliable live substitutions during games",
+                desc: "Match your league's format exactly — set clock length, timeouts and foul limits separately for each quarter or half",
               },
             ].map((item, idx) => {
               const Icon = item.icon;
@@ -206,8 +232,8 @@ export default function Landing() {
                     <div className="text-sm font-bold text-slate-900">{item.title}</div>
                     <div className="text-xs text-slate-500">{item.desc}</div>
                   </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={{ backgroundColor: "#FEF0E7", color: "#F26B1F" }}>
-                    New
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={item.badge === "Most requested" ? { backgroundColor: "#F26B1F", color: "#fff" } : { backgroundColor: "#FEF0E7", color: "#F26B1F" }}>
+                    {item.badge || "New"}
                   </span>
                 </div>
               );
