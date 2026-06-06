@@ -157,14 +157,18 @@ export default function RegistrationGate({ user }) {
           }));
         }
         if (selectedRole === "player") {
+          // Only submit for leagues where a team was actually chosen (teamless leagues are dropped — see the signup note).
+          const chosenLeagues = selectedLeagues.filter(lid => leagueTeamMap[lid]);
           applicationData.display_name = formData.display_name;
           applicationData.handle = formData.handle || "";
           applicationData.jersey_number = (formData.jersey_number || "").trim();
           applicationData.player_name_status = formData.display_name ? "completed" : "missing";
-          applicationData.team_id = leagueTeamMap[selectedLeagues[0]] || "";
-          applicationData.league_team_pairs = selectedLeagues.map(lid => ({
+          applicationData.league_id = chosenLeagues[0] || selectedLeagues[0];
+          applicationData.league_ids = chosenLeagues.length ? chosenLeagues : selectedLeagues;
+          applicationData.team_id = leagueTeamMap[chosenLeagues[0]] || "";
+          applicationData.league_team_pairs = chosenLeagues.map(lid => ({
             league_id: lid,
-            team_id: leagueTeamMap[lid] || "",
+            team_id: leagueTeamMap[lid],
           }));
         }
       }
@@ -501,20 +505,28 @@ export default function RegistrationGate({ user }) {
                       {selectedLeagues.map(lid => {
                         const league = leagues.find(l => l.id === lid);
                         const leagueTeams = teams.filter(t => t.league_id === lid);
+                        const noTeams = leagueTeams.length === 0;
                         return (
                           <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
                             <p className="text-xs font-semibold text-slate-600 mb-2">{league?.name} <span className="text-slate-400">({league?.season})</span></p>
-                            <Select
-                              value={leagueTeamMap[lid] || ""}
-                              onValueChange={(val) => setLeagueTeamMap(prev => ({ ...prev, [lid]: val }))}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Choose a team" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {leagueTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
+                            {/* TEAMLESS_LEAGUE_V1 */}
+                            {noTeams ? (
+                              <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                This league hasn't added any teams yet, so there's no roster to join. Ask your league organizer to set up your team, then come back to finish signing up. You can still continue with any other league that has teams.
+                              </div>
+                            ) : (
+                              <Select
+                                value={leagueTeamMap[lid] || ""}
+                                onValueChange={(val) => setLeagueTeamMap(prev => ({ ...prev, [lid]: val }))}
+                              >
+                                <SelectTrigger className="bg-white">
+                                  <SelectValue placeholder="Choose a team" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {leagueTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            )}
                           </div>
                         );
                       })}
@@ -531,9 +543,15 @@ export default function RegistrationGate({ user }) {
                 if (adminLeagueMode === "existing" && !selectedAdminLeagueId) canSubmit = false;
               } else {
                 if (selectedLeagues.length === 0) canSubmit = false;
-                if ((selectedRole === "player" || selectedRole === "coach") && selectedLeagues.some(lid => !leagueTeamMap[lid])) canSubmit = false;
-                if (selectedRole === "player" && !formData.display_name?.trim()) canSubmit = false;
-                if (selectedRole === "player" && !formData.jersey_number?.trim()) canSubmit = false;
+                if (selectedRole === "coach" && selectedLeagues.some(lid => !leagueTeamMap[lid])) canSubmit = false;
+                if (selectedRole === "player") {
+                  // Leagues that actually have teams must have a team chosen; teamless leagues are excluded (note shown instead).
+                  const leaguesWithTeams = selectedLeagues.filter(lid => teams.some(t => t.league_id === lid));
+                  if (leaguesWithTeams.some(lid => !leagueTeamMap[lid])) canSubmit = false;
+                  if (!leaguesWithTeams.some(lid => leagueTeamMap[lid])) canSubmit = false;
+                  if (!formData.display_name?.trim()) canSubmit = false;
+                  if (!formData.jersey_number?.trim()) canSubmit = false;
+                }
               }
               return (
                 <Button type="submit" disabled={isSubmitting || !canSubmit} className="w-full bg-orange-500 hover:bg-orange-600 mt-2 disabled:opacity-50">
