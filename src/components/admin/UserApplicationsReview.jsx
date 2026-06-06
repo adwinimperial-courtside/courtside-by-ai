@@ -6,15 +6,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Check, X } from "lucide-react";
+import { Check, X, Lock } from "lucide-react";
 
-const ROLE_LABELS = {
-  league_admin: "League Admin",
-  coach: "Coach",
-  player: "Player",
-  viewer: "Viewer",
-};
-
+// REVIEW_SCREEN_V2 per-league
+const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Viewer" };
 const ROLE_BADGE_COLORS = {
   league_admin: "bg-yellow-100 text-yellow-800 border-yellow-200",
   coach: "bg-blue-100 text-blue-800 border-blue-200",
@@ -24,250 +19,258 @@ const ROLE_BADGE_COLORS = {
 
 export default function UserApplicationsReview() {
   const queryClient = useQueryClient();
-  const [processingId, setProcessingId] = useState(null);
+  const [processingAppId, setProcessingAppId] = useState(null);
   const [matchingApp, setMatchingApp] = useState(null);
-  const [adminLeagueOverrides, setAdminLeagueOverrides] = useState({}); // appId -> leagueId
+  const [adminLeagueOverrides, setAdminLeagueOverrides] = useState({});
+  const [actionError, setActionError] = useState(null);
 
-  const { data: applications = [], isLoading } = useQuery({
-    queryKey: ['user_applications_pending'],
-    queryFn: () => base44.entities.UserApplication.filter({ status: "Pending" }),
+  const { data: reviewData, isLoading } = useQuery({
+    queryKey: ['review_requests'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getReviewRequests', {});
+      return res?.data || res;
+    },
   });
+  const requests = reviewData?.requests || [];
+  const isAppAdmin = reviewData?.role === 'app_admin';
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
+    enabled: isAppAdmin,
   });
-
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
+    enabled: isAppAdmin,
   });
 
-  const handleApprove = async (application) => {
-    // For player applications, open the match modal first
-    if (application.requested_role === 'player') {
-      setMatchingApp(application);
-      return;
-    }
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['review_requests'] });
 
-    const roleName = ROLE_LABELS[application.requested_role];
-    const userName = application.user_name || application.user_email;
-
-    // For league_admin with no league info, require admin to pick one
-    if (application.requested_role === 'league_admin' && !application.league_id && !application.league_name) {
-      const overrideLeagueId = adminLeagueOverrides[application.id];
-      if (!overrideLeagueId) {
-        alert("Please select a league to assign this admin to before approving.");
-        return;
-      }
-    }
-
-    if (!confirm(`Approve ${userName}'s application for ${roleName}?`)) return;
-
-    setProcessingId(application.id);
+  const decide = async (app, action, leagueIds) => {
+    if (action === 'reject' && !window.confirm(`Reject ${app.user_name || app.user_email}'s request for this league?`)) return;
+    setActionError(null);
+    setProcessingAppId(app.id);
     try {
-      const overrideLeagueId = adminLeagueOverrides[application.id];
-      await base44.functions.invoke('approveUserApplication', {
-        applicationId: application.id,
-        action: 'approve',
-        ...(overrideLeagueId ? { override_league_id: overrideLeagueId } : {}),
-      });
-      queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-      const overrideLeagueName = overrideLeagueId ? leagues.find(l => l.id === overrideLeagueId)?.name : null;
-      alert(`✅ Approved!${application.requested_role === "league_admin" ? (application.league_id || overrideLeagueId ? ` User added to ${overrideLeagueName || "existing"} league.` : ` League "${application.league_name}" has been created.`) : ""}`);
-    } catch (error) {
-      alert("Failed to approve application: " + error.message);
+      await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action, league_ids: leagueIds });
+      refresh();
+    } catch (e) {
+      setActionError((e && e.message) || 'Action failed');
     } finally {
-      setProcessingId(null);
+      setProcessingAppId(null);
     }
   };
 
-  const handleReject = async (application) => {
-    const userName = application.user_name || application.user_email;
-    if (!confirm(`Reject ${userName}'s application?`)) return;
-
-    setProcessingId(application.id);
+  const handleRejectWhole = async (app) => {
+    if (!window.confirm(`Reject ${app.user_name || app.user_email}'s application?`)) return;
+    setActionError(null);
+    setProcessingAppId(app.id);
     try {
-      await base44.functions.invoke('approveUserApplication', {
-        applicationId: application.id,
-        action: 'reject',
-      });
-      queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-    } catch (error) {
-      alert("Failed to reject application: " + error.message);
+      await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action: 'reject' });
+      refresh();
+    } catch (e) {
+      setActionError((e && e.message) || 'Failed');
     } finally {
-      setProcessingId(null);
+      setProcessingAppId(null);
     }
+  };
+
+  const handleApproveLeagueAdmin = async (app) => {
+    if (!app.league_id && !app.league_name && !adminLeagueOverrides[app.id]) {
+      setActionError('Select a league to assign this admin to before approving.');
+      return;
+    }
+    setActionError(null);
+    setProcessingAppId(app.id);
+    try {
+      const override = adminLeagueOverrides[app.id];
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId: app.id, action: 'approve',
+        ...(override ? { override_league_id: override } : {}),
+      });
+      refresh();
+    } catch (e) {
+      setActionError((e && e.message) || 'Failed');
+    } finally {
+      setProcessingAppId(null);
+    }
+  };
+
+  const StatusPill = ({ decision, by }) => (
+    <span className={`inline-flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 border ${decision === 'approved' ? 'text-green-700 bg-green-50 border-green-200' : 'text-red-700 bg-red-50 border-red-200'}`}>
+      {decision === 'approved' ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5" />}
+      {decision === 'approved' ? 'Approved' : 'Rejected'}{by ? ` · ${by}` : ''}
+    </span>
+  );
+
+  const renderPerLeague = (app) => {
+    const role = app.requested_role;
+    const lgs = app.leagues || [];
+    const canDecide = app.can_decide || [];
+    const busy = processingAppId === app.id;
+    const total = lgs.length;
+    const approved = lgs.filter(l => l.decision === 'approved').length;
+    const pending = lgs.filter(l => l.decision === 'pending').length;
+    return (
+      <>
+        {isAppAdmin && total > 1 && (
+          <div className="inline-flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1 mb-2">
+            {approved} of {total} leagues approved · {pending} pending
+          </div>
+        )}
+        <div className="border-t border-slate-200">
+          {lgs.map((l) => {
+            const decidable = canDecide.includes(l.league_id);
+            return (
+              <div key={l.league_id} className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-b-0">
+                <div className="text-sm">
+                  <span className="font-semibold text-slate-900">{l.league_name}</span>
+                  {!isAppAdmin && <span className="ml-2 text-[11px] text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">your league</span>}
+                  <span className="ml-2 text-xs text-slate-400">{ROLE_LABELS[role]}</span>
+                </div>
+                {decidable ? (
+                  <div className="flex gap-2">
+                    <Button onClick={() => decide(app, 'approve', [l.league_id])} disabled={busy} size="sm" className="bg-green-600 hover:bg-green-700"><Check className="w-4 h-4 mr-1" />Approve</Button>
+                    <Button onClick={() => decide(app, 'reject', [l.league_id])} disabled={busy} size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-300"><X className="w-4 h-4 mr-1" />Reject</Button>
+                  </div>
+                ) : (
+                  <StatusPill decision={l.decision} by={isAppAdmin ? l.decided_by_name : ''} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {isAppAdmin && canDecide.length > 1 && (
+          <div className="mt-3 flex justify-end">
+            <Button onClick={() => decide(app, 'approve', canDecide)} disabled={busy} size="sm" className="bg-green-600 hover:bg-green-700">Approve all remaining</Button>
+          </div>
+        )}
+        {!isAppAdmin && (
+          <div className="mt-2 text-xs text-slate-400 flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" />You only see requests for leagues you manage.</div>
+        )}
+      </>
+    );
+  };
+
+  const renderPlayer = (app) => {
+    const busy = processingAppId === app.id;
+    return (
+      <>
+        <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3 text-sm space-y-1">
+          {app.display_name && <div><span className="text-slate-500">Display Name:</span> <span className="font-medium">{app.display_name}</span></div>}
+          {app.handle && <div><span className="text-slate-500">Nickname:</span> <span className="font-medium">{app.handle}</span></div>}
+          {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
+          {(app.leagues || []).map((l, i) => (
+            <div key={i}>
+              <span className="text-slate-500">League:</span> <span className="font-medium">{l.league_name}</span>
+              {" · "}<span className="text-slate-500">Team:</span> <span className="font-medium">{(l.team && l.team.team_name) || "N/A"}</span>
+              {l.decision !== 'pending' && <span className="ml-2 text-xs text-slate-400">({l.decision})</span>}
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setMatchingApp(app)} disabled={busy} size="sm" className="bg-green-600 hover:bg-green-700"><Check className="w-4 h-4 mr-1" />Approve</Button>
+          <Button onClick={() => handleRejectWhole(app)} disabled={busy} size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-300"><X className="w-4 h-4 mr-1" />Reject</Button>
+        </div>
+      </>
+    );
+  };
+
+  const renderLeagueAdminApp = (app) => {
+    const busy = processingAppId === app.id;
+    const joiningExisting = app.league_id && !app.league_name;
+    return (
+      <>
+        <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3 text-sm space-y-1">
+          {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
+          {joiningExisting ? (
+            <div><span className="text-slate-500">Joining Existing League:</span> <span className="font-medium">{(leagues.find(l => l.id === app.league_id) || {}).name || app.league_id}</span></div>
+          ) : app.league_name ? (
+            <>
+              <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>
+              {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
+              {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
+              {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
+            </>
+          ) : (
+            <div className="space-y-1">
+              <div className="text-amber-600 text-xs font-medium">No league specified — assign one before approving:</div>
+              <Select value={adminLeagueOverrides[app.id] || ""} onValueChange={v => setAdminLeagueOverrides(prev => ({ ...prev, [app.id]: v }))}>
+                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select a league…" /></SelectTrigger>
+                <SelectContent>{leagues.map(l => (<SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>))}</SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button onClick={() => handleApproveLeagueAdmin(app)} disabled={busy} size="sm" className="bg-green-600 hover:bg-green-700"><Check className="w-4 h-4 mr-1" />Approve</Button>
+          <Button onClick={() => handleRejectWhole(app)} disabled={busy} size="sm" variant="outline" className="text-red-600 hover:bg-red-50 border-red-300"><X className="w-4 h-4 mr-1" />Reject</Button>
+        </div>
+      </>
+    );
   };
 
   return (
     <>
-    {matchingApp && (
-      <PlayerMatchModal
-        application={matchingApp}
-        leagues={leagues}
-        teams={teams}
-        onClose={() => setMatchingApp(null)}
-        onApproved={() => {
-          setMatchingApp(null);
-          alert('✅ Player matched and approved!');
-        }}
-      />
-    )}
-    <Card className="border-slate-200 shadow-lg">
-      <CardHeader className="border-b border-slate-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl">Role Applications</CardTitle>
-            <p className="text-sm text-slate-600 mt-1">Review and approve user role requests</p>
+      {matchingApp && (
+        <PlayerMatchModal
+          application={matchingApp}
+          leagues={leagues}
+          teams={teams}
+          onClose={() => setMatchingApp(null)}
+          onApproved={() => { setMatchingApp(null); refresh(); }}
+        />
+      )}
+      <Card className="border-slate-200 shadow-lg">
+        <CardHeader className="border-b border-slate-200 bg-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-xl">Role Applications</CardTitle>
+              <p className="text-sm text-slate-600 mt-1">Review and approve user role requests{!isAppAdmin ? " for your leagues" : ""}</p>
+            </div>
+            <Badge className="bg-orange-100 text-orange-800 text-base px-3 py-1">{requests.length} pending</Badge>
           </div>
-          <Badge className="bg-orange-100 text-orange-800 text-base px-3 py-1">
-            {applications.length} pending
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-6">
-        {isLoading ? (
-          <p className="text-slate-500 text-center py-8">Loading applications...</p>
-        ) : applications.length === 0 ? (
-          <p className="text-slate-500 text-center py-8">No pending role applications</p>
-        ) : (
-          <div className="space-y-4">
-            {applications.map((app) => {
-              const league = leagues.find(l => l.id === app.league_id);
-              const isProcessing = processingId === app.id;
-
-              return (
-                <div key={app.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="font-semibold text-slate-900">{app.user_name || "N/A"}</div>
-                        {app.is_additional_request && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">+ Additional League</span>
+        </CardHeader>
+        <CardContent className="pt-6">
+          {actionError && (
+            <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{actionError}</div>
+          )}
+          {isLoading ? (
+            <p className="text-slate-500 text-center py-8">Loading applications...</p>
+          ) : requests.length === 0 ? (
+            <p className="text-slate-500 text-center py-8">No pending role applications</p>
+          ) : (
+            <div className="space-y-4">
+              {requests.map((app) => {
+                const role = app.requested_role;
+                return (
+                  <div key={app.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="font-semibold text-slate-900">{app.user_name || "N/A"}</div>
+                          {isAppAdmin && app.is_additional_request && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">+ Additional League</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-slate-600">{app.user_email}</div>
+                        {isAppAdmin && app.is_additional_request && app.current_user_type && (
+                          <div className="text-xs text-slate-400 mt-0.5">Current role: {app.current_user_type.replace('_', ' ')}</div>
                         )}
+                        <div className="text-xs text-slate-400 mt-1">Applied: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : "N/A"}</div>
                       </div>
-                      <div className="text-sm text-slate-600">{app.user_email}</div>
-                      {app.is_additional_request && app.current_user_type && (
-                        <div className="text-xs text-slate-400 mt-0.5">Current role: {app.current_user_type.replace('_', ' ')}</div>
-                      )}
-                      <div className="text-xs text-slate-400 mt-1">
-                        Applied: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : "N/A"}
-                      </div>
+                      <Badge variant="outline" className={ROLE_BADGE_COLORS[role]}>{ROLE_LABELS[role]}</Badge>
                     </div>
-                    <Badge variant="outline" className={ROLE_BADGE_COLORS[app.requested_role]}>
-                      {ROLE_LABELS[app.requested_role]}
-                    </Badge>
+                    {(role === 'coach' || role === 'viewer') && renderPerLeague(app)}
+                    {role === 'player' && renderPlayer(app)}
+                    {role === 'league_admin' && renderLeagueAdminApp(app)}
                   </div>
-
-                  {/* Application details */}
-                  <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3 text-sm space-y-1">
-                    {app.requested_role === "league_admin" && (
-                      <>
-                        {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
-                        {app.league_id && !app.league_name ? (
-                          <div>
-                            <span className="text-slate-500">Joining Existing League:</span>{" "}
-                            <span className="font-medium">{leagues.find(l => l.id === app.league_id)?.name || app.league_id}</span>
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Joining Existing</span>
-                          </div>
-                        ) : app.league_name ? (
-                          <>
-                            <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>
-                            {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
-                            {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
-                            {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
-                          </>
-                        ) : (
-                          <div className="space-y-1">
-                            <div className="text-amber-600 text-xs font-medium">⚠️ No league specified — assign one before approving:</div>
-                            <Select
-                              value={adminLeagueOverrides[app.id] || ""}
-                              onValueChange={v => setAdminLeagueOverrides(prev => ({ ...prev, [app.id]: v }))}
-                            >
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue placeholder="Select a league…" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {leagues.map(l => (
-                                  <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        )}
-                      </>
-                    )}
-                    {(app.requested_role === "coach" || app.requested_role === "viewer") && (
-                      <>
-                        {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
-                        {app.league_ids && app.league_ids.length > 0 ? (
-                          app.league_ids.map((lid, i) => {
-                            const l = leagues.find(lg => lg.id === lid);
-                            return <div key={i}><span className="text-slate-500">League:</span> <span className="font-medium">{l?.name || lid}</span></div>;
-                          })
-                        ) : (
-                          <div><span className="text-slate-500">League:</span> <span className="font-medium">{league?.name || app.league_id || "N/A"}</span></div>
-                        )}
-                      </>
-                    )}
-                    {app.requested_role === "player" && (
-                      <>
-                        {app.display_name && <div><span className="text-slate-500">Display Name:</span> <span className="font-medium">{app.display_name}</span></div>}
-                        {app.handle && <div><span className="text-slate-500">Nickname:</span> <span className="font-medium">{app.handle}</span></div>}
-                        {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
-                        {app.league_team_pairs && app.league_team_pairs.length > 0 ? (
-                          app.league_team_pairs.map((pair, i) => {
-                            const pLeague = leagues.find(l => l.id === pair.league_id);
-                            const pTeam = teams.find(t => t.id === pair.team_id);
-                            return (
-                              <div key={i}>
-                                <span className="text-slate-500">League:</span> <span className="font-medium">{pLeague?.name || pair.league_id || "N/A"}</span>
-                                {" · "}
-                                <span className="text-slate-500">Team:</span> <span className="font-medium">{pTeam?.name || pair.team_id || "N/A"}</span>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <>
-                            <div><span className="text-slate-500">League:</span> <span className="font-medium">{leagues.find(l => l.id === app.league_id)?.name || app.league_id || "N/A"}</span></div>
-                            <div><span className="text-slate-500">Team:</span> <span className="font-medium">{teams.find(t => t.id === app.team_id)?.name || app.team_id || "N/A"}</span></div>
-                          </>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => handleApprove(app)}
-                      disabled={isProcessing}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Check className="w-4 h-4 mr-1" />
-                      Approve
-                    </Button>
-                    <Button
-                      onClick={() => handleReject(app)}
-                      disabled={isProcessing}
-                      size="sm"
-                      variant="outline"
-                      className="text-red-600 hover:bg-red-50 border-red-300"
-                    >
-                      <X className="w-4 h-4 mr-1" />
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </>
   );
 }
