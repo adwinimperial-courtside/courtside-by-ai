@@ -148,6 +148,18 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
 
+  const { data: leagueAdminReview } = useQuery({
+    queryKey: ['review_requests_count'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke('getReviewRequests', {});
+      return res?.data || res;
+    },
+    enabled: currentUser?.user_type === 'league_admin',
+    refetchInterval: 30000,
+  });
+  const leagueAdminPendingCount = (leagueAdminReview?.requests || []).length;
+  const requestsBadgeCount = currentUser?.user_type === 'app_admin' ? pendingRequestsCount : leagueAdminPendingCount;
+
   const playerNavItem = {
     title: "Player Profile",
     url: createPageUrl("PlayerProfile"),
@@ -172,7 +184,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const getVisibleAdminItems = () => {
     if (!currentUser) return [];
     if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems];
-    if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems];
+    if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems, { title: "Requests", url: createPageUrl("RequestManagement"), icon: ClipboardList }];
     return [];
   };
 
@@ -243,6 +255,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
+                      {item.title === "Requests" && requestsBadgeCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{requestsBadgeCount}</Badge>
+                      )}
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
