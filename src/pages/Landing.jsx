@@ -27,6 +27,27 @@ export default function Landing() {
   const role = currentUser?.user_type;
   const firstName = currentUser?.full_name?.split(" ")[0] || null;
 
+  const isOrganiser = role === "app_admin" || role === "league_admin";
+
+  const { data: reqData } = useQuery({
+    queryKey: ['dash_pending_requests'],
+    queryFn: async () => { const r = await base44.functions.invoke('getReviewRequests', {}); return r?.data || r; },
+    enabled: isOrganiser,
+    staleTime: 30000,
+  });
+  const pendingRequestsCount = (reqData?.requests || []).length;
+
+  const { data: usersData } = useQuery({
+    queryKey: ['dash_league_users'],
+    queryFn: async () => { const r = await base44.functions.invoke('getLeagueUsers', {}); return r?.data || r; },
+    enabled: isOrganiser,
+    staleTime: 60000,
+  });
+  const myLeagueIds = currentUser?.assigned_league_ids || [];
+  const leagueUsersCount = role === "app_admin"
+    ? (usersData?.users || []).length
+    : (usersData?.users || []).filter(u => Array.isArray(u.assigned_league_ids) && u.assigned_league_ids.some(id => myLeagueIds.includes(id))).length;
+
   const getRoleLabel = () => {
     if (role === "app_admin" || role === "league_admin") return "League organiser";
     if (role === "coach") return "Coach";
@@ -56,7 +77,8 @@ export default function Landing() {
     if (role === "app_admin" || role === "league_admin") return [
       { icon: Calendar, color: "#F26B1F", bg: "bg-orange-100", title: "Schedule", subtitle: "View & manage games", href: "/schedule" },
       { icon: Trophy, color: "#D97706", bg: "bg-amber-100", title: "Standings", subtitle: "League standings", href: "/standings" },
-      { icon: Users, color: "#3B82F6", bg: "bg-blue-100", title: "League users", subtitle: "Manage members", href: "/leagueusers" },
+      { icon: Users, color: "#3B82F6", bg: "bg-blue-100", title: "League users", subtitle: "Manage members", href: "/leagueusers", count: leagueUsersCount },
+      { icon: UserCheck, color: "#16A34A", bg: "bg-green-100", title: "User Requests", subtitle: "Approve new members", href: "/requestmanagement", count: pendingRequestsCount, accent: true },
     ];
     if (role === "coach") return [
       { icon: Target, color: "#9333EA", bg: "bg-purple-100", title: "Coach insights", subtitle: "Analyse matchups", href: "/coachinsights" },
@@ -109,16 +131,21 @@ export default function Landing() {
             <p className="text-sm text-slate-400 mb-6">{getTagline()}</p>
 
             {/* Quick action cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className={`grid grid-cols-1 ${getQuickCards().length >= 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"} gap-3`}>
               {getQuickCards().map((card, idx) => {
                 const Icon = card.icon;
                 return (
                   <button
                     key={idx}
                     onClick={() => window.location.href = card.href}
-                    className="flex items-center gap-3 sm:flex-col sm:items-start rounded-xl p-3 sm:p-4 text-left transition-all hover:opacity-80 min-h-[44px]"
+                    className="relative flex items-center gap-3 sm:flex-col sm:items-start rounded-xl p-3 sm:p-4 text-left transition-all hover:opacity-80 min-h-[44px]"
                     style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)" }}
                   >
+                    {card.count > 0 && (
+                      <span className="absolute top-2.5 right-2.5 min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold flex items-center justify-center" style={card.accent ? { backgroundColor: "#F26B1F", color: "#fff" } : { backgroundColor: "rgba(255,255,255,0.15)", color: "#fff" }}>
+                        {card.count}
+                      </span>
+                    )}
                     <div className={`flex items-center justify-center rounded-lg flex-shrink-0 ${card.bg}`} style={{ width: 36, height: 36, minWidth: 36 }}>
                       <Icon style={{ color: card.color, width: 18, height: 18 }} />
                     </div>
