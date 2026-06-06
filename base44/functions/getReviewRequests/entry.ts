@@ -90,6 +90,7 @@ Deno.serve(async (req) => {
         out.push({
           id: app.id, user_name: app.user_name || '', user_email: app.user_email || '',
           requested_role: role, applied_at: app.applied_at || app.created_date || '', country: app.country || '',
+          user_id: app.user_id || '', team_id: app.team_id || '',
           is_additional_request: !!app.is_additional_request, current_user_type: app.current_user_type || '',
           display_name: app.display_name || '', handle: app.handle || '',
           league_id: app.league_id || '', league_name: app.league_name || '',
