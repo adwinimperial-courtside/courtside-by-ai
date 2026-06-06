@@ -125,6 +125,48 @@
     "phone_verified": {
       "type": "boolean",
       "default": false
+    },
+    "league_decisions": {
+      "type": "array",
+      "default": [],
+      "description": "Per-league approval decisions. One entry per league this application targets.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "league_id": {
+            "type": "string",
+            "description": "The league this decision is for"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ],
+            "default": "pending"
+          },
+          "decided_by_email": {
+            "type": "string",
+            "description": "Email of the admin who decided this league"
+          },
+          "decided_by_name": {
+            "type": "string",
+            "description": "Name of the admin who decided this league"
+          },
+          "decided_by_type": {
+            "type": "string",
+            "enum": [
+              "app_admin",
+              "league_admin"
+            ]
+          },
+          "decided_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
     }
   },
   "required": [
