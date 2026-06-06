@@ -60,16 +60,11 @@ const navigationItems = [
   ];
 
 const adminItems = [
-  {
-    title: "Admin Tools",
-    url: createPageUrl("AdminTools"),
-    icon: Settings
-  },
-  {
-    title: "Award Settings",
-    url: createPageUrl("LeagueAwardSettings"),
-    icon: SlidersHorizontal
-  }
+  { title: "League Users", url: createPageUrl("LeagueUsers"), icon: Users },
+  { title: "Game Log", url: createPageUrl("GameLog"), icon: ScrollText },
+  { title: "Admin Tools", url: createPageUrl("AdminTools"), icon: Settings },
+  { title: "Award Settings", url: createPageUrl("LeagueAwardSettings"), icon: SlidersHorizontal },
+  { title: "Story Builder", url: createPageUrl("StoryBuilder"), icon: Newspaper }
 ];
 
 const overlayItem = {
@@ -78,23 +73,7 @@ const overlayItem = {
   icon: MonitorPlay
 };
 
-const leagueAdminItems = [
-  {
-    title: "Game Log",
-    url: createPageUrl("GameLog"),
-    icon: ScrollText
-  },
-  {
-    title: "League Users",
-    url: createPageUrl("LeagueUsers"),
-    icon: Users
-  },
-  {
-    title: "Story Builder",
-    url: createPageUrl("StoryBuilder"),
-    icon: Newspaper
-  }
-];
+const leagueAdminItems = [];
 
 const ownerItems = [
   {
@@ -103,7 +82,7 @@ const ownerItems = [
     icon: MonitorPlay
   },
   {
-    title: "Requests",
+    title: "User Requests",
     url: createPageUrl("RequestManagement"),
     icon: ClipboardList
   },
@@ -184,7 +163,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const getVisibleAdminItems = () => {
     if (!currentUser) return [];
     if (currentUser.user_type === "app_admin") return [...adminItems, ...leagueAdminItems];
-    if (currentUser.user_type === "league_admin") return [...adminItems, ...leagueAdminItems, { title: "Requests", url: createPageUrl("RequestManagement"), icon: ClipboardList }];
+    if (currentUser.user_type === "league_admin") return [{ title: "User Requests", url: createPageUrl("RequestManagement"), icon: ClipboardList }, ...adminItems, ...leagueAdminItems];
     return [];
   };
 
@@ -255,7 +234,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
-                      {item.title === "Requests" && requestsBadgeCount > 0 && (
+                      {item.title === "User Requests" && requestsBadgeCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{requestsBadgeCount}</Badge>
                       )}
                     </Link>
@@ -312,7 +291,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
-                      {item.title === "Requests" && pendingRequestsCount > 0 && (
+                      {item.title === "User Requests" && pendingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
                       )}
                     </Link>
