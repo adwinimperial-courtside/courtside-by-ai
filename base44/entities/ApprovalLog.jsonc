@@ -1,0 +1,71 @@
+{
+  "name": "ApprovalLog",
+  "type": "object",
+  "properties": {
+    "application_id": {
+      "type": "string",
+      "description": "The UserApplication this decision was about"
+    },
+    "applicant_name": {
+      "type": "string",
+      "description": "Name of the applicant"
+    },
+    "applicant_email": {
+      "type": "string",
+      "description": "Email of the applicant"
+    },
+    "requested_role": {
+      "type": "string",
+      "description": "Role that was requested"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "The single league this decision applies to"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "The league's name, for display"
+    },
+    "decision": {
+      "type": "string",
+      "enum": [
+        "approved",
+        "rejected"
+      ],
+      "description": "The decision made"
+    },
+    "approved_by_email": {
+      "type": "string",
+      "description": "Email of the person who made the decision"
+    },
+    "approved_by_name": {
+      "type": "string",
+      "description": "Name of the person who made the decision"
+    },
+    "approver_type": {
+      "type": "string",
+      "enum": [
+        "app_admin",
+        "league_admin"
+      ],
+      "description": "Role of the approver"
+    },
+    "decided_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the decision was made"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes about the decision"
+    }
+  },
+  "required": [
+    "application_id",
+    "league_id",
+    "decision",
+    "approved_by_email",
+    "approver_type",
+    "decided_at"
+  ]
+}
