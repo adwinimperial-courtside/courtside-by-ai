@@ -8,15 +8,18 @@ import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Ke
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
   const isAdmin = currentUser?.user_type === "app_admin";
-  // Page through every record so counts are exact (never capped at 500).
+  // Page through every record. Advance by what base44 actually returns and
+  // stop only when a page comes back empty, so base44's per-response cap
+  // can never silently truncate the totals.
   const listAll = async (entity, sort) => {
-    const PAGE = 5000;
+    const PAGE = 1000;
     let all = [], skip = 0;
     while (true) {
       const page = await base44.entities[entity].list(sort, PAGE, skip);
+      if (!page || page.length === 0) break;
       all = all.concat(page);
+      skip += page.length;
       if (page.length < PAGE) break;
-      skip += PAGE;
     }
     return all;
   };
