@@ -1002,11 +1002,21 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setPulsePlayerId(inPlayerId);
     setTimeout(() => setPulsePlayerId(prev => (prev === inPlayerId ? null : prev)), 300);
 
-    // Writes — stat OUT, stat IN, and the log all fire together
+    // Writes — resolve OUT/IN from FRESH DB stats (not the cache). QUICKSWAP_FRESH_V1
+    // A stale or temp cache row could skip the OUT deactivation, leaving 6 on court
+    // and tripping Emergency Lineup Repair. Mirrors the dialog path's fresh-fetch fix.
     try {
+      const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      const outFresh = freshStats.find(s => s.player_id === outPlayer.id);
+      const inFresh  = freshStats.find(s => s.player_id === inPlayerId);
+      if (!outFresh || outFresh.is_active !== true) {
+        // OUT player isn't actually on court in the DB — abort instead of activating
+        // the IN player and ending up with 6. The catch below reverts the optimistic swap.
+        throw new Error('SUB_OUT_NOT_ACTIVE');
+      }
       const writes = [];
-      if (outStat) writes.push(updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_active: false, minutes_played: outMinutes } }));
-      if (inStat)  writes.push(updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } }));
+      writes.push(updateStatMutation.mutateAsync({ statId: outFresh.id, updates: { is_active: false, minutes_played: outMinutes } }));
+      if (inFresh) writes.push(updateStatMutation.mutateAsync({ statId: inFresh.id, updates: { is_active: true } }));
       else         writes.push(createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 }));
       writes.push(createLogMutation.mutateAsync(logPayload));
       await Promise.all(writes);
