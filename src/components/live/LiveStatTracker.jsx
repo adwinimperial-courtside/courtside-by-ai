@@ -107,6 +107,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const subCompletedAtRef = React.useRef(0);
   const isProcessingStatRef = React.useRef(false);
   const lastStatClickTimeRef = React.useRef(0);
+  const pendingRepairTimerRef = React.useRef(null);
   const queryClient = useQueryClient();
 
   const computeTimeLeft = (currentGame) => {
@@ -225,8 +226,28 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   useEffect(() => {
     if (existingStats.length === 0) return;
     if (isSubmittingSubRef.current) return;
-    // ALWAYS check lineup validity — don't skip, even after subs
-    checkAndTriggerRepair(existingStats);
+
+    // Exactly 5 on both teams is always a valid lineup — clear any pending prompt.
+    if (homeActiveCount === 5 && awayActiveCount === 5) {
+      if (pendingRepairTimerRef.current) { clearTimeout(pendingRepairTimerRef.current); pendingRepairTimerRef.current = null; }
+      updateValidSnapshots(existingStats);
+      return;
+    }
+
+    // Off-count (e.g. mid-way through subbing 2 players, or a brief refetch race while
+    // writes land). Don't interrupt the game right away — wait, then CONFIRM against
+    // fresh DB data, and only open the Emergency modal if it is STILL wrong. REPAIR_CONFIRM_V1
+    if (pendingRepairTimerRef.current) return;
+    pendingRepairTimerRef.current = setTimeout(async () => {
+      pendingRepairTimerRef.current = null;
+      if (isSubmittingSubRef.current) return;
+      try {
+        const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+        checkAndTriggerRepair(freshStats);
+      } catch {
+        checkAndTriggerRepair(existingStats);
+      }
+    }, 2000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [homeActiveCount, awayActiveCount, existingStats]);
 
