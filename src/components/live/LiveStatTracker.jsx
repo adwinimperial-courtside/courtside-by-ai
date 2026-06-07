@@ -1437,7 +1437,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const teamBench = (panelTeamId === game.home_team_id ? homeBenchPlayers : awayBenchPlayers).filter(p => !isDisqualified(p.id));
 
     return (
-      <div className="bg-white border border-slate-200 rounded-2xl p-2 flex flex-col overflow-y-auto" style={borderStyle}>
+      <div className="bg-white border border-slate-200 rounded-2xl p-2 flex flex-col h-full min-h-0 overflow-hidden" style={borderStyle}>
         <div className="flex items-center gap-2 mb-2 flex-shrink-0">
           <div
             className="w-7 h-7 rounded-lg flex items-center justify-center text-white font-bold text-xs shadow-md flex-shrink-0 overflow-hidden"
@@ -1450,7 +1450,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
           <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
         </div>
-        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-0.5 min-[900px]:content-start">
+        <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-0.5 min-[900px]:content-start flex-1 min-h-0 overflow-y-auto">
           {teamPlayers.map((player) => 
             <div key={player.id}>
               {PlayerButton({
