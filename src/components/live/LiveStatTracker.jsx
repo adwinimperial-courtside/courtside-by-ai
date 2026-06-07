@@ -1002,22 +1002,31 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     setPulsePlayerId(inPlayerId);
     setTimeout(() => setPulsePlayerId(prev => (prev === inPlayerId ? null : prev)), 300);
 
-    // Writes — resolve OUT/IN from FRESH DB stats (not the cache). QUICKSWAP_FRESH_V1
-    // A stale or temp cache row could skip the OUT deactivation, leaving 6 on court
-    // and tripping Emergency Lineup Repair. Mirrors the dialog path's fresh-fetch fix.
+    // Writes — resolve from FRESH DB stats and handle DUPLICATE rows. QUICKSWAP_DEDUPE_V2
+    // A player can end up with more than one PlayerStats row (e.g. a create that got
+    // retried on a bad connection). If we flip only one row, the duplicate keeps the
+    // player "on court" -> 6 players -> Emergency Lineup Repair. So deactivate EVERY row
+    // of the OUT player, and make sure the IN player has exactly one active row.
     try {
       const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-      const outFresh = freshStats.find(s => s.player_id === outPlayer.id);
-      const inFresh  = freshStats.find(s => s.player_id === inPlayerId);
-      if (!outFresh || outFresh.is_active !== true) {
+      const outRows = freshStats.filter(s => s.player_id === outPlayer.id);
+      const inRows  = freshStats.filter(s => s.player_id === inPlayerId);
+      if (!outRows.some(s => s.is_active === true)) {
         // OUT player isn't actually on court in the DB — abort instead of activating
-        // the IN player and ending up with 6. The catch below reverts the optimistic swap.
+        // the IN player and ending up with too many. The catch reverts the optimistic swap.
         throw new Error('SUB_OUT_NOT_ACTIVE');
       }
       const writes = [];
-      writes.push(updateStatMutation.mutateAsync({ statId: outFresh.id, updates: { is_active: false, minutes_played: outMinutes } }));
-      if (inFresh) writes.push(updateStatMutation.mutateAsync({ statId: inFresh.id, updates: { is_active: true } }));
-      else         writes.push(createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 }));
+      outRows.forEach((row, i) => writes.push(updateStatMutation.mutateAsync({
+        statId: row.id,
+        updates: i === 0 ? { is_active: false, minutes_played: outMinutes } : { is_active: false }
+      })));
+      if (inRows.length > 0) {
+        writes.push(updateStatMutation.mutateAsync({ statId: inRows[0].id, updates: { is_active: true } }));
+        inRows.slice(1).forEach(row => writes.push(updateStatMutation.mutateAsync({ statId: row.id, updates: { is_active: false } })));
+      } else {
+        writes.push(createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 }));
+      }
       writes.push(createLogMutation.mutateAsync(logPayload));
       await Promise.all(writes);
       subCompletedAtRef.current = Date.now();
