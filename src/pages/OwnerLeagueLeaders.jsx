@@ -1,9 +1,11 @@
+// OWNER_LEADERS_HOOK_V1 — data now comes from the shared useLeagueStatsData hook
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, Filter } from "lucide-react";
 import AwardLeadersTop20 from "@/components/stats/AwardLeadersTop20";
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 export default function OwnerLeagueLeadersPage() {
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -35,39 +37,8 @@ export default function OwnerLeagueLeadersPage() {
     ? leagues
     : leagues.filter(l => assignedLeagueIds.includes(l.id));
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['owner_teams', selectedLeague],
-    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeague }, null, 500),
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 60000,
-  });
-
-  const { data: players = [] } = useQuery({
-    queryKey: ['owner_players', selectedLeague, teams.length],
-    queryFn: () => {
-      const teamIds = teams.map(t => t.id);
-      if (teamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all' && teams.length > 0,
-    staleTime: 60000,
-  });
-
-  const { data: games = [] } = useQuery({
-    queryKey: ['owner_games', selectedLeague],
-    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000),
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 30000,
-  });
-
-  const gameIds = games.map(g => g.id);
-
-  const { data: allStats = [] } = useQuery({
-    queryKey: ['owner_stats', selectedLeague, gameIds.length],
-    queryFn: () => base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000),
-    enabled: !!selectedLeague && selectedLeague !== 'all' && gameIds.length > 0,
-    staleTime: 30000,
-  });
+  // OWNER_LEADERS_HOOK_V1 — single shared fetch (paged, truncation-proof)
+  const { teams, players, games, stats: allStats } = useLeagueStatsData(selectedLeague);
 
   const { data: allAwardSettings = [] } = useQuery({
     queryKey: ['awardSettings'],
