@@ -439,10 +439,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       });
     }
 
+  }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers]);
+
+  // PERIOD_END_RESET_V1 — this reset used to live inside the effect above,
+  // AFTER an early return that fires whenever the clock isn't running, so it
+  // could never execute. In its own effect the flag reliably re-arms once the
+  // clock stops, so the next period's end is always handled — even after
+  // manual clock edits that bypass the start-next-period handlers.
+  useEffect(() => {
     if (!game.clock_running) {
       periodEndHandledRef.current = false;
     }
-  }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers]);
+  }, [game.clock_running]);
 
   // FIBA-style default rules — reads from game.game_rules with fallback
   const getGameRules = () => ({
@@ -559,7 +567,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     if (isProcessingStatRef.current || now - lastStatClickTimeRef.current < 300) return;
     if (!selectedPlayer) return;
 
-    const playerStatCached = existingStats.find(s => s.player_id === selectedPlayer.id);
+    // STAT_ACTIVE_ROW_V1 — if duplicate rows exist for this player, write the
+    // stat to the ACTIVE row (the one subs/dedupe keep), not the first found.
+    const playerStatCached =
+      existingStats.find(s => s.player_id === selectedPlayer.id && s.is_active) ||
+      existingStats.find(s => s.player_id === selectedPlayer.id);
     if (!playerStatCached) return;
 
     lastStatClickTimeRef.current = now;
@@ -1519,7 +1531,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   );
 
   const PlayerButton = ({ player, teamColor, isDesktop, side }) => {
-    const playerStats = existingStats.find(s => s.player_id === player.id);
+    const playerStats =
+      existingStats.find(s => s.player_id === player.id && s.is_active) ||
+      existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
     const isSelected = selectedPlayer?.id === player.id;
     const isArmed = armedOutIds.has(player.id);
@@ -1699,7 +1713,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           <div className="flex rounded-lg overflow-hidden shadow-md">
             <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTM</motion.button>
             <div className="w-px bg-indigo-900/30" />
-            <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indide-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTX</motion.button>
+            <motion.button whileTap={{ scale: selectedPlayer ? 0.92 : 1 }} onClick={() => handleStatClick(STAT_TYPES.find(s => s.key === 'free_throws_missed'))} disabled={!selectedPlayer} className={`flex-1 ${btnH} text-white font-bold text-xs bg-indigo-300 hover:bg-indigo-400 disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-150`}>FTX</motion.button>
           </div>
           {['points_2', 'points_3'].map(key => {
             const stat = STAT_TYPES.find(s => s.key === key);
