@@ -2,39 +2,27 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield } from "lucide-react";
 import TeamLogo from "../../teams/TeamLogo";
+import { buildTeamAggregates } from "../statEngine";
 
+// MOBILE_TEAMSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function MobileTeamStats({ teams, games, stats }) {
-  const teamStatistics = teams.map(team => {
-    const teamGames = games.filter(g =>
-      g.status === 'completed' && (g.home_team_id === team.id || g.away_team_id === team.id)
-    );
-    const teamStats = stats.filter(s => s.team_id === team.id);
-
-    const totals = teamStats.reduce((acc, stat) => ({
-      points: acc.points + ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0),
-      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
-      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
-      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-      assists: acc.assists + (stat.assists || 0),
-      steals: acc.steals + (stat.steals || 0),
-      blocks: acc.blocks + (stat.blocks || 0),
-      turnovers: acc.turnovers + (stat.turnovers || 0),
-    }), { points: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 });
-
-    const gp = teamGames.length;
-    return {
-      ...team,
-      gp,
-      ppg: gp > 0 ? (totals.points / gp).toFixed(1) : '0.0',
-      rpg: gp > 0 ? (totals.rebounds / gp).toFixed(1) : '0.0',
-      apg: gp > 0 ? (totals.assists / gp).toFixed(1) : '0.0',
-      orebpg: gp > 0 ? (totals.offensiveRebounds / gp).toFixed(1) : '0.0',
-      drebpg: gp > 0 ? (totals.defensiveRebounds / gp).toFixed(1) : '0.0',
-      stlpg: gp > 0 ? (totals.steals / gp).toFixed(1) : '0.0',
-      blkpg: gp > 0 ? (totals.blocks / gp).toFixed(1) : '0.0',
-      topg: gp > 0 ? (totals.turnovers / gp).toFixed(1) : '0.0',
-    };
-  }).filter(t => t.gp > 0).sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+  const teamStatistics = React.useMemo(() => {
+    return buildTeamAggregates({ teams, games, stats })
+      .filter(t => t.gamesPlayed > 0)
+      .map(t => ({
+        ...t,
+        gp: t.gamesPlayed,
+        ppg: t.ppg.toFixed(1),
+        rpg: t.rpg.toFixed(1),
+        apg: t.apg.toFixed(1),
+        orebpg: t.orebpg.toFixed(1),
+        drebpg: t.drebpg.toFixed(1),
+        stlpg: t.stlpg.toFixed(1),
+        blkpg: t.blkpg.toFixed(1),
+        topg: t.topg.toFixed(1),
+      }))
+      .sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+  }, [teams, games, stats]);
 
   if (teamStatistics.length === 0) {
     return <p className="text-slate-500 text-center py-8">No team stats yet</p>;
