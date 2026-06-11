@@ -1,3 +1,4 @@
+// STATS_PAGE_HOOK_V1 — data now comes from the shared useLeagueStatsData hook
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
@@ -5,15 +6,14 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { BarChart3, Filter, BarChart4 } from "lucide-react";
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 import TeamStats from "../components/stats/TeamStats";
 import PlayerStats from "../components/stats/PlayerStats";
 import LeagueLeaders from "../components/stats/LeagueLeaders";
-import GameStats from "../components/stats/GameStats";
 import MobileTeamStats from "../components/stats/mobile/MobileTeamStats";
 import MobilePlayerStats from "../components/stats/mobile/MobilePlayerStats";
 import MobileLeagueLeaders from "../components/stats/mobile/MobileLeagueLeaders";
-import MobileGameStats from "../components/stats/mobile/MobileGameStats";
 
 
 export default function StatisticsPage() {
@@ -67,53 +67,10 @@ export default function StatisticsPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['stats_teams', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 60000,
-  });
+  // STATS_PAGE_HOOK_V1 — single shared fetch (paged, truncation-proof)
+  const { teams, players, games, stats: allStats } = useLeagueStatsData(selectedLeague);
 
-  const { data: players = [] } = useQuery({
-    queryKey: ['stats_players', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
-      const teamIds = leagueTeams.map(t => t.id);
-      if (teamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 60000,
-  });
-
-  const { data: games = [] } = useQuery({
-    queryKey: ['stats_games', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 30000,
-  });
-
-  const { data: allStats = [] } = useQuery({
-    queryKey: ['stats_playerStats', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague }, null, 1000);
-      const gameIds = leagueGames.map(g => g.id);
-      if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 30000,
-  });
-
-  // Already league-filtered from queries above
+  // Already league-filtered from the hook above
   const filteredTeams = teams;
   const filteredPlayers = selectedTeam === "all" 
     ? players 
