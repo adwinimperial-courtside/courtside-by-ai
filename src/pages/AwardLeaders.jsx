@@ -1,8 +1,10 @@
+// AWARDS_PAGE_HOOK_V1 — data now comes from the shared useLeagueStatsData hook
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, Filter } from "lucide-react";
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 import AwardLeadersComponent from "../components/stats/AwardLeaders";
 
@@ -44,50 +46,8 @@ export default function AwardLeadersPage() {
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
       : leagues;
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['awards_teams', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 60000,
-  });
-
-  const { data: players = [] } = useQuery({
-    queryKey: ['awards_players', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      const teamIds = teams.map(t => t.id);
-      if (teamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all' && teams.length > 0,
-    staleTime: 60000,
-  });
-
-  const { data: games = [] } = useQuery({
-    queryKey: ['awards_games', selectedLeague],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      return base44.entities.Game.filter({ league_id: selectedLeague }, '-game_date', 1000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all',
-    staleTime: 30000,
-  });
-
-  const gameIds = games.map(g => g.id);
-
-  const { data: allStats = [] } = useQuery({
-    queryKey: ['awards_playerStats', selectedLeague, gameIds.length],
-    queryFn: async () => {
-      if (!selectedLeague || selectedLeague === 'all') return [];
-      if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
-    },
-    enabled: !!selectedLeague && selectedLeague !== 'all' && gameIds.length > 0,
-    staleTime: 30000,
-  });
+  // AWARDS_PAGE_HOOK_V1 — single shared fetch (paged, truncation-proof)
+  const { teams, players, games, stats: allStats } = useLeagueStatsData(selectedLeague);
 
   const { data: allAwardSettings = [] } = useQuery({
     queryKey: ['awardSettings'],
