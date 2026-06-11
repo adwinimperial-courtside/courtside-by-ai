@@ -599,12 +599,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       player_stat_id: playerStat.id,
       old_value: currentValue,
       new_value: currentValue + 1,
+      period: game.clock_period ?? 1,
       old_home_score: oldScores.home,
       old_away_score: oldScores.away,
       logged_by: currentUser?.email || '',
       device_name: getDeviceName()
     };
     const previousLogs = queryClient.getQueryData(['gameLogs', game.id]);
+    const previousGame = queryClient.getQueryData(['game', game.id]);
     queryClient.setQueryData(['gameLogs', game.id], prev => [
       { id: `temp-${Date.now()}`, created_date: new Date().toISOString(), ...statLogPayload },
       ...(prev || [])
@@ -621,6 +623,12 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         const currentFoulMap = { ...(game[foulKey] || {}) };
         currentFoulMap[resetKey] = (currentFoulMap[resetKey] || 0) + 1;
         gameUpdates[foulKey] = currentFoulMap;
+        // TEAMFOUL_OPTIMISTIC_V1 — bump the cached game's foul map NOW so a
+        // second foul tapped before the next game poll reads the updated
+        // count instead of a stale one (which silently lost a team foul).
+        queryClient.setQueryData(['game', game.id], prev =>
+          prev ? { ...prev, [foulKey]: currentFoulMap } : prev
+        );
       }
 
       if (statType.points > 0) {
@@ -705,6 +713,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         }
         if (previousLogs !== undefined) {
           queryClient.setQueryData(['gameLogs', game.id], previousLogs);
+        }
+        if (previousGame !== undefined) {
+          queryClient.setQueryData(['game', game.id], previousGame);
         }
         setStatError('Could not record that stat — tap it again.');
         setTimeout(() => setStatError(null), 2500);
