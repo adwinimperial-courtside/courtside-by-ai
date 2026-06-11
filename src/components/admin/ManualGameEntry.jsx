@@ -6,9 +6,34 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { X, Save, Upload } from "lucide-react";
+import { X, Save, Upload, AlertCircle } from "lucide-react";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 import GameConfirmationModal from "./GameConfirmationModal";
+
+// MANUAL_ENTRY_VALIDATE_V1
+// Validates one player's points math. Returns:
+//   { ok: true, twosMade }            when total = 3*3PM + FT + 2*twosMade
+//   { ok: false, message }            when the numbers are impossible
+export function validatePointsRow(stats) {
+  const total = stats.total_points || 0;
+  const threes = stats.points_3 || 0;
+  const ft = stats.free_throws || 0;
+  const floor = threes * 3 + ft;
+  if (total < floor) {
+    return {
+      ok: false,
+      message: `Threes (${threes * 3} pts) + free throws (${ft}) add up to ${floor}, but total points is ${total} — check the numbers.`,
+    };
+  }
+  const remainder = total - floor;
+  if (remainder % 2 !== 0) {
+    return {
+      ok: false,
+      message: `${remainder} point${remainder === 1 ? "" : "s"} left over after threes and free throws — twos must make an even number. One field is off by 1.`,
+    };
+  }
+  return { ok: true, twosMade: remainder / 2 };
+}
 
 export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -26,6 +51,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const [playerStats, setPlayerStats] = useState([]);
   const [winningTeamId, setWinningTeamId] = useState("");
   const [confirmationData, setConfirmationData] = useState(null);
+  const [csvError, setCsvError] = useState("");
 
   const homeTeamPlayers = players.filter(p => p.team_id === gameData.home_team_id);
   const awayTeamPlayers = players.filter(p => p.team_id === gameData.away_team_id);
@@ -37,8 +63,9 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         const totalPoints = stat.stats.total_points || 0;
         const points3 = stat.stats.points_3 || 0;
         const ftEntered = stat.stats.free_throws || 0;
-        // points_2 = (total - 3PT*3 - FT*1) / 2
-        // No remainder possible: remaining points after 3PT and FT are always even (2-pointers)
+        // MANUAL_ENTRY_VALIDATE_V1: validation guarantees (total - 3*3PM - FT) is even and >= 0.
+        // Storage format unchanged for now: points_2 holds raw 2-point POINTS (not a count).
+        // The count-format cutover happens in a later migration step.
         const points2Made = Math.max(0, totalPoints - (points3 * 3) - ftEntered);
         const ftAdjusted = ftEntered;
 
@@ -189,6 +216,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const handleCsvImport = async (e, teamId) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setCsvError("");
 
     try {
       const text = await file.text();
@@ -208,6 +236,12 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
       const foulIdx = headers.findIndex(h => h === 'FOUL');
       const tfIdx = headers.findIndex(h => h === 'TECHNICAL');
       const unspoIdx = headers.findIndex(h => h === 'UNSPORTSMANLIKE');
+
+      if (playerIdx === -1 || ptsIdx === -1) {
+        setCsvError("CSV is missing the PLAYER or POINTS column. Expected headers: PLAYER, POINTS, 3 POINTS, FT, ASSIST, STEAL, BLOCK, OREB, DREB, TURNOVER, FOUL, TECHNICAL, UNSPORTSMANLIKE.");
+        e.target.value = "";
+        return;
+      }
 
       setPlayerStats(prev =>
         prev.map(ps => {
@@ -242,8 +276,10 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         })
       );
     } catch (error) {
-      alert("Error reading CSV file. Ensure it has columns: PLAYER, POINTS, 3 POINTS, FT, ASSIST, STEAL, BLOCK, OREB, DREB, TURNOVER, FOUL, TECHNICAL, UNSPORTSMANLIKE");
+      // MANUAL_ENTRY_VALIDATE_V1: alert() is blocked in base44 — show an on-page banner instead
+      setCsvError("Couldn't read that CSV file. Ensure it has columns: PLAYER, POINTS, 3 POINTS, FT, ASSIST, STEAL, BLOCK, OREB, DREB, TURNOVER, FOUL, TECHNICAL, UNSPORTSMANLIKE.");
     }
+    e.target.value = "";
   };
 
   const calcPlayerPoints = (stats) => stats.total_points || 0;
@@ -258,7 +294,12 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
     setGameData(prev => ({ ...prev, home_score: homeScore, away_score: awayScore }));
   };
 
+  // MANUAL_ENTRY_VALIDATE_V1: rows whose points math is impossible block saving
+  const invalidRows = playerStats.filter(ps => !validatePointsRow(ps.stats).ok);
+
   const handleSubmit = () => {
+    if (invalidRows.length > 0) return;
+
     const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
@@ -378,6 +419,66 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
+  // MANUAL_ENTRY_VALIDATE_V1: shared renderer for one team's scoresheet rows
+  const renderStatRows = (statsList) => statsList.map((ps, idx) => {
+    const check = validatePointsRow(ps.stats);
+    const rowBg = !check.ok ? 'bg-red-50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50');
+    return (
+      <React.Fragment key={ps.player_id}>
+        <tr className={rowBg}>
+          <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+          <td className="px-3 py-2">{ps.player_name}</td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2 text-center">
+            {check.ok ? (
+              <span className="inline-block min-w-[2rem] px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-semibold">{check.twosMade}</span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-semibold"><AlertCircle className="w-3 h-3" />—</span>
+            )}
+          </td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+        </tr>
+        {!check.ok && (
+          <tr className="bg-red-50">
+            <td colSpan={15} className="px-3 pb-2 pt-0 text-xs text-red-700">{check.message}</td>
+          </tr>
+        )}
+      </React.Fragment>
+    );
+  });
+
+  const tableHeader = (
+    <thead className="bg-slate-50 border-b border-slate-200">
+      <tr>
+        <th className="px-3 py-2 text-left font-semibold">#</th>
+        <th className="px-3 py-2 text-left font-semibold">Player</th>
+        <th className="px-3 py-2 text-center font-semibold">PTS</th>
+        <th className="px-3 py-2 text-center font-semibold">3PM</th>
+        <th className="px-3 py-2 text-center font-semibold">FT</th>
+        <th className="px-3 py-2 text-center font-semibold">2PM</th>
+        <th className="px-3 py-2 text-center font-semibold">AST</th>
+        <th className="px-3 py-2 text-center font-semibold">STL</th>
+        <th className="px-3 py-2 text-center font-semibold">BLK</th>
+        <th className="px-3 py-2 text-center font-semibold">OREB</th>
+        <th className="px-3 py-2 text-center font-semibold">DREB</th>
+        <th className="px-3 py-2 text-center font-semibold">TO</th>
+        <th className="px-3 py-2 text-center font-semibold">FOUL</th>
+        <th className="px-3 py-2 text-center font-semibold">TF</th>
+        <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
+      </tr>
+    </thead>
+  );
+
   return (
     <div className="space-y-6">
       <div className="bg-slate-100 p-4 rounded-lg">
@@ -394,6 +495,15 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           </Button>
         </div>
       </div>
+
+      <p className="text-sm text-slate-500">Enter each player's total points, made threes and free throws — twos are worked out automatically in the 2PM column.</p>
+
+      {csvError && (
+        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <span>{csvError}</span>
+        </div>
+      )}
 
       <div className="space-y-6">
         <div>
@@ -423,43 +533,9 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           </div>
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">#</th>
-                  <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                  <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">AST</th>
-                  <th className="px-3 py-2 text-center font-semibold">STL</th>
-                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                  <th className="px-3 py-2 text-center font-semibold">TF</th>
-                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {homeStats.map((ps, idx) => (
-                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                    <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                  </tr>
-                ))}
+              {tableHeader}
+              <tbody>
+                {renderStatRows(homeStats)}
               </tbody>
             </table>
           </div>
@@ -492,48 +568,21 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           </div>
           <div className="overflow-x-auto border border-slate-200 rounded-lg">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold">#</th>
-                  <th className="px-3 py-2 text-left font-semibold">Player</th>
-                  <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                  <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                  <th className="px-3 py-2 text-center font-semibold">FT</th>
-                  <th className="px-3 py-2 text-center font-semibold">AST</th>
-                  <th className="px-3 py-2 text-center font-semibold">STL</th>
-                  <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                  <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                  <th className="px-3 py-2 text-center font-semibold">TO</th>
-                  <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                  <th className="px-3 py-2 text-center font-semibold">TF</th>
-                  <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {awayStats.map((ps, idx) => (
-                  <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                    <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                    <td className="px-3 py-2">{ps.player_name}</td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                    <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                  </tr>
-                ))}
+              {tableHeader}
+              <tbody>
+                {renderStatRows(awayStats)}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+
+      {invalidRows.length > 0 && (
+        <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{invalidRows.length} row{invalidRows.length === 1 ? '' : 's'} need{invalidRows.length === 1 ? 's' : ''} fixing before you can save — look for the red rows above.</span>
+        </div>
+      )}
 
       <div className="flex gap-3">
         <Button variant="outline" onClick={onClose}>
@@ -542,7 +591,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={createGameMutation.isPending}
+          disabled={createGameMutation.isPending || invalidRows.length > 0}
           className="bg-gradient-to-r from-green-500 to-green-600 flex-1"
         >
           <Save className="w-4 h-4 mr-2" />
