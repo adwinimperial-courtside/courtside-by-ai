@@ -107,6 +107,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const subCompletedAtRef = React.useRef(0);
   const isProcessingStatRef = React.useRef(false);
   const lastStatClickTimeRef = React.useRef(0);
+  // END_GAME_GUARD_V1 — blocks double-taps on End Game so team win/loss
+  // records can never be incremented twice for the same game.
+  const isEndingGameRef = React.useRef(false);
   const pendingRepairTimerRef = React.useRef(null);
   const queryClient = useQueryClient();
 
@@ -1178,41 +1181,54 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleEndGameFromModal = async () => {
-    const homeScore = calcTeamScore(game.home_team_id, existingStats);
-    const awayScore = calcTeamScore(game.away_team_id, existingStats);
-    const homeWins = homeScore > awayScore;
+    // END_GAME_GUARD_V1 — same double-run protection as the header End Game button.
+    if (isEndingGameRef.current) return;
+    if ((liveGame?.status || game.status) === 'completed') { onBack(); return; }
+    isEndingGameRef.current = true;
 
-    if (game.game_mode === 'timed' && game.clock_running) {
-      activePlayers.forEach(stat => {
-        const clockState = playerGameClockStateRef.current[stat.player_id];
-        if (clockState && clockState.period === game.clock_period) {
-          const currentComputedTimeLeft = computeTimeLeft(game);
-          const gameTimeElapsed = clockState.timeLeft - currentComputedTimeLeft;
-          playerMinutesRef.current[stat.player_id] = (playerMinutesRef.current[stat.player_id] || 0) + gameTimeElapsed;
-        }
+    try {
+      const homeScore = calcTeamScore(game.home_team_id, existingStats);
+      const awayScore = calcTeamScore(game.away_team_id, existingStats);
+      const homeWins = homeScore > awayScore;
+
+      if (game.game_mode === 'timed' && game.clock_running) {
+        activePlayers.forEach(stat => {
+          const clockState = playerGameClockStateRef.current[stat.player_id];
+          if (clockState && clockState.period === game.clock_period) {
+            const currentComputedTimeLeft = computeTimeLeft(game);
+            const gameTimeElapsed = clockState.timeLeft - currentComputedTimeLeft;
+            playerMinutesRef.current[stat.player_id] = (playerMinutesRef.current[stat.player_id] || 0) + gameTimeElapsed;
+          }
+        });
+      }
+
+      const minuteUpdates = existingStats.map(stat => {
+        const totalSeconds = playerMinutesRef.current[stat.player_id] || 0;
+        const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
+        return updateStatMutation.mutateAsync({
+          statId: stat.id,
+          updates: { minutes_played: totalMinutes }
+        });
       });
+
+      await Promise.all(minuteUpdates);
+
+      await updateGameMutation.mutateAsync({
+        gameId: game.id,
+        data: { status: 'completed', player_of_game: findPlayerOfGame(existingStats, game) }
+      });
+
+      await updateTeamRecordMutation.mutateAsync({ teamId: game.home_team_id, isWin: homeWins });
+      await updateTeamRecordMutation.mutateAsync({ teamId: game.away_team_id, isWin: !homeWins });
+
+      onBack();
+    } catch (error) {
+      console.error('Error ending game (modal):', error);
+      setStatError('Could not end the game — please try again.');
+      setTimeout(() => setStatError(null), 4000);
+    } finally {
+      isEndingGameRef.current = false;
     }
-
-    const minuteUpdates = existingStats.map(stat => {
-      const totalSeconds = playerMinutesRef.current[stat.player_id] || 0;
-      const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
-      return updateStatMutation.mutateAsync({
-        statId: stat.id,
-        updates: { minutes_played: totalMinutes }
-      });
-    });
-
-    await Promise.all(minuteUpdates);
-
-    await updateGameMutation.mutateAsync({
-      gameId: game.id,
-      data: { status: 'completed', player_of_game: findPlayerOfGame(existingStats, game) }
-    });
-
-    await updateTeamRecordMutation.mutateAsync({ teamId: game.home_team_id, isWin: homeWins });
-    await updateTeamRecordMutation.mutateAsync({ teamId: game.away_team_id, isWin: !homeWins });
-
-    onBack();
   };
 
   const handleUndo = async (logEntry) => {
@@ -1354,9 +1370,14 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleEndGame = async () => {
+    // END_GAME_GUARD_V1 — ignore taps while an end-game is already running,
+    // and never re-run (and re-count records for) an already-completed game.
+    if (isEndingGameRef.current) return;
+    if ((liveGame?.status || game.status) === 'completed') { onBack(); return; }
     if (!confirm("Are you sure you want to end this game? This cannot be undone.")) {
       return;
     }
+    isEndingGameRef.current = true;
 
     try {
       const homeScore = calcTeamScore(game.home_team_id, existingStats);
@@ -1411,7 +1432,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       onBack();
     } catch (error) {
       console.error('Error ending game:', error);
-      alert('Failed to end game: ' + error.message);
+      // alert() is unreliable in base44 — surface the failure in the on-page banner.
+      setStatError('Could not end the game — please try again.');
+      setTimeout(() => setStatError(null), 4000);
+    } finally {
+      isEndingGameRef.current = false;
     }
   };
 
