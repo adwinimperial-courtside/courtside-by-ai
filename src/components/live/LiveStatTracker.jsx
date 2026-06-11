@@ -1029,7 +1029,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     // player "on court" -> 6 players -> Emergency Lineup Repair. So deactivate EVERY row
     // of the OUT player, and make sure the IN player has exactly one active row.
     try {
-      const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      // QUICKSWAP_TIMEOUT_V1 — never let a hung connection hold the sub lock
+      const freshStats = await Promise.race([
+        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SUB_FETCH_TIMEOUT')), 15000))
+      ]);
       const outRows = freshStats.filter(s => s.player_id === outPlayer.id);
       const inRows  = freshStats.filter(s => s.player_id === inPlayerId);
       if (!outRows.some(s => s.is_active === true)) {
@@ -1049,7 +1053,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         writes.push(createStatMutation.mutateAsync({ game_id: game.id, player_id: inPlayerId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 }));
       }
       writes.push(createLogMutation.mutateAsync(logPayload));
-      await Promise.all(writes);
+      await Promise.race([
+        Promise.all(writes),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('SUB_WRITE_TIMEOUT')), 15000))
+      ]);
       subCompletedAtRef.current = Date.now();
     } catch (error) {
       if (statsSnapshot !== undefined) queryClient.setQueryData(['playerStats', game.id], statsSnapshot);
