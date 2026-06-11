@@ -333,7 +333,7 @@ export function computeMvpRace({ league, teams, games, players, stats, awardSett
         avgGis: avgGis.toFixed(1),
         gpPct: (gpPct * 100).toFixed(1),
         mvpScoreNum: mvpScore,
-        mvpScore: mvpScore.toFixed(1),
+        mvpScore: mvpScore.toFixed(2),
       };
     })
     .filter(Boolean)
