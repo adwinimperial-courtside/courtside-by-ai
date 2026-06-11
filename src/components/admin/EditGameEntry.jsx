@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save, Plus, Trash2 } from "lucide-react";
+import { X, Save, Plus, Trash2, AlertCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { validatePointsRow } from "./ManualGameEntry";
 
 export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -17,12 +18,18 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const [winningTeamId, setWinningTeamId] = useState("");
   const [addPlayerModal, setAddPlayerModal] = useState(false);
   const [addPlayerTeamId, setAddPlayerTeamId] = useState(null);
+  const [surplusRowIds, setSurplusRowIds] = useState([]);
+  const [saveError, setSaveError] = useState("");
 
   const { data: completedGames = [] } = useQuery({
     queryKey: ['completedGames', selectedLeague],
     queryFn: () => selectedLeague ? base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' }, '-game_date') : Promise.resolve([]),
     enabled: !!selectedLeague,
   });
+
+  // EDIT_MANUAL_ONLY_V1: only completed, manually entered, non-forfeit games can be edited.
+  // Live-scored (digital) games and forfeit/default results are locked.
+  const editableGames = completedGames.filter(g => g.entry_type === 'manual' && !g.is_default_result);
 
   const { data: existingStats = [] } = useQuery({
     queryKey: ['editGameStats', selectedGame?.id],
@@ -32,12 +39,36 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   useEffect(() => {
     if (existingStats.length > 0 && selectedGame) {
-      const isEdited = selectedGame.edited || selectedGame.entry_type === 'manual';
-      const stats = existingStats.map(stat => {
+      // EDIT_ENTRY_VALIDATE_V1: only manual games are editable now. Manual games store
+      // points_2 as raw 2-point POINTS, so total = points_2 + 3PM*3 + FT.
+      // Legacy duplicate rows (old substitution bugs) are merged here per player;
+      // the surplus rows are remembered and deleted on save.
+      const byPlayer = new Map();
+      const surplus = [];
+      for (const stat of existingStats) {
+        if (!byPlayer.has(stat.player_id)) {
+          byPlayer.set(stat.player_id, { ...stat });
+        } else {
+          const merged = byPlayer.get(stat.player_id);
+          merged.points_2 = (merged.points_2 || 0) + (stat.points_2 || 0);
+          merged.points_3 = (merged.points_3 || 0) + (stat.points_3 || 0);
+          merged.free_throws = (merged.free_throws || 0) + (stat.free_throws || 0);
+          merged.assists = (merged.assists || 0) + (stat.assists || 0);
+          merged.steals = (merged.steals || 0) + (stat.steals || 0);
+          merged.blocks = (merged.blocks || 0) + (stat.blocks || 0);
+          merged.offensive_rebounds = (merged.offensive_rebounds || 0) + (stat.offensive_rebounds || 0);
+          merged.defensive_rebounds = (merged.defensive_rebounds || 0) + (stat.defensive_rebounds || 0);
+          merged.turnovers = (merged.turnovers || 0) + (stat.turnovers || 0);
+          merged.fouls = (merged.fouls || 0) + (stat.fouls || 0);
+          merged.technical_fouls = (merged.technical_fouls || 0) + (stat.technical_fouls || 0);
+          merged.unsportsmanlike_fouls = (merged.unsportsmanlike_fouls || 0) + (stat.unsportsmanlike_fouls || 0);
+          surplus.push(stat.id);
+        }
+      }
+      setSurplusRowIds(surplus);
+      const stats = Array.from(byPlayer.values()).map(stat => {
         const player = players.find(p => p.id === stat.player_id);
-        const totalPoints = isEdited
-          ? (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0)
-          : ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+        const totalPoints = (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
         return {
           stat_id: stat.id,
           player_id: stat.player_id,
@@ -72,7 +103,9 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           const points3Value = (stat.stats.points_3 || 0) * 3;
           const ftValue = stat.stats.free_throws || 0;
           const totalPoints = stat.stats.total_points || 0;
-          // Store remaining points directly (no /2) so display is lossless
+          // EDIT_ENTRY_VALIDATE_V1: validation guarantees (total - 3*3PM - FT) is even and >= 0.
+          // Storage format unchanged for now: points_2 holds raw 2-point POINTS (not a count).
+          // The count-format cutover happens in a later migration step.
           const points2Value = Math.max(0, totalPoints - points3Value - ftValue);
           
           // New player (no stat_id)
@@ -114,18 +147,16 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         })
       );
 
-      // Delete removed players
-      const existingPlayerIds = existingStats.map(s => s.player_id);
+      // EDIT_REMOVE_ALL_ROWS_V1: delete EVERY stat row of removed players (not just the
+      // first match), plus the surplus duplicate rows merged at load time.
       const currentPlayerIds = data.playerStats.map(ps => ps.player_id);
-      const removedPlayerIds = existingPlayerIds.filter(id => !currentPlayerIds.includes(id));
-      
+      const removedRowIds = existingStats
+        .filter(s => !currentPlayerIds.includes(s.player_id))
+        .map(s => s.id);
+      const rowsToDelete = [...new Set([...removedRowIds, ...surplusRowIds])];
+
       await Promise.all(
-        removedPlayerIds.map(playerId => {
-          const statToDelete = existingStats.find(s => s.player_id === playerId);
-          if (statToDelete) {
-            return base44.entities.PlayerStats.delete(statToDelete.id);
-          }
-        })
+        rowsToDelete.map(rowId => base44.entities.PlayerStats.delete(rowId))
       );
 
       // Update game with new scores and mark as edited
@@ -142,8 +173,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
       queryClient.invalidateQueries({ queryKey: ['games'] });
       queryClient.invalidateQueries({ queryKey: ['allPlayerStats'] });
       queryClient.invalidateQueries({ queryKey: ['completedGames'] });
-      alert('Game updated successfully!');
       onClose();
+    },
+    onError: () => {
+      // EDIT_ENTRY_VALIDATE_V1: alert() is blocked in base44 — show an on-page banner instead
+      setSaveError("Saving failed. Please check your connection and tap Save Changes again.");
     },
   });
 
@@ -192,12 +226,19 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   };
 
   const selectGame = (gameId) => {
-    const game = completedGames.find(g => g.id === gameId);
+    const game = editableGames.find(g => g.id === gameId);
     setSelectedGame(game);
+    setSurplusRowIds([]);
+    setSaveError("");
     setStep(2);
   };
 
+  // EDIT_ENTRY_VALIDATE_V1: rows whose points math is impossible block saving
+  const invalidRows = playerStats.filter(ps => !validatePointsRow(ps.stats).ok);
+
   const proceedToPlayerSelection = () => {
+    if (invalidRows.length > 0) return;
+
     const homeStats = playerStats.filter(ps => ps.team_id === selectedGame.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === selectedGame.away_team_id);
 
@@ -211,12 +252,15 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   };
 
   const handleSubmit = () => {
+    if (invalidRows.length > 0) return;
+
     const homeStats = playerStats.filter(ps => ps.team_id === selectedGame.home_team_id);
     const awayStats = playerStats.filter(ps => ps.team_id === selectedGame.away_team_id);
 
     const homeScore = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
     const awayScore = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
 
+    setSaveError("");
     updateGameMutation.mutate({
       game: selectedGame,
       playerStats,
@@ -239,6 +283,72 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const homeStats = playerStats.filter(ps => ps.team_id === selectedGame?.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === selectedGame?.away_team_id);
 
+  // EDIT_ENTRY_VALIDATE_V1 / FOCUS_SELECT_V1: shared renderer; inputs select-all on focus so typing replaces the 0
+  const renderStatRows = (statsList) => statsList.map((ps, idx) => {
+    const check = validatePointsRow(ps.stats);
+    const rowBg = !check.ok ? 'bg-red-50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50');
+    return (
+      <React.Fragment key={ps.player_id}>
+        <tr className={rowBg}>
+          <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
+          <td className="px-3 py-2">{ps.player_name}</td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2 text-center">
+            {check.ok ? (
+              <span className="inline-block min-w-[2rem] px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-semibold">{check.twosMade}</span>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-semibold"><AlertCircle className="w-3 h-3" />—</span>
+            )}
+          </td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2 text-center">
+            <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </td>
+        </tr>
+        {!check.ok && (
+          <tr className="bg-red-50">
+            <td colSpan={16} className="px-3 pb-2 pt-0 text-xs text-red-700">{check.message}</td>
+          </tr>
+        )}
+      </React.Fragment>
+    );
+  });
+
+  const tableHeader = (
+    <thead className="bg-slate-50 border-b border-slate-200">
+      <tr>
+        <th className="px-3 py-2 text-left font-semibold">#</th>
+        <th className="px-3 py-2 text-left font-semibold">Player</th>
+        <th className="px-3 py-2 text-center font-semibold">PTS</th>
+        <th className="px-3 py-2 text-center font-semibold">3PM</th>
+        <th className="px-3 py-2 text-center font-semibold">FT</th>
+        <th className="px-3 py-2 text-center font-semibold">2PM</th>
+        <th className="px-3 py-2 text-center font-semibold">AST</th>
+        <th className="px-3 py-2 text-center font-semibold">STL</th>
+        <th className="px-3 py-2 text-center font-semibold">BLK</th>
+        <th className="px-3 py-2 text-center font-semibold">OREB</th>
+        <th className="px-3 py-2 text-center font-semibold">DREB</th>
+        <th className="px-3 py-2 text-center font-semibold">TO</th>
+        <th className="px-3 py-2 text-center font-semibold">FOUL</th>
+        <th className="px-3 py-2 text-center font-semibold">TF</th>
+        <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
+        <th className="px-3 py-2 text-center font-semibold">Actions</th>
+      </tr>
+    </thead>
+  );
+
   return (
     <>
       {step === 1 && (
@@ -260,13 +370,13 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
             {selectedLeague && (
               <div className="space-y-2">
-                <Label>Select Completed Game *</Label>
+                <Label>Select Game to Edit *</Label>
                 <Select onValueChange={selectGame}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select game to edit" />
                   </SelectTrigger>
                   <SelectContent>
-                    {completedGames.map(game => {
+                    {editableGames.map(game => {
                       const home = teams.find(t => t.id === game.home_team_id);
                       const away = teams.find(t => t.id === game.away_team_id);
                       return (
@@ -277,6 +387,10 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     })}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-slate-500">Only games entered with the scoresheet can be edited. Live-scored games and forfeit results are locked.</p>
+                {editableGames.length === 0 && (
+                  <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">No editable games in this league yet.</p>
+                )}
               </div>
             )}
           </div>
@@ -307,6 +421,8 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
             </div>
           </div>
 
+          <p className="text-sm text-slate-500">Enter each player's total points, made threes and free throws — twos are worked out automatically in the 2PM column.</p>
+
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -328,49 +444,9 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold">#</th>
-                      <th className="px-3 py-2 text-left font-semibold">Player</th>
-                      <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                      <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                      <th className="px-3 py-2 text-center font-semibold">FT</th>
-                      <th className="px-3 py-2 text-center font-semibold">AST</th>
-                      <th className="px-3 py-2 text-center font-semibold">STL</th>
-                      <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                      <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                      <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                      <th className="px-3 py-2 text-center font-semibold">TO</th>
-                      <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                      <th className="px-3 py-2 text-center font-semibold">TF</th>
-                      <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                      <th className="px-3 py-2 text-center font-semibold">Actions</th>
-                    </tr>
-                  </thead>
+                  {tableHeader}
                   <tbody>
-                    {homeStats.map((ps, idx) => (
-                      <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                        <td className="px-3 py-2">{ps.player_name}</td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {renderStatRows(homeStats)}
                   </tbody>
                 </table>
               </div>
@@ -396,54 +472,21 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
               </div>
               <div className="overflow-x-auto border border-slate-200 rounded-lg">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold">#</th>
-                      <th className="px-3 py-2 text-left font-semibold">Player</th>
-                      <th className="px-3 py-2 text-center font-semibold">PTS</th>
-                      <th className="px-3 py-2 text-center font-semibold">3PT</th>
-                      <th className="px-3 py-2 text-center font-semibold">FT</th>
-                      <th className="px-3 py-2 text-center font-semibold">AST</th>
-                      <th className="px-3 py-2 text-center font-semibold">STL</th>
-                      <th className="px-3 py-2 text-center font-semibold">BLK</th>
-                      <th className="px-3 py-2 text-center font-semibold">OREB</th>
-                      <th className="px-3 py-2 text-center font-semibold">DREB</th>
-                      <th className="px-3 py-2 text-center font-semibold">TO</th>
-                      <th className="px-3 py-2 text-center font-semibold">FOUL</th>
-                      <th className="px-3 py-2 text-center font-semibold">TF</th>
-                      <th className="px-3 py-2 text-center font-semibold">UNSPO</th>
-                      <th className="px-3 py-2 text-center font-semibold">Actions</th>
-                    </tr>
-                  </thead>
+                  {tableHeader}
                   <tbody>
-                    {awayStats.map((ps, idx) => (
-                      <tr key={ps.player_id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
-                        <td className="px-3 py-2">{ps.player_name}</td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-                        <td className="px-3 py-2 text-center">
-                          <Button size="sm" variant="ghost" onClick={() => removePlayer(ps.player_id)} className="h-7 w-7 p-0 hover:bg-red-100 hover:text-red-600">
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {renderStatRows(awayStats)}
                   </tbody>
                 </table>
               </div>
             </div>
           </div>
+
+          {invalidRows.length > 0 && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{invalidRows.length} row{invalidRows.length === 1 ? '' : 's'} need{invalidRows.length === 1 ? 's' : ''} fixing before you can continue — look for the red rows above.</span>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={onClose}>
@@ -452,6 +495,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
             </Button>
             <Button
               onClick={proceedToPlayerSelection}
+              disabled={invalidRows.length > 0}
               className="bg-gradient-to-r from-blue-500 to-blue-600"
             >
               Next: Select Player of the Game
@@ -497,6 +541,13 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
               </SelectContent>
             </Select>
           </div>
+
+          {saveError && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{saveError}</span>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => setStep(2)}>
