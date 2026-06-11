@@ -1256,29 +1256,80 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleUndoSubstitution = async (logEntry) => {
+    // UNDO_SUB_SAFE_V1 — validate before reversing, dedupe-aware, locked, time-limited.
     if (!logEntry.subData) return;
-    const { out_ids, in_ids } = logEntry.subData;
-    const freshStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-    
-    const statUpdatePromises = [];
-    
-    for (const playerId of (out_ids || [])) {
-      const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_active: true } }));
-    }
-    
-    for (const playerId of (in_ids || [])) {
-      const stat = freshStats.find(s => s.player_id === playerId);
-      if (stat) statUpdatePromises.push(updateStatMutation.mutateAsync({ statId: stat.id, updates: { is_active: false } }));
-    }
-    
-    await Promise.all([
-      ...statUpdatePromises,
-      deleteLogMutation.mutateAsync(logEntry.id)
-    ]);
+    if (repairMode) return;
+    if (isSubmittingSubRef.current) return;
+    isSubmittingSubRef.current = true;
 
-    const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-    checkAndTriggerRepair(postUndoStats);
+    const showUndoError = (msg) => {
+      setStatError(msg);
+      setTimeout(() => setStatError(null), 4000);
+    };
+
+    try {
+      const { out_ids, in_ids } = logEntry.subData;
+      const freshStats = await Promise.race([
+        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_FETCH_TIMEOUT')), 15000))
+      ]);
+
+      // Only reversible if the lineup still matches what this sub produced:
+      // every IN player is still on court, every OUT player is still off.
+      for (const playerId of (in_ids || [])) {
+        const rows = freshStats.filter(s => s.player_id === playerId);
+        if (!rows.some(s => s.is_active === true)) {
+          showUndoError("Can't undo — the lineup has changed since this substitution. Use SUB instead.");
+          return;
+        }
+      }
+      for (const playerId of (out_ids || [])) {
+        const rows = freshStats.filter(s => s.player_id === playerId);
+        if (rows.some(s => s.is_active === true)) {
+          showUndoError("Can't undo — the lineup has changed since this substitution. Use SUB instead.");
+          return;
+        }
+        if (!isPlayerEligibleForCourt(playerId, freshStats)) {
+          showUndoError("Can't undo — that player has fouled out and can't return to the court.");
+          return;
+        }
+      }
+
+      // Reverse the sub. Dedupe-aware: OUT players get exactly one active row,
+      // IN players get every row deactivated.
+      const writes = [];
+      for (const playerId of (out_ids || [])) {
+        const rows = freshStats.filter(s => s.player_id === playerId);
+        rows.forEach((row, i) => writes.push(updateStatMutation.mutateAsync({
+          statId: row.id,
+          updates: { is_active: i === 0 }
+        })));
+      }
+      for (const playerId of (in_ids || [])) {
+        const rows = freshStats.filter(s => s.player_id === playerId);
+        rows.forEach(row => writes.push(updateStatMutation.mutateAsync({
+          statId: row.id,
+          updates: { is_active: false }
+        })));
+      }
+
+      await Promise.race([
+        Promise.all(writes),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_WRITE_TIMEOUT')), 15000))
+      ]);
+
+      // Delete the feed entry only after the lineup writes succeeded.
+      await deleteLogMutation.mutateAsync(logEntry.id);
+      subCompletedAtRef.current = Date.now();
+
+      const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+      checkAndTriggerRepair(postUndoStats);
+    } catch (error) {
+      console.error('[LiveStat:undoSub]', error);
+      showUndoError('Undo failed — please try again.');
+    } finally {
+      isSubmittingSubRef.current = false;
+    }
   };
 
   const handleEndGame = async () => {
