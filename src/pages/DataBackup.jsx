@@ -57,14 +57,16 @@ export default function DataBackup() {
 
     for (const entity of ENTITIES) {
       try {
-        const PAGE_SIZE = 5000;
+        // BACKUP_PAGINATION_V2 — cap-agnostic paging
+        const PAGE = 1000;
         let allRecords = [];
         let skip = 0;
         while (true) {
-          const page = await base44.entities[entity].list('-created_date', PAGE_SIZE, skip);
+          const page = await base44.entities[entity].list('-created_date', PAGE, skip);
+          if (!page || page.length === 0) break;
           allRecords = allRecords.concat(page);
-          if (page.length < PAGE_SIZE) break;
-          skip += PAGE_SIZE;
+          skip += page.length;
+          if (page.length < PAGE) break;
         }
         backup.entities[entity] = allRecords;
         setBackupProgress(prev => [...prev, { entity, count: allRecords.length, status: "ok" }]);
@@ -113,14 +115,16 @@ export default function DataBackup() {
           counts[entity] = { restored: 0, skipped: 0 };
           continue;
         }
-        const PAGE_SIZE = 5000;
+        // RESTORE_PAGINATION_V2 — cap-agnostic paging
+        const PAGE = 1000;
         let existing = [];
         let skip = 0;
         while (true) {
-          const page = await base44.entities[entity].list('-created_date', PAGE_SIZE, skip);
+          const page = await base44.entities[entity].list('-created_date', PAGE, skip);
+          if (!page || page.length === 0) break;
           existing = existing.concat(page);
-          if (page.length < PAGE_SIZE) break;
-          skip += PAGE_SIZE;
+          skip += page.length;
+          if (page.length < PAGE) break;
         }
         const existingIds = new Set(existing.map(r => r.id));
         const missing = records.filter(r => !existingIds.has(r.id));
