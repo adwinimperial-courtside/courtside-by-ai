@@ -1,89 +1,27 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { buildLeaderBoards } from "../statEngine";
 
+// MOBILE_LEADERS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function MobileLeagueLeaders({ players, teams, stats, games = [] }) {
-  const calcPoints = (stat) => {
-    const game = games.find(g => g.id === stat.game_id);
-    const isDigital = game && game.entry_type === 'digital' && !game.edited;
-    return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-  };
-
-  const didPlayerParticipate = (stat) => {
-    const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
-                     (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
-                     (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
-                     (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
-    if (stat.did_play) return true;
-    if ((stat.minutes_played || 0) > 0) return true;
-    if (hasStats) return true;
-    return false;
-  };
-
-  // Only actually played games — matches standings logic
-  function isActualPlayedGame(g) {
-    return (
-      g.status === 'completed' &&
-      !g.is_default_result &&
-      g.result_type !== 'default' &&
-      !g.exclude_from_player_stats &&
-      !g.exclude_from_awards
-    );
-  }
-  const validGameIds = new Set(games.filter(isActualPlayedGame).map(g => g.id));
-
-  // Count completed games per team (consistent with standings)
-  const teamGameCounts = {};
-  games.filter(isActualPlayedGame).forEach(g => {
-    teamGameCounts[g.home_team_id] = (teamGameCounts[g.home_team_id] || 0) + 1;
-    teamGameCounts[g.away_team_id] = (teamGameCounts[g.away_team_id] || 0) + 1;
-  });
-
-  const playerAggregates = players.map(player => {
-    const playerStats = stats.filter(s => s.player_id === player.id && validGameIds.has(s.game_id)).filter(didPlayerParticipate);
-    const team = teams.find(t => t.id === player.team_id);
-    const teamMaxGames = teamGameCounts[player.team_id] || 0;
-    const gamesPlayed = Math.min(playerStats.length, teamMaxGames);
-
-    const totals = playerStats.reduce((acc, stat) => ({
-      points: acc.points + calcPoints(stat),
-      threes: acc.threes + (stat.points_3 || 0),
-      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-      assists: acc.assists + (stat.assists || 0),
-      steals: acc.steals + (stat.steals || 0),
-      blocks: acc.blocks + (stat.blocks || 0),
-    }), { points: 0, threes: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 });
-
-    return {
-      ...player,
-      team,
-      gamesPlayed,
-      points: gamesPlayed > 0 ? totals.points / gamesPlayed : 0,
-      threes: gamesPlayed > 0 ? totals.threes / gamesPlayed : 0,
-      rebounds: gamesPlayed > 0 ? totals.rebounds / gamesPlayed : 0,
-      assists: gamesPlayed > 0 ? totals.assists / gamesPlayed : 0,
-      steals: gamesPlayed > 0 ? totals.steals / gamesPlayed : 0,
-      blocks: gamesPlayed > 0 ? totals.blocks / gamesPlayed : 0,
-    };
-  }).filter(p => {
-    const teamGames = teamGameCounts[p.team_id] || 0;
-    return teamGames > 0 && p.gamesPlayed > 0;
-  });
+  const boards = React.useMemo(
+    () => buildLeaderBoards({ players, teams, games, stats, topN: 5 }),
+    [players, teams, games, stats]
+  );
 
   const categories = [
-    { key: 'points', label: 'PPG Leaders', icon: '🏀' },
-    { key: 'threes', label: '3PM Leaders', icon: '🎯' },
-    { key: 'rebounds', label: 'RPG Leaders', icon: '💪' },
-    { key: 'assists', label: 'APG Leaders', icon: '🤝' },
-    { key: 'steals', label: 'SPG Leaders', icon: '👐' },
-    { key: 'blocks', label: 'BPG Leaders', icon: '🚫' },
+    { key: 'points', valueKey: 'ppg', label: 'PPG Leaders', icon: '🏀' },
+    { key: 'threes', valueKey: 'threepm', label: '3PM Leaders', icon: '🎯' },
+    { key: 'rebounds', valueKey: 'rpg', label: 'RPG Leaders', icon: '💪' },
+    { key: 'assists', valueKey: 'apg', label: 'APG Leaders', icon: '🤝' },
+    { key: 'steals', valueKey: 'spg', label: 'SPG Leaders', icon: '👐' },
+    { key: 'blocks', valueKey: 'bpg', label: 'BPG Leaders', icon: '🚫' },
   ];
 
   return (
     <div className="space-y-4">
       {categories.map(category => {
-        const leaders = [...playerAggregates]
-          .sort((a, b) => b[category.key] - a[category.key])
-          .slice(0, 5);
+        const leaders = boards[category.key];
 
         return (
           <Card key={category.key} className="border-slate-200 shadow-sm">
@@ -116,7 +54,7 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
                         <p className="font-medium text-xs truncate">{player.name}</p>
                         <p className="text-[10px] text-slate-500 truncate">{player.team?.name}</p>
                       </div>
-                      <p className="font-bold text-purple-600 text-sm">{player[category.key].toFixed(1)}</p>
+                      <p className="font-bold text-purple-600 text-sm">{player[category.valueKey].toFixed(1)}</p>
                     </div>
                   ))}
                 </div>
