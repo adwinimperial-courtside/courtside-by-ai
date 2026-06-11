@@ -295,6 +295,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return {
       id: log.id,
       timestamp: new Date(log.created_date),
+      period: log.period,
       player: player,
       isSubstitution: log.stat_type === 'substitution',
       subData,
@@ -1232,47 +1233,84 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   };
 
   const handleUndo = async (logEntry) => {
-    const updates = { [logEntry.statType.key]: logEntry.oldValue };
+    // UNDO_STAT_SAFE_V1 — validate before reversing, locked, time-limited.
+    // Only the entry whose new_value still matches the live stat can be
+    // undone (i.e. the most recent change to that stat). Undoing an older
+    // entry would silently erase every later increment.
+    if (String(logEntry.id).startsWith('temp-')) return; // optimistic entry still saving — ignore the tap
+    if (isProcessingStatRef.current) return;
+    isProcessingStatRef.current = true;
 
-    console.log(`[LiveStat:undo] game=${game.id} player=${logEntry.statId} stat=${logEntry.statType.key} restoring to old=${logEntry.oldValue}`);
-    
-    const gameUpdates = {};
-    
-    if (logEntry.statType.points > 0) {
-      const isHome = logEntry.teamId === game.home_team_id;
-      // UNDO_SCORE_SINGLE_FIELD_V1 — write only the affected team's score so a
-      // stale cached value of the OTHER team's score is never written back.
-      // Required for the future two-scorer mode; harmless improvement today.
-      if (isHome) {
-        const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
-        gameUpdates.home_score = Math.max(0, currentHomeScore - logEntry.statType.points);
-      } else {
-        const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
-        gameUpdates.away_score = Math.max(0, currentAwayScore - logEntry.statType.points);
+    const showUndoError = (msg) => {
+      setStatError(msg);
+      setTimeout(() => setStatError(null), 4000);
+    };
+
+    try {
+      // Fresh read of the single stat row — never trust the cache for undo.
+      const freshStat = await Promise.race([
+        base44.entities.PlayerStats.get(logEntry.statId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_STAT_FETCH_TIMEOUT')), 15000))
+      ]);
+      if (!freshStat) {
+        showUndoError('Undo failed — please try again.');
+        return;
       }
-    }
 
-    if (statCountsAsTeamFoul(logEntry.statType.key)) {
-      const isHome = logEntry.teamId === game.home_team_id;
-      const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
-      const period = game.clock_period ?? 1;
-      const resetKey = getFoulResetKey(period);
-      const currentFoulMap = { ...(game[foulKey] || {}) };
-      currentFoulMap[resetKey] = Math.max(0, (currentFoulMap[resetKey] || 0) - 1);
-      gameUpdates[foulKey] = currentFoulMap;
-    }
+      const currentValue = freshStat[logEntry.statType.key] || 0;
+      if (currentValue !== logEntry.newValue) {
+        showUndoError("Can't undo — newer entries exist for this stat. Undo the most recent one first.");
+        return;
+      }
 
-    const promises = [
-      updateStatMutation.mutateAsync({ statId: logEntry.statId, updates })
-    ];
-    
-    if (Object.keys(gameUpdates).length > 0) {
-      promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
+      const updates = { [logEntry.statType.key]: logEntry.oldValue };
+      const gameUpdates = {};
+
+      if (logEntry.statType.points > 0) {
+        const isHome = logEntry.teamId === game.home_team_id;
+        // UNDO_SCORE_SINGLE_FIELD_V1 — write only the affected team's score so a
+        // stale cached value of the OTHER team's score is never written back.
+        if (isHome) {
+          const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
+          gameUpdates.home_score = Math.max(0, currentHomeScore - logEntry.statType.points);
+        } else {
+          const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
+          gameUpdates.away_score = Math.max(0, currentAwayScore - logEntry.statType.points);
+        }
+      }
+
+      if (statCountsAsTeamFoul(logEntry.statType.key)) {
+        const isHome = logEntry.teamId === game.home_team_id;
+        const foulKey = isHome ? 'home_team_fouls' : 'away_team_fouls';
+        // Decrement the period the foul was LOGGED in when the log knows it;
+        // fall back to the current period for older entries without one.
+        const period = logEntry.period ?? game.clock_period ?? 1;
+        const resetKey = getFoulResetKey(period);
+        const currentFoulMap = { ...(game[foulKey] || {}) };
+        currentFoulMap[resetKey] = Math.max(0, (currentFoulMap[resetKey] || 0) - 1);
+        gameUpdates[foulKey] = currentFoulMap;
+      }
+
+      const promises = [
+        updateStatMutation.mutateAsync({ statId: logEntry.statId, updates })
+      ];
+      if (Object.keys(gameUpdates).length > 0) {
+        promises.push(updateGameMutation.mutateAsync({ gameId: game.id, data: gameUpdates }));
+      }
+
+      await Promise.race([
+        Promise.all(promises),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_STAT_WRITE_TIMEOUT')), 15000))
+      ]);
+
+      // Delete the feed entry only AFTER the stat write succeeded.
+      await deleteLogMutation.mutateAsync(logEntry.id);
+    } catch (error) {
+      console.error('[LiveStat:undoStat]', error);
+      showUndoError('Undo failed — please try again.');
+    } finally {
+      isProcessingStatRef.current = false;
     }
-    
-    promises.push(deleteLogMutation.mutateAsync(logEntry.id));
-    
-    await Promise.all(promises);
   };
 
   const getTimeoutSegmentKey = (period) => {
