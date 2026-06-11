@@ -329,6 +329,7 @@ export function computeMvpRace({ league, teams, games, players, stats, awardSett
         player,
         team,
         gp: effectiveGp,
+        totalGames: teamData.gamesPlayed,
         avgGisNum: avgGis,
         avgGis: avgGis.toFixed(1),
         gpPct: (gpPct * 100).toFixed(1),
