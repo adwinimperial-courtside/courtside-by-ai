@@ -22,14 +22,14 @@ export function validatePointsRow(stats) {
   if (total < floor) {
     return {
       ok: false,
-      message: `Threes (${threes * 3} pts) + free throws (${ft}) add up to ${floor}, but total points is ${total} — check the numbers.`,
+      message: `The total is too low. The threes and free throws alone make ${floor} points, but the total says ${total}.`,
     };
   }
   const remainder = total - floor;
   if (remainder % 2 !== 0) {
     return {
       ok: false,
-      message: `${remainder} point${remainder === 1 ? "" : "s"} left over after threes and free throws — twos must make an even number. One field is off by 1.`,
+      message: `The numbers don't match. With these threes and free throws, the total can't be ${total} — it could be ${total - 1} or ${total + 1}.`,
     };
   }
   return { ok: true, twosMade: remainder / 2 };
