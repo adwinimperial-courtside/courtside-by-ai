@@ -424,7 +424,7 @@ export function computeDpoyRace({ league, teams, games, players, stats, awardSet
         sumTech: data.sumTech,
         sumUnsp: data.sumUnsp,
         dpoyScoreNum: dpoyScore,
-        dpoyScore: dpoyScore.toFixed(1),
+        dpoyScore: dpoyScore.toFixed(2),
       };
     })
     .filter(Boolean)
