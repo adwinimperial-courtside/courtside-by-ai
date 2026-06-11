@@ -1,91 +1,32 @@
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
+import { buildPlayerAggregates } from "../statEngine";
 
-// Only games that were truly played on the court
-function isActualPlayedGame(g) {
-  return (
-    g.status === 'completed' &&
-    !g.is_default_result &&
-    g.result_type !== 'default' &&
-    !g.exclude_from_player_stats &&
-    !g.exclude_from_awards
-  );
-}
-
+// MOBILE_PLAYERSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function MobilePlayerStats({ players, teams, stats, games = [] }) {
-  // Build a set of valid game IDs — defaults are never included
-  const validGameIds = new Set(games.filter(isActualPlayedGame).map(g => g.id));
-
-  const calcPoints = (stat) => {
-    const game = games.find(g => g.id === stat.game_id);
-    const isDigital = game && game.entry_type === 'digital' && !game.edited;
-    return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-  };
-
-  const didPlayerParticipate = (stat) => {
-    const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
-                     (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
-                     (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
-                     (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
-    if (stat.did_play) return true;
-    if ((stat.minutes_played || 0) > 0) return true;
-    if (hasStats) return true;
-    return false;
-  };
-
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
-  // Compute each team's actual completed games (consistent with standings)
-  const teamGameCounts = {};
-  teams.forEach(team => {
-    teamGameCounts[team.id] = games.filter(g =>
-      isActualPlayedGame(g) && (g.home_team_id === team.id || g.away_team_id === team.id)
-    ).length;
-  });
-
-  const playerAggregates = players.map(player => {
-    // Only count stats from actual played games
-    const playerStats = stats
-      .filter(s => s.player_id === player.id && validGameIds.has(s.game_id))
-      .filter(didPlayerParticipate);
-    const team = teams.find(t => t.id === player.team_id);
-
-    const totals = playerStats.reduce((acc, stat) => ({
-      points: acc.points + calcPoints(stat),
-      points_2: acc.points_2 + (stat.points_2 || 0),
-      points_3: acc.points_3 + (stat.points_3 || 0),
-      freeThrows: acc.freeThrows + (stat.free_throws || 0),
-      offensiveRebounds: acc.offensiveRebounds + (stat.offensive_rebounds || 0),
-      defensiveRebounds: acc.defensiveRebounds + (stat.defensive_rebounds || 0),
-      rebounds: acc.rebounds + (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0),
-      assists: acc.assists + (stat.assists || 0),
-      steals: acc.steals + (stat.steals || 0),
-      blocks: acc.blocks + (stat.blocks || 0),
-      turnovers: acc.turnovers + (stat.turnovers || 0),
-      games: acc.games + 1
-    }), { points: 0, points_2: 0, points_3: 0, freeThrows: 0, offensiveRebounds: 0, defensiveRebounds: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0, games: 0 });
-
-    // Cap GP by team's actual game count (consistent with standings)
-    const teamMaxGames = teamGameCounts[player.team_id] || totals.games;
-    const gp = Math.min(totals.games, teamMaxGames);
-    return {
-      ...player,
-      team,
-      gp,
-      ppg: gp > 0 ? (totals.points / gp).toFixed(1) : '0.0',
-      twopm: gp > 0 ? (totals.points_2 / gp).toFixed(1) : '0.0',
-      threepm: gp > 0 ? (totals.points_3 / gp).toFixed(1) : '0.0',
-      ftm: gp > 0 ? (totals.freeThrows / gp).toFixed(1) : '0.0',
-      rpg: gp > 0 ? (totals.rebounds / gp).toFixed(1) : '0.0',
-      apg: gp > 0 ? (totals.assists / gp).toFixed(1) : '0.0',
-      orebpg: gp > 0 ? (totals.offensiveRebounds / gp).toFixed(1) : '0.0',
-      drebpg: gp > 0 ? (totals.defensiveRebounds / gp).toFixed(1) : '0.0',
-      spg: gp > 0 ? (totals.steals / gp).toFixed(1) : '0.0',
-      bpg: gp > 0 ? (totals.blocks / gp).toFixed(1) : '0.0',
-      tpg: gp > 0 ? (totals.turnovers / gp).toFixed(1) : '0.0',
-    };
-  }).filter(p => p.gp > 0).sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+  const playerAggregates = React.useMemo(() => {
+    return buildPlayerAggregates({ players, teams, games, stats })
+      .filter(p => p.gamesPlayed > 0)
+      .map(p => ({
+        ...p,
+        gp: p.gamesPlayed,
+        ppg: p.ppg.toFixed(1),
+        twopm: p.twopm.toFixed(1),
+        threepm: p.threepm.toFixed(1),
+        ftm: p.ftm.toFixed(1),
+        rpg: p.rpg.toFixed(1),
+        apg: p.apg.toFixed(1),
+        orebpg: p.orebpg.toFixed(1),
+        drebpg: p.drebpg.toFixed(1),
+        spg: p.spg.toFixed(1),
+        bpg: p.bpg.toFixed(1),
+        tpg: p.tpg.toFixed(1),
+      }))
+      .sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+  }, [players, teams, games, stats]);
 
   if (playerAggregates.length === 0) {
     return <p className="text-slate-500 text-center py-8">No player stats yet</p>;
