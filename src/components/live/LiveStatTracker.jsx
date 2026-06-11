@@ -1080,7 +1080,13 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const handleBenchPick = (teamId, inPlayerId) => {
     const teamActives = teamId === game.home_team_id ? homeActivePlayers : awayActivePlayers;
-    const firstArmed = teamActives.find(p => armedOutIds.has(p.id));
+    // BENCHPICK_ORDER_V1 — swap for the player armed FIRST (a Set preserves
+    // insertion order), not the lowest jersey number among armed players.
+    let firstArmed = null;
+    for (const armedId of armedOutIds) {
+      const p = teamActives.find(tp => tp.id === armedId);
+      if (p) { firstArmed = p; break; }
+    }
     if (!firstArmed) return;
     handleQuickSwap(teamId, firstArmed, inPlayerId);
   };
@@ -1217,11 +1223,17 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const gameUpdates = {};
     
     if (logEntry.statType.points > 0) {
-      const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
-      const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
       const isHome = logEntry.teamId === game.home_team_id;
-      gameUpdates.home_score = isHome ? Math.max(0, currentHomeScore - logEntry.statType.points) : currentHomeScore;
-      gameUpdates.away_score = !isHome ? Math.max(0, currentAwayScore - logEntry.statType.points) : currentAwayScore;
+      // UNDO_SCORE_SINGLE_FIELD_V1 — write only the affected team's score so a
+      // stale cached value of the OTHER team's score is never written back.
+      // Required for the future two-scorer mode; harmless improvement today.
+      if (isHome) {
+        const currentHomeScore = calcTeamScore(game.home_team_id, existingStats);
+        gameUpdates.home_score = Math.max(0, currentHomeScore - logEntry.statType.points);
+      } else {
+        const currentAwayScore = calcTeamScore(game.away_team_id, existingStats);
+        gameUpdates.away_score = Math.max(0, currentAwayScore - logEntry.statType.points);
+      }
     }
 
     if (statCountsAsTeamFoul(logEntry.statType.key)) {
@@ -1422,7 +1434,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const isEligibleReplacement = (playerId) => !isDisqualified(playerId);
 
-  // Bench = not currently is_starter=true in the latest stats
+  // Bench = not currently is_active=true in the latest stats
   // Use a Set for fast lookup; fall back to activePlayerIds if no stat row exists
   const activePlayerIdSet = new Set(activePlayerIds);
   const homeBenchPlayers = players.filter(p => 
