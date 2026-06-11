@@ -134,6 +134,8 @@ export default function LiveGamePage() {
     }
   }, [mergedGame, existingStats]);
 
+  const isStartingGameRef = React.useRef(false);
+
   if (liveIsViewer) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
@@ -198,17 +200,38 @@ export default function LiveGamePage() {
       alert("Please select 5 starters for each team");
       return;
     }
+    // START_GAME_GUARD_V1 — block double-taps and make retries safe.
+    if (isStartingGameRef.current) return;
+    isStartingGameRef.current = true;
 
     try {
+      // If a previous attempt already created rows (e.g. the status update
+      // failed and the user tapped Start again), reuse them instead of
+      // creating duplicates. Only create rows for starters with no row yet.
+      const existingRows = await base44.entities.PlayerStats.filter({ game_id: gameId });
+      const existingIds = new Set(existingRows.map(s => s.player_id));
+      const chosenIds = new Set([...homeStarters, ...awayStarters]);
+
+      // Heal leftovers from a previous attempt: deactivate rows for players
+      // no longer in the chosen five, re-activate chosen players whose row
+      // exists but is not active/starter.
+      for (const row of existingRows) {
+        if (!chosenIds.has(row.player_id) && (row.is_active || row.is_starter)) {
+          await base44.entities.PlayerStats.update(row.id, { is_active: false, is_starter: false });
+        } else if (chosenIds.has(row.player_id) && (!row.is_active || !row.is_starter)) {
+          await base44.entities.PlayerStats.update(row.id, { is_active: true, is_starter: true });
+        }
+      }
+
       const statsToCreate = [
-        ...homeStarters.map(playerId => ({
+        ...homeStarters.filter(playerId => !existingIds.has(playerId)).map(playerId => ({
           game_id: gameId,
           player_id: playerId,
           team_id: mergedGame.home_team_id,
           is_starter: true,
           is_active: true,
         })),
-        ...awayStarters.map(playerId => ({
+        ...awayStarters.filter(playerId => !existingIds.has(playerId)).map(playerId => ({
           game_id: gameId,
           player_id: playerId,
           team_id: mergedGame.away_team_id,
@@ -217,17 +240,21 @@ export default function LiveGamePage() {
         }))
       ];
 
-      await base44.entities.PlayerStats.bulkCreate(statsToCreate);
+      if (statsToCreate.length > 0) {
+        await base44.entities.PlayerStats.bulkCreate(statsToCreate);
+      }
       await updateGameMutation.mutateAsync({
         gameId,
         data: { status: 'in_progress' }
       });
-      
+
       queryClient.invalidateQueries({ queryKey: ['playerStats', gameId] });
       setIsSetupComplete(true);
     } catch (error) {
       console.error("Error starting game:", error);
       alert("Error starting game. Please try again.");
+    } finally {
+      isStartingGameRef.current = false;
     }
   };
 
