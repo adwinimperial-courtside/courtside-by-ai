@@ -824,32 +824,41 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             }
           }
           playerGameClockStateRef.current[playerOut.id] = null;
-          const outStat = freshStats.find(s => s.player_id === playerOut.id);
-          if (outStat) {
+          // DIALOG_SUB_DEDUPE_V1 — deactivate EVERY row of the OUT player so a
+          // duplicate row can't keep them "on court".
+          const outRows = freshStats.filter(s => s.player_id === playerOut.id);
+          if (outRows.length > 0) {
             const totalSeconds = playerMinutesRef.current[playerOut.id] || 0;
             const totalMinutes = Math.round((totalSeconds / 60) * 100) / 100;
-            await updateStatMutation.mutateAsync({ statId: outStat.id, updates: { is_active: false, minutes_played: totalMinutes } });
+            await Promise.all(outRows.map((row, i) => updateStatMutation.mutateAsync({
+              statId: row.id,
+              updates: i === 0 ? { is_active: false, minutes_played: totalMinutes } : { is_active: false }
+            })));
           }
           if (selectedPlayer?.id === playerOut.id) setSelectedPlayer(null);
         }));
 
         // Process all IN players in parallel
         await Promise.all(actualPlayersIn.map(async (playerInId) => {
-          let inStat = freshStats.find(s => s.player_id === playerInId);
-          if (inStat) {
-            await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } });
+          // DIALOG_SUB_DEDUPE_V1 — IN player ends with exactly ONE active row.
+          const inRows = freshStats.filter(s => s.player_id === playerInId);
+          if (inRows.length > 0) {
+            await updateStatMutation.mutateAsync({ statId: inRows[0].id, updates: { is_active: true } });
+            await Promise.all(inRows.slice(1).map(row =>
+              updateStatMutation.mutateAsync({ statId: row.id, updates: { is_active: false } })
+            ));
           } else {
-            // Before creating, do a targeted DB check to prevent duplicate rows
-            // (freshStats may have missed this player if they were recently added)
-            try {
-              const existing = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
-              if (existing && existing.length > 0) {
-                inStat = existing[0];
-                await updateStatMutation.mutateAsync({ statId: inStat.id, updates: { is_active: true } });
-              } else {
-                await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
-              }
-            } catch {
+            // freshStats may have missed a recently-added player — do a targeted
+            // DB check before creating. If the check itself fails, FAIL the sub
+            // (the dialog shows the error and the user retries) instead of
+            // blindly creating a possible duplicate row.
+            const existing = await base44.entities.PlayerStats.filter({ game_id: game.id, player_id: playerInId });
+            if (existing && existing.length > 0) {
+              await updateStatMutation.mutateAsync({ statId: existing[0].id, updates: { is_active: true } });
+              await Promise.all(existing.slice(1).map(row =>
+                updateStatMutation.mutateAsync({ statId: row.id, updates: { is_active: false } })
+              ));
+            } else {
               await createStatMutation.mutateAsync({ game_id: game.id, player_id: playerInId, team_id: teamId, is_starter: false, is_active: true, minutes_played: 0 });
             }
           }
