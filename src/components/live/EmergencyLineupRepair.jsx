@@ -69,35 +69,58 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
   };
 
   const handleConfirm = async () => {
+    // REPAIR_SAVE_V1 — save against FRESH DB rows (not the cache), enforce
+    // exactly ONE active row per chosen player (duplicate-proof), never hang.
     setSaving(true);
     setError('');
     try {
+      const freshStats = await Promise.race([
+        base44.entities.PlayerStats.filter({ game_id: game.id }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('REPAIR_FETCH_TIMEOUT')), 15000))
+      ]);
+
+      const writes = [];
       for (const teamData of repairData.teams) {
         const { teamId } = teamData;
         const activeSet = workingActive[teamId] || new Set();
-        const teamStats = existingStats.filter(s => s.team_id === teamId);
+        const teamRows = freshStats.filter(s => s.team_id === teamId);
 
-        for (const stat of teamStats) {
-          const shouldBeActive = activeSet.has(stat.player_id);
-          if (stat.is_active !== shouldBeActive) {
-            await base44.entities.PlayerStats.update(stat.id, { is_active: shouldBeActive });
-          }
+        // Group rows by player so duplicates are handled: a chosen player ends
+        // with exactly ONE active row; everyone else has every row deactivated.
+        const rowsByPlayer = {};
+        for (const row of teamRows) {
+          (rowsByPlayer[row.player_id] = rowsByPlayer[row.player_id] || []).push(row);
+        }
+        for (const [playerId, rows] of Object.entries(rowsByPlayer)) {
+          const shouldBeActive = activeSet.has(playerId);
+          rows.forEach((row, i) => {
+            const target = shouldBeActive && i === 0;
+            if (row.is_active !== target) {
+              writes.push(base44.entities.PlayerStats.update(row.id, { is_active: target }));
+            }
+          });
         }
 
-        const existingPlayerIds = teamStats.map(s => s.player_id);
+        // Chosen players with no row at all get one created.
+        const existingPlayerIds = new Set(teamRows.map(s => s.player_id));
         for (const playerId of [...activeSet]) {
-          if (!existingPlayerIds.includes(playerId)) {
-            await base44.entities.PlayerStats.create({
+          if (!existingPlayerIds.has(playerId)) {
+            writes.push(base44.entities.PlayerStats.create({
               game_id: game.id,
               player_id: playerId,
               team_id: teamId,
               is_starter: false,
               is_active: true,
               minutes_played: 0,
-            });
+            }));
           }
         }
       }
+
+      await Promise.race([
+        Promise.all(writes),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('REPAIR_WRITE_TIMEOUT')), 15000))
+      ]);
       onComplete();
     } catch(e) {
       setError('Failed to save lineup. Please try again.');
