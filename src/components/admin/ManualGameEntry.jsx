@@ -419,7 +419,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
   const homeStats = playerStats.filter(ps => ps.team_id === gameData.home_team_id);
   const awayStats = playerStats.filter(ps => ps.team_id === gameData.away_team_id);
 
-  // MANUAL_ENTRY_VALIDATE_V1: shared renderer for one team's scoresheet rows
+  // MANUAL_ENTRY_VALIDATE_V1 / FOCUS_SELECT_V1: shared renderer; inputs select-all on focus so typing replaces the 0
   const renderStatRows = (statsList) => statsList.map((ps, idx) => {
     const check = validatePointsRow(ps.stats);
     const rowBg = !check.ok ? 'bg-red-50' : (idx % 2 === 0 ? 'bg-white' : 'bg-slate-50');
@@ -428,9 +428,9 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
         <tr className={rowBg}>
           <td className="px-3 py-2 font-semibold">{ps.jersey_number}</td>
           <td className="px-3 py-2">{ps.player_name}</td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.total_points} onChange={(e) => updatePlayerStat(ps.player_id, 'total_points', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.points_3} onChange={(e) => updatePlayerStat(ps.player_id, 'points_3', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.free_throws} onChange={(e) => updatePlayerStat(ps.player_id, 'free_throws', e.target.value)} className={`h-8 w-16 text-center ${!check.ok ? 'border-red-400 ring-1 ring-red-400' : ''}`} /></td>
           <td className="px-3 py-2 text-center">
             {check.ok ? (
               <span className="inline-block min-w-[2rem] px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-semibold">{check.twosMade}</span>
@@ -438,15 +438,15 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-red-100 text-red-700 text-xs font-semibold"><AlertCircle className="w-3 h-3" />—</span>
             )}
           </td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
-          <td className="px-3 py-2"><Input type="number" min="0" value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.assists} onChange={(e) => updatePlayerStat(ps.player_id, 'assists', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.steals} onChange={(e) => updatePlayerStat(ps.player_id, 'steals', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.blocks} onChange={(e) => updatePlayerStat(ps.player_id, 'blocks', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.offensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'offensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.defensive_rebounds} onChange={(e) => updatePlayerStat(ps.player_id, 'defensive_rebounds', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.turnovers} onChange={(e) => updatePlayerStat(ps.player_id, 'turnovers', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.technical_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'technical_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
+          <td className="px-3 py-2"><Input type="number" min="0" onFocus={(e) => e.target.select()} value={ps.stats.unsportsmanlike_fouls} onChange={(e) => updatePlayerStat(ps.player_id, 'unsportsmanlike_fouls', e.target.value)} className="h-8 w-16 text-center" /></td>
         </tr>
         {!check.ok && (
           <tr className="bg-red-50">
