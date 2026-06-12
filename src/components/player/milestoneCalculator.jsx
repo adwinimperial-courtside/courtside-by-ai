@@ -1,3 +1,6 @@
+// CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
+import { calcPoints } from "@/components/stats/statEngine";
+
 // Milestone tiers and progress calculation
 const MILESTONES = {
   season_points: {
@@ -27,10 +30,6 @@ const MILESTONES = {
   },
 };
 
-function getPoints(stat) {
-  return (stat.points_2 || 0) * 2 + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
-}
-
 function getRebounds(stat) {
   return (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
 }
@@ -39,16 +38,21 @@ function getAssists(stat) {
   return stat.assists || 0;
 }
 
-function countDoubleDigitCategories(stat) {
-  let count = 0;
-  if (getPoints(stat) >= 10) count++;
-  if (getRebounds(stat) >= 10) count++;
-  if (getAssists(stat) >= 10) count++;
-  return count;
-}
-
-export function getMilestoneProgress(myStats, games) {
+export function getMilestoneProgress(myStats, games, formatMap = null) {
   if (!myStats || !games) return null;
+
+  // CARD_FORMAT_V1 — per-stat points via the engine, with each game's detected
+  // format when a formatMap is supplied; engine legacy fallback otherwise.
+  const gamesById = new Map(games.map(g => [g.id, g]));
+  const getPoints = (stat) =>
+    calcPoints(stat, gamesById.get(stat.game_id), formatMap ? formatMap[stat.game_id] : undefined);
+  const countDoubleDigitCategories = (stat) => {
+    let count = 0;
+    if (getPoints(stat) >= 10) count++;
+    if (getRebounds(stat) >= 10) count++;
+    if (getAssists(stat) >= 10) count++;
+    return count;
+  };
 
   const completedGames = games.filter(g => g.status === 'completed');
   const completedGameIds = new Set(completedGames.map(g => g.id));
