@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper } from "lucide-react";
 import { DEFAULT_AWARD_SETTINGS } from "@/utils/awardDefaults";
+// B4_FORMAT_V1 — points math via the stat engine (per-game format detection),
+// data via the shared cap-agnostic league stats hook.
+import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 function didPlay(stat) {
   if (stat.did_play) return true;
@@ -22,10 +26,11 @@ function isActualGame(g) {
   return g.status === "completed" && !g.is_default_result && g.result_type !== "default" && !g.exclude_from_awards;
 }
 
-function calcPts(stat, game) {
-  const isDigital = game && game.entry_type === "digital" && !game.edited;
-  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) +
-    (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
+// B4_FORMAT_V1 — delegate to engine calcPoints; formatMap supplies the
+// detected per-game format ('raw'/'count'). Without a map entry the engine
+// falls back to its legacy guess (unchanged behavior).
+function calcPts(stat, game, formatMap) {
+  return calcPoints(stat, game, formatMap ? formatMap.get(game?.id) : undefined);
 }
 
 function calculateStandings(teams, games) {
@@ -53,7 +58,7 @@ function calculateStandings(teams, games) {
     .sort((a, b) => parseFloat(b.winPct) - parseFloat(a.winPct));
 }
 
-function computeAwards(leagueGames, leagueTeams, players, stats, cfg = DEFAULT_AWARD_SETTINGS) {
+function computeAwards(leagueGames, leagueTeams, players, stats, cfg = DEFAULT_AWARD_SETTINGS, formatMap = null) {
   const actualGames = leagueGames.filter(isActualGame);
 
   // Team stats for eligibility
@@ -75,7 +80,7 @@ function computeAwards(leagueGames, leagueTeams, players, stats, cfg = DEFAULT_A
 
       // MVP
       if (!mvpMap[pid]) mvpMap[pid] = { gp: 0, sumGis: 0, sumTech: 0, sumUnsp: 0, teamId: s.team_id };
-      const pts = cfg.mvp_pts_weight * calcPts(s, game);
+      const pts = cfg.mvp_pts_weight * calcPts(s, game, formatMap);
       const gis = pts +
         cfg.mvp_oreb_weight * (s.offensive_rebounds || 0) +
         cfg.mvp_dreb_weight * (s.defensive_rebounds || 0) +
@@ -160,39 +165,39 @@ export default function RegularSeasonRecap() {
     enabled: !!currentUser,
   });
 
-  const { data: completedGames = [] } = useQuery({
-    queryKey: ["recapGames", selectedLeagueId],
-    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, "-game_date"),
-    enabled: !!selectedLeagueId,
-  });
+  // B4_FORMAT_V1 — one shared, cap-agnostic fetch for teams/players/games/stats
+  // (replaces four private capped queries; recapStats previously asked for 5000
+  // rows in a single request, silently truncated at the ~1,500-row server cap).
+  const {
+    teams: leagueTeams,
+    players: leaguePlayers,
+    games: allLeagueGames,
+    stats: allLeagueStats,
+  } = useLeagueStatsData(selectedLeagueId);
 
-  const { data: leagueTeams = [] } = useQuery({
-    queryKey: ["recapTeams", selectedLeagueId],
-    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeagueId }),
-    enabled: !!selectedLeagueId,
-  });
+  // Recap consumes completed games only; hook games arrive newest-first.
+  const completedGames = useMemo(
+    () => allLeagueGames.filter(g => g.status === "completed"),
+    [allLeagueGames]
+  );
 
-  const { data: leaguePlayers = [] } = useQuery({
-    queryKey: ["recapPlayers", selectedLeagueId],
-    queryFn: async () => {
-      const teams = await base44.entities.Team.filter({ league_id: selectedLeagueId });
-      const teamIds = teams.map(t => t.id);
-      if (!teamIds.length) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
-    },
-    enabled: !!selectedLeagueId,
-  });
+  const completedGameIds = useMemo(
+    () => new Set(completedGames.map(g => g.id)),
+    [completedGames]
+  );
 
-  const { data: leagueStats = [] } = useQuery({
-    queryKey: ["recapStats", selectedLeagueId],
-    queryFn: async () => {
-      const games = await base44.entities.Game.filter({ league_id: selectedLeagueId, status: "completed" }, null, 500);
-      const gameIds = games.map(g => g.id);
-      if (!gameIds.length) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
-    },
-    enabled: !!selectedLeagueId,
-  });
+  // Preserve prior behavior: stats scoped to completed games only.
+  const leagueStats = useMemo(
+    () => allLeagueStats.filter(s => completedGameIds.has(s.game_id)),
+    [allLeagueStats, completedGameIds]
+  );
+
+  // Per-game format detection — built ONCE from UNFILTERED games + stats
+  // (detection must sum every row of a game, duplicates included).
+  const formatMap = useMemo(
+    () => buildGameFormatMap(allLeagueGames, allLeagueStats),
+    [allLeagueGames, allLeagueStats]
+  );
 
   const { data: awardSettings = null } = useQuery({
     queryKey: ["recapAwardSettings", selectedLeagueId],
@@ -207,8 +212,8 @@ export default function RegularSeasonRecap() {
   const awards = useMemo(() => {
     if (!leagueTeams.length || !completedGames.length || !leaguePlayers.length || !leagueStats.length) return null;
     const cfg = awardSettings ? { ...DEFAULT_AWARD_SETTINGS, ...awardSettings } : DEFAULT_AWARD_SETTINGS;
-    return computeAwards(completedGames, leagueTeams, leaguePlayers, leagueStats, cfg);
-  }, [completedGames, leagueTeams, leaguePlayers, leagueStats, awardSettings]);
+    return computeAwards(completedGames, leagueTeams, leaguePlayers, leagueStats, cfg, formatMap);
+  }, [completedGames, leagueTeams, leaguePlayers, leagueStats, awardSettings, formatMap]);
 
   // Championship game = completed game with game_stage === "championship"
   const championshipGame = useMemo(() =>
