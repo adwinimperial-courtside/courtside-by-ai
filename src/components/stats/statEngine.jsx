@@ -2,6 +2,13 @@
 // Every stats surface (Statistics page, Award Leaders, Top 20, mobile views)
 // must import from this file instead of defining its own formulas.
 // Pure functions only — no React, no data fetching.
+//
+// FORMAT_DETECT_V1 — historical points data is in MIXED formats: some games
+// store points_2 as raw 2-point POINTS, others as a COUNT of made twos.
+// entry_type/edited flags are unreliable (~46% of manual/edited games are
+// actually count-format). The engine now detects each game's true format at
+// read time by checking which formula reconciles with the stored final
+// score. Zero database writes; unknown games fall back to legacy behavior.
 
 import { resolveSettings } from "@/utils/awardDefaults";
 
@@ -28,13 +35,66 @@ export function eligibleGameIds(games, purpose) {
 }
 
 // ---------------------------------------------------------------------------
-// Points — digital-entry aware.
-// Digital, unedited games store points_2 as a COUNT of made 2-pointers (×2).
-// Manual / CSV / edited games store points_2 as raw 2-point POINTS (×1).
+// FORMAT_DETECT_V1 — per-game points-format detection.
+// For one game, sum ALL its stat rows two ways and compare with the stored
+// final score (home + away):
+//   rawSum   = Σ (points_2     + points_3×3 + free_throws)  → 'raw'   if == score
+//   countSum = Σ (points_2 × 2 + points_3×3 + free_throws)  → 'count' if == score
+// Order matters: a game with zero made twos matches both, and 'raw' (×1)
+// equals 'count' (×2) when points_2 is 0, so checking raw first is harmless.
+// If neither reconciles (corrupt data) or scores/rows are missing, fall back
+// to the legacy entry_type/edited rule — identical to pre-V2 behavior.
 // ---------------------------------------------------------------------------
-export function calcPoints(stat, game) {
-  const isDigital = game && game.entry_type === "digital" && !game.edited;
-  const two = isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0);
+export function resolveGameFormat(game, rows) {
+  if (!game) return "raw";
+  const hasScores = game.home_score != null && game.away_score != null;
+  if (hasScores && rows && rows.length > 0) {
+    const score = (game.home_score || 0) + (game.away_score || 0);
+    let rawSum = 0;
+    let countSum = 0;
+    rows.forEach((s) => {
+      const fixed = (s.points_3 || 0) * 3 + (s.free_throws || 0);
+      rawSum += (s.points_2 || 0) + fixed;
+      countSum += (s.points_2 || 0) * 2 + fixed;
+    });
+    if (rawSum === score) return "raw";
+    if (countSum === score) return "count";
+  }
+  const isDigital = game.entry_type === "digital" && !game.edited;
+  return isDigital ? "count" : "raw";
+}
+
+// Build a lookup table once per dataset: gameId → 'raw' | 'count'.
+// Pass the UNFILTERED stat rows for those games (duplicate rows included —
+// stats are split across duplicates, so summing every row is correct).
+export function buildGameFormatMap(games, stats) {
+  const rowsByGame = new Map();
+  (stats || []).forEach((s) => {
+    let rows = rowsByGame.get(s.game_id);
+    if (!rows) { rows = []; rowsByGame.set(s.game_id, rows); }
+    rows.push(s);
+  });
+  const map = new Map();
+  (games || []).forEach((g) => {
+    map.set(g.id, resolveGameFormat(g, rowsByGame.get(g.id) || []));
+  });
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Points — format-aware. FORMAT_DETECT_V1
+// 'count' → points_2 is a count of made 2-pointers (×2).
+// 'raw'   → points_2 is already 2-point POINTS (×1).
+// When no format is supplied (external callers not yet migrated, e.g. Story
+// Builder), behaves exactly as before: digital+unedited → count, else raw.
+// ---------------------------------------------------------------------------
+export function calcPoints(stat, game, format) {
+  let mode = format;
+  if (mode !== "raw" && mode !== "count") {
+    const isDigital = game && game.entry_type === "digital" && !game.edited;
+    mode = isDigital ? "count" : "raw";
+  }
+  const two = mode === "count" ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0);
   return two + (stat.points_3 || 0) * 3 + (stat.free_throws || 0);
 }
 
@@ -109,6 +169,7 @@ export function buildPlayerAggregates({ players, teams, games, stats }) {
   const gameById = new Map((games || []).map((g) => [g.id, g]));
   const validIds = eligibleGameIds(games, purpose);
   const teamGameCounts = countTeamGames(games, purpose);
+  const formatByGame = buildGameFormatMap(games, stats); // FORMAT_DETECT_V1
   const byGame = groupStatsByGameAndPlayer(
     (stats || []).filter((s) => validIds.has(s.game_id))
   );
@@ -134,7 +195,7 @@ export function buildPlayerAggregates({ players, teams, games, stats }) {
       assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0,
     };
     entries.forEach(({ line, game }) => {
-      t.points += calcPoints(line, game);
+      t.points += calcPoints(line, game, formatByGame.get(line.game_id));
       t.points_2 += line.points_2;
       t.points_3 += line.points_3;
       t.freeThrows += line.free_throws;
@@ -197,6 +258,7 @@ export function buildTeamAggregates({ teams, games, stats }) {
   const purpose = "player_stats";
   const gameById = new Map((games || []).map((g) => [g.id, g]));
   const validIds = eligibleGameIds(games, purpose);
+  const formatByGame = buildGameFormatMap(games, stats); // FORMAT_DETECT_V1
 
   return (teams || []).map((team) => {
     const gamesPlayed = (games || []).filter(
@@ -212,7 +274,7 @@ export function buildTeamAggregates({ teams, games, stats }) {
       assists: 0, steals: 0, blocks: 0, turnovers: 0, fouls: 0,
     };
     teamStats.forEach((stat) => {
-      t.points += calcPoints(stat, gameById.get(stat.game_id));
+      t.points += calcPoints(stat, gameById.get(stat.game_id), formatByGame.get(stat.game_id));
       t.offensiveRebounds += stat.offensive_rebounds || 0;
       t.defensiveRebounds += stat.defensive_rebounds || 0;
       t.rebounds += (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0);
@@ -272,9 +334,9 @@ export function computeMvpRace({ league, teams, games, players, stats, awardSett
     };
   });
 
-  const byGame = groupStatsByGameAndPlayer(
-    stats.filter((s) => leagueGames.some((g) => g.id === s.game_id))
-  );
+  const leagueStats = stats.filter((s) => leagueGames.some((g) => g.id === s.game_id));
+  const formatByGame = buildGameFormatMap(leagueGames, leagueStats); // FORMAT_DETECT_V1
+  const byGame = groupStatsByGameAndPlayer(leagueStats);
   const gameById = new Map(leagueGames.map((g) => [g.id, g]));
 
   const scores = {};
@@ -285,7 +347,7 @@ export function computeMvpRace({ league, teams, games, players, stats, awardSett
       if (!scores[playerId]) {
         scores[playerId] = { gp: 0, sumGis: 0, sumTech: 0, sumUnsp: 0, teamId: line.team_id };
       }
-      const pts = cfg.mvp_pts_weight * calcPoints(line, game);
+      const pts = cfg.mvp_pts_weight * calcPoints(line, game, formatByGame.get(gameId));
       const gis =
         pts +
         cfg.mvp_oreb_weight * line.offensive_rebounds +
