@@ -37,7 +37,6 @@ export default function PlayerProfile() {
     return allLeagues.filter(l => currentUser.assigned_league_ids.includes(l.id));
   }, [allLeagues, currentUser]);
 
-  // For coaches, select the first league they have an identity in
   const coachIdentityLeagueId = useMemo(() => {
     if (currentUser?.user_type !== 'coach') return null;
     const coachIdentity = identities.find(i => i.matched_player_id);
@@ -46,7 +45,6 @@ export default function PlayerProfile() {
 
   useEffect(() => {
     if (userLeagues.length > 0 && !selectedLeagueId) {
-      // For coaches, prefer the league with matched identity
       const leagueToSelect = coachIdentityLeagueId ? coachIdentityLeagueId : userLeagues[0].id;
       setSelectedLeagueId(leagueToSelect);
     }
@@ -93,7 +91,6 @@ export default function PlayerProfile() {
   const currentTeam = useMemo(() => allTeams.find(t => t.id === teamId) || null, [allTeams, teamId]);
   const selectedLeague = useMemo(() => allLeagues.find(l => l.id === selectedLeagueId) || null, [allLeagues, selectedLeagueId]);
 
-  // Resolve the player record: prefer matched_player_id, fallback to display_name match
   const playerRecord = useMemo(() => {
     if (matchedPlayerId) return teamPlayers.find(p => p.id === matchedPlayerId) || null;
     if (!currentUser?.display_name || !teamPlayers.length) return null;
@@ -101,7 +98,6 @@ export default function PlayerProfile() {
     return teamPlayers.find(p => p.name?.trim().toLowerCase() === dn) || null;
   }, [teamPlayers, matchedPlayerId, currentUser]);
 
-  // Match the exact same game filter used in PlayerStats.jsx
   const completedGameIds = useMemo(
     () => new Set(leagueGames.filter(g =>
       g.status === 'completed' &&
@@ -113,7 +109,6 @@ export default function PlayerProfile() {
     [leagueGames]
   );
 
-  // Stats for THIS player using resolved playerRecord
   const resolvedPlayerId = playerRecord?.id;
 
   const didPlayerParticipate = (stat) => {
@@ -167,7 +162,6 @@ export default function PlayerProfile() {
     );
   }
 
-  // Coaches need a matched player to view this page
   if (currentUser?.user_type === 'coach' && !matchedPlayerId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,13 +177,11 @@ export default function PlayerProfile() {
       
       <div className="max-w-2xl mx-auto relative z-10">
 
-        {/* Page title */}
         <div className="pt-4 pb-6">
           <h1 className="text-3xl font-bold text-slate-900">Player Dashboard</h1>
           <p className="text-sm text-slate-500 mt-1">Your performance, achievements & upcoming games</p>
         </div>
 
-        {/* League Selector (only if multiple leagues) */}
         {userLeagues.length > 1 && (
           <div className="mb-32">
             <label className="block text-sm font-semibold text-slate-700 mb-2">Select League</label>
@@ -206,7 +198,6 @@ export default function PlayerProfile() {
           </div>
         )}
 
-        {/* Main dashboard card - Floating Hero */}
         <div className="mb-8 -mx-4 md:mx-0">
           <PlayerDashboardCard
             currentUser={currentUser}
@@ -223,18 +214,16 @@ export default function PlayerProfile() {
           />
         </div>
 
-        {/* Performance Section */}
         <div className="space-y-6">
 
-          {/* Achievements */}
           <PlayerAchievements
             myStats={myStats}
             games={leagueGames}
             teamId={teamId}
             playerRecord={playerRecord}
+            formatMap={formatMap}
           />
 
-          {/* Trend */}
           <PlayerTrendCard
             myStats={myStats}
             games={leagueGames}
@@ -242,7 +231,6 @@ export default function PlayerProfile() {
             formatMap={formatMap}
           />
 
-          {/* Last Game */}
           <PlayerLastGame
             games={leagueGames}
             myStats={myStats}
@@ -251,7 +239,6 @@ export default function PlayerProfile() {
             formatMap={formatMap}
           />
 
-          {/* Next Game */}
           <PlayerNextGame
             games={leagueGames}
             teams={allTeams}

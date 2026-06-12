@@ -13,11 +13,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 function didPlayerParticipate(stat) {
-  // Check if player actually participated based on priority:
-  // 1. explicit did_play flag
-  // 2. starter status
-  // 3. minutes_played > 0
-  // 4. any recorded stat or foul > 0
   if (stat.did_play) return true;
   if (stat.is_starter) return true;
   if ((stat.minutes_played || 0) > 0) return true;
@@ -60,7 +55,7 @@ function getCategoryRank(myPlayerId, allStats, categoryKey, games, formatMap) {
   const gamesById = new Map((games || []).map(g => [g.id, g])); // CARD_FORMAT_V1
   const playerStats = {};
   allStats.forEach(s => {
-    if (!didPlayerParticipate(s)) return; // Only count participated games
+    if (!didPlayerParticipate(s)) return;
     if (!playerStats[s.player_id]) playerStats[s.player_id] = { total: 0, gp: 0 };
     let catValue = 0;
     if (categoryKey === 'points') {
@@ -105,7 +100,6 @@ function getPrimaryRank(myPlayerId, allStats, myStats, games, formatMap) {
 
   if (!myPlayerId || !allStats.length || !myStats.length) return null;
 
-  // Calculate player's averages
   const myAverages = {};
   CATEGORIES.forEach(cat => {
     const catRankData = getCategoryRank(myPlayerId, allStats, cat, games, formatMap);
@@ -114,7 +108,6 @@ function getPrimaryRank(myPlayerId, allStats, myStats, games, formatMap) {
     }
   });
 
-  // Filter valid categories by threshold and notability
   const validCandidates = [];
   CATEGORIES.forEach(cat => {
     const threshold = THRESHOLDS[cat];
@@ -130,7 +123,6 @@ function getPrimaryRank(myPlayerId, allStats, myStats, games, formatMap) {
 
   if (!validCandidates.length) return null;
 
-  // Sort by: best percentile, then lowest rank, then priority order
   validCandidates.sort((a, b) => {
     if (b.percentile !== a.percentile) return b.percentile - a.percentile;
     if (a.rank !== b.rank) return a.rank - b.rank;
@@ -176,10 +168,8 @@ export default function PlayerDashboardCard({
     return getRankMovement(leagueId, playerRecord.id, primaryRank.rank, primaryRank.cat);
   }, [primaryRank, leagueId, playerRecord?.id]);
 
-  // Milestone progress
-  const milestone = useMemo(() => getMilestoneProgress(myStats, games), [myStats, games]);
-
-
+  // Milestone progress — CARD_FORMAT_V1
+  const milestone = useMemo(() => getMilestoneProgress(myStats, games, formatMap), [myStats, games, formatMap]);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files?.[0];
@@ -251,7 +241,6 @@ export default function PlayerDashboardCard({
 
       {/* ── 2. Player Identity ── */}
       <div className="flex items-start gap-6 pb-8 border-b border-slate-100">
-        {/* Avatar */}
         {readOnly ? (
           <div className="relative flex-shrink-0">
             <div className="w-24 h-24 rounded-full overflow-hidden bg-indigo-100 border-4 border-indigo-200 flex items-center justify-center shadow-md">
@@ -294,7 +283,6 @@ export default function PlayerDashboardCard({
         )}
         {!readOnly && <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />}
 
-        {/* Name / team / position */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <h2 className="text-3xl font-bold text-slate-900 leading-tight">{displayName}</h2>
@@ -329,7 +317,6 @@ export default function PlayerDashboardCard({
           ))}
         </div>
       </div>
-
 
     </div>
   );

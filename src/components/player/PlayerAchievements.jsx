@@ -3,9 +3,10 @@ import { calculatePlayerBadges } from "./badgeCalculator";
 import { BADGE_DEFINITIONS } from "./badgeDefinitions";
 import BadgeCard from "./BadgeCard";
 
-export default function PlayerAchievements({ myStats, games, teamId, playerRecord }) {
+// CARD_FORMAT_V1 — optional formatMap (gameId -> 'raw'|'count') for engine points.
+export default function PlayerAchievements({ myStats, games, teamId, playerRecord, formatMap = null }) {
   const badges = useMemo(() => {
-    const badgeCounts = calculatePlayerBadges(myStats, games);
+    const badgeCounts = calculatePlayerBadges(myStats, games, formatMap); // CARD_FORMAT_V1
     
     // Filter only unlocked badges (count > 0) and sort by count descending
     return Object.entries(badgeCounts)
@@ -16,7 +17,7 @@ export default function PlayerAchievements({ myStats, games, teamId, playerRecor
         count,
         ...BADGE_DEFINITIONS[badgeKey],
       }));
-  }, [myStats, games]);
+  }, [myStats, games, formatMap]);
 
   if (badges.length === 0) {
     return (

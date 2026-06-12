@@ -71,7 +71,6 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
     [leagueGames, allLeagueStats]
   );
 
-  // Build a mock user object shaped like what the profile components expect
   const mockUser = pogPlayer
     ? {
         full_name: pogPlayer.name,
@@ -114,7 +113,6 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               <span>This is a <strong>full player profile spotlight</strong>. Register and claim yours to unlock this view for yourself.</span>
             </div>
 
-            {/* Player Dashboard Card */}
             <PlayerDashboardCard
               currentUser={mockUser}
               team={team}
@@ -129,15 +127,14 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               formatMap={formatMap}
             />
 
-            {/* Achievements */}
             <PlayerAchievements
               myStats={myStats}
               games={leagueGames}
               teamId={teamId}
               playerRecord={pogPlayer}
+              formatMap={formatMap}
             />
 
-            {/* Trend */}
             <PlayerTrendCard
               myStats={myStats}
               games={leagueGames}
@@ -145,7 +142,6 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               formatMap={formatMap}
             />
 
-            {/* Last Game */}
             <PlayerLastGame
               games={leagueGames}
               myStats={myStats}
