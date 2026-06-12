@@ -5,6 +5,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Trophy, Star, X } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
+// CARD_FORMAT_V1 — per-game points-format detection for the player cards.
+import { buildGameFormatMap } from "@/components/stats/statEngine";
 import PlayerAchievements from "@/components/player/PlayerAchievements";
 import PlayerTrendCard from "@/components/player/PlayerTrendCard";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
@@ -63,6 +65,12 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
     [allLeagueStats, completedGameIds]
   );
 
+  // CARD_FORMAT_V1 — built from UNFILTERED rows (see statEngine).
+  const formatMap = useMemo(
+    () => buildGameFormatMap(leagueGames, allLeagueStats),
+    [leagueGames, allLeagueStats]
+  );
+
   // Build a mock user object shaped like what the profile components expect
   const mockUser = pogPlayer
     ? {
@@ -118,6 +126,7 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               leagueId={leagueId}
               onPhotoUpdate={() => {}}
               readOnly={true}
+              formatMap={formatMap}
             />
 
             {/* Achievements */}
@@ -133,6 +142,7 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               myStats={myStats}
               games={leagueGames}
               teamId={teamId}
+              formatMap={formatMap}
             />
 
             {/* Last Game */}
@@ -141,6 +151,7 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               myStats={myStats}
               teams={allTeams.length ? allTeams : teams}
               teamId={teamId}
+              formatMap={formatMap}
             />
           </div>
         )}

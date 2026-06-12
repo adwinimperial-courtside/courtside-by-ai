@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
+// CARD_FORMAT_V1 — per-game points-format detection for the player cards.
+import { buildGameFormatMap } from "@/components/stats/statEngine";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
 import PlayerNextGame from "@/components/player/PlayerNextGame";
 import PlayerTrendCard from "@/components/player/PlayerTrendCard";
@@ -138,6 +140,13 @@ export default function PlayerProfile() {
     [allLeagueStats, completedGameIds]
   );
 
+  // CARD_FORMAT_V1 — built from UNFILTERED rows: detection must sum every row
+  // of a game (duplicates and non-participants included) against the score.
+  const formatMap = useMemo(
+    () => buildGameFormatMap(leagueGames, allLeagueStats),
+    [leagueGames, allLeagueStats]
+  );
+
   const handlePhotoUpdate = () => {
     queryClient.invalidateQueries({ queryKey: ['currentUserProfile'] });
   };
@@ -210,6 +219,7 @@ export default function PlayerProfile() {
             leagueId={selectedLeagueId}
             leagueName={selectedLeague?.name}
             onPhotoUpdate={handlePhotoUpdate}
+            formatMap={formatMap}
           />
         </div>
 
@@ -229,6 +239,7 @@ export default function PlayerProfile() {
             myStats={myStats}
             games={leagueGames}
             teamId={teamId}
+            formatMap={formatMap}
           />
 
           {/* Last Game */}
@@ -237,6 +248,7 @@ export default function PlayerProfile() {
             myStats={myStats}
             teams={allTeams}
             teamId={teamId}
+            formatMap={formatMap}
           />
 
           {/* Next Game */}
