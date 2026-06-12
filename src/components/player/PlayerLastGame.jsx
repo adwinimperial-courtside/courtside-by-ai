@@ -3,6 +3,8 @@ import { ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+// CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
+import { calcPoints } from "@/components/stats/statEngine";
 
 function didPlayerParticipate(stat) {
   const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
@@ -16,7 +18,7 @@ function didPlayerParticipate(stat) {
   return false;
 }
 
-export default function PlayerLastGame({ games, myStats, teams, teamId }) {
+export default function PlayerLastGame({ games, myStats, teams, teamId, formatMap = null }) {
   const navigate = useNavigate();
 
   const lastGame = useMemo(() => {
@@ -63,7 +65,7 @@ export default function PlayerLastGame({ games, myStats, teams, teamId }) {
             const oppScore = isHome ? lastGame.away_score : lastGame.home_score;
             const won = myScore > oppScore;
 
-            const pts = statLine ? (statLine.points_2||0)*2 + (statLine.points_3||0)*3 + (statLine.free_throws||0) : null;
+            const pts = statLine ? calcPoints(statLine, lastGame, formatMap ? formatMap[lastGame.id] : undefined) : null; // CARD_FORMAT_V1
             const reb = statLine ? (statLine.offensive_rebounds||0) + (statLine.defensive_rebounds||0) : null;
             const ast = statLine ? statLine.assists || 0 : null;
             const min = statLine ? Math.round(statLine.minutes_played || 0) : null;

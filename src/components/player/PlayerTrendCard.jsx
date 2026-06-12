@@ -1,14 +1,15 @@
 import React, { useMemo } from "react";
+// CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
+import { calcPoints } from "@/components/stats/statEngine";
 
-function getPts(s) { return (s.points_2||0)*2 + (s.points_3||0)*3 + (s.free_throws||0); }
-function getReb(s) { return (s.offensive_rebounds||0) + (s.defensive_rebounds||0); }
-function getAst(s) { return s.assists || 0; }
-function getStl(s) { return s.steals || 0; }
-function getBlk(s) { return s.blocks || 0; }
+function getReb(x) { return (x.stat.offensive_rebounds||0) + (x.stat.defensive_rebounds||0); }
+function getAst(x) { return x.stat.assists || 0; }
+function getStl(x) { return x.stat.steals || 0; }
+function getBlk(x) { return x.stat.blocks || 0; }
 
 function avg(items, fn) {
   if (!items.length) return 0;
-  return items.reduce((sum, x) => sum + fn(x.stat), 0) / items.length;
+  return items.reduce((sum, x) => sum + fn(x), 0) / items.length;
 }
 
 function didPlayerParticipate(stat) {
@@ -23,7 +24,10 @@ function didPlayerParticipate(stat) {
   return false;
 }
 
-function computeTrend(myStats, games, teamId) {
+function computeTrend(myStats, games, teamId, formatMap) {
+  // CARD_FORMAT_V1 — format-aware points for this player's game entries.
+  const getPts = (x) => calcPoints(x.stat, x.game, formatMap ? formatMap[x.game.id] : undefined);
+
   // Build sorted list of completed games player appeared in
   const completedGames = games
     .filter(g => g.status === 'completed')
@@ -55,7 +59,7 @@ function computeTrend(myStats, games, teamId) {
   // ── Priority 1: Achievement trends ──
 
   // Double-double in 2 of last 3
-  const isDD = x => [getPts(x.stat)>=10, getReb(x.stat)>=10, getAst(x.stat)>=10].filter(Boolean).length >= 2;
+  const isDD = x => [getPts(x)>=10, getReb(x)>=10, getAst(x)>=10].filter(Boolean).length >= 2;
   const ddCount = last3.filter(isDD).length;
   if (ddCount >= 2) {
     candidates.push({ priority: 1, strength: 10, emoji: "📦", label: "Double-Double Run", description: `${ddCount} double-doubles in last 3 games` });
@@ -63,20 +67,20 @@ function computeTrend(myStats, games, teamId) {
 
   // 20+ points in last 2 straight
   const last2 = last3.slice(0, 2);
-  if (last2.length === 2 && last2.every(x => getPts(x.stat) >= 20)) {
+  if (last2.length === 2 && last2.every(x => getPts(x) >= 20)) {
     candidates.push({ priority: 1, strength: 9, emoji: "🔥", label: "Scoring Streak", description: "20+ points in 2 straight games" });
   }
 
   // Season-high in last game
   if (all.length >= 2 && last3.length > 0) {
-    const lastStat = last3[0].stat;
+    const lastEntry = last3[0];
     const rest = all.slice(1);
-    const maxPts = Math.max(...rest.map(x => getPts(x.stat)));
-    const maxReb = Math.max(...rest.map(x => getReb(x.stat)));
-    const maxAst = Math.max(...rest.map(x => getAst(x.stat)));
-    const lPts = getPts(lastStat);
-    const lReb = getReb(lastStat);
-    const lAst = getAst(lastStat);
+    const maxPts = Math.max(...rest.map(x => getPts(x)));
+    const maxReb = Math.max(...rest.map(x => getReb(x)));
+    const maxAst = Math.max(...rest.map(x => getAst(x)));
+    const lPts = getPts(lastEntry);
+    const lReb = getReb(lastEntry);
+    const lAst = getAst(lastEntry);
     if (lPts > maxPts && lPts >= 15) {
       candidates.push({ priority: 1, strength: 8, emoji: "🏆", label: "Season-High Points", description: `${lPts} pts — new season best` });
     } else if (lReb > maxReb && lReb >= 7) {
@@ -105,13 +109,13 @@ function computeTrend(myStats, games, teamId) {
     }
 
     const stlDiff = l3SPG - sSPG;
-    const stealsStreak = last3.every(x => getStl(x.stat) >= 1);
+    const stealsStreak = last3.every(x => getStl(x) >= 1);
     if (stlDiff >= 0.8 || (last3.length === 3 && stealsStreak)) {
       candidates.push({ priority: 2, strength: stlDiff, emoji: "🛡️", label: "Defensive Activity", description: stealsStreak ? "steals in 3 straight games" : `+${stlDiff.toFixed(1)} SPG in last 3 games` });
     }
 
     const blkDiff = l3BPG - sBPG;
-    const bigBlockGames = last3.filter(x => getBlk(x.stat) >= 2).length;
+    const bigBlockGames = last3.filter(x => getBlk(x) >= 2).length;
     if (blkDiff >= 0.8 || bigBlockGames >= 2) {
       candidates.push({ priority: 2, strength: blkDiff, emoji: "🚫", label: "Rim Protection", description: bigBlockGames >= 2 ? `2+ blocks in ${bigBlockGames} of last 3 games` : `+${blkDiff.toFixed(1)} BPG in last 3 games` });
     }
@@ -120,13 +124,13 @@ function computeTrend(myStats, games, teamId) {
   // ── Priority 3: Consistency streaks ──
 
   if (last3.length === 3) {
-    if (last3.every(x => getPts(x.stat) >= 10)) {
+    if (last3.every(x => getPts(x) >= 10)) {
       candidates.push({ priority: 3, strength: 3, emoji: "✅", label: "Consistency Trend", description: "10+ points in 3 straight games" });
     }
-    if (last3.every(x => getReb(x.stat) >= 5)) {
+    if (last3.every(x => getReb(x) >= 5)) {
       candidates.push({ priority: 3, strength: 2, emoji: "📈", label: "Rebounding Consistency", description: "5+ rebounds in 3 straight games" });
     }
-    if (last3.every(x => getAst(x.stat) >= 4)) {
+    if (last3.every(x => getAst(x) >= 4)) {
       candidates.push({ priority: 3, strength: 1, emoji: "📈", label: "Assist Consistency", description: "4+ assists in 3 straight games" });
     }
   }
@@ -151,8 +155,8 @@ function computeTrend(myStats, games, teamId) {
   return candidates[0];
 }
 
-export default function PlayerTrendCard({ myStats, games, teamId }) {
-  const trend = useMemo(() => computeTrend(myStats, games, teamId), [myStats, games, teamId]);
+export default function PlayerTrendCard({ myStats, games, teamId, formatMap = null }) {
+  const trend = useMemo(() => computeTrend(myStats, games, teamId, formatMap), [myStats, games, teamId, formatMap]);
 
   if (!trend) return null;
 

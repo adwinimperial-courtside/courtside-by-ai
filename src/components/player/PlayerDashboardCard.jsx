@@ -3,6 +3,8 @@ import { base44 } from "@/api/base44Client";
 import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp, TrendingDown } from "lucide-react";
 import { getRankMovement } from "@/components/utils/rankMovementTracker";
 import { getMilestoneProgress } from "./milestoneCalculator";
+// CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
+import { calcPoints as enginePoints } from "@/components/stats/statEngine";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,19 +28,20 @@ function didPlayerParticipate(stat) {
   return hasStats;
 }
 
-function calcPoints(stat, games) {
-  const game = games.find(g => g.id === stat.game_id);
-  const isDigital = game && game.entry_type === 'digital' && !game.edited;
-  return (isDigital ? (stat.points_2 || 0) * 2 : (stat.points_2 || 0)) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+// CARD_FORMAT_V1 — per-stat points via the engine, with the game's detected format.
+function statPoints(stat, gamesById, formatMap) {
+  const game = gamesById.get(stat.game_id);
+  return enginePoints(stat, game, formatMap ? formatMap[stat.game_id] : undefined);
 }
 
-function computeStats(stats, games) {
+function computeStats(stats, games, formatMap) {
   const participatedStats = stats.filter(didPlayerParticipate);
   const gp = participatedStats.length;
   if (gp === 0) return { gp: 0, ppg: null, rpg: null, apg: null };
-  
+
+  const gamesById = new Map(games.map(g => [g.id, g])); // CARD_FORMAT_V1
   const totals = participatedStats.reduce((acc, s) => ({
-    points: acc.points + calcPoints(s, games),
+    points: acc.points + statPoints(s, gamesById, formatMap),
     rebounds: acc.rebounds + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0),
     assists: acc.assists + (s.assists || 0)
   }), { points: 0, rebounds: 0, assists: 0 });
@@ -51,16 +54,17 @@ function computeStats(stats, games) {
   };
 }
 
-function getCategoryRank(myPlayerId, allStats, categoryKey) {
+function getCategoryRank(myPlayerId, allStats, categoryKey, games, formatMap) {
   if (!myPlayerId || !allStats.length) return null;
 
+  const gamesById = new Map((games || []).map(g => [g.id, g])); // CARD_FORMAT_V1
   const playerStats = {};
   allStats.forEach(s => {
     if (!didPlayerParticipate(s)) return; // Only count participated games
     if (!playerStats[s.player_id]) playerStats[s.player_id] = { total: 0, gp: 0 };
     let catValue = 0;
     if (categoryKey === 'points') {
-      catValue = (s.points_2 || 0) * 2 + (s.points_3 || 0) * 3 + (s.free_throws || 0);
+      catValue = statPoints(s, gamesById, formatMap);
     } else if (categoryKey === 'rebounds') {
       catValue = (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0);
     } else if (categoryKey === 'assists') {
@@ -87,7 +91,7 @@ function getCategoryRank(myPlayerId, allStats, categoryKey) {
   return { rank: idx + 1, ppg: parseFloat(ranked[idx].ppg), percentile };
 }
 
-function getPrimaryRank(myPlayerId, allStats, myStats) {
+function getPrimaryRank(myPlayerId, allStats, myStats, games, formatMap) {
   const THRESHOLDS = {
     points: 8,
     rebounds: 4,
@@ -104,7 +108,7 @@ function getPrimaryRank(myPlayerId, allStats, myStats) {
   // Calculate player's averages
   const myAverages = {};
   CATEGORIES.forEach(cat => {
-    const catRankData = getCategoryRank(myPlayerId, allStats, cat);
+    const catRankData = getCategoryRank(myPlayerId, allStats, cat, games, formatMap);
     if (catRankData) {
       myAverages[cat] = catRankData.ppg;
     }
@@ -115,7 +119,7 @@ function getPrimaryRank(myPlayerId, allStats, myStats) {
   CATEGORIES.forEach(cat => {
     const threshold = THRESHOLDS[cat];
     if (myAverages[cat] >= threshold) {
-      const rankData = getCategoryRank(myPlayerId, allStats, cat);
+      const rankData = getCategoryRank(myPlayerId, allStats, cat, games, formatMap);
       const isTopTen = rankData.rank <= 10;
       const isTop25Percentile = rankData.percentile >= 75;
       if (isTopTen || isTop25Percentile) {
@@ -136,7 +140,7 @@ function getPrimaryRank(myPlayerId, allStats, myStats) {
   return validCandidates[0];
 }
 
-function getHotStreak(stats, games) {
+function getHotStreak(stats, games, formatMap) {
   if (!stats.length || !games.length) return 0;
   const sorted = [...games]
     .filter(g => g.status === 'completed')
@@ -146,7 +150,7 @@ function getHotStreak(stats, games) {
   for (const game of sorted) {
     const s = stats.find(st => st.game_id === game.id);
     if (!s) break;
-    const pts = (s.points_2||0)*2 + (s.points_3||0)*3 + (s.free_throws||0);
+    const pts = enginePoints(s, game, formatMap ? formatMap[game.id] : undefined); // CARD_FORMAT_V1
     if (pts >= 15) streak++;
     else break;
   }
@@ -154,7 +158,7 @@ function getHotStreak(stats, games) {
 }
 
 export default function PlayerDashboardCard({
-  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueId, leagueName, onPhotoUpdate, readOnly = false
+  currentUser, team, playerRecord, myStats, allStats, games, teamId, leagueId, leagueName, onPhotoUpdate, readOnly = false, formatMap = null
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -164,9 +168,9 @@ export default function PlayerDashboardCard({
   const photoUrl = currentUser?.profile_photo_url;
   const initials = displayName.charAt(0).toUpperCase();
 
-  const stats = useMemo(() => computeStats(myStats, games), [myStats, games]);
-  const hotStreak = useMemo(() => getHotStreak(myStats, games), [myStats, games]);
-  const primaryRank = useMemo(() => getPrimaryRank(playerRecord?.id, allStats, myStats), [playerRecord?.id, allStats, myStats]);
+  const stats = useMemo(() => computeStats(myStats, games, formatMap), [myStats, games, formatMap]);
+  const hotStreak = useMemo(() => getHotStreak(myStats, games, formatMap), [myStats, games, formatMap]);
+  const primaryRank = useMemo(() => getPrimaryRank(playerRecord?.id, allStats, myStats, games, formatMap), [playerRecord?.id, allStats, myStats, games, formatMap]);
   const rankMovement = useMemo(() => {
     if (!primaryRank || !leagueId || !playerRecord?.id) return { change: 0, direction: 'neutral' };
     return getRankMovement(leagueId, playerRecord.id, primaryRank.rank, primaryRank.cat);
