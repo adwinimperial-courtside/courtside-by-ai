@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +15,8 @@ import TeamLogo from "../teams/TeamLogo";
 import EditGameSettingsDialog from "./EditGameSettingsDialog";
 import POGSpotlightModal from "./POGSpotlightModal";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+// GAMECARD_FORMAT_V1: points math delegated to the stat engine (per-game format detection)
+import { calcPoints as engineCalcPoints, resolveGameFormat } from "@/components/stats/statEngine";
 
 export default function GameCard({ game, teams, leagues, onStartGame, currentUser, onGameUpdated }) {
   const navigate = useNavigate();
@@ -133,12 +135,17 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const editedBadgeColor = "bg-amber-100 text-amber-800";
   const defaultBadgeColor = "bg-red-100 text-red-800";
 
-  const calcPoints = (stat) => {
-    if (liveGame.entry_type === 'manual' || liveGame.edited) {
-      return (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-    }
-    return ((stat.points_2 || 0) * 2) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
-  };
+  // GAMECARD_FORMAT_V1: detect this game's points format once from its UNFILTERED
+  // stat rows (engine reconciles against the stored final score; falls back to
+  // legacy entry_type/edited guess when rows or scores are missing).
+  const gameFormat = useMemo(
+    () => resolveGameFormat(liveGame, gamePlayerStats),
+    [liveGame, gamePlayerStats]
+  );
+
+  // GAMECARD_FORMAT_V1: all player-line points go through the engine.
+  // Displayed game scores are NOT computed here (stored score / calcLiveScore).
+  const calcPoints = (stat) => engineCalcPoints(stat, liveGame, gameFormat);
 
   const hasPlayerStats = (stat) => {
     const points = calcPoints(stat);
