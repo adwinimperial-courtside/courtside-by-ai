@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
 // CARD_FORMAT_V1 — per-game points-format detection for the player cards.
 import { buildGameFormatMap } from "@/components/stats/statEngine";
+// PROFILE_STATS_HOOK_V1 — all league data comes from the shared cap-agnostic hook.
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 import PlayerLastGame from "@/components/player/PlayerLastGame";
 import PlayerNextGame from "@/components/player/PlayerNextGame";
 import PlayerTrendCard from "@/components/player/PlayerTrendCard";
@@ -58,35 +60,23 @@ export default function PlayerProfile() {
   const teamId = currentIdentity?.team_id;
   const matchedPlayerId = currentIdentity?.matched_player_id;
 
-  const { data: allTeams = [] } = useQuery({
-    queryKey: ['profile_teams', selectedLeagueId],
-    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeagueId }, null, 500),
-    enabled: !!selectedLeagueId,
-    staleTime: 60000,
-  });
+  // PROFILE_STATS_HOOK_V1: teams, players, games, and stats all come from the
+  // shared league-stats hook (cap-agnostic pagination, sequential requests,
+  // one cache key shared with the Statistics / Award Leaders / Top 20 pages).
+  // This replaces four private fetches, including a single capped 5000-row
+  // PlayerStats request that silently truncated large leagues (~1,500-row cap).
+  const {
+    teams: allTeams,
+    players: leaguePlayers,
+    games: leagueGames,
+    stats: allLeagueStats,
+  } = useLeagueStatsData(selectedLeagueId);
 
-  const { data: teamPlayers = [] } = useQuery({
-    queryKey: ['teamPlayers', teamId],
-    queryFn: () => base44.entities.Player.filter({ team_id: teamId }),
-    enabled: !!teamId,
-  });
-
-  const { data: leagueGames = [] } = useQuery({
-    queryKey: ['leagueGames', selectedLeagueId],
-    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeagueId }),
-    enabled: !!selectedLeagueId,
-  });
-
-  const { data: allLeagueStats = [] } = useQuery({
-    queryKey: ['allLeagueStats', selectedLeagueId],
-    queryFn: async () => {
-      const gameIds = leagueGames.filter(g => g.status === 'completed').map(g => g.id);
-      if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
-    },
-    enabled: !!selectedLeagueId && leagueGames.length > 0,
-    staleTime: 30000,
-  });
+  // PROFILE_STATS_HOOK_V1: derive this team's players from the league-wide list.
+  const teamPlayers = useMemo(
+    () => (teamId ? leaguePlayers.filter(p => p.team_id === teamId) : []),
+    [leaguePlayers, teamId]
+  );
 
   const currentTeam = useMemo(() => allTeams.find(t => t.id === teamId) || null, [allTeams, teamId]);
   const selectedLeague = useMemo(() => allLeagues.find(l => l.id === selectedLeagueId) || null, [allLeagues, selectedLeagueId]);
