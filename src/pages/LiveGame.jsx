@@ -92,7 +92,7 @@ export default function LiveGamePage() {
     retryDelay: attemptIndex => Math.min(2000 * 2 ** attemptIndex, 15000),
   });
 
-  const { isViewer: liveIsViewer } = useEffectiveRole(currentUser, game?.league_id || null);
+  const { isViewer: liveIsViewer, isAppAdmin, isLeagueAdmin } = useEffectiveRole(currentUser, game?.league_id || null);
 
   const updateGameMutation = useMutation({
     mutationFn: ({ gameId, data }) => base44.entities.Game.update(gameId, data),
@@ -136,12 +136,12 @@ export default function LiveGamePage() {
 
   const isStartingGameRef = React.useRef(false);
 
-  if (liveIsViewer) {
+  if (currentUser && !isAppAdmin && !isLeagueAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="text-center text-white">
           <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-slate-400 mb-6">Viewers cannot access the live stat tracker.</p>
+          <p className="text-slate-400 mb-6">Only league admins can access the live stat tracker.</p>
           <Button onClick={() => navigate(createPageUrl("Schedule"))}>
             Back to Schedule
           </Button>
