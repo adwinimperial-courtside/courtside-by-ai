@@ -7,6 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { TrendingUp, TrendingDown, Target, Users, Trophy, Shield, ArrowUpDown, AlertCircle, Lightbulb, Minus, Plus } from "lucide-react";
 import AITacticalBriefing from "../components/insights/AITacticalBriefing";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+// B4_FORMAT_V1 — points math via the stat engine (per-game format detection),
+// data via the shared cap-agnostic league stats hook.
+import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
+import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 // Leagues where turnovers are not tracked / should be excluded
 const LEAGUES_NO_TURNOVERS = ['698c39d164c376418918321d', '698b4d0c05fbeef938b93720'];
@@ -27,43 +31,46 @@ export default function CoachInsights() {
     queryFn: () => base44.entities.League.list('-created_date', 200),
   });
 
-  const { data: teams = [] } = useQuery({
-    queryKey: ['coach_teams', selectedLeague],
-    queryFn: () => base44.entities.Team.filter({ league_id: selectedLeague }, null, 500),
-    enabled: !!selectedLeague,
-    staleTime: 60000,
-  });
+  // B4_FORMAT_V1 — one shared, cap-agnostic fetch for teams/players/games/stats
+  // (replaces four private capped queries; coach_playerStats previously asked
+  // for 5000 rows in a single request, silently truncated at the ~1,500-row
+  // server cap on big leagues).
+  const {
+    teams,
+    players,
+    games: allLeagueGames,
+    stats: allLeagueStats,
+  } = useLeagueStatsData(selectedLeague);
 
-  const { data: games = [] } = useQuery({
-    queryKey: ['coach_games', selectedLeague],
-    queryFn: () => base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' }, '-game_date', 1000),
-    enabled: !!selectedLeague,
-    staleTime: 30000,
-  });
+  // Preserve prior behavior: this page works on completed games only.
+  const games = useMemo(
+    () => allLeagueGames.filter(g => g.status === 'completed'),
+    [allLeagueGames]
+  );
 
-  const { data: playerStats = [] } = useQuery({
-    queryKey: ['coach_playerStats', selectedLeague],
-    queryFn: async () => {
-      const leagueGames = await base44.entities.Game.filter({ league_id: selectedLeague, status: 'completed' }, null, 1000);
-      const gameIds = leagueGames.map(g => g.id);
-      if (gameIds.length === 0) return [];
-      return base44.entities.PlayerStats.filter({ game_id: { $in: gameIds } }, null, 5000);
-    },
-    enabled: !!selectedLeague,
-    staleTime: 30000,
-  });
+  const completedGameIds = useMemo(
+    () => new Set(games.map(g => g.id)),
+    [games]
+  );
 
-  const { data: players = [] } = useQuery({
-    queryKey: ['coach_players', selectedLeague],
-    queryFn: async () => {
-      const leagueTeams = await base44.entities.Team.filter({ league_id: selectedLeague }, null, 500);
-      const teamIds = leagueTeams.map(t => t.id);
-      if (teamIds.length === 0) return [];
-      return base44.entities.Player.filter({ team_id: { $in: teamIds } }, null, 1000);
-    },
-    enabled: !!selectedLeague,
-    staleTime: 60000,
-  });
+  // Stats scoped to completed games — rows from in-progress games must never
+  // leak into season averages while a game is being scored live.
+  const playerStats = useMemo(
+    () => allLeagueStats.filter(s => completedGameIds.has(s.game_id)),
+    [allLeagueStats, completedGameIds]
+  );
+
+  // Per-game format detection — built ONCE from UNFILTERED games + stats
+  // (detection must sum every row of a game, duplicates included).
+  const formatMap = useMemo(
+    () => buildGameFormatMap(allLeagueGames, allLeagueStats),
+    [allLeagueGames, allLeagueStats]
+  );
+
+  const gamesById = useMemo(
+    () => new Map(games.map(g => [g.id, g])),
+    [games]
+  );
 
   const { isAppAdmin: coachIsAppAdmin, isViewer: coachIsViewer } = useEffectiveRole(currentUser, selectedLeague || null);
 
@@ -194,7 +201,8 @@ export default function CoachInsights() {
 
       if (gamesPlayed === 0) return null;
 
-      const totalPts = pStats.reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
+      // B4_FORMAT_V1 — engine points with per-game detected format
+      const totalPts = pStats.reduce((sum, s) => sum + calcPoints(s, gamesById.get(s.game_id), formatMap.get(s.game_id)), 0);
       const defensiveScore = pStats.reduce((sum, s) => sum + (s.steals || 0) + (s.blocks || 0), 0);
 
       return {
@@ -215,7 +223,7 @@ export default function CoachInsights() {
       topScorer: topScorer || null,
       topDefender: topDefender || null,
     };
-  }, [selectedOpponent, games, playerStats, players, excludeTurnovers]);
+  }, [selectedOpponent, games, playerStats, players, excludeTurnovers, gamesById, formatMap]);
 
   // Player Impact Rankings
   const playerRankings = useMemo(() => {
@@ -229,7 +237,8 @@ export default function CoachInsights() {
 
       if (gamesPlayed === 0) return null;
 
-      const totalPts = pStats.reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
+      // B4_FORMAT_V1 — engine points with per-game detected format
+      const totalPts = pStats.reduce((sum, s) => sum + calcPoints(s, gamesById.get(s.game_id), formatMap.get(s.game_id)), 0);
       const totalReb = pStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       const totalAst = pStats.reduce((sum, s) => sum + (s.assists || 0), 0);
       const totalStl = pStats.reduce((sum, s) => sum + (s.steals || 0), 0);
@@ -259,7 +268,7 @@ export default function CoachInsights() {
         fpg: fpg.toFixed(1),
       };
     }).filter(Boolean);
-  }, [selectedTeam, players, playerStats]);
+  }, [selectedTeam, players, playerStats, gamesById, formatMap]);
 
   const sortedPlayers = useMemo(() => {
     const sorted = [...playerRankings];
