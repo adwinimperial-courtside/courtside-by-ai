@@ -6,20 +6,18 @@
 // check. Any game that fails ANY check is flagged and left completely
 // untouched. This function NEVER reads or writes home_score / away_score.
 
-import { createClient } from 'npm:@base44/sdk@0.8.32';
+import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 Deno.serve(async (req) => {
-  const base44 = createClient({ appId: Deno.env.get('BASE44_APP_ID') });
-  base44.auth.setToken(req.headers.get('authorization')?.replace('Bearer ', ''));
+  const base44 = createClientFromRequest(req);
 
   // ===== SET THIS TO false ONLY WHEN YOU ARE READY TO WRITE =====
   const DRY_RUN = true;
   // ===============================================================
 
   // --- caller must be app admin ---
-  let me;
   try {
-    me = await base44.auth.me();
+    const me = await base44.auth.me();
     const full = await base44.asServiceRole.entities.User.get(me.id);
     const isAdmin = full?.role === 'admin' || full?.user_type === 'app_admin';
     if (!isAdmin) return Response.json({ error: 'forbidden' }, { status: 403 });
@@ -41,7 +39,7 @@ Deno.serve(async (req) => {
     return all;
   };
 
-  // raw sum  = points_2 + 3*points_3 + free_throws
+  // raw sum   = points_2 + 3*points_3 + free_throws
   // count sum = (points_2/2)*2 + 3*points_3 + free_throws
   const sumPoints = (rows, useCount) =>
     rows.reduce((acc, s) =>
@@ -72,8 +70,6 @@ Deno.serve(async (req) => {
     const scoreTotal = (game.home_score || 0) + (game.away_score || 0);
 
     // CHECK 1 (pre-convert): raw player-point sum must already equal the score.
-    // If not, this game is NOT clean raw format (maybe already count, or bad
-    // data) -> skip, flag for human review. Nothing in it is touched.
     const rawSum = sumPoints(rows, false);
     if (rawSum !== scoreTotal) {
       report.games_skipped_mismatch++;
