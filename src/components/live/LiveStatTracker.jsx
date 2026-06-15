@@ -931,9 +931,19 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
       console.log(`[LiveStat:sub] game=${game.id} homeOut=${capturedHomeOut.map(p=>p.name)} homeIn=${capturedHomeIn} awayOut=${capturedAwayOut.map(p=>p.name)} awayIn=${capturedAwayIn}`);
 
+      // DIALOG_SUB_TIMEOUT_V1 — brake the entire write phase (both teams, all
+      // rows, plus the targeted re-check inside processTeamSub) so a hung
+      // connection can't hold isSubmittingSubRef forever. Mirrors quick-swap's
+      // SUB_WRITE_TIMEOUT. On timeout this throws -> the catch shows the error
+      // and keeps the dialog open -> finally releases the lock.
       // Process sequentially to avoid race conditions when both teams sub simultaneously
-      await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
-      await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
+      await Promise.race([
+        (async () => {
+          await processTeamSub(capturedHomeOut, capturedHomeIn, game.home_team_id);
+          await processTeamSub(capturedAwayOut, capturedAwayIn, game.away_team_id);
+        })(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('DIALOG_SUB_WRITE_TIMEOUT')), 15000))
+      ]);
 
       // Compute expected post-sub state locally from freshStats + the operations we performed
       const allSubOutIds = new Set([
@@ -1416,12 +1426,26 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_WRITE_TIMEOUT')), 15000))
       ]);
 
-      // Delete the feed entry only after the lineup writes succeeded.
-      await deleteLogMutation.mutateAsync(logEntry.id);
+      // The critical lineup writes above already succeeded. Stamp completion now
+      // so the repair-check stays quiet while the cache settles.
       subCompletedAtRef.current = Date.now();
 
-      const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
-      checkAndTriggerRepair(postUndoStats);
+      // UNDO_TAIL_TIMEOUT_V1 — the feed-log delete and post-undo recheck are
+      // best-effort cleanup. Brake them so a hung connection can't hold the sub
+      // lock, but DON'T report failure here: the undo itself already applied.
+      try {
+        await Promise.race([
+          (async () => {
+            // Delete the feed entry only after the lineup writes succeeded.
+            await deleteLogMutation.mutateAsync(logEntry.id);
+            const postUndoStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
+            checkAndTriggerRepair(postUndoStats);
+          })(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('UNDO_TAIL_TIMEOUT')), 15000))
+        ]);
+      } catch (tailError) {
+        console.warn('[LiveStat:undoSub] post-undo cleanup slow/failed (undo already applied):', tailError);
+      }
     } catch (error) {
       console.error('[LiveStat:undoSub]', error);
       showUndoError('Undo failed — please try again.');
