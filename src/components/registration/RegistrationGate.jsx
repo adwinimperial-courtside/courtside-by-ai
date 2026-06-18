@@ -103,6 +103,9 @@ export default function RegistrationGate({ user }) {
         if (!Number.isInteger(teams) || teams < 2) { alert("Please enter the number of teams (at least 2)."); return; }
         const players = Number.parseInt(formData.avg_players_per_team, 10);
         if (!Number.isInteger(players) || players < 5) { alert("Please enter the average players per team (at least 5)."); return; }
+        if (formData.onboarding_call !== false && (!formData.onboarding_date || !formData.onboarding_time)) {
+          alert("Please pick a preferred date and time for your onboarding call, or untick the onboarding call option."); return;
+        }
       }
       if (adminLeagueMode === "existing" && !selectedAdminLeagueId) {
         alert("Please select an existing league."); return;
@@ -186,6 +189,21 @@ export default function RegistrationGate({ user }) {
       if (selectedRole === "player" && createdApp?.id) {
         try { await base44.functions.invoke("suggestPlayerMatch", { applicationId: createdApp.id }); }
         catch (e) { console.error("suggestPlayerMatch failed (non-blocking):", e?.message); }
+      }
+      // ONBOARDING_BOOKING_V1 — new-league applicants can request an onboarding call (non-blocking)
+      if (selectedRole === "league_admin" && adminLeagueMode === "new" && formData.onboarding_call !== false && formData.onboarding_date && formData.onboarding_time && createdApp?.id) {
+        try {
+          await base44.entities.OnboardingBooking.create({
+            application_id: createdApp.id,
+            user_id: user.id,
+            user_email: user.email,
+            user_name: formData.full_name || user.full_name || "",
+            league_name: formData.league_name || "",
+            requested_datetime: `${formData.onboarding_date}T${formData.onboarding_time}`,
+            requested_timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            status: "requested",
+          });
+        } catch (e) { console.error("OnboardingBooking create failed (non-blocking):", e?.message); }
       }
       await base44.auth.updateMe({
         application_status: "Pending",
@@ -366,6 +384,25 @@ export default function RegistrationGate({ user }) {
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">League Facebook page <span className="text-slate-400 font-normal">(optional)</span></label>
                       <Input value={formData.league_fb_page || ""} onChange={e => setFormData(prev => ({ ...prev, league_fb_page: e.target.value }))} placeholder="facebook.com/yourleague" />
+                    </div>
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-3">
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input type="checkbox" className="mt-1" checked={formData.onboarding_call !== false} onChange={e => setFormData(prev => ({ ...prev, onboarding_call: e.target.checked }))} />
+                        <span className="text-sm text-slate-700"><span className="font-semibold text-orange-700">Book a free 30-min onboarding &amp; demo call</span> — we'll set your league up with you and show you around. Highly recommended for new leagues.</span>
+                      </label>
+                      {formData.onboarding_call !== false && (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Preferred date</label>
+                            <Input type="date" value={formData.onboarding_date || ""} onChange={e => setFormData(prev => ({ ...prev, onboarding_date: e.target.value }))} />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Preferred time</label>
+                            <Input type="time" step="1800" value={formData.onboarding_time || ""} onChange={e => setFormData(prev => ({ ...prev, onboarding_time: e.target.value }))} />
+                          </div>
+                          <p className="col-span-2 text-xs text-slate-500">Times are in your local timezone (auto-detected): {Intl.DateTimeFormat().resolvedOptions().timeZone}</p>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}

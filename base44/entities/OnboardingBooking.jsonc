@@ -1,0 +1,62 @@
+{
+  "name": "OnboardingBooking",
+  "type": "object",
+  "properties": {
+    "application_id": {
+      "type": "string",
+      "description": "The UserApplication this booking belongs to"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "The applicant's User id"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Applicant email"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "Applicant name"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "Proposed league name, for display"
+    },
+    "requested_datetime": {
+      "type": "string",
+      "description": "Requested local wall-clock date and time, format YYYY-MM-DDTHH:MM"
+    },
+    "requested_timezone": {
+      "type": "string",
+      "description": "Applicant IANA timezone, e.g. Asia/Manila"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "requested",
+        "confirmed",
+        "completed",
+        "cancelled"
+      ],
+      "default": "requested",
+      "description": "Booking status"
+    },
+    "admin_notes": {
+      "type": "string",
+      "description": "Internal notes by app admin"
+    },
+    "confirmed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the call was confirmed"
+    },
+    "confirmed_by": {
+      "type": "string",
+      "description": "Email of the admin who confirmed"
+    }
+  },
+  "required": [
+    "user_id",
+    "requested_datetime"
+  ]
+}
