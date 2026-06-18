@@ -7,6 +7,13 @@ import { Check, X } from "lucide-react";
 
 // APPROVAL_LOG_VIEW_V1
 const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Viewer" };
+const EVENT_LABELS = {
+  application_approved: "Application approved",
+  application_rejected: "Application rejected",
+  direct_grant: "Access granted (direct edit)",
+  direct_revoke: "Access revoked (direct edit)",
+  pending_assignment_applied: "Pending assignment applied",
+};
 
 export default function ApprovalLogView() {
   const { data: logs = [], isLoading } = useQuery({
@@ -42,9 +49,9 @@ export default function ApprovalLogView() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-slate-900">
-                      <span className="font-semibold capitalize">{log.decision}</span>
-                      {" · "}{ROLE_LABELS[log.requested_role] || log.requested_role}
-                      {" · "}<span className="font-medium">{log.league_name || log.league_id}</span>
+                      <span className="font-semibold capitalize">{EVENT_LABELS[log.event_type] || log.decision}</span>
+                      {log.requested_role ? <>{" · "}{ROLE_LABELS[log.requested_role] || log.requested_role}</> : null}
+                      {" · "}<span className="font-medium">{log.league_name || log.league_id || 'No league'}</span>
                     </div>
                     <div className="text-xs text-slate-500 truncate">
                       {log.applicant_name || log.applicant_email || 'Unknown'}

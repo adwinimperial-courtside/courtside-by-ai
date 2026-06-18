@@ -26,6 +26,17 @@
       "type": "string",
       "description": "The league's name, for display"
     },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "application_approved",
+        "application_rejected",
+        "direct_grant",
+        "direct_revoke",
+        "pending_assignment_applied"
+      ],
+      "description": "Precise classification of this access event"
+    },
     "decision": {
       "type": "string",
       "enum": [
@@ -46,9 +57,10 @@
       "type": "string",
       "enum": [
         "app_admin",
-        "league_admin"
+        "league_admin",
+        "system"
       ],
-      "description": "Role of the approver"
+      "description": "Role of the approver (system = automatic, no human actor)"
     },
     "decided_at": {
       "type": "string",
@@ -61,8 +73,6 @@
     }
   },
   "required": [
-    "application_id",
-    "league_id",
     "decision",
     "approved_by_email",
     "approver_type",

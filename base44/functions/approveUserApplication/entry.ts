@@ -137,15 +137,16 @@ async function claimRosterPlayer(base44, application, leagueId, match) {
 }
 
 async function writeLog(base44, application, leagueId, decision, decider) {
-  const leagueName = await getLeagueName(base44, leagueId);
+  const leagueName = leagueId ? await getLeagueName(base44, leagueId) : '';
   try {
     await base44.asServiceRole.entities.ApprovalLog.create({
       application_id: application.id,
       applicant_name: application.user_name || '',
       applicant_email: application.user_email || '',
       requested_role: application.requested_role,
-      league_id: leagueId,
+      league_id: leagueId || '',
       league_name: leagueName,
+      event_type: decision === 'approved' ? 'application_approved' : 'application_rejected',
       decision: decision,
       approved_by_email: decider.email,
       approved_by_name: decider.name,
@@ -191,6 +192,7 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
   if (action === 'reject') {
     try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
     await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Rejected', decline_email_sent: true });
+    await writeLog(base44, application, override_league_id || application.league_id || null, 'rejected', decider);
     await sendDeclineOnce(base44, application);
     return Response.json({ success: true, action: 'rejected' });
   }
