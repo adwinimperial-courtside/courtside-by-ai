@@ -103,6 +103,7 @@ export default function RegistrationGate({ user }) {
         if (!Number.isInteger(teams) || teams < 2) { alert("Please enter the number of teams (at least 2)."); return; }
         const players = Number.parseInt(formData.avg_players_per_team, 10);
         if (!Number.isInteger(players) || players < 5) { alert("Please enter the average players per team (at least 5)."); return; }
+        if (!formData.phone?.trim()) { alert("Please enter your mobile number so we can reach you about your league."); return; }
         if (formData.onboarding_call !== false && (!formData.onboarding_date || !formData.onboarding_time)) {
           alert("Please pick a preferred date and time for your onboarding call, or untick the onboarding call option."); return;
         }
@@ -354,8 +355,8 @@ export default function RegistrationGate({ user }) {
                       </div>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label>
-                      <Input value={formData.phone || ""} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="e.g., +63 917 555 0142" />
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Mobile Number <span className="text-orange-600">*</span></label>
+                      <Input value={formData.phone || ""} onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))} placeholder="e.g., +63 917 555 0142" required />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1">Best way to reach you</label>
