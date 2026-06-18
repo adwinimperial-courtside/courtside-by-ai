@@ -201,6 +201,16 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
   } else if (application.league_id && !application.league_name) {
     assignedLeagueIds = [application.league_id];
   } else {
+    const teams = Number.parseInt(application.number_of_teams, 10);
+    const players = Number.parseInt(application.avg_players_per_team, 10);
+    if (
+      !application.league_name || !String(application.league_name).trim() ||
+      !application.season_start_date ||
+      !Number.isInteger(teams) || teams < 2 ||
+      !Number.isInteger(players) || players < 5
+    ) {
+      return Response.json({ error: 'Cannot approve: application is missing required new-league details (league name, season start date, number of teams, players per team).' }, { status: 400 });
+    }
     const newLeague = await base44.asServiceRole.entities.League.create({
       name: application.league_name,
       season: application.season_start_date || 'TBD',

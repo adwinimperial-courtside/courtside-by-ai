@@ -96,8 +96,13 @@ export default function RegistrationGate({ user }) {
     e.preventDefault();
 
     if (selectedRole === "league_admin") {
-      if (adminLeagueMode === "new" && !formData.league_name?.trim()) {
-        alert("Please enter a league name."); return;
+      if (adminLeagueMode === "new") {
+        if (!formData.league_name?.trim()) { alert("Please enter a league name."); return; }
+        if (!formData.season_start_date) { alert("Please enter the season start date."); return; }
+        const teams = Number.parseInt(formData.number_of_teams, 10);
+        if (!Number.isInteger(teams) || teams < 2) { alert("Please enter the number of teams (at least 2)."); return; }
+        const players = Number.parseInt(formData.avg_players_per_team, 10);
+        if (!Number.isInteger(players) || players < 5) { alert("Please enter the average players per team (at least 5)."); return; }
       }
       if (adminLeagueMode === "existing" && !selectedAdminLeagueId) {
         alert("Please select an existing league."); return;
