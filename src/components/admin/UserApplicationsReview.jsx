@@ -199,6 +199,9 @@ export default function UserApplicationsReview() {
               {app.league_type && <div><span className="text-slate-500">League type:</span> <span className="font-medium capitalize">{app.league_type}</span></div>}
               {app.heard_from && <div><span className="text-slate-500">Heard about us:</span> <span className="font-medium">{String(app.heard_from).replace(/_/g, ' ')}</span></div>}
               {app.league_fb_page && <div><span className="text-slate-500">FB page:</span> <a href={app.league_fb_page.startsWith('http') ? app.league_fb_page : `https://${app.league_fb_page}`} target="_blank" rel="noopener noreferrer" className="font-medium text-orange-600 underline">{app.league_fb_page}</a></div>}
+              {app.onboarding_call && app.onboarding_call.requested_datetime && (
+                <div className="pt-1"><span className="inline-flex items-center gap-1 text-xs font-semibold bg-orange-100 text-orange-700 border border-orange-200 rounded-full px-2 py-0.5">📅 Onboarding call requested: {String(app.onboarding_call.requested_datetime).replace('T', ' · ')} ({app.onboarding_call.requested_timezone || 'tz unknown'})</span></div>
+              )}
             </>
           ) : (
             <div className="space-y-1">

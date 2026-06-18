@@ -34,6 +34,15 @@ Deno.serve(async (req) => {
 
     const pending = await base44.asServiceRole.entities.UserApplication.filter({ status: 'Pending' }, '-created_date');
 
+    // Onboarding call requests, keyed by application_id (app_admin view only)
+    const bookingByApp = {};
+    if (isAppAdmin) {
+      try {
+        const bookings = await base44.asServiceRole.entities.OnboardingBooking.list('-created_date', 500);
+        for (const bk of bookings) { if (bk && bk.application_id && !bookingByApp[bk.application_id]) bookingByApp[bk.application_id] = bk; }
+      } catch (_e) { /* non-blocking */ }
+    }
+
     const nameCache = {}; const teamCache = {};
     const leagueName = async (lid) => {
       if (lid in nameCache) return nameCache[lid];
@@ -121,6 +130,7 @@ Deno.serve(async (req) => {
           phone: app.phone || '', preferred_channel: app.preferred_channel || '',
           league_type: app.league_type || '', heard_from: app.heard_from || '',
           league_fb_page: app.league_fb_page || '', role_in_league: app.role_in_league || '',
+          onboarding_call: bookingByApp[app.id] ? { requested_datetime: bookingByApp[app.id].requested_datetime || '', requested_timezone: bookingByApp[app.id].requested_timezone || '', status: bookingByApp[app.id].status || 'requested' } : null,
           leagues,
           can_decide: leagues.filter(l => l.decision === 'pending').map(l => l.league_id),
         });
