@@ -96,6 +96,31 @@ export default function EnhancedUserManagement() {
           });
         }
       }
+
+      // Audit: record this direct grant/revoke in the ApprovalLog ledger.
+      // Wrapped so a logging failure can never block the admin's save.
+      try {
+        const grantedLeagueIds = data.assigned_league_ids || [];
+        const roleMap = data.league_role_map || {};
+        if (grantedLeagueIds.length === 0) {
+          await base44.functions.invoke('logAccessEvent', {
+            event_type: 'direct_revoke',
+            applicant_name: selectedUser.full_name,
+            applicant_email: selectedUser.email,
+            requested_role: data.user_type,
+          });
+        } else {
+          for (const leagueId of grantedLeagueIds) {
+            await base44.functions.invoke('logAccessEvent', {
+              event_type: 'direct_grant',
+              applicant_name: selectedUser.full_name,
+              applicant_email: selectedUser.email,
+              requested_role: roleMap[leagueId] || data.user_type,
+              league_id: leagueId,
+            });
+          }
+        }
+      } catch (_e) { /* never block the save on a logging failure */ }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
