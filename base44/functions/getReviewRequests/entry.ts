@@ -118,6 +118,9 @@ Deno.serve(async (req) => {
           league_ids: app.league_ids || [], league_team_pairs: app.league_team_pairs || [],
           season_start_date: app.season_start_date || '', number_of_teams: app.number_of_teams || null,
           avg_players_per_team: app.avg_players_per_team || null,
+          phone: app.phone || '', preferred_channel: app.preferred_channel || '',
+          league_type: app.league_type || '', heard_from: app.heard_from || '',
+          league_fb_page: app.league_fb_page || '', role_in_league: app.role_in_league || '',
           leagues,
           can_decide: leagues.filter(l => l.decision === 'pending').map(l => l.league_id),
         });

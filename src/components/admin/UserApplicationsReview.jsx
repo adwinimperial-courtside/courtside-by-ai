@@ -184,13 +184,21 @@ export default function UserApplicationsReview() {
         <div className="bg-white rounded-lg p-3 border border-slate-200 mb-3 text-sm space-y-1">
           {app.country && <div><span className="text-slate-500">Country:</span> <span className="font-medium">{app.country}</span></div>}
           {joiningExisting ? (
-            <div><span className="text-slate-500">Joining Existing League:</span> <span className="font-medium">{(leagues.find(l => l.id === app.league_id) || {}).name || app.league_id}</span></div>
+            <>
+              <div><span className="text-slate-500">Joining Existing League:</span> <span className="font-medium">{(leagues.find(l => l.id === app.league_id) || {}).name || app.league_id}</span></div>
+              {app.role_in_league && <div><span className="text-slate-500">Role in league:</span> <span className="font-medium">{app.role_in_league}</span></div>}
+            </>
           ) : app.league_name ? (
             <>
               <div><span className="text-slate-500">League Name:</span> <span className="font-medium">{app.league_name}</span></div>
               {app.season_start_date && <div><span className="text-slate-500">Season Start:</span> <span className="font-medium">{app.season_start_date}</span></div>}
               {app.number_of_teams && <div><span className="text-slate-500">Teams:</span> <span className="font-medium">{app.number_of_teams}</span></div>}
               {app.avg_players_per_team && <div><span className="text-slate-500">Avg Players/Team:</span> <span className="font-medium">{app.avg_players_per_team}</span></div>}
+              {app.phone && <div><span className="text-slate-500">Mobile:</span> <span className="font-medium">{app.phone}</span></div>}
+              {app.preferred_channel && <div><span className="text-slate-500">Best contact:</span> <span className="font-medium capitalize">{app.preferred_channel}</span></div>}
+              {app.league_type && <div><span className="text-slate-500">League type:</span> <span className="font-medium capitalize">{app.league_type}</span></div>}
+              {app.heard_from && <div><span className="text-slate-500">Heard about us:</span> <span className="font-medium">{String(app.heard_from).replace(/_/g, ' ')}</span></div>}
+              {app.league_fb_page && <div><span className="text-slate-500">FB page:</span> <a href={app.league_fb_page.startsWith('http') ? app.league_fb_page : `https://${app.league_fb_page}`} target="_blank" rel="noopener noreferrer" className="font-medium text-orange-600 underline">{app.league_fb_page}</a></div>}
             </>
           ) : (
             <div className="space-y-1">
