@@ -587,7 +587,7 @@ export default function EnhancedUserManagement() {
                           </div>
                         )) : (
                           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
-                            {user.user_type || "viewer"} · no league assigned
+                            {user.user_type || "no role"} · no league assigned
                           </span>
                         )}
                       </div>
