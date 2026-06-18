@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,7 @@ export default function RegistrationGate({ user }) {
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -79,6 +80,25 @@ export default function RegistrationGate({ user }) {
     queryFn: () => base44.entities.Team.list(),
     enabled: selectedRole === "player" || selectedRole === "coach",
   });
+
+  // Has this user ever actually submitted an application? A genuine applicant
+  // and a brand-new account can both show application_status "Pending", so we
+  // check for a real application on file instead of trusting the status flag.
+  const { data: myApplications = [], isLoading: appsLoading } = useQuery({
+    queryKey: ['my_applications', user?.id],
+    queryFn: () => base44.entities.UserApplication.filter({ user_id: user.id }),
+    enabled: !!user?.id,
+  });
+  const hasApplied = myApplications.length > 0;
+
+  // On the waiting screen but never actually applied? Send them to the
+  // role/league form instead of a dead-end. (justSubmitted guards the brief
+  // window right after submitting, before the application list refreshes.)
+  useEffect(() => {
+    if (!appsLoading && step === "pending" && !hasApplied && !justSubmitted) {
+      setStep("select_role");
+    }
+  }, [appsLoading, hasApplied, step, justSubmitted]);
 
   const selectedLeague = selectedLeagues[0] || ""; // kept for backwards compat reference
 
@@ -211,6 +231,7 @@ export default function RegistrationGate({ user }) {
         ...(formData.full_name?.trim() ? { full_name: formData.full_name.trim() } : {}),
         ...(consentData || {}),
       });
+      setJustSubmitted(true);
       setStep("pending");
     } catch (error) {
       alert("Failed to submit application: " + error.message);
@@ -220,6 +241,16 @@ export default function RegistrationGate({ user }) {
   };
 
   if (step === "pending") {
+    if (appsLoading) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+            <AppLogo />
+            <p className="text-slate-500 mt-6">Loading…</p>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
@@ -227,21 +258,18 @@ export default function RegistrationGate({ user }) {
           <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mt-6 mb-4">
             <Clock className="w-10 h-10 text-yellow-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">Finish setting up your account</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">Application Under Review</h2>
           <p className="text-slate-600 mb-6">
-            Choose the role and the league(s) you want to get started. If you've already applied, our team is reviewing it — you'll get access once approved.
+            Your application has been submitted. Our admin team will review it shortly and grant you access once approved.
           </p>
           <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 text-left mb-6">
-            <p className="text-sm font-medium text-amber-800">Already applied?</p>
+            <p className="text-sm font-medium text-amber-800">What happens next?</p>
             <ul className="text-sm text-amber-700 mt-2 space-y-1 list-disc list-inside">
-              <li>Our team is reviewing your application</li>
+              <li>Admin reviews your application</li>
               <li>You'll get full access once approved</li>
               <li>Tap "Refresh Status" below to check your progress</li>
             </ul>
           </div>
-          <Button onClick={() => setStep("select_role")} className="w-full mb-3 h-12 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-md">
-            Choose your role & league
-          </Button>
           <Button onClick={() => window.location.reload()} variant="outline" className="w-full mb-3">
             Refresh Status
           </Button>
