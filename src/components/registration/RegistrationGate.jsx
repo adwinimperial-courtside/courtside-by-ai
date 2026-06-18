@@ -227,22 +227,21 @@ export default function RegistrationGate({ user }) {
           <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mt-6 mb-4">
             <Clock className="w-10 h-10 text-yellow-600" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-3">Application Under Review</h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-3">Finish setting up your account</h2>
           <p className="text-slate-600 mb-6">
-            Your application has been submitted. Our admin team will review it shortly and grant you access once approved.
+            Choose the role and the league(s) you want to get started. If you've already applied, our team is reviewing it — you'll get access once approved.
           </p>
           <div className="bg-amber-50 rounded-xl p-4 border border-amber-200 text-left mb-6">
-            <p className="text-sm font-medium text-amber-800">What happens next?</p>
+            <p className="text-sm font-medium text-amber-800">Already applied?</p>
             <ul className="text-sm text-amber-700 mt-2 space-y-1 list-disc list-inside">
-              <li>Admin reviews your application</li>
+              <li>Our team is reviewing your application</li>
               <li>You'll get full access once approved</li>
-              <li>Refresh this page to check your status</li>
+              <li>Tap "Refresh Status" below to check your progress</li>
             </ul>
           </div>
-          <Button onClick={() => setStep("select_role")} className="w-full mb-3">
+          <Button onClick={() => setStep("select_role")} className="w-full mb-3 h-12 text-base font-semibold bg-orange-500 hover:bg-orange-600 text-white shadow-md">
             Choose your role & league
           </Button>
-          <p className="text-xs text-slate-500 mb-3">Haven't chosen a league yet? Pick your role and the league(s) you want above.</p>
           <Button onClick={() => window.location.reload()} variant="outline" className="w-full mb-3">
             Refresh Status
           </Button>
