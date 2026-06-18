@@ -132,6 +132,15 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
 
+  const { data: onboardingBookings = [] } = useQuery({
+    queryKey: ['onboardingBookings'],
+    queryFn: () => base44.entities.OnboardingBooking.list(),
+    enabled: currentUser?.user_type === 'app_admin',
+    refetchInterval: 30000,
+    staleTime: 0,
+  });
+  const onboardingRequestsCount = onboardingBookings.filter(b => b.status === 'requested').length;
+
   const { data: leagueAdminReview } = useQuery({
     queryKey: ['review_requests_count'],
     queryFn: async () => {
@@ -298,6 +307,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                       <span>{item.title}</span>
                       {item.title === "User Requests" && pendingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                      )}
+                      {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
                       )}
                     </Link>
                   </SidebarMenuButton>
