@@ -89,7 +89,11 @@ export default function RegistrationGate({ user }) {
     queryFn: () => base44.entities.UserApplication.filter({ user_id: user.id }),
     enabled: !!user?.id,
   });
-  const hasApplied = myApplications.length > 0;
+  const hasApplied = myApplications.some(
+    app => app.league_id
+      || (Array.isArray(app.league_ids) && app.league_ids.length > 0)
+      || (app.league_name && String(app.league_name).trim())
+  );
 
   // On the waiting screen but never actually applied? Send them to the
   // role/league form instead of a dead-end. (justSubmitted guards the brief
