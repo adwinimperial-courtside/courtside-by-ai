@@ -239,6 +239,10 @@ export default function RegistrationGate({ user }) {
               <li>Refresh this page to check your status</li>
             </ul>
           </div>
+          <Button onClick={() => setStep("select_role")} className="w-full mb-3">
+            Choose your role & league
+          </Button>
+          <p className="text-xs text-slate-500 mb-3">Haven't chosen a league yet? Pick your role and the league(s) you want above.</p>
           <Button onClick={() => window.location.reload()} variant="outline" className="w-full mb-3">
             Refresh Status
           </Button>
