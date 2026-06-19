@@ -29,14 +29,15 @@ Deno.serve(async (req) => {
     const callerType = caller && caller.user_type;
     const isAppAdmin = me.role === 'admin' || callerType === 'app_admin';
     const isLeagueAdmin = callerType === 'league_admin';
-    if (!isAppAdmin && !isLeagueAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const isOpsAdmin = callerType === 'ops_admin';
+    if (!isAppAdmin && !isLeagueAdmin && !isOpsAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
     const myLeagueIds = Array.isArray(caller && caller.assigned_league_ids) ? caller.assigned_league_ids : [];
 
     const pending = await base44.asServiceRole.entities.UserApplication.filter({ status: 'Pending' }, '-created_date');
 
     // Onboarding call requests, keyed by application_id (app_admin view only)
     const bookingByApp = {};
-    if (isAppAdmin) {
+    if (isAppAdmin || isOpsAdmin) {
       try {
         const bookings = await base44.asServiceRole.entities.OnboardingBooking.list('-created_date', 500);
         for (const bk of bookings) { if (bk && bk.application_id && !bookingByApp[bk.application_id]) bookingByApp[bk.application_id] = bk; }
@@ -62,6 +63,13 @@ Deno.serve(async (req) => {
     for (const app of pending) {
       const role = app.requested_role;
       const targets = getTargetLeagueIds(app);
+
+      // Operations Admins only ever see brand-new-league applications (those that create
+      // a league: a league_name is provided and they are not joining an existing league_id).
+      if (isOpsAdmin && !isAppAdmin) {
+        const isNewLeague = role === 'league_admin' && !!app.league_name && String(app.league_name).trim() && !app.league_id;
+        if (!isNewLeague) continue;
+      }
 
       if (isLeagueAdmin) {
         // LA_PLAYER_APPROVAL_V1 — league admins can now also see player requests for their teams
@@ -136,7 +144,7 @@ Deno.serve(async (req) => {
         });
       }
     }
-    return Response.json({ requests: out, role: isAppAdmin ? 'app_admin' : 'league_admin' });
+    return Response.json({ requests: out, role: (isAppAdmin || isOpsAdmin) ? 'app_admin' : 'league_admin' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
