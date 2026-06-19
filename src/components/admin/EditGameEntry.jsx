@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save, Plus, Trash2, AlertCircle } from "lucide-react";
+import { X, Save, Plus, Trash2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { validatePointsRow } from "./ManualGameEntry";
+// EDIT_FORMAT_AWARE_V1: detect this game's points_2 storage convention at read time.
+import { resolveGameFormat } from "../stats/statEngine";
 
 export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const queryClient = useQueryClient();
@@ -20,6 +22,9 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
   const [addPlayerTeamId, setAddPlayerTeamId] = useState(null);
   const [surplusRowIds, setSurplusRowIds] = useState([]);
   const [saveError, setSaveError] = useState("");
+  // EDIT_FORMAT_AWARE_V1: 'raw' (manual: points_2 = 2-pt POINTS) or 'count' (digital: points_2 = number of made twos).
+  // Pinned ONCE at load from the original stored stats+score, then reused on save so a digital game never flips to raw.
+  const [gameFormat, setGameFormat] = useState("raw");
 
   const { data: completedGames = [] } = useQuery({
     queryKey: ['completedGames', selectedLeague],
@@ -27,9 +32,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
     enabled: !!selectedLeague,
   });
 
-  // EDIT_MANUAL_ONLY_V1: only completed, manually entered, non-forfeit games can be edited.
-  // Live-scored (digital) games and forfeit/default results are locked.
-  const editableGames = completedGames.filter(g => g.entry_type === 'manual' && !g.is_default_result);
+  // EDIT_DIGITAL_UNLOCK_V1: completed manual OR live/digital games can be edited.
+  // Forfeit / default-result games stay locked (they carry award-exclusion flags set by the Default Winner flow).
+  const editableGames = completedGames.filter(
+    g => (g.entry_type === 'manual' || g.entry_type === 'digital') && !g.is_default_result
+  );
 
   const { data: existingStats = [] } = useQuery({
     queryKey: ['editGameStats', selectedGame?.id],
@@ -39,8 +46,11 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
   useEffect(() => {
     if (existingStats.length > 0 && selectedGame) {
-      // EDIT_ENTRY_VALIDATE_V1: only manual games are editable now. Manual games store
-      // points_2 as raw 2-point POINTS, so total = points_2 + 3PM*3 + FT.
+      // EDIT_FORMAT_AWARE_V1: detect storage convention ONCE from the original stored rows + final score,
+      // BEFORE any edit (selectedGame is untouched here). Pin it so save writes back in the same format.
+      // Pass the raw, un-merged rows (duplicates included) — that is what resolveGameFormat expects.
+      const fmt = resolveGameFormat(selectedGame, existingStats);
+      setGameFormat(fmt);
       // Legacy duplicate rows (old substitution bugs) are merged here per player;
       // the surplus rows are remembered and deleted on save.
       const byPlayer = new Map();
@@ -68,7 +78,9 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
       setSurplusRowIds(surplus);
       const stats = Array.from(byPlayer.values()).map(stat => {
         const player = players.find(p => p.id === stat.player_id);
-        const totalPoints = (stat.points_2 || 0) + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
+        // EDIT_FORMAT_AWARE_V1: count format stores made-twos as a count (×2); raw stores 2-pt points (×1).
+        const twoPoints = fmt === 'count' ? ((stat.points_2 || 0) * 2) : (stat.points_2 || 0);
+        const totalPoints = twoPoints + ((stat.points_3 || 0) * 3) + (stat.free_throws || 0);
         return {
           stat_id: stat.id,
           player_id: stat.player_id,
@@ -103,10 +115,13 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           const points3Value = (stat.stats.points_3 || 0) * 3;
           const ftValue = stat.stats.free_throws || 0;
           const totalPoints = stat.stats.total_points || 0;
-          // EDIT_ENTRY_VALIDATE_V1: validation guarantees (total - 3*3PM - FT) is even and >= 0.
-          // Storage format unchanged for now: points_2 holds raw 2-point POINTS (not a count).
-          // The count-format cutover happens in a later migration step.
-          const points2Value = Math.max(0, totalPoints - points3Value - ftValue);
+          // EDIT_FORMAT_AWARE_V1: validatePointsRow guarantees (total - 3*3PM - FT) is even and >= 0.
+          // Write points_2 in the SAME format this game already uses:
+          //   count (digital) → store the number of made twos (rawTwoPoints / 2, exact because it's even)
+          //   raw   (manual)  → store the 2-point POINTS unchanged
+          // A digital game must NEVER be flipped to raw.
+          const rawTwoPoints = Math.max(0, totalPoints - points3Value - ftValue);
+          const points2Value = data.gameFormat === 'count' ? Math.round(rawTwoPoints / 2) : rawTwoPoints;
           
           // New player (no stat_id)
           if (!stat.stat_id) {
@@ -264,6 +279,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
     updateGameMutation.mutate({
       game: selectedGame,
       playerStats,
+      gameFormat,
       home_score: homeScore,
       away_score: awayScore,
       player_of_game: selectedGame.player_of_game,
@@ -387,7 +403,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     })}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-slate-500">Only games entered with the scoresheet can be edited. Live-scored games and forfeit results are locked.</p>
+                <p className="text-xs text-slate-500">Completed manual and live-scored games can be edited. Forfeit and default-result games are locked.</p>
                 {editableGames.length === 0 && (
                   <p className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-lg p-3">No editable games in this league yet.</p>
                 )}
@@ -414,6 +430,12 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                   {homeTeam?.name} vs {awayTeam?.name}
                 </p>
                 <p className="text-sm text-slate-600">{new Date(selectedGame.game_date).toLocaleString()}</p>
+                {/* EDIT_FORMAT_AWARE_V1: show which kind of game this is so the admin knows it loaded correctly. */}
+                {selectedGame.entry_type === 'digital' ? (
+                  <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium px-2 py-0.5 rounded bg-blue-50 text-blue-700">Live / digital game</span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 mt-1 text-xs font-medium px-2 py-0.5 rounded bg-slate-200 text-slate-600">Manual entry</span>
+                )}
               </div>
               <Button variant="outline" size="sm" onClick={() => setStep(1)}>
                 Change Game
@@ -517,6 +539,27 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
               </p>
             </div>
           </div>
+
+          {/* EDIT_SCORE_CHECK_V1: warn-and-allow. Compare the stored final score against the edited totals.
+              Never blocks saving — just makes a score change a deliberate, visible decision. */}
+          {(() => {
+            const editedHome = homeStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+            const editedAway = awayStats.reduce((sum, ps) => sum + ps.stats.total_points, 0);
+            const storedHome = selectedGame.home_score || 0;
+            const storedAway = selectedGame.away_score || 0;
+            const scoreMatches = editedHome === storedHome && editedAway === storedAway;
+            return scoreMatches ? (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg p-3">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>Score check passes — stored final {storedHome}–{storedAway} matches your edited totals.</span>
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-sm rounded-lg p-3">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>This changes the final score. Stored was <strong>{storedHome}–{storedAway}</strong>; saving will set it to <strong>{editedHome}–{editedAway}</strong>. Make sure that's correct before you save.</span>
+              </div>
+            );
+          })()}
 
           <div className="bg-slate-100 p-6 rounded-lg">
             <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
