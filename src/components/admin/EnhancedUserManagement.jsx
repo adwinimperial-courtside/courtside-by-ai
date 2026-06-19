@@ -98,7 +98,6 @@ export default function EnhancedUserManagement() {
       }
 
       // Audit: record this direct grant/revoke in the ApprovalLog ledger.
-      // Wrapped so a logging failure can never block the admin's save.
       try {
         const grantedLeagueIds = data.assigned_league_ids || [];
         const roleMap = data.league_role_map || {};
@@ -177,7 +176,7 @@ export default function EnhancedUserManagement() {
   const handleUserSelect = (user) => {
     setSelectedUser(user);
 
-    // Build per-league role map: applications first, then ULI overrides (reflects admin edits)
+    // Build per-league role map: applications first, then ULI overrides
     const approvedApps = userApplications.filter(a => a.user_id === user.id && a.status === "Approved");
     const leagueRoleMap = {};
     approvedApps.forEach(app => {
@@ -272,6 +271,7 @@ export default function EnhancedUserManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
+                <SelectItem value="ops_admin">Operations Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
@@ -350,6 +350,7 @@ export default function EnhancedUserManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
+                <SelectItem value="ops_admin">Operations Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
@@ -496,14 +497,12 @@ export default function EnhancedUserManagement() {
           </div>
           <div className="space-y-2">
             {filteredUsers.map((user) => {
-              // Build leagueId -> role map: start from approved applications, then override with UserLeagueIdentity (which reflects admin edits)
               const approvedApps = userApplications.filter(a => a.user_id === user.id && a.status === "Approved");
               const leagueRoleMap = {};
               approvedApps.forEach(app => {
                 const leagueIds = app.league_ids?.length > 0 ? app.league_ids : app.league_id ? [app.league_id] : [];
                 leagueIds.forEach(lid => { leagueRoleMap[lid] = app.requested_role; });
               });
-              // UserLeagueIdentity roles override application roles (set by admin)
               userLeagueIdentities.filter(uli => uli.user_id === user.id && uli.role).forEach(uli => {
                 leagueRoleMap[uli.league_id] = uli.role;
               });
@@ -527,10 +526,8 @@ export default function EnhancedUserManagement() {
                   <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
                     {(() => {
                       const app = userApplications.find(a => a.user_id === user.id && a.user_name);
-                      // realName: prefer application user_name if full_name looks auto-generated (no spaces)
                       const fullNameLooksReal = user.full_name && user.full_name.includes(" ");
                       const primaryName = fullNameLooksReal ? user.full_name : (app?.user_name || user.full_name || "—");
-                      // secondaryName: show display_name as nickname if it differs from primaryName
                       const secondaryName = user.display_name && user.display_name !== primaryName ? user.display_name : null;
                       return (
                         <>
@@ -544,7 +541,6 @@ export default function EnhancedUserManagement() {
                     <div className="text-sm text-slate-500 truncate">{user.email}</div>
                     <div className="text-xs text-slate-400 mt-1">Created {format(new Date(user.created_date), "MMM dd, yyyy 'at' h:mm a")}</div>
 
-                    {/* Global role badge for app_admin / league_admin */}
                     {(user.user_type === "app_admin" || user.user_type === "league_admin") && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
@@ -563,7 +559,6 @@ export default function EnhancedUserManagement() {
                       </div>
                     )}
 
-                    {/* Per-league role badges for players/coaches/viewers */}
                     {user.user_type !== "app_admin" && user.user_type !== "league_admin" && (
                       <div className="flex flex-col gap-1 mt-2">
                         {leagueRoleEntries.length > 0 ? leagueRoleEntries.map((entry, i) => (
