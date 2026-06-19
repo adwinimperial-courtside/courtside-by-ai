@@ -119,23 +119,37 @@ const ownerItems = [
   }
 ];
 
+// Operations Admin (ops_admin): a lesser app-level helper role. Sees ONLY these four pages.
+const opsItems = [
+  { title: "User Requests", url: createPageUrl("RequestManagement"), icon: ClipboardList },
+  { title: "Onboarding Bookings", url: createPageUrl("OnboardingBookings"), icon: Calendar },
+  { title: "Command Center", url: createPageUrl("CommandCenter"), icon: MonitorPlay },
+  { title: "Feedback", url: createPageUrl("Feedback"), icon: MessageSquare }
+];
+
 export default function SidebarMenuContent({ currentUser, location, isViewerWithoutAdminAccess }) {
   const { isMobile, setOpenMobile } = useSidebar();
 
   const { data: userApplications = [] } = useQuery({
     queryKey: ['userApplications'],
     queryFn: () => base44.entities.UserApplication.list(),
-    enabled: currentUser?.user_type === 'app_admin',
+    enabled: currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'ops_admin',
     refetchInterval: 30000,
     staleTime: 0,
   });
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
+  // Operations Admin only handles NEW-LEAGUE league-admin applications (has a league_name, not joining an existing league_id).
+  const opsNewLeaguePending = userApplications.filter(r =>
+    r.status === 'Pending' &&
+    r.requested_role === 'league_admin' &&
+    r.league_name && String(r.league_name).trim() && !r.league_id
+  ).length;
 
   const { data: onboardingBookings = [] } = useQuery({
     queryKey: ['onboardingBookings'],
     queryFn: () => base44.entities.OnboardingBooking.list(),
-    enabled: currentUser?.user_type === 'app_admin',
+    enabled: currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'ops_admin',
     refetchInterval: 30000,
     staleTime: 0,
   });
@@ -167,8 +181,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
         ? [playerNavItem, ...base]
         : base;
-      // Add "Request League Access" for all approved non-admin users
-      if (currentUser.user_type && currentUser.user_type !== "app_admin") {
+      // Add "Request League Access" for all approved non-admin users (not staff roles)
+      if (currentUser.user_type && currentUser.user_type !== "app_admin" && currentUser.user_type !== "ops_admin") {
         return [...withRole, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }];
       }
       return withRole;
@@ -194,6 +208,12 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const getVisibleOwnerItems = () => {
     if (!currentUser) return [];
     if (currentUser.user_type === "app_admin") return ownerItems;
+    return [];
+  };
+
+  const getVisibleOpsItems = () => {
+    if (!currentUser) return [];
+    if (currentUser.user_type === "ops_admin") return opsItems;
     return [];
   };
 
@@ -307,6 +327,39 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                       <span>{item.title}</span>
                       {item.title === "User Requests" && pendingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                      )}
+                      {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
+                      )}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
+
+      {getVisibleOpsItems().length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+            Operations
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {getVisibleOpsItems().map((item) =>
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton
+                    asChild
+                    className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                      location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+                    }`}
+                  >
+                    <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.title}</span>
+                      {item.title === "User Requests" && opsNewLeaguePending > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{opsNewLeaguePending}</Badge>
                       )}
                       {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
