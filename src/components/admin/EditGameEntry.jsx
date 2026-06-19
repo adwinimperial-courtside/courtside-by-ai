@@ -445,6 +445,43 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
 
           <p className="text-sm text-slate-500">Enter each player's total points, made threes and free throws — twos are worked out automatically in the 2PM column.</p>
 
+          {/* EDIT_LIVE_SCORE_V1: running scoreboard pinned to the top of the edit step so the admin can
+              validate against the stored final score while typing, without scrolling to the review step.
+              Derives from the same totals as save — never blocks input. */}
+          {(() => {
+            const editHome = homeStats.reduce((sum, ps) => sum + (ps.stats.total_points || 0), 0);
+            const editAway = awayStats.reduce((sum, ps) => sum + (ps.stats.total_points || 0), 0);
+            const storedHome = selectedGame.home_score || 0;
+            const storedAway = selectedGame.away_score || 0;
+            const scoreMatches = editHome === storedHome && editAway === storedAway;
+            return (
+              <div className="sticky top-0 z-20 rounded-lg border border-slate-200 overflow-hidden bg-white shadow-sm">
+                <div className="flex items-stretch">
+                  <div className="flex-1 text-center py-3 px-2">
+                    <p className="text-xs text-slate-500 truncate">{homeTeam?.name}</p>
+                    <p className="text-3xl font-bold leading-none">{editHome}</p>
+                  </div>
+                  <div className="flex items-center px-2 text-slate-400 text-xl">–</div>
+                  <div className="flex-1 text-center py-3 px-2">
+                    <p className="text-xs text-slate-500 truncate">{awayTeam?.name}</p>
+                    <p className="text-3xl font-bold leading-none">{editAway}</p>
+                  </div>
+                </div>
+                {scoreMatches ? (
+                  <div className="flex items-center justify-center gap-2 py-2 bg-green-50">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                    <span className="text-xs font-medium text-green-700">Matches stored final {storedHome}–{storedAway}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 py-2 bg-amber-50">
+                    <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-xs font-medium text-amber-700">Edited {editHome}–{editAway} · stored final was {storedHome}–{storedAway}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-3">
@@ -453,6 +490,8 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     {homeTeam?.name?.[0]}
                   </div>
                   {homeTeam?.name}
+                  {/* EDIT_LIVE_SCORE_V1: per-team running total so the admin can see which side is off. */}
+                  <span className="ml-1 text-sm font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">{homeStats.reduce((sum, ps) => sum + (ps.stats.total_points || 0), 0)} pts</span>
                 </h3>
                 <Button
                   size="sm"
@@ -481,6 +520,8 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
                     {awayTeam?.name?.[0]}
                   </div>
                   {awayTeam?.name}
+                  {/* EDIT_LIVE_SCORE_V1: per-team running total so the admin can see which side is off. */}
+                  <span className="ml-1 text-sm font-medium px-2 py-0.5 rounded bg-slate-100 text-slate-600">{awayStats.reduce((sum, ps) => sum + (ps.stats.total_points || 0), 0)} pts</span>
                 </h3>
                 <Button
                   size="sm"
