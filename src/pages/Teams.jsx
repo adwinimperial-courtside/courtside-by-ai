@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, ArrowLeft, Edit2, Trash2 } from "lucide-react";
+import { Plus, Users, ArrowLeft, Edit2, Trash2, ListChecks, ClipboardCheck, X, Check, AlertTriangle, ArrowRight } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -31,6 +31,8 @@ export default function TeamsPage() {
   const [selectedLeague, setSelectedLeague] = useState(leagueIdFromUrl || null);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [checkResults, setCheckResults] = useState(null);
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
@@ -53,6 +55,9 @@ export default function TeamsPage() {
     };
     fetchUser();
   }, [leagueIdFromUrl]);
+
+  // ROSTER_CHECK_V1 — clear stale results when the league filter changes
+  React.useEffect(() => { setCheckResults(null); }, [selectedLeague]);
 
   const { data: leagues } = useQuery({
     queryKey: ['leagues'],
@@ -229,6 +234,43 @@ export default function TeamsPage() {
     ? baseTeams
     : baseTeams.filter(team => team.league_id === selectedLeague);
 
+  // ROSTER_CHECK_V1 — read-only sweep: find teams whose roster has a jersey number used twice+
+  const handleCheckRosters = async () => {
+    if (!filteredTeams.length) return;
+    setChecking(true);
+    setCheckResults(null);
+    try {
+      const results = await Promise.all(
+        filteredTeams.map(async (team) => {
+          const roster = await base44.entities.Player.filter({ team_id: team.id });
+          const counts = {};
+          (roster || []).forEach(p => {
+            const jn = String(p.jersey_number ?? '').trim();
+            if (jn === '') return;
+            const n = parseInt(jn, 10);
+            if (isNaN(n)) return;
+            if (!counts[n]) counts[n] = [];
+            counts[n].push((p.name || '').trim() || 'Unnamed');
+          });
+          const dups = Object.keys(counts)
+            .filter(k => counts[k].length > 1)
+            .map(k => ({ number: Number(k), players: counts[k] }))
+            .sort((a, b) => a.number - b.number);
+          return { teamId: team.id, teamName: team.name, dups };
+        })
+      );
+      const problems = results
+        .filter(r => r.dups.length > 0)
+        .sort((a, b) => (a.teamName || '').localeCompare(b.teamName || ''));
+      setCheckResults({ teamsChecked: filteredTeams.length, problems, error: false });
+    } catch (e) {
+      console.error('Roster check failed:', e);
+      setCheckResults({ teamsChecked: 0, problems: [], error: true });
+    } finally {
+      setChecking(false);
+    }
+  };
+
   // Keep selectedTeam fresh from the latest teams data
   const liveSelectedTeam = selectedTeam ? (teams?.find(t => t.id === selectedTeam.id) || selectedTeam) : null;
 
@@ -267,7 +309,7 @@ export default function TeamsPage() {
         </div>
 
         {assignedLeagues.length > 0 && (
-           <div className="mb-8">
+           <div className="mb-8 flex flex-col sm:flex-row sm:items-center gap-3">
              <Select value={selectedLeague} onValueChange={setSelectedLeague}>
                <SelectTrigger className="w-full sm:w-64 h-12 bg-white border-slate-200">
                  <SelectValue placeholder="Filter by league" />
@@ -281,9 +323,70 @@ export default function TeamsPage() {
                  ))}
                </SelectContent>
              </Select>
+             {canManageTeams && (
+               <Button
+                 variant="outline"
+                 onClick={handleCheckRosters}
+                 disabled={checking || filteredTeams.length === 0}
+                 className="h-12 px-5 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+               >
+                 <ListChecks className="w-5 h-5 mr-2" />
+                 {checking ? "Checking..." : "Check rosters"}
+               </Button>
+             )}
            </div>
          )}
 
+        {checkResults && (
+          <div className="mb-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <div className="flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-slate-500" />
+                <div>
+                  <div className="font-semibold text-slate-900 text-sm">Roster check</div>
+                  <div className="text-xs text-slate-500">{checkResults.teamsChecked} team{checkResults.teamsChecked !== 1 ? 's' : ''} checked</div>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setCheckResults(null)}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            {checkResults.error ? (
+              <div className="px-4 py-3 text-sm text-red-700 bg-red-50">Couldn't finish the check. Please try again.</div>
+            ) : checkResults.problems.length === 0 ? (
+              <div className="flex items-center gap-2 px-4 py-3 text-sm text-green-700 bg-green-50">
+                <Check className="w-4 h-4" /> All clear - no duplicate jersey numbers.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-700 bg-red-50">
+                  <AlertTriangle className="w-4 h-4" />
+                  {checkResults.problems.length} team{checkResults.problems.length !== 1 ? 's' : ''} need attention
+                </div>
+                {checkResults.problems.map(prob => (
+                  <div key={prob.teamId} className="flex items-start justify-between gap-3 px-4 py-3 border-t border-slate-100">
+                    <div>
+                      <div className="font-medium text-slate-900 text-sm mb-1">{prob.teamName}</div>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+                        {prob.dups.map(d => (
+                          <span key={d.number}><span className="text-red-600 font-medium">#{d.number}</span> · {d.players.join(', ')}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-shrink-0 h-8"
+                      onClick={() => { const t = teams.find(x => x.id === prob.teamId); if (t) setSelectedTeam(t); }}
+                    >
+                      Open <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Button>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        )}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
