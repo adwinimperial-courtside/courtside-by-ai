@@ -10,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Settings2, HardDrive, Trash2, Download, Upload, Database,
-  CheckCircle, AlertTriangle, Loader2, Key, User, Calendar, Hash
+  CheckCircle, AlertTriangle, Loader2, Key, User, Calendar, Hash,
+  CalendarOff, RefreshCw, ListChecks
 } from "lucide-react";
 
 // ─── Data Backup constants ───────────────────────────────────────────────────
@@ -66,6 +67,12 @@ export default function System() {
             >
               <Trash2 className="w-4 h-4" /> Delete League
             </TabsTrigger>
+            <TabsTrigger
+              value="dormant"
+              className="flex items-center gap-2 data-[state=active]:text-amber-700 data-[state=active]:border-amber-600"
+            >
+              <CalendarOff className="w-4 h-4" /> Dormant Leagues
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="backup">
@@ -74,6 +81,10 @@ export default function System() {
 
           <TabsContent value="delete">
             <DeleteLeagueTab currentUser={currentUser} />
+          </TabsContent>
+
+          <TabsContent value="dormant">
+            <DormantLeaguesTab currentUser={currentUser} />
           </TabsContent>
         </Tabs>
       </div>
@@ -405,6 +416,364 @@ function DeleteLeagueTab({ currentUser }) {
           <Trash2 className="w-4 h-4 mr-2" />
           {isDeleting ? "Deleting..." : "Permanently Delete League"}
         </Button>
+      </CardContent>
+    </Card>
+  );
+}
+// ─── Dormant Leagues Tab ──────────────────────────────────────────────────────
+function DormantLeaguesTab({ currentUser }) {
+  const [thresholdDays, setThresholdDays] = useState(30);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [banner, setBanner] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [progress, setProgress] = useState(null);
+  const [showBulkConfirm, setShowBulkConfirm] = useState(false);
+  const [bulkConfirmText, setBulkConfirmText] = useState("");
+  const [pendingSingle, setPendingSingle] = useState(null);
+  const queryClient = useQueryClient();
+
+  const isAdmin = currentUser?.user_type === "app_admin";
+
+  const fetchAll = async (entityName) => {
+    const PAGE_SIZE = 5000;
+    let all = [];
+    let skip = 0;
+    while (true) {
+      const page = await base44.entities[entityName].list("-created_date", PAGE_SIZE, skip);
+      all = all.concat(page);
+      if (page.length < PAGE_SIZE) break;
+      skip += PAGE_SIZE;
+    }
+    return all;
+  };
+
+  const { data: leagues = [], isLoading: leaguesLoading } = useQuery({
+    queryKey: ["leagues"],
+    queryFn: () => fetchAll("League"),
+    enabled: isAdmin,
+  });
+
+  const { data: teams = [], isLoading: teamsLoading } = useQuery({
+    queryKey: ["teams"],
+    queryFn: () => fetchAll("Team"),
+    enabled: isAdmin,
+  });
+
+  const loading = leaguesLoading || teamsLoading;
+
+  const teamCountByLeague = React.useMemo(() => {
+    const map = {};
+    for (const t of teams) {
+      if (!t.league_id) continue;
+      map[t.league_id] = (map[t.league_id] || 0) + 1;
+    }
+    return map;
+  }, [teams]);
+
+  const dormant = React.useMemo(() => {
+    const now = Date.now();
+    const rows = [];
+    for (const league of leagues) {
+      const teamCount = teamCountByLeague[league.id] || 0;
+      if (teamCount > 0) continue;
+      const lastActivityStr = league.updated_date || league.created_date;
+      if (!lastActivityStr) continue;
+      const lastActivity = new Date(lastActivityStr).getTime();
+      if (isNaN(lastActivity)) continue;
+      const daysDormant = Math.floor((now - lastActivity) / 86400000);
+      if (daysDormant <= thresholdDays) continue;
+      rows.push({ ...league, daysDormant });
+    }
+    rows.sort((a, b) => b.daysDormant - a.daysDormant);
+    return rows;
+  }, [leagues, teamCountByLeague, thresholdDays]);
+
+  const dormantIds = React.useMemo(() => new Set(dormant.map((l) => l.id)), [dormant]);
+
+  React.useEffect(() => {
+    setSelectedIds((prev) => {
+      const next = new Set();
+      for (const id of prev) if (dormantIds.has(id)) next.add(id);
+      return next;
+    });
+  }, [dormantIds]);
+
+  const allSelected = dormant.length > 0 && dormant.every((l) => selectedIds.has(l.id));
+  const selectedCount = selectedIds.size;
+
+  const toggleOne = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    setSelectedIds(allSelected ? new Set() : new Set(dormant.map((l) => l.id)));
+  };
+
+  const rescan = () => {
+    queryClient.invalidateQueries({ queryKey: ["leagues"] });
+    queryClient.invalidateQueries({ queryKey: ["teams"] });
+    setBanner(null);
+  };
+
+  const badgeClass = (days) => {
+    if (days >= 90) return "bg-red-100 text-red-700";
+    if (days >= 45) return "bg-orange-100 text-orange-700";
+    return "bg-amber-100 text-amber-700";
+  };
+
+  const deleteOneLeague = async (leagueId) => {
+    try {
+      const teamsNow = await base44.entities.Team.filter({ league_id: leagueId });
+      if (teamsNow.length > 0) return "skipped";
+      const games = await base44.entities.Game.filter({ league_id: leagueId });
+      const gameIds = games.map((g) => g.id);
+      if (gameIds.length > 0) {
+        const [allStats, allLogs] = await Promise.all([
+          base44.entities.PlayerStats.list(),
+          base44.entities.GameLog.list(),
+        ]);
+        const gset = new Set(gameIds);
+        await Promise.all([
+          ...allStats.filter((s) => gset.has(s.game_id)).map((s) => base44.entities.PlayerStats.delete(s.id)),
+          ...allLogs.filter((l) => gset.has(l.game_id)).map((l) => base44.entities.GameLog.delete(l.id)),
+        ]);
+        await Promise.all(games.map((g) => base44.entities.Game.delete(g.id)));
+      }
+      await base44.entities.League.delete(leagueId);
+      return "deleted";
+    } catch {
+      return "error";
+    }
+  };
+
+  const handleSingleDelete = async () => {
+    if (!pendingSingle) return;
+    const target = pendingSingle;
+    setPendingSingle(null);
+    setIsDeleting(true);
+    setBanner(null);
+    const result = await deleteOneLeague(target.id);
+    queryClient.invalidateQueries({ queryKey: ["leagues"] });
+    queryClient.invalidateQueries({ queryKey: ["teams"] });
+    queryClient.invalidateQueries({ queryKey: ["games"] });
+    setIsDeleting(false);
+    if (result === "deleted") setBanner({ type: "success", text: `Deleted "${target.name}".` });
+    else if (result === "skipped") setBanner({ type: "error", text: `"${target.name}" now has at least one team — skipped, not deleted.` });
+    else setBanner({ type: "error", text: `Could not delete "${target.name}". Please try again.` });
+  };
+
+  const handleBulkDelete = async () => {
+    setShowBulkConfirm(false);
+    setBulkConfirmText("");
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setIsDeleting(true);
+    setBanner(null);
+    let deleted = 0, skipped = 0, errors = 0;
+    setProgress({ done: 0, total: ids.length });
+    for (let i = 0; i < ids.length; i++) {
+      const result = await deleteOneLeague(ids[i]);
+      if (result === "deleted") deleted++;
+      else if (result === "skipped") skipped++;
+      else errors++;
+      setProgress({ done: i + 1, total: ids.length });
+    }
+    queryClient.invalidateQueries({ queryKey: ["leagues"] });
+    queryClient.invalidateQueries({ queryKey: ["teams"] });
+    queryClient.invalidateQueries({ queryKey: ["games"] });
+    setSelectedIds(new Set());
+    setProgress(null);
+    setIsDeleting(false);
+    const parts = [`Deleted ${deleted} league${deleted === 1 ? "" : "s"}.`];
+    if (skipped > 0) parts.push(`Skipped ${skipped} (gained a team since the scan).`);
+    if (errors > 0) parts.push(`${errors} failed — try again.`);
+    setBanner({ type: errors > 0 ? "error" : "success", text: parts.join(" ") });
+  };
+
+  const fmtDate = (d) =>
+    d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Unknown";
+
+  return (
+    <Card className="border-amber-200 shadow-lg">
+      <CardHeader className="bg-amber-50 border-b border-amber-200">
+        <CardTitle className="text-amber-800 flex items-center gap-2">
+          <CalendarOff className="w-5 h-5" /> Dormant Leagues — empty and inactive
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-5">
+        <p className="text-sm text-slate-600">
+          Leagues with <span className="font-semibold">no teams</span> that have not been touched for longer than the
+          selected period. Deleting these removes only the empty league record (plus any leftover game data, if any).
+        </p>
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600">Inactive for more than</span>
+            <Select value={String(thresholdDays)} onValueChange={(v) => setThresholdDays(Number(v))}>
+              <SelectTrigger className="w-[120px] h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="15">15 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="45">45 days</SelectItem>
+                <SelectItem value="60">60 days</SelectItem>
+                <SelectItem value="90">90 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={rescan} disabled={loading || isDeleting} className="gap-2">
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Rescan
+            </Button>
+          </div>
+          <span className="text-sm text-slate-500">
+            {loading ? "Scanning…" : `Found ${dormant.length} dormant league${dormant.length === 1 ? "" : "s"}`}
+          </span>
+        </div>
+
+        {/* Status banner */}
+        {banner && (
+          <div className={`rounded-lg p-3 text-sm flex items-start gap-2 border ${
+            banner.type === "success" ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-800"
+          }`}>
+            {banner.type === "success" ? <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> : <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />}
+            <span>{banner.text}</span>
+          </div>
+        )}
+
+        {/* Deleting progress */}
+        {isDeleting && progress && (
+          <div className="rounded-lg p-3 text-sm bg-slate-50 border border-slate-200 text-slate-700 flex items-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Deleting {progress.done} of {progress.total}…
+          </div>
+        )}
+
+        {/* List */}
+        {loading ? (
+          <div className="flex items-center gap-2 text-slate-500 text-sm py-8 justify-center">
+            <Loader2 className="w-5 h-5 animate-spin" /> Scanning leagues…
+          </div>
+        ) : dormant.length === 0 ? (
+          <div className="text-center py-10 text-slate-500">
+            <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+            <p className="font-medium text-slate-700">No dormant leagues</p>
+            <p className="text-sm">Nothing empty and inactive beyond {thresholdDays} days. All tidy.</p>
+          </div>
+        ) : (
+          <div className="border border-slate-200 rounded-lg overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-50 text-slate-500 text-left">
+                  <th className="w-10 px-3 py-2.5 text-center">
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all"
+                      className="w-4 h-4 accent-red-600 cursor-pointer align-middle" disabled={isDeleting} />
+                  </th>
+                  <th className="px-3 py-2.5 font-medium">League</th>
+                  <th className="px-3 py-2.5 font-medium w-20">Season</th>
+                  <th className="px-3 py-2.5 font-medium w-28 hidden sm:table-cell">Created by</th>
+                  <th className="px-3 py-2.5 font-medium w-24">Dormant</th>
+                  <th className="w-12 px-3 py-2.5"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {dormant.map((league) => {
+                  const checked = selectedIds.has(league.id);
+                  return (
+                    <tr key={league.id} className={`border-t border-slate-100 ${checked ? "bg-amber-50" : "bg-white"}`}>
+                      <td className="px-3 py-2.5 text-center">
+                        <input type="checkbox" checked={checked} onChange={() => toggleOne(league.id)}
+                          aria-label={`Select ${league.name}`} className="w-4 h-4 accent-red-600 cursor-pointer align-middle"
+                          disabled={isDeleting} />
+                      </td>
+                      <td className="px-3 py-2.5 font-medium text-slate-800 truncate max-w-[180px]" title={league.name}>{league.name}</td>
+                      <td className="px-3 py-2.5 text-slate-500">{league.season || "—"}</td>
+                      <td className="px-3 py-2.5 text-slate-500 truncate max-w-[120px] hidden sm:table-cell" title={league.created_by || ""}>{league.created_by || "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${badgeClass(league.daysDormant)}`}>
+                          {league.daysDormant} days
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-center">
+                        <button onClick={() => setPendingSingle(league)} disabled={isDeleting}
+                          aria-label={`Delete ${league.name}`}
+                          className="text-slate-400 hover:text-red-600 disabled:opacity-40 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Bulk action bar */}
+            <div className="flex items-center justify-between gap-3 px-3 py-2.5 border-t border-slate-200 bg-slate-50">
+              <span className="text-sm text-slate-500 flex items-center gap-1.5">
+                <ListChecks className="w-4 h-4" /> {selectedCount} selected
+              </span>
+              <Button onClick={() => { setBulkConfirmText(""); setShowBulkConfirm(true); }}
+                disabled={selectedCount === 0 || isDeleting}
+                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 gap-2">
+                <Trash2 className="w-4 h-4" /> Delete selected ({selectedCount})
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Single-delete confirm dialog */}
+        <Dialog open={!!pendingSingle} onOpenChange={(open) => { if (!open) setPendingSingle(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-700">
+                <Trash2 className="w-5 h-5" /> Delete this league?
+              </DialogTitle>
+              <DialogDescription className="space-y-2 pt-2">
+                <span className="block text-slate-700">
+                  Permanently delete <span className="font-semibold">{pendingSingle?.name}</span>
+                  {pendingSingle?.season ? ` (${pendingSingle.season})` : ""}? It has no teams. This cannot be undone.
+                </span>
+                <span className="block text-xs text-slate-500">Created {fmtDate(pendingSingle?.created_date)} · by {pendingSingle?.created_by || "Unknown"}</span>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-3 justify-end mt-2">
+              <Button variant="outline" onClick={() => setPendingSingle(null)}>Cancel</Button>
+              <Button onClick={handleSingleDelete} className="bg-red-600 hover:bg-red-700 text-white gap-2">
+                <Trash2 className="w-4 h-4" /> Delete
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Bulk-delete confirm dialog */}
+        <Dialog open={showBulkConfirm} onOpenChange={(open) => { if (!open) { setShowBulkConfirm(false); setBulkConfirmText(""); } }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-700">
+                <AlertTriangle className="w-5 h-5" /> Delete {selectedCount} league{selectedCount === 1 ? "" : "s"}?
+              </DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                <span className="block text-slate-700">
+                  This permanently deletes the {selectedCount} selected empty league{selectedCount === 1 ? "" : "s"}. This cannot be undone.
+                </span>
+                <span className="block">
+                  <span className="block text-sm font-medium text-slate-700 mb-2">Type <span className="font-bold text-red-600">DELETE</span> to confirm:</span>
+                  <Input value={bulkConfirmText} onChange={(e) => setBulkConfirmText(e.target.value)} placeholder="DELETE"
+                    className="border-red-300 focus-visible:ring-red-400" />
+                </span>
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-3 justify-end mt-2">
+              <Button variant="outline" onClick={() => { setShowBulkConfirm(false); setBulkConfirmText(""); }}>Cancel</Button>
+              <Button disabled={bulkConfirmText !== "DELETE"} onClick={handleBulkDelete}
+                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 gap-2">
+                <Trash2 className="w-4 h-4" /> Delete {selectedCount}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
