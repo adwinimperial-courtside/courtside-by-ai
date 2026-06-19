@@ -328,7 +328,7 @@ export default function TeamsPage() {
                  variant="outline"
                  onClick={handleCheckRosters}
                  disabled={checking || filteredTeams.length === 0}
-                 className="h-12 px-5 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                 className="h-12 px-5 border-0 bg-[#F26B1F] hover:bg-[#D95D15] text-white shadow-md"
                >
                  <ListChecks className="w-5 h-5 mr-2" />
                  {checking ? "Checking..." : "Check rosters"}
