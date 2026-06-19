@@ -249,7 +249,8 @@ Deno.serve(async (req) => {
     const callerType = caller && caller.user_type;
     const isAppAdmin = me.role === 'admin' || callerType === 'app_admin';
     const isLeagueAdmin = callerType === 'league_admin';
-    if (!isAppAdmin && !isLeagueAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const isOpsAdmin = callerType === 'ops_admin';
+    if (!isAppAdmin && !isLeagueAdmin && !isOpsAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
     const callerLeagueIds = Array.isArray(caller && caller.assigned_league_ids) ? caller.assigned_league_ids : [];
 
     const body = await req.json();
@@ -264,15 +265,27 @@ Deno.serve(async (req) => {
     const decider = {
       email: (caller && caller.email) || me.email || '',
       name: (caller && (caller.full_name || caller.name)) || me.full_name || me.email || '',
-      type: isAppAdmin ? 'app_admin' : 'league_admin',
+      type: isAppAdmin ? 'app_admin' : (isOpsAdmin ? 'ops_admin' : 'league_admin'),
       at: new Date().toISOString(),
     };
 
     const role = application.requested_role;
 
     if (role === 'league_admin') {
-      if (!isAppAdmin) return Response.json({ error: 'Forbidden: only an app admin can approve league admin requests' }, { status: 403 });
+      // Operations Admins may decide ONLY brand-new-league applications (those that create a
+      // league: a league_name is provided and they are not joining an existing league_id).
+      const isExistingLeagueJoin = !!application.league_id && !application.league_name;
+      const opsMayDecide = isOpsAdmin && !isExistingLeagueJoin;
+      if (!isAppAdmin && !opsMayDecide) {
+        return Response.json({ error: 'Forbidden: you are not allowed to decide this league admin request' }, { status: 403 });
+      }
       return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider);
+    }
+
+    // Operations Admins are limited to the new-league applications handled above; they may
+    // not decide coach, player, or viewer requests.
+    if (isOpsAdmin && !isAppAdmin) {
+      return Response.json({ error: 'Forbidden: Operations Admins can only decide new-league applications' }, { status: 403 });
     }
 
     const targetLeagueIds = getTargetLeagueIds(application);
