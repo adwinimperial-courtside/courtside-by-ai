@@ -7,7 +7,7 @@ import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Ke
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
-  const isAdmin = currentUser?.user_type === "app_admin";
+  const isAdmin = currentUser?.user_type === "app_admin" || currentUser?.user_type === "ops_admin";
   // Page through every record. Advance by what base44 actually returns and
   // stop only when a page comes back empty, so base44's per-response cap
   // can never silently truncate the totals.
@@ -30,6 +30,23 @@ export default function CommandCenter() {
     staleTime: 30000,
     refetchInterval: 60000,
     queryFn: async () => {
+      // ops_admin cannot read User/UserApplication directly (platform-admin only),
+      // so it loads the dashboard snapshot via the service-role helper.
+      // app_admin keeps its original direct reads below, unchanged.
+      if (currentUser?.user_type === "ops_admin") {
+        const res = await base44.functions.invoke("getCommandCenterData", {});
+        const d = res?.data || res || {};
+        return {
+          leagues: d.leagues || [],
+          teams: d.teams || [],
+          players: d.players || [],
+          games: d.games || [],
+          applications: d.applications || [],
+          users: d.users || [],
+          auditLogs: d.auditLogs || [],
+          deletions: d.deletions || [],
+        };
+      }
       // One request at a time — true totals with zero request burst.
       const leagues = await listAll("League", "-created_date");
       const teams = await listAll("Team", "-created_date");
