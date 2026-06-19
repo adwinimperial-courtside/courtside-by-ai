@@ -19,7 +19,7 @@ export default function RequestManagement() {
     fetchUser();
   }, []);
 
-  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin") {
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "league_admin" && currentUser.user_type !== "ops_admin") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
         <div className="max-w-2xl mx-auto">
