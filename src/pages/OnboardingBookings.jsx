@@ -35,7 +35,7 @@ export default function OnboardingBookings() {
   const { data: bookings = [], isLoading, refetch } = useQuery({
     queryKey: ["onboarding_bookings"],
     queryFn: () => base44.entities.OnboardingBooking.list("-created_date", 200),
-    enabled: currentUser?.user_type === "app_admin",
+    enabled: currentUser?.user_type === "app_admin" || currentUser?.user_type === "ops_admin",
   });
 
   const viewerTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -70,7 +70,7 @@ export default function OnboardingBookings() {
     }
   };
 
-  if (currentUser && currentUser.user_type !== "app_admin") {
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "ops_admin") {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 flex items-center justify-center">
         <div className="bg-white rounded-xl border border-red-200 p-8 text-center max-w-sm">

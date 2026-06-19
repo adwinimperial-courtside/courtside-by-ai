@@ -23,7 +23,7 @@ export default function FeedbackPage() {
     staleTime: 0,
   });
 
-  if (currentUser && currentUser.user_type !== "app_admin") {
+  if (currentUser && currentUser.user_type !== "app_admin" && currentUser.user_type !== "ops_admin") {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
