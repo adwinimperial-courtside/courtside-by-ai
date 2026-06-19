@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Crown, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2, Crown, Upload, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -63,7 +63,35 @@ export default function PlayerManagement({ teamId, team, userType }) {
     setTableData(initialData);
   }, [players.length]);
 
+  // JERSEY_DEDUPE_V1 — jersey numbers must be unique within a team.
+  // Find numbers used by 2+ rows; blank/empty rows are ignored.
+  const duplicateJerseys = React.useMemo(() => {
+    const counts = {};
+    tableData.forEach(row => {
+      const jn = String(row.jersey_number ?? '').trim();
+      if (jn === '') return;
+      const n = parseInt(jn, 10);
+      if (isNaN(n)) return;
+      counts[n] = (counts[n] || 0) + 1;
+    });
+    return new Set(Object.keys(counts).filter(k => counts[k] > 1).map(Number));
+  }, [tableData]);
+
+  const hasDuplicates = duplicateJerseys.size > 0;
+  const duplicateList = [...duplicateJerseys].sort((a, b) => a - b).map(n => `#${n}`).join(', ');
+  const isDuplicateRow = (row) => {
+    const jn = String(row.jersey_number ?? '').trim();
+    if (jn === '') return false;
+    const n = parseInt(jn, 10);
+    return !isNaN(n) && duplicateJerseys.has(n);
+  };
+
   const handleSaveAllPlayers = async () => {
+    // JERSEY_DEDUPE_V1 — never save a roster with duplicate numbers
+    if (hasDuplicates) {
+      toast({ title: "Duplicate jersey numbers", description: "Two players share the same number. Make each number unique, then save.", variant: "destructive" });
+      return;
+    }
     setIsSaving(true);
     try {
       let savedCount = 0;
@@ -204,7 +232,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
             {canManage && (
               <Button
                 onClick={handleSaveAllPlayers}
-                disabled={isSaving || isLoading}
+                disabled={isSaving || isLoading || hasDuplicates}
                 className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
               >
                 <Plus className="w-4 h-4 mr-2" />
@@ -214,6 +242,14 @@ export default function PlayerManagement({ teamId, team, userType }) {
           </div>
         </CardHeader>
         <CardContent className="pt-6">
+          {!isLoading && hasDuplicates && (
+            <div className="mb-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <span className="text-sm text-red-700 leading-snug">
+                Duplicate jersey number{duplicateJerseys.size > 1 ? 's' : ''}: {duplicateList}. Each number must be unique within the team before you can save.
+              </span>
+            </div>
+          )}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-pulse text-slate-400">Loading players...</div>
@@ -252,9 +288,12 @@ export default function PlayerManagement({ teamId, team, userType }) {
                              handleRowChange(index, 'jersey_number', val);
                            }}
                            placeholder="#"
-                           className="border-0 p-1 h-8"
+                           className={`p-1 h-8 ${isDuplicateRow(row) ? 'border-2 border-red-500 bg-red-50 text-red-700 font-semibold' : 'border-0'}`}
                            disabled={isSaving || !canManage}
                          />
+                         {isDuplicateRow(row) && (
+                           <span className="block text-xs text-red-600 mt-0.5">duplicate</span>
+                         )}
                        </TableCell>
                       <TableCell>
                         <Select
