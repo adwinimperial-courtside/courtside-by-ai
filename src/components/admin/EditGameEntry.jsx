@@ -561,7 +561,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
               disabled={invalidRows.length > 0}
               className="bg-gradient-to-r from-blue-500 to-blue-600"
             >
-              Next: Select Player of the Game
+              Next: review &amp; save
             </Button>
           </div>
         </div>
@@ -603,12 +603,15 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
           })()}
 
           <div className="bg-slate-100 p-6 rounded-lg">
-            <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: teams.find(t => t.id === winningTeamId)?.color }}>
-                {teams.find(t => t.id === winningTeamId)?.name?.[0]}
-              </div>
-              Select Player of the Game from {teams.find(t => t.id === winningTeamId)?.name}
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white" style={{ backgroundColor: teams.find(t => t.id === winningTeamId)?.color }}>
+                  {teams.find(t => t.id === winningTeamId)?.name?.[0]}
+                </div>
+                Player of the game
+              </h3>
+              <span className="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded">already set · change only if needed</span>
+            </div>
             <Select 
               value={selectedGame.player_of_game || ""} 
               onValueChange={(value) => setSelectedGame({ ...selectedGame, player_of_game: value })}
