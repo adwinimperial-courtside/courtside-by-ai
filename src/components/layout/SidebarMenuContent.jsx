@@ -133,18 +133,12 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   const { data: userApplications = [] } = useQuery({
     queryKey: ['userApplications'],
     queryFn: () => base44.entities.UserApplication.list(),
-    enabled: currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'ops_admin',
+    enabled: currentUser?.user_type === 'app_admin',
     refetchInterval: 30000,
     staleTime: 0,
   });
 
   const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
-  // Operations Admin only handles NEW-LEAGUE league-admin applications (has a league_name, not joining an existing league_id).
-  const opsNewLeaguePending = userApplications.filter(r =>
-    r.status === 'Pending' &&
-    r.requested_role === 'league_admin' &&
-    r.league_name && String(r.league_name).trim() && !r.league_id
-  ).length;
 
   const { data: onboardingBookings = [] } = useQuery({
     queryKey: ['onboardingBookings'],
@@ -161,7 +155,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       const res = await base44.functions.invoke('getReviewRequests', {});
       return res?.data || res;
     },
-    enabled: currentUser?.user_type === 'league_admin',
+    enabled: currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'ops_admin',
     refetchInterval: 30000,
   });
   const leagueAdminPendingCount = (leagueAdminReview?.requests || []).length;
@@ -358,8 +352,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
-                      {item.title === "User Requests" && opsNewLeaguePending > 0 && (
-                        <Badge className="ml-auto bg-orange-500 text-white">{opsNewLeaguePending}</Badge>
+                      {item.title === "User Requests" && leagueAdminPendingCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{leagueAdminPendingCount}</Badge>
                       )}
                       {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
