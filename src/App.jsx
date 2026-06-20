@@ -55,11 +55,29 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
+      // JOIN_KOE_REDIRECT_V1 — if the user arrived via the KOE join link, remember it so we can
+      // return them to /JoinKOE after sign-in (base44 otherwise drops new signups on the home route).
+      try {
+        if (window.location.pathname.toLowerCase().includes('joinkoe')) {
+          localStorage.setItem('koe_signup_intent', '1');
+        }
+      } catch (e) {}
       // Redirect to login automatically
       navigateToLogin();
       return null;
     }
   }
+
+  // JOIN_KOE_REDIRECT_V1 — once authenticated, send KOE-link arrivals to /JoinKOE (which renders
+  // outside the Layout, bypassing the normal RegistrationGate). Clear the marker so it fires once.
+  try {
+    if (localStorage.getItem('koe_signup_intent') === '1' &&
+        !window.location.pathname.toLowerCase().includes('joinkoe')) {
+      localStorage.removeItem('koe_signup_intent');
+      window.location.replace('/JoinKOE');
+      return null;
+    }
+  } catch (e) {}
 
   // Render the main app — overlay is layout-free
   return (
