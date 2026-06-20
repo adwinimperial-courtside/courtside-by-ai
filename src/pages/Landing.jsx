@@ -17,6 +17,7 @@ import {
   Wifi
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
+import PlayerHomePanel from "@/components/home/PlayerHomePanel"; // PLAYER_HOME_WIREUP_V1
 
 export default function Landing() {
   const { data: currentUser } = useQuery({
@@ -96,6 +97,9 @@ export default function Landing() {
       { icon: BarChart3, color: "#3B82F6", bg: "bg-blue-100", title: "Statistics", subtitle: "Player leaders", href: "/statistics" },
     ];
   };
+
+  // PLAYER_HOME_WIREUP_V1 — players get the dedicated cockpit; admin/coach/viewer unchanged.
+  if (role === "player") return <PlayerHomePanel currentUser={currentUser} />;
 
   return (
     <div className="min-h-screen bg-white">
