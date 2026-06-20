@@ -15,6 +15,7 @@ import PrivacyConsentStep from "@/components/registration/PrivacyConsentStep";
 const KOE_LEAGUE_NAME = "Kings of Europe";
 const KOE_CODE_LABEL = "KOE26";
 const LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563563de/a6f36183f_CourtSidebyAILOGOTransparent.png";
+const KOE_LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563563de/e0e9fdb49_koe_logo.png";
 
 const ROLE_OPTIONS = [
   { id: "player", label: "Player", icon: User, description: "Join your team and follow your personal stats" },
@@ -36,9 +37,9 @@ function KoeHeader({ stepHint }) {
       <div className="flex items-center justify-center mb-3">
         <img src={LOGO_URL} alt="Courtside by AI" className="h-16 w-auto" />
       </div>
-      <div className="rounded-xl px-4 py-3 text-center" style={{ backgroundColor: "#0B1F3A" }}>
-        <p className="text-white font-bold text-lg leading-tight">Kings of Europe</p>
-        <p className="text-xs font-medium tracking-wide" style={{ color: "#F26B1F" }}>Numbers Don't Lie</p>
+      <div className="flex flex-col items-center gap-2">
+        <img src={KOE_LOGO_URL} alt="Kings of Europe" className="h-24 w-auto" />
+        <p className="text-sm text-slate-500 text-center">The biggest and best Filipino basketball tournament in Europe</p>
       </div>
       {stepHint && <p className="text-center text-xs text-slate-400 mt-3">{stepHint}</p>}
     </div>
