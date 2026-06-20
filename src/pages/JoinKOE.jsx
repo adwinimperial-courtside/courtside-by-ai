@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Users, Eye, User, CheckCircle2, Loader2, AlertCircle, ChevronLeft } from "lucide-react";
+import { Users, Eye, User, CheckCircle2, Loader2, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import PrivacyConsentStep from "@/components/registration/PrivacyConsentStep";
 
 // JOIN_KOE_V1 — Dedicated, isolated signup for the Kings of Europe league.
@@ -18,30 +18,56 @@ const LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563563d
 const KOE_LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563563de/e0e9fdb49_koe_logo.png";
 
 const ROLE_OPTIONS = [
-  { id: "player", label: "Player", icon: User, description: "Join your team and follow your personal stats" },
-  { id: "coach", label: "Coach", icon: Users, description: "Access coaching insights and team analytics" },
-  { id: "viewer", label: "Viewer", icon: Eye, description: "Follow league stats, standings, and results" },
+  { id: "player", label: "Player", icon: User, description: "Join your team, own your stats" },
+  { id: "coach", label: "Coach", icon: Users, description: "Insights & team analytics" },
+  { id: "viewer", label: "Viewer", icon: Eye, description: "Follow standings & results" },
 ];
 
-function Shell({ children }) {
+function Shell({ children, stepNumber }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-6 sm:p-8">{children}</div>
-    </div>
-  );
-}
-
-function KoeHeader({ stepHint }) {
-  return (
-    <div className="mb-6">
-      <div className="flex items-center justify-center mb-3">
-        <img src={LOGO_URL} alt="Courtside by AI" className="h-16 w-auto" />
+    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full bg-white rounded-3xl shadow-xl overflow-hidden">
+        {/* Dark hero header */}
+        <div className="relative px-6 pt-6 pb-8 flex flex-col items-center" style={{ backgroundColor: "#0B1F3A" }}>
+          {/* Season badge */}
+          <div className="mb-4 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest text-white" style={{ backgroundColor: "#F26B1F" }}>
+            SEASON 2026 · KOE26
+          </div>
+          {/* KOE logo in white circle */}
+          <div className="w-28 h-28 rounded-full bg-white flex items-center justify-center mb-4 shadow-lg">
+            <img src={KOE_LOGO_URL} alt="Kings of Europe" className="w-24 h-24 object-contain" />
+          </div>
+          <h1 className="text-white font-extrabold text-2xl text-center leading-tight">
+            The biggest &amp; best Filipino<br />basketball league in Europe
+          </h1>
+        </div>
+        {/* Orange divider line */}
+        <div className="h-1 w-full" style={{ backgroundColor: "#F26B1F" }} />
+        {/* Body */}
+        <div className="px-6 py-5">
+          {/* Meta line */}
+          <p className="text-xs text-slate-500 text-center mb-4">
+            <span className="font-semibold text-slate-700">EST. 2013</span> · Filipino hoops · across Europe
+          </p>
+          {/* Step indicator */}
+          {stepNumber && (
+            <div className="mb-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-xs font-bold tracking-widest" style={{ color: "#F26B1F" }}>STEP {stepNumber} / 3</span>
+              </div>
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ backgroundColor: "#F26B1F", width: `${(stepNumber / 3) * 100}%` }} />
+              </div>
+            </div>
+          )}
+          {children}
+        </div>
+        {/* Footer */}
+        <div className="px-6 pb-5 text-center">
+          <p className="text-xs text-slate-400">Powered by Courtside by AI · Numbers Don't Lie</p>
+          <img src={LOGO_URL} alt="Courtside by AI" className="h-6 w-auto mx-auto mt-1 opacity-50" />
+        </div>
       </div>
-      <div className="flex flex-col items-center gap-2">
-        <img src={KOE_LOGO_URL} alt="Kings of Europe" className="h-24 w-auto" />
-        <p className="text-sm font-bold text-blue-700 text-center">The biggest and best Filipino basketball tournament in Europe</p>
-      </div>
-      {stepHint && <p className="text-center text-xs text-slate-400 mt-3">{stepHint}</p>}
     </div>
   );
 }
@@ -233,7 +259,6 @@ export default function JoinKOE() {
   if (step === "loading") {
     return (
       <Shell>
-        <KoeHeader />
         <div className="flex flex-col items-center gap-3 py-6">
           <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
           <p className="text-sm text-slate-500">Loading the Kings of Europe signup…</p>
@@ -245,7 +270,6 @@ export default function JoinKOE() {
   if (step === "load_error") {
     return (
       <Shell>
-        <KoeHeader />
         <Banner message={loadError} />
         <Button onClick={() => window.location.reload()} className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold">
           Try again
@@ -257,7 +281,6 @@ export default function JoinKOE() {
   if (step === "already_applied") {
     return (
       <Shell>
-        <KoeHeader />
         <div className="text-center py-4">
           <div className="w-14 h-14 rounded-full bg-orange-50 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-7 h-7" style={{ color: "#F26B1F" }} />
@@ -275,7 +298,6 @@ export default function JoinKOE() {
   if (step === "success") {
     return (
       <Shell>
-        <KoeHeader />
         <div className="text-center py-4">
           <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-7 h-7 text-green-500" />
@@ -292,15 +314,13 @@ export default function JoinKOE() {
   }
 
   if (step === "consent") {
-    // Reused as-is (import, never edit). Its own Back returns to role selection.
     return <PrivacyConsentStep onAccept={handleConsentAccept} onBack={() => setStep("role")} />;
   }
 
   if (step === "role") {
     return (
-      <Shell>
-        <KoeHeader stepHint="Step 1 of 3 · Choose your role" />
-        <p className="text-sm text-slate-600 mb-4 text-center">How are you joining the Kings of Europe league?</p>
+      <Shell stepNumber={1}>
+        <h2 className="text-lg font-bold text-slate-900 text-center mb-4">How are you joining?</h2>
         <div className="space-y-3">
           {ROLE_OPTIONS.map((role) => {
             const Icon = role.icon;
@@ -309,15 +329,16 @@ export default function JoinKOE() {
                 key={role.id}
                 type="button"
                 onClick={() => pickRole(role.id)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50 transition-colors text-left"
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border-2 border-slate-200 hover:border-orange-400 hover:bg-orange-50 transition-colors text-left group"
               >
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "#0B1F3A" }}>
                   <Icon className="w-5 h-5 text-white" />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800">{role.label}</p>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-slate-800">{role.label}</p>
                   <p className="text-xs text-slate-500">{role.description}</p>
                 </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-orange-400 transition-colors flex-shrink-0" />
               </button>
             );
           })}
@@ -329,9 +350,7 @@ export default function JoinKOE() {
   // step === "details"
   const roleLabel = selectedRole === "player" ? "Player" : selectedRole === "coach" ? "Coach" : "Viewer";
   return (
-    <Shell>
-      <KoeHeader stepHint={`Step 3 of 3 · ${roleLabel} details`} />
-
+    <Shell stepNumber={3}>
       <button
         type="button"
         onClick={() => setStep("role")}
