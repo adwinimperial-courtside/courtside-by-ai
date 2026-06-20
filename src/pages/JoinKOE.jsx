@@ -140,6 +140,20 @@ export default function JoinKOE() {
         if (cancelled) return;
         setLeague(koe);
 
+        // JOIN_KOE_MEMBER_REDIRECT_V1 — if this user is ALREADY a registered KOE member, don't make
+        // them sign up again: send them into the app (Courtside home page). Membership is determined
+        // by the KOE league id being present in the user's assigned_league_ids — the field that
+        // approveUserApplication writes on approval and that the app uses everywhere. This runs BEFORE
+        // the teams load and the already-applied check so KOE members are bounced immediately. Users
+        // who are NOT KOE members (including registered members of OTHER leagues, and pending KOE
+        // applicants) fall through: pending applicants hit the "already applied" screen, everyone else
+        // can still apply to KOE.
+        const assignedLeagueIds = Array.isArray(me.assigned_league_ids) ? me.assigned_league_ids : [];
+        if (assignedLeagueIds.includes(koe.id)) {
+          if (!cancelled) window.location.replace("/");
+          return;
+        }
+
         // KOE teams for the dropdown
         const allTeams = await base44.entities.Team.list();
         const koeTeams = (allTeams || [])
