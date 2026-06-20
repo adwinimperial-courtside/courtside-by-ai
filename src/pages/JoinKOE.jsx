@@ -39,7 +39,7 @@ function KoeHeader({ stepHint }) {
       </div>
       <div className="flex flex-col items-center gap-2">
         <img src={KOE_LOGO_URL} alt="Kings of Europe" className="h-24 w-auto" />
-        <p className="text-sm text-slate-500 text-center">The biggest and best Filipino basketball tournament in Europe</p>
+        <p className="text-sm font-bold text-blue-700 text-center">The biggest and best Filipino basketball tournament in Europe</p>
       </div>
       {stepHint && <p className="text-center text-xs text-slate-400 mt-3">{stepHint}</p>}
     </div>
