@@ -27,6 +27,7 @@ import GameOverlayPage from './pages/GameOverlay';
 import GameOverlaySettingsPage from './pages/GameOverlaySettings';
 import CommandCenterPage from './pages/CommandCenter';
 import OnboardingBookingsPage from './pages/OnboardingBookings';
+import JoinKOEPage from './pages/JoinKOE';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -64,6 +65,8 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/GameOverlay" element={<GameOverlayPage />} />
+      {/* JOIN_KOE_ROUTE_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new KOE signups */}
+      <Route path="/JoinKOE" element={<JoinKOEPage />} />
       <Route path="*" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <Routes>
