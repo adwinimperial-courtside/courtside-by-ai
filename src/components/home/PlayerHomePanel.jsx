@@ -206,12 +206,12 @@ export default function PlayerHomePanel({ currentUser }) {
 
   // Earned badges (count > 0) — same calculator as the Player Dashboard.
   const earnedBadges = useMemo(() => {
-    const counts = calculatePlayerBadges(myStats, games, formatMap);
+    const counts = calculatePlayerBadges(myStats, games, formatMap, stats);
     return Object.entries(counts)
       .filter(([, c]) => c > 0)
       .sort(([, a], [, b]) => b - a)
       .map(([key, count]) => ({ key, count, ...BADGE_DEFINITIONS[key] }));
-  }, [myStats, games, formatMap]);
+  }, [myStats, games, formatMap, stats]);
 
   const firstName = currentUser?.full_name?.split(" ")[0] || null;
   const initial = currentUser?.full_name?.[0]?.toUpperCase() || "U";

@@ -133,6 +133,7 @@ export default function POGSpotlightModal({ open, onClose, pogPlayer, leagueId, 
               teamId={teamId}
               playerRecord={pogPlayer}
               formatMap={formatMap}
+              allStats={allCompletedStats}
             />
 
             <PlayerTrendCard

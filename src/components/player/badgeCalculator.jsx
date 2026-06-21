@@ -18,7 +18,7 @@ function getBlocks(stat) {
   return stat.blocks || 0;
 }
 
-export function calculatePlayerBadges(myStats, games, formatMap = null) {
+export function calculatePlayerBadges(myStats, games, formatMap = null, allStats = null) {
   // CARD_FORMAT_V1 — per-stat points via the engine, with each game's detected
   // format when a formatMap is supplied; engine legacy fallback otherwise.
   const gamesById = new Map((games || []).map(g => [g.id, g]));
@@ -47,7 +47,9 @@ export function calculatePlayerBadges(myStats, games, formatMap = null) {
     .sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
 
   const completedGameIds = new Set(completedGames.map(g => g.id));
-  const playerGameStats = myStats.filter(s => completedGameIds.has(s.game_id));
+  const playerGameStats = myStats
+    .filter(s => completedGameIds.has(s.game_id))
+    .sort((a, b) => new Date(gamesById.get(a.game_id)?.game_date || 0) - new Date(gamesById.get(b.game_id)?.game_date || 0));
 
   // === SCORING BADGES ===
 
@@ -150,33 +152,37 @@ export function calculatePlayerBadges(myStats, games, formatMap = null) {
     }
   });
 
-  // Clutch Performer: leading scorer in winning team
-  playerGameStats.forEach(stat => {
-    const game = completedGames.find(g => g.id === stat.game_id);
-    if (!game) return;
+  // Clutch Performer: sole team-leading scorer (10+) in a win.
+  // Requires full team scoring data (allStats); if absent, skip rather than
+  // over-credit on partial data.
+  if (allStats && allStats.length) {
+    playerGameStats.forEach(stat => {
+      const game = completedGames.find(g => g.id === stat.game_id);
+      if (!game) return;
 
-    const isHome = game.home_team_id === stat.team_id;
-    const isWin = isHome ? game.home_score > game.away_score : game.away_score > game.home_score;
+      const isHome = game.home_team_id === stat.team_id;
+      const isWin = isHome ? game.home_score > game.away_score : game.away_score > game.home_score;
 
-    if (!isWin) return;
+      if (!isWin) return;
 
-    // Find all stats from this game for this team
-    const teamStats = playerGameStats.filter(
-      s => s.game_id === stat.game_id && s.team_id === stat.team_id
-    );
+      // All stats from this game for this team (full roster, not just this player)
+      const teamStats = allStats.filter(
+        s => s.game_id === stat.game_id && s.team_id === stat.team_id
+      );
 
-    const playerPoints = getPoints(stat);
-    const teamPoints = teamStats.map(getPoints);
-    const maxTeamScore = Math.max(...teamPoints);
-    const numberOfTopScorers = teamPoints.filter(p => p === maxTeamScore).length;
+      const playerPoints = getPoints(stat);
+      const teamPoints = teamStats.map(getPoints);
+      const maxTeamScore = teamPoints.length ? Math.max(...teamPoints) : playerPoints;
+      const numberOfTopScorers = teamPoints.filter(p => p === maxTeamScore).length;
 
-    const qualifies =
-      playerPoints === maxTeamScore &&
-      numberOfTopScorers === 1 &&
-      playerPoints >= 10;
+      const qualifies =
+        playerPoints === maxTeamScore &&
+        numberOfTopScorers === 1 &&
+        playerPoints >= 10;
 
-    if (qualifies) badgeCounts.clutch_performer++;
-  });
+      if (qualifies) badgeCounts.clutch_performer++;
+    });
+  }
 
   // All-Around Game: 5+ points, 5+ rebounds, 5+ assists
   playerGameStats.forEach(stat => {

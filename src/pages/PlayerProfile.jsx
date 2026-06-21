@@ -212,6 +212,7 @@ export default function PlayerProfile() {
             teamId={teamId}
             playerRecord={playerRecord}
             formatMap={formatMap}
+            allStats={allCompletedStats}
           />
 
           <PlayerTrendCard
