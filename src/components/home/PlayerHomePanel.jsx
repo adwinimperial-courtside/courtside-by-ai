@@ -16,11 +16,12 @@ import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 import { calculatePlayerBadges } from "@/components/player/badgeCalculator";
 import { BADGE_DEFINITIONS } from "@/components/player/badgeDefinitions";
 
-// PLAYER_HOME_V1 — Compact, mobile-first "cockpit" home for players.
-// Renders only for user_type === 'player' (gated by Landing.jsx). All numbers
-// come from the shared cap-agnostic stats hook + the existing stat engine and
-// badge calculator, so a player's KPIs, last game, rank and badges match the
-// Player Dashboard / Statistics pages exactly. No new stat math is invented here.
+// PLAYER_HOME_V2 — Responsive "cockpit" home for players: single column on
+// phones, two columns (games | badges) on iPad/laptop (>=md). Renders only for
+// user_type === 'player' (gated by Landing.jsx). All numbers come from the
+// shared stats hook + the existing stat engine and badge calculator, so KPIs,
+// last game, rank and badges match the Player Dashboard / Statistics pages
+// exactly. No new stat math is invented here.
 
 const NAVY = "#0B1F3A";
 const ORANGE = "#F26B1F";
@@ -50,7 +51,7 @@ function didParticipate(stat) {
 function Shell({ children }) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f1f5f9" }}>
-      <div className="max-w-md mx-auto px-4 pt-5 pb-2">{children}</div>
+      <div className="max-w-md md:max-w-4xl mx-auto px-4 pt-5 pb-2">{children}</div>
     </div>
   );
 }
@@ -88,7 +89,7 @@ function StatsBar() {
   ];
   return (
     <div className="mt-1 -mx-4 px-4 pt-4 pb-6 bg-slate-50 border-t border-slate-200">
-      <div className="flex text-center">
+      <div className="flex text-center max-w-md md:max-w-2xl mx-auto">
         {items.map((s, i) => (
           <div key={i} className={`flex-1 ${i > 0 ? "border-l border-slate-200" : ""}`}>
             <div className="text-[22px] font-black leading-none" style={{ color: ORANGE }}>{s.n}</div>
@@ -219,9 +220,137 @@ export default function PlayerHomePanel({ currentUser }) {
 
   const heroChip = gp > 0 ? (scoringRank ? `#${scoringRank} in scoring` : "Your stats are live") : "New player";
 
+  // ---- Card render helpers (used in the responsive grid below) ----
+
+  const KpiCard = (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
+      <div className="flex text-center">
+        {[{ v: ppg, l: "PPG" }, { v: rpg, l: "RPG" }, { v: apg, l: "APG" }].map((k, i) => (
+          <div key={i} className={`flex-1 ${i > 0 ? "border-l border-slate-100" : ""}`}>
+            <div className="text-[26px] font-black leading-none tracking-tight" style={{ color: gp > 0 ? NAVY : "#94a3b8" }}>
+              {gp > 0 ? k.v.toFixed(1) : "—"}
+            </div>
+            <div className="text-[11px] text-slate-500 mt-1.5 font-semibold">{k.l}</div>
+          </div>
+        ))}
+      </div>
+      <div className="text-[11px] text-slate-500 text-center mt-2.5 pt-2.5 border-t border-slate-100">
+        {gp > 0 ? (
+          <><span className="inline-block bg-slate-100 text-slate-600 font-bold text-[11px] px-2 py-0.5 rounded-full">{gp} games played</span>{currentTeam?.name ? ` · ${currentTeam.name}` : ""}</>
+        ) : (
+          "Your stats appear after your first game."
+        )}
+      </div>
+    </div>
+  );
+
+  const LastGameCard = (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4">
+      {lastGame ? (() => {
+        const isHome = lastGame.home_team_id === teamId;
+        const oppId = isHome ? lastGame.away_team_id : lastGame.home_team_id;
+        const opp = teams.find((t) => t.id === oppId);
+        const myScore = isHome ? lastGame.home_score : lastGame.away_score;
+        const oppScore = isHome ? lastGame.away_score : lastGame.home_score;
+        const won = myScore > oppScore;
+        const pts = lastLine ? calcPoints(lastLine, lastGame, formatMap[lastGame.id]) : 0;
+        const reb = lastLine ? (lastLine.offensive_rebounds || 0) + (lastLine.defensive_rebounds || 0) : 0;
+        const ast = lastLine ? lastLine.assists || 0 : 0;
+        return (
+          <button className="w-full text-left" onClick={() => go("Schedule")}>
+            <Eyebrow right={<span className="text-[11px] font-extrabold" style={{ color: won ? "#16A34A" : "#DC2626" }}>{won ? "W" : "L"} {myScore}–{oppScore}</span>}>
+              Last game
+            </Eyebrow>
+            <div className="flex gap-2">
+              {[{ v: pts, k: "PTS", d: Math.round(pts - ppg) }, { v: reb, k: "REB", d: Math.round(reb - rpg) }, { v: ast, k: "AST", d: Math.round(ast - apg) }].map((s, i) => (
+                <div key={i} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 text-center">
+                  <div className="text-[19px] font-extrabold text-slate-900 leading-none">{s.v}</div>
+                  <div className="text-[10px] text-slate-500 font-bold tracking-wide mt-1">{s.k}</div>
+                  <Delta value={s.d} />
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-slate-500 text-center mt-2.5">vs {opp?.name || "opponent"} · compared to your season average</p>
+          </button>
+        );
+      })() : (
+        <>
+          <Eyebrow>Last game</Eyebrow>
+          <p className="text-sm text-slate-500 text-center py-1">No games yet — your first stat line will show up here once you've played.</p>
+        </>
+      )}
+    </div>
+  );
+
+  const NextGameCard = (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4">
+      {nextGame ? (() => {
+        const isHome = nextGame.home_team_id === teamId;
+        const oppId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
+        const opp = teams.find((t) => t.id === oppId);
+        const d = new Date(nextGame.game_date);
+        const dateLabel = isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, "EEE, MMM d");
+        return (
+          <button className="w-full text-left" onClick={() => go("Schedule")}>
+            <Eyebrow>Next game</Eyebrow>
+            <div className="text-[15px] font-extrabold text-slate-900">{dateLabel} · {format(d, "HH:mm")}</div>
+            <div className="text-[13px] text-slate-600 mt-0.5">{currentTeam?.name || "Your team"} vs {opp?.name || "TBD"}</div>
+            <div className="text-[11.5px] text-slate-400 mt-0.5">{isHome ? "🏠 Home" : "🚌 Away"}</div>
+          </button>
+        );
+      })() : (
+        <>
+          <Eyebrow>Next game</Eyebrow>
+          <p className="text-sm text-slate-500">No upcoming games scheduled.</p>
+        </>
+      )}
+    </div>
+  );
+
+  const BadgesCard = (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 h-full">
+      <Eyebrow right={<button className="text-[11px] font-bold flex items-center gap-0.5" style={{ color: ORANGE }} onClick={() => go("PlayerProfile")}>See all <ChevronRight className="w-3 h-3" /></button>}>
+        Your badges
+      </Eyebrow>
+      {earnedBadges.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {earnedBadges.slice(0, 6).map((b) => (
+            <span key={b.key} className="inline-flex items-center gap-1.5 text-[12px] font-bold px-2.5 py-1.5 rounded-full" style={{ backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", color: "#9a3412" }}>
+              {b.badge_icon} {b.badge_name}{b.count > 1 ? <span style={{ color: ORANGE }}>×{b.count}</span> : null}
+            </span>
+          ))}
+          {earnedBadges.length > 6 && (
+            <span className="inline-flex items-center text-[12px] font-bold px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-500">+{earnedBadges.length - 6} more</span>
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-slate-500">No badges yet. Show up, put up numbers, and they'll start landing here. 🏀</p>
+      )}
+
+      <details className="mt-3 border-t border-slate-100 pt-2.5 group">
+        <summary className="list-none cursor-pointer flex items-center gap-1.5 text-[12px] font-bold" style={{ color: ORANGE }}>
+          How do I earn badges?
+          <ChevronDown className="w-3.5 h-3.5 ml-auto text-slate-400 group-open:rotate-180 transition-transform" />
+        </summary>
+        <div className="mt-2.5 space-y-2.5">
+          {BADGE_GUIDE.map((g) => (
+            <div key={g.group} className="flex gap-2.5">
+              <span className="text-[16px] leading-tight flex-shrink-0">{g.icon}</span>
+              <div>
+                <div className="text-[12.5px] font-bold text-slate-800">{g.group}</div>
+                <div className="text-[11.5px] text-slate-500 leading-snug">{g.items}</div>
+              </div>
+            </div>
+          ))}
+          <p className="text-[11px] text-slate-400 italic">Earn them game by game — the more you play, the more you stack up.</p>
+        </div>
+      </details>
+    </div>
+  );
+
   return (
     <Shell>
-      {/* Hero */}
+      {/* Hero (full width on every screen) */}
       <div className="rounded-2xl p-4 mb-3" style={{ backgroundColor: NAVY }}>
         <div className="flex items-center justify-between gap-2.5 mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -248,7 +377,7 @@ export default function PlayerHomePanel({ currentUser }) {
         {/* League: switcher when >1, plain label otherwise */}
         {userLeagues.length > 1 ? (
           <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
-            <SelectTrigger className="w-full bg-white/10 border-white/15 text-white text-sm font-semibold rounded-xl h-auto py-2">
+            <SelectTrigger className="w-full md:w-auto md:min-w-[18rem] bg-white/10 border-white/15 text-white text-sm font-semibold rounded-xl h-auto py-2">
               <span className="mr-1">🏀</span>
               <SelectValue placeholder="Choose a league" />
             </SelectTrigger>
@@ -280,130 +409,23 @@ export default function PlayerHomePanel({ currentUser }) {
         </div>
       ) : (
         <>
-          {/* KPIs */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-            <div className="flex text-center">
-              {[{ v: ppg, l: "PPG" }, { v: rpg, l: "RPG" }, { v: apg, l: "APG" }].map((k, i) => (
-                <div key={i} className={`flex-1 ${i > 0 ? "border-l border-slate-100" : ""}`}>
-                  <div className="text-[26px] font-black leading-none tracking-tight" style={{ color: gp > 0 ? NAVY : "#94a3b8" }}>
-                    {gp > 0 ? k.v.toFixed(1) : "—"}
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-1.5 font-semibold">{k.l}</div>
-                </div>
-              ))}
+          {/* KPIs (full width) */}
+          {KpiCard}
+
+          {/* Responsive band: phones stack everything; >=md is two columns
+              (left: last + next game, right: badges). */}
+          <div className="md:grid md:grid-cols-2 md:gap-3 md:items-start mb-3">
+            <div className="space-y-3 mb-3 md:mb-0">
+              {LastGameCard}
+              {NextGameCard}
             </div>
-            <div className="text-[11px] text-slate-500 text-center mt-2.5 pt-2.5 border-t border-slate-100">
-              {gp > 0 ? (
-                <><span className="inline-block bg-slate-100 text-slate-600 font-bold text-[11px] px-2 py-0.5 rounded-full">{gp} games played</span>{currentTeam?.name ? ` · ${currentTeam.name}` : ""}</>
-              ) : (
-                "Your stats appear after your first game."
-              )}
+            <div className="md:h-full">
+              {BadgesCard}
             </div>
           </div>
 
-          {/* Last game */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-            {lastGame ? (() => {
-              const isHome = lastGame.home_team_id === teamId;
-              const oppId = isHome ? lastGame.away_team_id : lastGame.home_team_id;
-              const opp = teams.find((t) => t.id === oppId);
-              const myScore = isHome ? lastGame.home_score : lastGame.away_score;
-              const oppScore = isHome ? lastGame.away_score : lastGame.home_score;
-              const won = myScore > oppScore;
-              const pts = lastLine ? calcPoints(lastLine, lastGame, formatMap[lastGame.id]) : 0;
-              const reb = lastLine ? (lastLine.offensive_rebounds || 0) + (lastLine.defensive_rebounds || 0) : 0;
-              const ast = lastLine ? lastLine.assists || 0 : 0;
-              return (
-                <button className="w-full text-left" onClick={() => go("Schedule")}>
-                  <Eyebrow right={<span className="text-[11px] font-extrabold" style={{ color: won ? "#16A34A" : "#DC2626" }}>{won ? "W" : "L"} {myScore}–{oppScore}</span>}>
-                    Last game
-                  </Eyebrow>
-                  <div className="flex gap-2">
-                    {[{ v: pts, k: "PTS", d: Math.round(pts - ppg) }, { v: reb, k: "REB", d: Math.round(reb - rpg) }, { v: ast, k: "AST", d: Math.round(ast - apg) }].map((s, i) => (
-                      <div key={i} className="flex-1 bg-slate-50 border border-slate-100 rounded-xl py-2.5 text-center">
-                        <div className="text-[19px] font-extrabold text-slate-900 leading-none">{s.v}</div>
-                        <div className="text-[10px] text-slate-500 font-bold tracking-wide mt-1">{s.k}</div>
-                        <Delta value={s.d} />
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-[11px] text-slate-500 text-center mt-2.5">vs {opp?.name || "opponent"} · compared to your season average</p>
-                </button>
-              );
-            })() : (
-              <>
-                <Eyebrow>Last game</Eyebrow>
-                <p className="text-sm text-slate-500 text-center py-1">No games yet — your first stat line will show up here once you've played.</p>
-              </>
-            )}
-          </div>
-
-          {/* Badges */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-            <Eyebrow right={<button className="text-[11px] font-bold flex items-center gap-0.5" style={{ color: ORANGE }} onClick={() => go("PlayerProfile")}>See all <ChevronRight className="w-3 h-3" /></button>}>
-              Your badges
-            </Eyebrow>
-            {earnedBadges.length > 0 ? (
-              <div className="flex flex-wrap gap-2">
-                {earnedBadges.slice(0, 6).map((b) => (
-                  <span key={b.key} className="inline-flex items-center gap-1.5 text-[12px] font-bold px-2.5 py-1.5 rounded-full" style={{ backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", color: "#9a3412" }}>
-                    {b.badge_icon} {b.badge_name}{b.count > 1 ? <span style={{ color: ORANGE }}>×{b.count}</span> : null}
-                  </span>
-                ))}
-                {earnedBadges.length > 6 && (
-                  <span className="inline-flex items-center text-[12px] font-bold px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-500">+{earnedBadges.length - 6} more</span>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">No badges yet. Show up, put up numbers, and they'll start landing here. 🏀</p>
-            )}
-
-            <details className="mt-3 border-t border-slate-100 pt-2.5 group">
-              <summary className="list-none cursor-pointer flex items-center gap-1.5 text-[12px] font-bold" style={{ color: ORANGE }}>
-                How do I earn badges?
-                <ChevronDown className="w-3.5 h-3.5 ml-auto text-slate-400 group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="mt-2.5 space-y-2.5">
-                {BADGE_GUIDE.map((g) => (
-                  <div key={g.group} className="flex gap-2.5">
-                    <span className="text-[16px] leading-tight flex-shrink-0">{g.icon}</span>
-                    <div>
-                      <div className="text-[12.5px] font-bold text-slate-800">{g.group}</div>
-                      <div className="text-[11.5px] text-slate-500 leading-snug">{g.items}</div>
-                    </div>
-                  </div>
-                ))}
-                <p className="text-[11px] text-slate-400 italic">Earn them game by game — the more you play, the more you stack up.</p>
-              </div>
-            </details>
-          </div>
-
-          {/* Next game */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-            {nextGame ? (() => {
-              const isHome = nextGame.home_team_id === teamId;
-              const oppId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
-              const opp = teams.find((t) => t.id === oppId);
-              const d = new Date(nextGame.game_date);
-              const dateLabel = isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, "EEE, MMM d");
-              return (
-                <button className="w-full text-left" onClick={() => go("Schedule")}>
-                  <Eyebrow>Next game</Eyebrow>
-                  <div className="text-[15px] font-extrabold text-slate-900">{dateLabel} · {format(d, "HH:mm")}</div>
-                  <div className="text-[13px] text-slate-600 mt-0.5">{currentTeam?.name || "Your team"} vs {opp?.name || "TBD"}</div>
-                  <div className="text-[11.5px] text-slate-400 mt-0.5">{isHome ? "🏠 Home" : "🚌 Away"}</div>
-                </button>
-              );
-            })() : (
-              <>
-                <Eyebrow>Next game</Eyebrow>
-                <p className="text-sm text-slate-500">No upcoming games scheduled.</p>
-              </>
-            )}
-          </div>
-
-          {/* Quick links */}
-          <div className="flex gap-2 mb-3">
+          {/* Quick links (full width) */}
+          <div className="flex gap-2 mb-3 max-w-md md:max-w-2xl md:mx-auto">
             {[{ i: "👤", t: "My profile", p: "PlayerProfile" }, { i: "📊", t: "Statistics", p: "Statistics" }, { i: "📅", t: "Schedule", p: "Schedule" }].map((q) => (
               <button key={q.p} onClick={() => go(q.p)} className="flex-1 bg-white border border-slate-200 rounded-xl py-3 text-center hover:border-orange-300 transition-colors">
                 <div className="text-[17px]">{q.i}</div>
