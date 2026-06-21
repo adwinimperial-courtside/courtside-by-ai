@@ -7,7 +7,6 @@ import { Plus, Settings, RefreshCw, Trash2, Trophy, Filter, ShieldAlert } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import ManualGameEntry from "../components/admin/ManualGameEntry";
-import StatIntegrityChecker from "../components/admin/StatIntegrityChecker";
 import EditGameEntry from "../components/admin/EditGameEntry";
 import DeleteGameEntry from "../components/admin/DeleteGameEntry";
 import { findPlayerOfGame } from "../components/utils/pogCalculator";
@@ -395,21 +394,6 @@ export default function AdminTools() {
                     <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculatingStandings ? 'animate-spin' : ''}`} />
                     {isRecalculatingStandings ? 'Recalculating...' : 'Recalculate Team Standings'}
                   </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="border-slate-200 shadow-lg border-violet-200">
-                <CardHeader className="border-b border-slate-200 bg-violet-50">
-                  <CardTitle className="text-xl flex items-center gap-2 text-violet-800">
-                    <ShieldAlert className="w-5 h-5" />
-                    Stat Integrity Checker
-                  </CardTitle>
-                  <p className="text-sm text-violet-700 mt-2">
-                    Finds completed digital games where points exist but all non-point stats (REB, AST, STL, BLK, TO) are zero. Can auto-repair from GameLog entries.
-                  </p>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <StatIntegrityChecker leagues={filteredLeagues} teams={teams} />
                 </CardContent>
               </Card>
 

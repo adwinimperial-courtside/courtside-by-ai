@@ -26,16 +26,10 @@ export default function DeleteGameEntry({ leagues, teams, onClose }) {
       // Get all stats for this game
       const gameStats = await base44.entities.PlayerStats.filter({ game_id: game.id });
       
-      // Calculate team scores from stats
-      const homeScore = gameStats
-        .filter(s => s.team_id === game.home_team_id)
-        .reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
-      
-      const awayScore = gameStats
-        .filter(s => s.team_id === game.away_team_id)
-        .reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
-
-      const homeWon = homeScore > awayScore;
+      // Determine the winner from the stored final score (ground truth).
+      // Recomputing from stats assumed a single points_2 format and could
+      // flip the result on manual games, docking the wrong team's record.
+      const homeWon = (game.home_score || 0) > (game.away_score || 0);
       
       // Get current team records
       const homeTeam = teams.find(t => t.id === game.home_team_id);
