@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlayerHomePanel from "@/components/home/PlayerHomePanel"; // PLAYER_HOME_WIREUP_V1
+import CoachHomePanel from "@/components/home/CoachHomePanel"; // COACH_HOME_WIREUP_V1
 
 export default function Landing() {
   const { data: currentUser } = useQuery({
@@ -100,6 +101,7 @@ export default function Landing() {
 
   // PLAYER_HOME_WIREUP_V1 — players get the dedicated cockpit; admin/coach/viewer unchanged.
   if (role === "player") return <PlayerHomePanel currentUser={currentUser} />;
+  if (role === "coach") return <CoachHomePanel currentUser={currentUser} />; // COACH_HOME_WIREUP_V1
 
   return (
     <div className="min-h-screen bg-white">
