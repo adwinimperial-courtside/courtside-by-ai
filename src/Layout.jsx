@@ -395,9 +395,6 @@ export default function Layout({ children }) {
                 <SidebarTrigger
                   onClick={dismissMenuHint}
                   className="relative h-12 w-12 rounded-xl bg-orange-500 text-white hover:bg-orange-600 shadow-sm [&_svg]:size-6" />
-                {showMenuHint && (
-                  <span className="text-sm font-bold text-orange-600 animate-pulse select-none">Menu</span>
-                )}
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
