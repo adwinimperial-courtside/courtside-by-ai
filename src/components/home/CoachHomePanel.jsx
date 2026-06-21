@@ -189,8 +189,12 @@ export default function CoachHomePanel({ currentUser }) {
     }
   }, [userLeagues, selectedLeagueId, currentUser]);
 
-  // Reset any manual team override when the league changes.
-  useEffect(() => { setOverrideTeamId(null); }, [selectedLeagueId]);
+  // On league change, restore the coach's previously chosen team (remembered locally).
+  useEffect(() => {
+    let saved = null;
+    try { if (currentUser?.id && selectedLeagueId) saved = localStorage.getItem(`coachTeam:${currentUser.id}:${selectedLeagueId}`); } catch (_e) {}
+    setOverrideTeamId(saved || null);
+  }, [selectedLeagueId, currentUser?.id]);
 
   const { teams, players, games, stats, isLoading } = useLeagueStatsData(selectedLeagueId);
 
@@ -491,7 +495,7 @@ export default function CoachHomePanel({ currentUser }) {
         <div className="bg-white border border-slate-200 rounded-2xl p-4">
           <Eyebrow>Pick your team</Eyebrow>
           <p className="text-sm text-slate-500 mb-3">We couldn't find a team linked to your coach account in this league. Choose your team to see its dashboard.</p>
-          <Select value={overrideTeamId || ""} onValueChange={setOverrideTeamId}>
+          <Select value={overrideTeamId || ""} onValueChange={(v) => { setOverrideTeamId(v); try { if (currentUser?.id && selectedLeagueId) localStorage.setItem(`coachTeam:${currentUser.id}:${selectedLeagueId}`, v); } catch (_e) {} }}>
             <SelectTrigger className="w-full"><SelectValue placeholder="Choose your team" /></SelectTrigger>
             <SelectContent>
               {[...teams].sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((t) => (
