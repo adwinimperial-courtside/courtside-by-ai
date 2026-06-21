@@ -390,11 +390,11 @@ export default function Layout({ children }) {
               {/* MENU_HINT_V1 — orange, clearly-tappable menu button with first-time pulse + label */}
               <div className="relative inline-flex items-center gap-2">
                 {showMenuHint && (
-                  <span className="absolute left-0 top-0 h-12 w-12 rounded-xl bg-orange-400 opacity-60 animate-ping pointer-events-none" />
+                  <span className="absolute left-0 top-0 h-9 w-9 rounded-xl bg-orange-400 opacity-60 animate-ping pointer-events-none" />
                 )}
                 <SidebarTrigger
                   onClick={dismissMenuHint}
-                  className="relative h-12 w-12 rounded-xl bg-orange-500 text-white hover:bg-orange-600 shadow-sm [&_svg]:size-6" />
+                  className="relative h-9 w-9 rounded-xl bg-orange-500 text-white hover:bg-orange-600 shadow-sm [&_svg]:size-5" />
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
