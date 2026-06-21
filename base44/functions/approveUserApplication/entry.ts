@@ -41,7 +41,10 @@ async function grantLeague(base44, application, applicantUser, leagueId, role) {
   if (existing.user_type !== 'app_admin') {
     userUpdate.user_type = highestRole(existing.user_type || 'viewer', role);
   }
-  if (role === 'player') {
+  // COACH_TEAM_PERSIST_V1 — persist the picked team for coaches too (mirrors the player path).
+  // A coach's application carries league_team_pairs / team_id in the same shape as a player's,
+  // so resolving and saving the team here lets the coach home auto-detect it (no team picker).
+  if (role === 'player' || role === 'coach') {
     const existingPairs = Array.isArray(existing.league_team_pairs) ? existing.league_team_pairs : [];
     let teamId = null;
     if (Array.isArray(application.league_team_pairs)) {
