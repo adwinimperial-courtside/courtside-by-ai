@@ -237,7 +237,7 @@ export default function AdminTools() {
     setBackfillError('');
     if (dryRun) setBackfillResult(null);
     try {
-      const res = await base44.functions.invoke('backfillCoachTeams', { dryRun });
+      const res = await base44.functions.invoke('backfillCoachTeams/entry', { dryRun });
       const result = res?.data || res;
       if (result?.error) throw new Error(result.error);
       setBackfillResult(result);
