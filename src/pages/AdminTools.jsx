@@ -16,7 +16,6 @@ export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [showEditEntry, setShowEditEntry] = useState(false);
   const [showDeleteEntry, setShowDeleteEntry] = useState(false);
-  const [isRecalculating, setIsRecalculating] = useState(false);
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
   const [isRecalculatingStandings, setIsRecalculatingStandings] = useState(false);
   const [selectedRecalcLeague, setSelectedRecalcLeague] = useState('');
@@ -86,47 +85,6 @@ export default function AdminTools() {
       </div>
     );
   }
-
-  const recalculateGameScores = async () => {
-    if (!selectedRecalcLeague) return;
-    setIsRecalculating(true);
-    try {
-      const games = await base44.entities.Game.filter({ status: 'completed', league_id: selectedRecalcLeague });
-      const stats = await base44.entities.PlayerStats.list();
-
-      let updatedCount = 0;
-
-      for (const game of games) {
-        // Get stats for this game
-        const gameStats = stats.filter(s => s.game_id === game.id);
-        
-        // Calculate scores
-        const homeScore = gameStats
-          .filter(s => s.team_id === game.home_team_id)
-          .reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
-        
-        const awayScore = gameStats
-          .filter(s => s.team_id === game.away_team_id)
-          .reduce((sum, s) => sum + ((s.points_2 || 0) * 2) + ((s.points_3 || 0) * 3) + (s.free_throws || 0), 0);
-
-        // Update if scores don't match
-        if (game.home_score !== homeScore || game.away_score !== awayScore) {
-          await base44.entities.Game.update(game.id, {
-            home_score: homeScore,
-            away_score: awayScore,
-          });
-          updatedCount++;
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['games'] });
-      alert(`Successfully recalculated scores for ${updatedCount} game(s)!`);
-    } catch (error) {
-      alert('Error recalculating scores: ' + error.message);
-    } finally {
-      setIsRecalculating(false);
-    }
-  };
 
   const calculateMissingPOG = async () => {
     if (!selectedRecalcLeague) return;
@@ -396,28 +354,6 @@ export default function AdminTools() {
             </Card>
 
             <div className="grid gap-4">
-              <Card className="border-slate-200 shadow-lg">
-                <CardHeader className="border-b border-slate-200 bg-white">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <RefreshCw className="w-5 h-5 text-blue-600" />
-                    Recalculate Game Scores
-                  </CardTitle>
-                  <p className="text-sm text-slate-600 mt-2">
-                    Fix scores for all completed games by recalculating from player statistics
-                  </p>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <Button
-                    onClick={recalculateGameScores}
-                    disabled={isRecalculating || !selectedRecalcLeague}
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${isRecalculating ? 'animate-spin' : ''}`} />
-                    {isRecalculating ? 'Recalculating...' : 'Recalculate Game Scores'}
-                  </Button>
-                </CardContent>
-              </Card>
-
               <Card className="border-slate-200 shadow-lg">
                 <CardHeader className="border-b border-slate-200 bg-white">
                   <CardTitle className="text-xl flex items-center gap-2">
