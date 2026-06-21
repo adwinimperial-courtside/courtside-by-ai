@@ -248,7 +248,9 @@ export default function CoachHomePanel({ currentUser }) {
     if (!teamId || !teams.length) return null;
     const sorted = computeStandings(teams, games);
     const idx = sorted.findIndex((t) => t.id === teamId);
-    return idx >= 0 ? { rank: idx + 1, total: sorted.length } : null;
+    if (idx < 0) return null;
+    if ((sorted[idx].wins + sorted[idx].losses) === 0) return null; // no decided games yet -> no real standing
+    return { rank: idx + 1, total: sorted.length };
   }, [teams, games, teamId]);
 
   // Last 5 results (oldest -> newest) for the form strip.
