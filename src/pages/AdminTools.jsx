@@ -20,6 +20,10 @@ export default function AdminTools() {
   const [isCalculatingPOG, setIsCalculatingPOG] = useState(false);
   const [isRecalculatingStandings, setIsRecalculatingStandings] = useState(false);
   const [selectedRecalcLeague, setSelectedRecalcLeague] = useState('');
+  // COACH_TEAM_BACKFILL_V1 — admin backfill UI state
+  const [backfillBusy, setBackfillBusy] = useState(false);
+  const [backfillResult, setBackfillResult] = useState(null);
+  const [backfillError, setBackfillError] = useState('');
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
@@ -225,6 +229,23 @@ export default function AdminTools() {
       alert('Error recalculating standings: ' + error.message);
     } finally {
       setIsRecalculatingStandings(false);
+    }
+  };
+
+  const runCoachBackfill = async (dryRun) => {
+    setBackfillBusy(true);
+    setBackfillError('');
+    if (dryRun) setBackfillResult(null);
+    try {
+      const res = await base44.functions.invoke('backfillCoachTeams', { dryRun });
+      const result = res?.data || res;
+      if (result?.error) throw new Error(result.error);
+      setBackfillResult(result);
+      if (!dryRun) queryClient.invalidateQueries({ queryKey: ['user'] });
+    } catch (err) {
+      setBackfillError(err?.message || 'Backfill failed');
+    } finally {
+      setBackfillBusy(false);
     }
   };
 
@@ -453,6 +474,86 @@ export default function AdminTools() {
                 </CardHeader>
                 <CardContent className="pt-6">
                   <StatIntegrityChecker leagues={filteredLeagues} teams={teams} />
+                </CardContent>
+              </Card>
+
+              {/* COACH_TEAM_BACKFILL_V1 — one-time backfill of coach teams (preview then run) */}
+              <Card className="border-slate-200 shadow-lg border-emerald-200">
+                <CardHeader className="border-b border-slate-200 bg-emerald-50">
+                  <CardTitle className="text-xl flex items-center gap-2 text-emerald-800">
+                    <RefreshCw className="w-5 h-5" />
+                    Coach Team Backfill
+                  </CardTitle>
+                  <p className="text-sm text-emerald-700 mt-2">
+                    Fills in the team for coaches approved before team auto-assignment, read from their original signup. Non-destructive — never changes a team that's already set, and safe to run more than once. Always Preview first, then Run.
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => runCoachBackfill(true)}
+                      disabled={backfillBusy}
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${backfillBusy ? 'animate-spin' : ''}`} />
+                      Preview
+                    </Button>
+                    <Button
+                      onClick={() => runCoachBackfill(false)}
+                      disabled={backfillBusy || !backfillResult || backfillResult.mode !== 'preview' || (backfillResult.additionsCount || 0) === 0}
+                      variant="outline"
+                      className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                    >
+                      Run backfill
+                    </Button>
+                  </div>
+
+                  {backfillError && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{backfillError}</div>
+                  )}
+
+                  {backfillResult && (
+                    <div className="text-sm">
+                      <div className={`rounded-lg px-3 py-2 mb-3 font-medium ${backfillResult.mode === 'committed' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}`}>
+                        {backfillResult.mode === 'committed'
+                          ? `Done. Set ${backfillResult.additionsCount} team${backfillResult.additionsCount === 1 ? '' : 's'} across ${backfillResult.usersAffected} coach${backfillResult.usersAffected === 1 ? '' : 'es'}.`
+                          : `Preview — would set ${backfillResult.additionsCount} team${backfillResult.additionsCount === 1 ? '' : 's'} across ${backfillResult.usersAffected} coach${backfillResult.usersAffected === 1 ? '' : 'es'}. Scanned ${backfillResult.coachApplicationsScanned} coach application${backfillResult.coachApplicationsScanned === 1 ? '' : 's'}.`}
+                      </div>
+
+                      {(backfillResult.additions || []).length > 0 && (
+                        <div className="mb-3">
+                          <div className="font-semibold text-slate-700 mb-1">{backfillResult.mode === 'committed' ? 'Applied' : 'Will set'}:</div>
+                          <ul className="space-y-1">
+                            {backfillResult.additions.map((a, i) => (
+                              <li key={i} className="text-slate-600">• <span className="font-medium">{a.email}</span> → {a.teamName} <span className="text-slate-400">({a.leagueName})</span></li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {(backfillResult.skipped || []).length > 0 && (
+                        <details className="mb-2">
+                          <summary className="cursor-pointer text-slate-500">{backfillResult.skipped.length} skipped</summary>
+                          <ul className="mt-1 space-y-1">
+                            {backfillResult.skipped.map((s, i) => (
+                              <li key={i} className="text-slate-500">• {s.email} <span className="text-slate-400">({s.league})</span> — {s.reason}</li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+
+                      {(backfillResult.errors || []).length > 0 && (
+                        <div className="text-red-600">
+                          <div className="font-semibold mb-1">{backfillResult.errors.length} error(s):</div>
+                          <ul className="space-y-1">
+                            {backfillResult.errors.map((e, i) => (
+                              <li key={i}>• {e.email}: {e.error}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
