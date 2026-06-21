@@ -35,6 +35,17 @@ export default function Layout({ children }) {
   const sessionStartTimeRef = useRef(null);
   const hasLoggedLoginEventRef = useRef(false);
 
+  // MENU_HINT_V1 — first-time navigation coachmark. The home menu button pulses with a
+  // "Menu" label until the user opens the menu once (remembered per device), then stops.
+  const [menuHintDismissed, setMenuHintDismissed] = useState(() => {
+    try { return localStorage.getItem("menuHintDismissed") === "1"; } catch (_e) { return false; }
+  });
+  const showMenuHint = !menuHintDismissed && location.pathname === "/";
+  const dismissMenuHint = () => {
+    setMenuHintDismissed(true);
+    try { localStorage.setItem("menuHintDismissed", "1"); } catch (_e) {}
+  };
+
   // Check if we're on the LiveGame page for full-screen mode
   const isLiveGamePage = location.pathname.toLowerCase().includes('livegame');
 
@@ -376,11 +387,18 @@ export default function Layout({ children }) {
         <main className="flex-1 flex flex-col">
           <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 px-6 py-4 md:hidden sticky top-0 z-10">
             <div className="flex items-center gap-4">
-              <SidebarTrigger asChild>
-                <button className="hover:bg-orange-100 p-2 h-12 w-12 rounded-xl transition-colors flex items-center justify-center">
-                  <Circle className="w-6 h-6 text-orange-500 fill-orange-500" />
-                </button>
-              </SidebarTrigger>
+              {/* MENU_HINT_V1 — orange, clearly-tappable menu button with first-time pulse + label */}
+              <div className="relative inline-flex items-center gap-2">
+                {showMenuHint && (
+                  <span className="absolute left-0 top-0 h-12 w-12 rounded-xl bg-orange-400 opacity-60 animate-ping pointer-events-none" />
+                )}
+                <SidebarTrigger
+                  onClick={dismissMenuHint}
+                  className="relative h-12 w-12 rounded-xl bg-orange-500 text-white hover:bg-orange-600 shadow-sm [&_svg]:size-6" />
+                {showMenuHint && (
+                  <span className="text-sm font-bold text-orange-600 animate-pulse select-none">Menu</span>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
                   <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/ed79261c1_CourtSidebyAILOGO.png" alt="Courtside by AI" className="w-full h-full object-cover" />
