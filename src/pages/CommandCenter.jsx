@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket } from "lucide-react";
+import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket, Sparkles } from "lucide-react";
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
@@ -123,6 +123,15 @@ export default function CommandCenter() {
     .filter((a) => a.startDate - now < -DAY && a.status !== "Approved")
     .sort((a, b) => a.startDate - b.startDate);
   const daysUntil = (d) => Math.ceil((d - now) / DAY);
+
+  // New leagues — real League records created recently, regardless of how they
+  // were created (approved sign-up application OR the "Create League" button
+  // used directly by an admin). Catches manually-created leagues that never
+  // went through an application at all.
+  const NEW_LEAGUE_WINDOW = 30 * DAY;
+  const newLeagues = leagues
+    .filter((l) => l.created_date && now - new Date(l.created_date) <= NEW_LEAGUE_WINDOW)
+    .sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   // Activity feed
   const feed = [
@@ -278,46 +287,68 @@ export default function CommandCenter() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <Rocket className="w-4 h-4 text-orange-600" /> Leagues starting soon
-          </h2>
-          {startingSoon.length === 0 && overdueStarts.length === 0 ? (
-            <p className="text-sm text-slate-400 py-2">No new-league sign-ups with a season start date on file.</p>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {startingSoon.map((s) => {
-                const d = daysUntil(s.startDate);
-                const urgent = d <= 7;
-                return (
-                  <div key={s.id} className="flex items-center justify-between py-2.5 text-sm">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Rocket className="w-4 h-4 text-orange-600" /> Leagues starting soon
+            </h2>
+            {startingSoon.length === 0 && overdueStarts.length === 0 ? (
+              <p className="text-sm text-slate-400 py-2">No new-league sign-ups with a season start date on file.</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {startingSoon.map((s) => {
+                  const d = daysUntil(s.startDate);
+                  const urgent = d <= 7;
+                  return (
+                    <div key={s.id} className="flex items-center justify-between py-2.5 text-sm">
+                      <div>
+                        <div className="font-medium text-slate-900">{s.leagueName}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{s.adminName} · {s.status}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-sm font-semibold ${urgent ? "text-red-600" : "text-slate-700"}`}>
+                          {d === 0 ? "Today" : d === 1 ? "Tomorrow" : d < 0 ? `${Math.abs(d)}d overdue` : `In ${d} days`}
+                        </div>
+                        <div className="text-xs text-slate-400">{s.startDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {overdueStarts.map((s) => (
+                  <div key={s.id} className="flex items-center justify-between py-2.5 text-sm bg-amber-50 -mx-2 px-2 rounded">
                     <div>
                       <div className="font-medium text-slate-900">{s.leagueName}</div>
                       <div className="text-xs text-slate-500 mt-0.5">{s.adminName} · {s.status}</div>
                     </div>
                     <div className="text-right">
-                      <div className={`text-sm font-semibold ${urgent ? "text-red-600" : "text-slate-700"}`}>
-                        {d === 0 ? "Today" : d === 1 ? "Tomorrow" : d < 0 ? `${Math.abs(d)}d overdue` : `In ${d} days`}
-                      </div>
+                      <div className="text-sm font-semibold text-amber-700">Start date passed</div>
                       <div className="text-xs text-slate-400">{s.startDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
                     </div>
                   </div>
-                );
-              })}
-              {overdueStarts.map((s) => (
-                <div key={s.id} className="flex items-center justify-between py-2.5 text-sm bg-amber-50 -mx-2 px-2 rounded">
-                  <div>
-                    <div className="font-medium text-slate-900">{s.leagueName}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">{s.adminName} · {s.status}</div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600" /> New leagues
+            </h2>
+            {newLeagues.length === 0 ? (
+              <p className="text-sm text-slate-400 py-2">No new leagues in the last 30 days.</p>
+            ) : (
+              <div className="divide-y divide-slate-100">
+                {newLeagues.map((l) => (
+                  <div key={l.id} className="flex items-center justify-between py-2.5 text-sm">
+                    <div>
+                      <div className="font-medium text-slate-900">{l.name}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{l.owner_name || l.owner_email || l.created_by || "Unknown owner"}{l.season ? ` · ${l.season}` : ""}</div>
+                    </div>
+                    <div className="text-xs text-slate-400 flex-shrink-0">{ago(l.created_date)}</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-amber-700">Start date passed</div>
-                    <div className="text-xs text-slate-400">{s.startDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Opportunities &amp; risks</h2>
