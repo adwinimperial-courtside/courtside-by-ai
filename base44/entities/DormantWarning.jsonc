@@ -1,0 +1,48 @@
+{
+  "name": "DormantWarning",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "ID of the dormant league that was warned"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "Name of the league at the time the warning was sent"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email address the warning was sent to"
+    },
+    "owner_name": {
+      "type": "string",
+      "description": "Name of the league admin who was warned"
+    },
+    "warned_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the warning email was sent"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date-time",
+      "description": "warned_at plus 3 days; after this the empty league may be deleted"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "warned",
+        "resolved",
+        "deleted"
+      ],
+      "default": "warned",
+      "description": "warned = 3-day clock running; resolved = admin took action / league kept; deleted = league was removed"
+    }
+  },
+  "required": [
+    "league_id",
+    "warned_at",
+    "deadline",
+    "status"
+  ]
+}
