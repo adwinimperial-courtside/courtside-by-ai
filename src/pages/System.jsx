@@ -465,6 +465,12 @@ function DormantLeaguesTab({ currentUser }) {
     enabled: isAdmin,
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => fetchAll("User"),
+    enabled: isAdmin,
+  });
+
   const [isWarning, setIsWarning] = useState(false);
 
   const loading = leaguesLoading || teamsLoading;
@@ -480,8 +486,23 @@ function DormantLeaguesTab({ currentUser }) {
     return map;
   }, [warnings]);
 
-  const ownerEmailOf = (l) => l.owner_email || "";
-  const ownerNameOf = (l) => l.owner_name || l.created_by || "";
+  // Real admin per league: the league_admin User whose assigned_league_ids
+  // includes this league. This is the authoritative link — older leagues have
+  // no owner_email stamped on the League record itself.
+  const adminByLeague = React.useMemo(() => {
+    const map = {};
+    for (const u of users) {
+      if (u.user_type !== "league_admin") continue;
+      const ids = Array.isArray(u.assigned_league_ids) ? u.assigned_league_ids : [];
+      for (const id of ids) {
+        if (!map[id] && u.email) map[id] = { email: u.email, name: u.full_name || u.email };
+      }
+    }
+    return map;
+  }, [users]);
+
+  const ownerEmailOf = (l) => (adminByLeague[l.id]?.email) || l.owner_email || "";
+  const ownerNameOf = (l) => (adminByLeague[l.id]?.name) || l.owner_name || "";
 
   const warnStatusOf = (league) => {
     const w = warningByLeague[league.id];
