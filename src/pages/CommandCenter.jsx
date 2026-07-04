@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil } from "lucide-react";
+import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket } from "lucide-react";
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
@@ -101,6 +101,28 @@ export default function CommandCenter() {
     .sort((a, b) => (a.lastGame ? a.lastGame.getTime() : 0) - (b.lastGame ? b.lastGame.getTime() : 0))
     .slice(0, 4);
   const recentSignups = applications.filter((a) => a.created_date && new Date(a.created_date) >= new Date(now.getTime() - 2 * DAY)).length;
+
+  // Leagues starting soon — derived from league-admin sign-ups for a brand-new
+  // league (requested_role "league_admin" with a league_name + season_start_date
+  // on the application). This is registration data, not a real League record yet.
+  const SOON_WINDOW = 60 * DAY;
+  const leagueStarts = applications
+    .filter((a) => a.requested_role === "league_admin" && a.league_name && a.season_start_date)
+    .map((a) => ({
+      id: a.id,
+      leagueName: a.league_name,
+      adminName: a.user_name || a.user_email || "Unknown",
+      startDate: new Date(a.season_start_date),
+      status: a.status,
+    }))
+    .filter((a) => !isNaN(a.startDate.getTime()));
+  const startingSoon = leagueStarts
+    .filter((a) => a.startDate - now >= -DAY && a.startDate - now <= SOON_WINDOW)
+    .sort((a, b) => a.startDate - b.startDate);
+  const overdueStarts = leagueStarts
+    .filter((a) => a.startDate - now < -DAY && a.status !== "Approved")
+    .sort((a, b) => a.startDate - b.startDate);
+  const daysUntil = (d) => Math.ceil((d - now) / DAY);
 
   // Activity feed
   const feed = [
@@ -254,6 +276,48 @@ export default function CommandCenter() {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <Rocket className="w-4 h-4 text-orange-600" /> Leagues starting soon
+          </h2>
+          {startingSoon.length === 0 && overdueStarts.length === 0 ? (
+            <p className="text-sm text-slate-400 py-2">No new-league sign-ups with a season start date on file.</p>
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {startingSoon.map((s) => {
+                const d = daysUntil(s.startDate);
+                const urgent = d <= 7;
+                return (
+                  <div key={s.id} className="flex items-center justify-between py-2.5 text-sm">
+                    <div>
+                      <div className="font-medium text-slate-900">{s.leagueName}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{s.adminName} · {s.status}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-sm font-semibold ${urgent ? "text-red-600" : "text-slate-700"}`}>
+                        {d === 0 ? "Today" : d === 1 ? "Tomorrow" : d < 0 ? `${Math.abs(d)}d overdue` : `In ${d} days`}
+                      </div>
+                      <div className="text-xs text-slate-400">{s.startDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              {overdueStarts.map((s) => (
+                <div key={s.id} className="flex items-center justify-between py-2.5 text-sm bg-amber-50 -mx-2 px-2 rounded">
+                  <div>
+                    <div className="font-medium text-slate-900">{s.leagueName}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{s.adminName} · {s.status}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-semibold text-amber-700">Start date passed</div>
+                    <div className="text-xs text-slate-400">{s.startDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Opportunities &amp; risks</h2>
