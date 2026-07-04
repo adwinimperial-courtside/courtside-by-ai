@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Settings2, HardDrive, Trash2, Download, Upload, Database,
   CheckCircle, AlertTriangle, Loader2, Key, User, Calendar, Hash,
-  CalendarOff, RefreshCw, ListChecks
+  CalendarOff, RefreshCw, ListChecks, Mail
 } from "lucide-react";
 
 // ─── Data Backup constants ───────────────────────────────────────────────────
@@ -459,7 +459,37 @@ function DormantLeaguesTab({ currentUser }) {
     enabled: isAdmin,
   });
 
+  const { data: warnings = [] } = useQuery({
+    queryKey: ["dormantWarnings"],
+    queryFn: () => fetchAll("DormantWarning"),
+    enabled: isAdmin,
+  });
+
+  const [isWarning, setIsWarning] = useState(false);
+
   const loading = leaguesLoading || teamsLoading;
+
+  // Most recent warning per league (by warned_at).
+  const warningByLeague = React.useMemo(() => {
+    const map = {};
+    for (const w of warnings) {
+      if (!w.league_id) continue;
+      const prev = map[w.league_id];
+      if (!prev || new Date(w.warned_at) > new Date(prev.warned_at)) map[w.league_id] = w;
+    }
+    return map;
+  }, [warnings]);
+
+  const ownerEmailOf = (l) => l.owner_email || "";
+  const ownerNameOf = (l) => l.owner_name || l.created_by || "";
+
+  const warnStatusOf = (league) => {
+    const w = warningByLeague[league.id];
+    if (!w) return { state: "none" };
+    const msLeft = new Date(w.deadline).getTime() - Date.now();
+    if (msLeft <= 0) return { state: "passed" };
+    return { state: "warned", daysLeft: Math.ceil(msLeft / 86400000) };
+  };
 
   const teamCountByLeague = React.useMemo(() => {
     const map = {};
@@ -595,6 +625,56 @@ function DormantLeaguesTab({ currentUser }) {
     setBanner({ type: errors > 0 ? "error" : "success", text: parts.join(" ") });
   };
 
+  const sendWarning = async (league) => {
+    const email = ownerEmailOf(league);
+    if (!email) { setBanner({ type: "error", text: `"${league.name}" has no admin email on file.` }); return; }
+    setIsWarning(true);
+    setBanner(null);
+    try {
+      const res = await base44.functions.invoke("sendDormantWarningEmail", {
+        league_id: league.id, league_name: league.name, owner_email: email,
+        owner_name: ownerNameOf(league), days_dormant: league.daysDormant,
+      });
+      const d = res?.data || res || {};
+      if (d.success) setBanner({ type: "success", text: `Warning sent to ${email} for "${league.name}". 3-day countdown started.` });
+      else setBanner({ type: "error", text: d.reason || d.error || `Could not send warning for "${league.name}".` });
+    } catch (e) {
+      setBanner({ type: "error", text: `Could not send warning for "${league.name}".` });
+    }
+    setIsWarning(false);
+    queryClient.invalidateQueries({ queryKey: ["dormantWarnings"] });
+  };
+
+  const handleBulkWarn = async () => {
+    const targets = dormant.filter((l) => selectedIds.has(l.id));
+    if (targets.length === 0) return;
+    setIsWarning(true);
+    setBanner(null);
+    let sent = 0, noEmail = 0, failed = 0;
+    setProgress({ done: 0, total: targets.length });
+    for (let i = 0; i < targets.length; i++) {
+      const l = targets[i];
+      const email = ownerEmailOf(l);
+      if (!email) { noEmail++; setProgress({ done: i + 1, total: targets.length }); continue; }
+      try {
+        const res = await base44.functions.invoke("sendDormantWarningEmail", {
+          league_id: l.id, league_name: l.name, owner_email: email,
+          owner_name: ownerNameOf(l), days_dormant: l.daysDormant,
+        });
+        const d = res?.data || res || {};
+        if (d.success) sent++; else failed++;
+      } catch { failed++; }
+      setProgress({ done: i + 1, total: targets.length });
+    }
+    setProgress(null);
+    setIsWarning(false);
+    queryClient.invalidateQueries({ queryKey: ["dormantWarnings"] });
+    const parts = [`Sent ${sent} warning${sent === 1 ? "" : "s"}.`];
+    if (noEmail > 0) parts.push(`Skipped ${noEmail} with no email.`);
+    if (failed > 0) parts.push(`${failed} failed.`);
+    setBanner({ type: failed > 0 ? "error" : "success", text: parts.join(" ") });
+  };
+
   const fmtDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "Unknown";
 
@@ -647,7 +727,7 @@ function DormantLeaguesTab({ currentUser }) {
         {/* Deleting progress */}
         {isDeleting && progress && (
           <div className="rounded-lg p-3 text-sm bg-slate-50 border border-slate-200 text-slate-700 flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" /> Deleting {progress.done} of {progress.total}…
+            <Loader2 className="w-4 h-4 animate-spin" /> {isWarning ? "Sending" : "Deleting"} {progress.done} of {progress.total}…
           </div>
         )}
 
@@ -672,10 +752,10 @@ function DormantLeaguesTab({ currentUser }) {
                       className="w-4 h-4 accent-red-600 cursor-pointer align-middle" disabled={isDeleting} />
                   </th>
                   <th className="px-3 py-2.5 font-medium">League</th>
-                  <th className="px-3 py-2.5 font-medium w-20">Season</th>
-                  <th className="px-3 py-2.5 font-medium w-28 hidden sm:table-cell">Created by</th>
+                  <th className="px-3 py-2.5 font-medium hidden sm:table-cell">Admin</th>
                   <th className="px-3 py-2.5 font-medium w-24">Dormant</th>
-                  <th className="w-12 px-3 py-2.5"></th>
+                  <th className="px-3 py-2.5 font-medium w-32">Warning</th>
+                  <th className="px-3 py-2.5 font-medium w-36 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -688,20 +768,54 @@ function DormantLeaguesTab({ currentUser }) {
                           aria-label={`Select ${league.name}`} className="w-4 h-4 accent-red-600 cursor-pointer align-middle"
                           disabled={isDeleting} />
                       </td>
-                      <td className="px-3 py-2.5 font-medium text-slate-800 truncate max-w-[180px]" title={league.name}>{league.name}</td>
-                      <td className="px-3 py-2.5 text-slate-500">{league.season || "—"}</td>
-                      <td className="px-3 py-2.5 text-slate-500 truncate max-w-[120px] hidden sm:table-cell" title={league.created_by || ""}>{league.created_by || "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="font-medium text-slate-800 truncate max-w-[200px]" title={league.name}>{league.name}</div>
+                        {league.season && <div className="text-xs text-slate-400">{league.season}</div>}
+                      </td>
+                      <td className="px-3 py-2.5 hidden sm:table-cell">
+                        {ownerEmailOf(league) ? (
+                          <>
+                            <div className="text-slate-700 truncate max-w-[160px]" title={ownerNameOf(league)}>{ownerNameOf(league) || "—"}</div>
+                            <div className="text-xs text-orange-600 truncate max-w-[160px]" title={ownerEmailOf(league)}>{ownerEmailOf(league)}</div>
+                          </>
+                        ) : (
+                          <span className="text-slate-400 italic">No email on file</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2.5">
                         <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${badgeClass(league.daysDormant)}`}>
                           {league.daysDormant} days
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-center">
-                        <button onClick={() => setPendingSingle(league)} disabled={isDeleting}
-                          aria-label={`Delete ${league.name}`}
-                          className="text-slate-400 hover:text-red-600 disabled:opacity-40 transition-colors">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <td className="px-3 py-2.5">
+                        {(() => {
+                          const w = warnStatusOf(league);
+                          if (w.state === "warned") return <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">Warned · {w.daysLeft}d left</span>;
+                          if (w.state === "passed") return <span className="inline-block px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">Deadline passed</span>;
+                          return <span className="text-xs text-slate-400">{ownerEmailOf(league) ? "Not warned" : "Can't warn"}</span>;
+                        })()}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center justify-end gap-2">
+                          {(() => {
+                            const w = warnStatusOf(league);
+                            const email = ownerEmailOf(league);
+                            if (!email) return <span className="text-xs text-slate-300">No email</span>;
+                            if (w.state === "warned") return <span className="text-xs text-slate-400">Warned</span>;
+                            const label = w.state === "passed" ? "Re-send" : "Send warning";
+                            return (
+                              <button onClick={() => sendWarning(league)} disabled={isWarning || isDeleting}
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded border border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-40">
+                                <Mail className="w-3 h-3" /> {label}
+                              </button>
+                            );
+                          })()}
+                          <button onClick={() => setPendingSingle(league)} disabled={isDeleting}
+                            aria-label={`Delete ${league.name}`}
+                            className="text-slate-400 hover:text-red-600 disabled:opacity-40 transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -714,11 +828,18 @@ function DormantLeaguesTab({ currentUser }) {
               <span className="text-sm text-slate-500 flex items-center gap-1.5">
                 <ListChecks className="w-4 h-4" /> {selectedCount} selected
               </span>
-              <Button onClick={() => { setBulkConfirmText(""); setShowBulkConfirm(true); }}
-                disabled={selectedCount === 0 || isDeleting}
-                className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 gap-2">
-                <Trash2 className="w-4 h-4" /> Delete selected ({selectedCount})
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handleBulkWarn}
+                  disabled={selectedCount === 0 || isWarning || isDeleting}
+                  className="gap-2">
+                  <Mail className="w-4 h-4" /> Warn selected ({selectedCount})
+                </Button>
+                <Button onClick={() => { setBulkConfirmText(""); setShowBulkConfirm(true); }}
+                  disabled={selectedCount === 0 || isDeleting}
+                  className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 gap-2">
+                  <Trash2 className="w-4 h-4" /> Delete selected ({selectedCount})
+                </Button>
+              </div>
             </div>
           </div>
         )}
