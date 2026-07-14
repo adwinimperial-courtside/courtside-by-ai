@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye, Mail, MailCheck } from "lucide-react";
+import { ArrowLeft, UserPlus, Pencil, Trash2, Search, Shield, Trophy, Eye, Mail, MailCheck, Copy, Check } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +35,34 @@ export default function EnhancedUserManagement() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sendingEmailTo, setSendingEmailTo] = useState(null);
   const [emailSentTo, setEmailSentTo] = useState(new Set());
+  // COPY_EMAIL_V1
+  const [copiedEmail, setCopiedEmail] = useState(null);
+  const copyEmailToClipboard = (userId, email) => {
+    const text = email || "";
+    const done = () => {
+      setCopiedEmail(userId);
+      setTimeout(() => setCopiedEmail(null), 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        done();
+      });
+    } else {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+      done();
+    }
+  };
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -538,7 +566,22 @@ export default function EnhancedUserManagement() {
                         </>
                       );
                     })()}
-                    <div className="text-sm text-slate-500 truncate">{user.email}</div>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <div className="text-sm text-slate-500 truncate">{user.email}</div>
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        title="Copy email"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          copyEmailToClipboard(user.id, user.email);
+                        }}
+                        className="shrink-0 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        {copiedEmail === user.id ? <Check className="w-3.5 h-3.5 text-green-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      </span>
+                    </div>
                     <div className="text-xs text-slate-400 mt-1">Created {format(new Date(user.created_date), "MMM dd, yyyy 'at' h:mm a")}</div>
 
                     {(user.user_type === "app_admin" || user.user_type === "league_admin") && (
