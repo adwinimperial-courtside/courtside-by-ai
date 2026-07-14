@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
 import { buildPlayerAggregates } from "../statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // MOBILE_PLAYERSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function MobilePlayerStats({ players, teams, stats, games = [] }) {
@@ -44,12 +45,8 @@ export default function MobilePlayerStats({ players, teams, stats, games = [] })
           <Card key={player.id} className="border-slate-200 shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-3">
-                <div
-                  className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
-                  style={{ backgroundColor: player.team?.color || '#f97316' }}
-                >
-                  {player.jersey_number}
-                </div>
+                {/* PLAYER_AVATAR_V1 */}
+                <PlayerAvatar player={player} size={36} teamColor={player.team?.color || '#f97316'} />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-900 text-sm truncate">{player.name}</p>
                   <p className="text-xs text-slate-500">{player.team?.name} • {player.gp} GP</p>

@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { buildLeaderBoards } from "../statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // MOBILE_LEADERS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function MobileLeagueLeaders({ players, teams, stats, games = [] }) {
@@ -44,12 +45,8 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
                       }`}>
                         {index + 1}
                       </div>
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                        style={{ backgroundColor: player.team?.color || '#f97316' }}
-                      >
-                        {player.jersey_number}
-                      </div>
+                      {/* PLAYER_AVATAR_V1 */}
+                      <PlayerAvatar player={player} size={28} teamColor={player.team?.color || '#f97316'} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-xs truncate">{player.name}</p>
                         <p className="text-[10px] text-slate-500 truncate">{player.team?.name}</p>
