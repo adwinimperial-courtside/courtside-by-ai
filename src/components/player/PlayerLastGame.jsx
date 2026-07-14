@@ -1,17 +1,29 @@
 import React, { useMemo } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Flame, Dumbbell, Handshake, Hand, Ban } from "lucide-react";
 import { format } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 // CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
 import { calcPoints } from "@/components/stats/statEngine";
 
+// PROFILE_GOLD_V1 — trophy-room palette
+const GOLD_MID = "#C8A468";
+const WARM_WHITE = "#EFE6D4";
+const WARM_MUTED = "#877A63";
+const CARD_BG = "#100D08";
+const CARD_BORDER = "#2A2114";
+const DIVIDER = "#2A2114";
+const WIN_BG = "#16241A";
+const WIN_TEXT = "#7FBE93";
+const LOSS_BG = "#2A1614";
+const LOSS_TEXT = "#E29B93";
+
 function didPlayerParticipate(stat) {
   const hasStats = (stat.points_2 || 0) + (stat.points_3 || 0) + (stat.free_throws || 0) +
                    (stat.assists || 0) + (stat.steals || 0) + (stat.blocks || 0) +
                    (stat.offensive_rebounds || 0) + (stat.defensive_rebounds || 0) +
                    (stat.fouls || 0) + (stat.technical_fouls || 0) + (stat.unsportsmanlike_fouls || 0) > 0;
-  
+
   if (stat.did_play) return true;
   if ((stat.minutes_played || 0) > 0) return true;
   if (hasStats) return true;
@@ -26,7 +38,7 @@ export default function PlayerLastGame({ games, myStats, teams, teamId, formatMa
     const completedGames = games
       .filter(g => (g.home_team_id === teamId || g.away_team_id === teamId) && g.status === 'completed')
       .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
-    
+
     for (const game of completedGames) {
       const stat = myStats.find(s => s.game_id === game.id);
       if (stat && didPlayerParticipate(stat)) {
@@ -42,21 +54,21 @@ export default function PlayerLastGame({ games, myStats, teams, teamId, formatMa
   );
 
   return (
-    <div className={`rounded-2xl shadow-sm border overflow-hidden transition-all ${!lastGame ? 'bg-white border-slate-100' : lastGame.home_team_id === teamId && lastGame.home_score > lastGame.away_score || lastGame.away_team_id === teamId && lastGame.away_score > lastGame.home_score ? 'bg-green-50 border-green-200 border-l-4 border-l-green-500' : 'bg-red-50 border-red-200 border-l-4 border-l-red-500'}`}>
-      <div className="px-6 pt-5 pb-2 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Last Game</h3>
-        {lastGame && <ChevronRight className="w-4 h-4 text-slate-300" />}
+    <div className="rounded-2xl overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
+      <div className="px-5 pt-4 pb-2 flex items-center justify-between">
+        <h3 className="text-[11px] font-bold tracking-[0.12em]" style={{ color: GOLD_MID }}>LAST GAME</h3>
+        {lastGame && <ChevronRight className="w-4 h-4" style={{ color: WARM_MUTED }} />}
       </div>
 
       {!lastGame ? (
-        <div className="px-6 pb-5 pt-2">
-          <p className="text-slate-400 text-sm">No game stats available yet.</p>
+        <div className="px-5 pb-4">
+          <p className="text-sm" style={{ color: WARM_MUTED }}>No game stats available yet.</p>
         </div>
       ) : (
         <button
-          className="w-full text-left px-6 pb-5 hover:opacity-85 transition-opacity"
+          className="w-full text-left px-5 pb-4 transition-opacity hover:opacity-85"
           onClick={() => navigate(createPageUrl('Schedule'))}
-          >
+        >
           {(() => {
             const isHome = lastGame.home_team_id === teamId;
             const opponentId = isHome ? lastGame.away_team_id : lastGame.home_team_id;
@@ -68,58 +80,57 @@ export default function PlayerLastGame({ games, myStats, teams, teamId, formatMa
             const pts = statLine ? calcPoints(statLine, lastGame, formatMap ? formatMap[lastGame.id] : undefined) : null; // CARD_FORMAT_V1
             const reb = statLine ? (statLine.offensive_rebounds||0) + (statLine.defensive_rebounds||0) : null;
             const ast = statLine ? statLine.assists || 0 : null;
-            const min = statLine ? Math.round(statLine.minutes_played || 0) : null;
+            const stl = statLine ? statLine.steals || 0 : null; // PROFILE_GOLD_V1 — defense on the line
+            const blk = statLine ? statLine.blocks || 0 : null;
+
+            const cols = [
+              { label: "PTS", value: pts, Icon: Flame },
+              { label: "REB", value: reb, Icon: Dumbbell },
+              { label: "AST", value: ast, Icon: Handshake },
+              { label: "STL", value: stl, Icon: Hand },
+              { label: "BLK", value: blk, Icon: Ban },
+            ];
 
             return (
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  {/* Win/Loss + opponent row */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className={`text-xs font-bold px-3 py-1.5 rounded-full ${won ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}`}>
-                      {won ? 'WIN' : 'LOSS'}
-                    </span>
-                    <span className={`text-sm font-semibold ${won ? 'text-green-700' : 'text-red-700'} truncate`}>{opponent?.name}</span>
+              <div>
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-baseline gap-3 min-w-0">
+                    <p className="text-2xl font-bold" style={{ color: WARM_WHITE }}>
+                      {myScore} – {oppScore}
+                    </p>
+                    <p className="text-sm font-semibold uppercase truncate" style={{ color: WARM_MUTED }}>
+                      vs {opponent?.name}
+                    </p>
                   </div>
-
-                  {/* Score */}
-                  <p className={`text-3xl font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>
-                    {myScore} – {oppScore}
-                  </p>
-                  <p className={`text-sm ${won ? 'text-green-700' : 'text-red-700'} font-medium mt-1`}>vs {opponent?.name}</p>
-
-                  {/* Stat line */}
-                  {statLine ? (
-                    <div className="flex items-center gap-4 mt-4">
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{pts}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>PTS</p>
-                      </div>
-                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{reb}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>REB</p>
-                      </div>
-                      <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                      <div className="text-center">
-                        <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{ast}</p>
-                        <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>AST</p>
-                      </div>
-                      {min > 0 && (
-                        <>
-                          <div className={`w-px h-8 ${won ? 'bg-green-300' : 'bg-red-300'}`} />
-                          <div className="text-center">
-                            <p className={`text-lg font-bold ${won ? 'text-green-900' : 'text-red-900'}`}>{min}</p>
-                            <p className={`text-xs font-semibold ${won ? 'text-green-600' : 'text-red-600'}`}>MIN</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <p className={`text-sm ${won ? 'text-green-600' : 'text-red-600'} mt-3`}>No personal stats recorded.</p>
-                  )}
-
-                  <p className={`text-xs ${won ? 'text-green-600' : 'text-red-600'} mt-3 font-medium`}>{format(new Date(lastGame.game_date), "EEE, MMM d")}</p>
+                  <span
+                    className="text-[11px] font-bold tracking-wide px-3 py-1 rounded-full flex-shrink-0"
+                    style={won ? { background: WIN_BG, color: WIN_TEXT } : { background: LOSS_BG, color: LOSS_TEXT }}
+                  >
+                    {won ? "W" : "L"} {myScore}–{oppScore}
+                  </span>
                 </div>
+
+                {statLine ? (
+                  <div className="grid grid-cols-5 mt-4 rounded-xl pt-3 pb-2" style={{ background: "#0B0A08", border: `1px solid ${DIVIDER}` }}>
+                    {cols.map(({ label, value, Icon }, i) => (
+                      <div
+                        key={label}
+                        className="text-center"
+                        style={i < cols.length - 1 ? { borderRight: `1px solid ${DIVIDER}` } : undefined}
+                      >
+                        <Icon className="w-4 h-4 mx-auto" style={{ color: WARM_MUTED }} />
+                        <p className="text-lg font-bold leading-none mt-1.5" style={{ color: WARM_WHITE }}>{value}</p>
+                        <p className="text-[10px] tracking-[0.08em] mt-1" style={{ color: WARM_MUTED }}>{label}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm mt-3" style={{ color: WARM_MUTED }}>No personal stats recorded.</p>
+                )}
+
+                <p className="text-[11px] font-medium tracking-wide mt-3" style={{ color: WARM_MUTED }}>
+                  {format(new Date(lastGame.game_date), "EEE, MMM d").toUpperCase()}
+                </p>
               </div>
             );
           })()}

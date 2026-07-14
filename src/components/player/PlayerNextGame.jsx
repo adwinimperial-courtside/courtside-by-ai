@@ -4,6 +4,17 @@ import { format, isToday, isTomorrow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
+// PROFILE_GOLD_V1 — trophy-room palette
+const GOLD_HI = "#E5C688";
+const GOLD_MID = "#C8A468";
+const WARM_WHITE = "#EFE6D4";
+const WARM_MUTED = "#877A63";
+const CARD_BG = "#100D08";
+const CARD_BORDER = "#2A2114";
+const INNER_BG = "#1A130C";
+const INNER_BORDER = "#3A2E1B";
+const GOLD_CHIP_TEXT = "#1A1206";
+
 export default function PlayerNextGame({ games, teams, teamId }) {
   const navigate = useNavigate();
 
@@ -16,18 +27,15 @@ export default function PlayerNextGame({ games, teams, teamId }) {
   }, [games, teamId]);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 border-l-4 border-l-purple-500 overflow-hidden">
-      <div className="px-6 pt-5 pb-2">
-        <h3 className="text-sm font-semibold text-slate-600 uppercase tracking-wider">Next Game</h3>
-      </div>
-
+    <div className="rounded-2xl overflow-hidden" style={{ background: CARD_BG, border: `1px solid ${CARD_BORDER}` }}>
       {!nextGame ? (
-        <div className="px-6 pb-5 pt-2">
-          <p className="text-slate-400 text-sm">No upcoming games scheduled.</p>
+        <div className="px-5 py-4">
+          <p className="text-[10px] font-bold tracking-[0.12em]" style={{ color: GOLD_MID }}>NEXT GAME</p>
+          <p className="text-sm mt-1" style={{ color: WARM_MUTED }}>No upcoming games scheduled.</p>
         </div>
       ) : (
         <button
-          className="w-full text-left px-6 pb-5 hover:bg-purple-50 transition-colors"
+          className="w-full text-left px-5 py-4 transition-opacity hover:opacity-85"
           onClick={() => navigate(createPageUrl(`LiveBoxScore?gameId=${nextGame.id}`))}
         >
           {(() => {
@@ -37,29 +45,43 @@ export default function PlayerNextGame({ games, teams, teamId }) {
             const gameDate = new Date(nextGame.game_date);
             const gameDay = isToday(gameDate);
             const tomorrow = isTomorrow(gameDate);
-            const dateLabel = gameDay ? "Today" : tomorrow ? "Tomorrow" : format(gameDate, "EEE, MMM d");
+            const dateLabel = gameDay ? "TODAY" : tomorrow ? "TOMORROW" : format(gameDate, "EEE, MMM d").toUpperCase();
 
             return (
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  {/* Opponent avatar */}
-                  <div className="w-14 h-14 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 shadow-sm">
-                    <span className="text-lg font-bold text-purple-600">
-                      {opponent?.name?.charAt(0) || "?"}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-lg font-bold text-slate-900 truncate">{opponent?.name || "TBD"}</p>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Calendar className="w-4 h-4 text-slate-400" />
-                      <p className="text-sm text-slate-600 font-medium">{dateLabel} · {format(gameDate, "HH:mm")}</p>
-                    </div>
-                    <p className="text-xs text-slate-500 font-medium mt-1">{isHome ? "🏠 Home" : "🚌 Away"}</p>
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: INNER_BG, border: `1px solid ${INNER_BORDER}` }}
+                >
+                  <span className="text-lg font-bold" style={{ color: GOLD_MID }}>
+                    {opponent?.name?.charAt(0) || "?"}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.12em]" style={{ color: GOLD_MID }}>NEXT GAME</p>
+                  <p className="text-lg font-bold uppercase truncate mt-0.5" style={{ color: WARM_WHITE }}>
+                    vs {opponent?.name || "TBD"}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <Calendar className="w-3.5 h-3.5" style={{ color: WARM_MUTED }} />
+                    <p className="text-[11px] font-medium tracking-wide" style={{ color: WARM_MUTED }}>
+                      {dateLabel} · {format(gameDate, "HH:mm")} · {isHome ? "HOME" : "AWAY"}
+                    </p>
                   </div>
                 </div>
-                {gameDay && (
-                  <span className="flex-shrink-0 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-full shadow-md">
-                    Today
+                {gameDay ? (
+                  <span
+                    className="flex-shrink-0 text-[11px] font-bold tracking-wide px-3 py-1.5 rounded-full"
+                    style={{ background: GOLD_MID, color: GOLD_CHIP_TEXT }}
+                  >
+                    TODAY
+                  </span>
+                ) : (
+                  <span
+                    className="flex-shrink-0 text-[11px] font-semibold tracking-wide px-3 py-1.5 rounded-full"
+                    style={{ border: `1px solid ${GOLD_MID}`, color: GOLD_HI }}
+                  >
+                    SCHEDULE
                   </span>
                 )}
               </div>

@@ -161,13 +161,19 @@ export default function PlayerTrendCard({ myStats, games, teamId, formatMap = nu
   if (!trend) return null;
 
   return (
-    <div className="bg-orange-50 rounded-2xl shadow-sm border border-orange-200 border-l-4 border-l-orange-400 px-6 py-5">
-      <p className="text-xs font-semibold text-orange-600 uppercase tracking-wider mb-3">Current Trend</p>
-      <div className="flex items-start gap-4">
-        <span className="text-3xl flex-shrink-0">{trend.emoji}</span>
+    <div className="rounded-2xl px-5 py-4" style={{ background: "#100D08", border: "1px solid #2A2114" }}>
+      {/* PROFILE_GOLD_V1 — trophy-room restyle, trend logic unchanged */}
+      <p className="text-[11px] font-bold tracking-[0.12em] mb-3" style={{ color: "#C8A468" }}>CURRENT TREND</p>
+      <div className="flex items-start gap-3">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+          style={{ background: "#1A130C", border: "1px solid #3A2E1B" }}
+        >
+          {trend.emoji}
+        </div>
         <div className="min-w-0">
-          <p className="text-base font-bold text-orange-900">{trend.label}</p>
-          <p className="text-sm text-orange-700 mt-1 font-medium">{trend.description}</p>
+          <p className="text-base font-bold" style={{ color: "#EFE6D4" }}>{trend.label}</p>
+          <p className="text-sm mt-0.5" style={{ color: "#877A63" }}>{trend.description}</p>
         </div>
       </div>
     </div>
