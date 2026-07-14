@@ -3,6 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { buildPlayerAggregates } from "./statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // PLAYERSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function PlayerStats({ players, teams, stats, games = [] }) {
@@ -119,12 +120,8 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
                   <TableRow key={player.id}>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-0">
-                        <div 
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-                          style={{ backgroundColor: player.team?.color || '#f97316' }}
-                        >
-                          {player.jersey_number}
-                        </div>
+                        {/* PLAYER_AVATAR_V1 */}
+                        <PlayerAvatar player={player} size={32} teamColor={player.team?.color || '#f97316'} />
                         <span className="font-medium truncate text-sm md:text-base">{player.name}</span>
                       </div>
                     </TableCell>

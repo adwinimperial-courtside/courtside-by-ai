@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Award } from "lucide-react";
 import { buildLeaderBoards } from "./statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // LEADERS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function LeagueLeaders({ players, teams, stats, games = [] }) {
@@ -47,12 +48,8 @@ export default function LeagueLeaders({ players, teams, stats, games = [] }) {
                       }`}>
                         {index + 1}
                       </div>
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                        style={{ backgroundColor: player.team?.color || '#f97316' }}
-                      >
-                        {player.jersey_number}
-                      </div>
+                      {/* PLAYER_AVATAR_V1 */}
+                      <PlayerAvatar player={player} size={32} teamColor={player.team?.color || '#f97316'} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate">{player.name}</p>
                         <p className="text-xs text-slate-500">{player.team?.name}</p>
