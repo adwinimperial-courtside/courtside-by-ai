@@ -251,9 +251,9 @@ export default function PlayerDashboardCard({
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `linear-gradient(180deg, rgba(11,10,8,0.72) 0%, rgba(11,10,8,0.90) 70%, rgba(11,10,8,0.97) 100%), url(${HERO_BG_URL})`,
+          backgroundImage: `linear-gradient(90deg, rgba(11,10,8,0.97) 0%, rgba(11,10,8,0.93) 38%, rgba(11,10,8,0.55) 72%, rgba(11,10,8,0.30) 100%), linear-gradient(180deg, rgba(11,10,8,0) 50%, rgba(11,10,8,0.88) 100%), url(${HERO_BG_URL})`,
           backgroundSize: "cover",
-          backgroundPosition: "center top",
+          backgroundPosition: "right center",
         }}
       />
 
