@@ -99,7 +99,7 @@ export default function PlayerCard() {
 
   return (
     <div className="min-h-screen p-4 md:p-8" style={{ background: "#050403" }}>{/* PLAYER_CARD_V1 */}
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto">
 
         <div className="pt-2 pb-4">
           <Button

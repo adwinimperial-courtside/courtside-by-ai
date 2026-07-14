@@ -165,7 +165,7 @@ export default function PlayerProfile() {
   return (
     <div className="min-h-screen p-4 md:p-8" style={{ background: "#050403" }}>{/* PROFILE_GOLD_V1 */}
       
-      <div className="max-w-2xl mx-auto relative z-10">
+      <div className="max-w-2xl mx-auto">
 
         <div className="pt-4 pb-6">
           <h1 className="text-3xl font-bold" style={{ color: "#E5C688" }}>Player Dashboard</h1>
