@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Crown, Upload, AlertTriangle } from "lucide-react";
+import { Plus, Edit2, Trash2, Crown, Upload, AlertTriangle, Camera, X, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -27,6 +27,38 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// PLAYER_PHOTO_V1 — compress an image file client-side before upload (max 512px, JPEG)
+async function compressPlayerPhoto(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const maxDim = 512;
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error("Image processing failed")); return; }
+          resolve(new File([blob], "player_photo.jpg", { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read image")); };
+    img.src = url;
+  });
+}
+
 export default function PlayerManagement({ teamId, team, userType }) {
    const isViewer = userType === "viewer";
    const canManage = userType === 'app_admin' || userType === 'league_admin';
@@ -40,6 +72,10 @@ export default function PlayerManagement({ teamId, team, userType }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
+  // PLAYER_PHOTO_V1 — per-row photo upload state
+  const [photoUploadingIndex, setPhotoUploadingIndex] = useState(null);
+  const photoInputRef = useRef(null);
+  const photoTargetIndexRef = useRef(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', teamId],
@@ -166,6 +202,58 @@ export default function PlayerManagement({ teamId, team, userType }) {
     setTableData([...tableData, { id: null, name: "", jersey_number: "", position: "PG" }]);
   };
 
+  // PLAYER_PHOTO_V1 — open the photo picker for a specific saved player row
+  const openPhotoPicker = (index) => {
+    photoTargetIndexRef.current = index;
+    photoInputRef.current?.click();
+  };
+
+  // PLAYER_PHOTO_V1 — compress, upload, and save the photo to the player record
+  const handlePhotoSelected = async (e) => {
+    const file = e.target.files?.[0];
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    const index = photoTargetIndexRef.current;
+    photoTargetIndexRef.current = null;
+    if (!file || index === null || index === undefined) return;
+    const row = tableData[index];
+    if (!row?.id) {
+      toast({ title: "Save the player first", description: "Add the name and jersey number, press Save All, then upload the photo.", variant: "destructive" });
+      return;
+    }
+    setPhotoUploadingIndex(index);
+    try {
+      const compressed = await compressPlayerPhoto(file);
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+      await base44.entities.Player.update(row.id, { photo_url: file_url });
+      handleRowChange(index, 'photo_url', file_url);
+      queryClient.invalidateQueries({ queryKey: ['players', teamId] });
+      toast({ title: "Photo saved", description: `${row.name || 'Player'}'s photo has been updated.` });
+    } catch (error) {
+      console.error("Error uploading player photo:", error);
+      toast({ title: "Upload failed", description: "Could not upload the photo. Please try again.", variant: "destructive" });
+    } finally {
+      setPhotoUploadingIndex(null);
+    }
+  };
+
+  // PLAYER_PHOTO_V1 — remove a player's photo
+  const handleRemovePhoto = async (index) => {
+    const row = tableData[index];
+    if (!row?.id) return;
+    setPhotoUploadingIndex(index);
+    try {
+      await base44.entities.Player.update(row.id, { photo_url: null });
+      handleRowChange(index, 'photo_url', null);
+      queryClient.invalidateQueries({ queryKey: ['players', teamId] });
+      toast({ title: "Photo removed", description: `${row.name || 'Player'} will show the jersey number again.` });
+    } catch (error) {
+      console.error("Error removing player photo:", error);
+      toast({ title: "Error", description: "Could not remove the photo. Please try again.", variant: "destructive" });
+    } finally {
+      setPhotoUploadingIndex(null);
+    }
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -259,6 +347,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
               <Table className="text-sm">
                 <TableHeader className="bg-slate-50">
                   <TableRow>
+                    <TableHead className="w-16 text-slate-900">Photo</TableHead>
                     <TableHead className="text-slate-900">Name</TableHead>
                     <TableHead className="w-20 text-slate-900">#</TableHead>
                     <TableHead className="w-24 text-slate-900">Position</TableHead>
@@ -269,6 +358,58 @@ export default function PlayerManagement({ teamId, team, userType }) {
                 <TableBody>
                   {tableData.map((row, index) => (
                     <TableRow key={index} className="hover:bg-slate-50">
+                      <TableCell>
+                        <div className="relative w-10 h-10">
+                          {photoUploadingIndex === index ? (
+                            <div className="w-10 h-10 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center">
+                              <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
+                            </div>
+                          ) : row.photo_url ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => canManage && openPhotoPicker(index)}
+                                disabled={!canManage || isSaving}
+                                title={canManage ? "Change photo" : undefined}
+                                className="block w-10 h-10 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-orange-500"
+                              >
+                                <img src={row.photo_url} alt={row.name || "Player"} className="w-10 h-10 rounded-full object-cover" />
+                              </button>
+                              {canManage && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemovePhoto(index)}
+                                  disabled={isSaving}
+                                  title="Remove photo"
+                                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-red-50"
+                                >
+                                  <X className="w-3 h-3 text-slate-500" />
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => canManage && row.id && openPhotoPicker(index)}
+                              disabled={!canManage || !row.id || isSaving}
+                              title={!row.id ? "Save the player first, then add a photo" : "Add photo"}
+                              className="relative block w-10 h-10 rounded-full focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-60"
+                            >
+                              <span
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
+                                style={{ backgroundColor: '#F26B1F', display: 'flex' }}
+                              >
+                                {String(row.jersey_number ?? '').trim() !== '' ? row.jersey_number : <Camera className="w-4 h-4" />}
+                              </span>
+                              {canManage && row.id && (
+                                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white border border-slate-300 flex items-center justify-center">
+                                  <Camera className="w-3 h-3 text-slate-500" />
+                                </span>
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Input
                           value={row.name}
@@ -371,6 +512,13 @@ export default function PlayerManagement({ teamId, team, userType }) {
                 type="file"
                 accept=".csv,.xlsx,.xls"
                 onChange={handleFileUpload}
+                className="hidden"
+              />
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelected}
                 className="hidden"
               />
             </div>
