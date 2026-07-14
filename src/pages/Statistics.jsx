@@ -105,6 +105,32 @@ export default function StatisticsPage() {
           <p className="text-slate-600 ml-15">Comprehensive league, team, and player statistics</p>
         </div>
 
+        {/* MOBILE_STATS_TABS_V1 — segmented control above filters, sticky below app header */}
+        {selectedLeague && selectedLeague !== "all" && (
+          <div className="block md:hidden sticky top-[68px] z-30 -mx-4 px-4 py-2 mb-4 bg-slate-50/95 backdrop-blur-sm">
+            <div className="grid grid-cols-3 gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
+              {[
+                { id: "teamstats", label: "Teams", Icon: Shield },
+                { id: "players", label: "Players", Icon: Users },
+                { id: "leaders", label: "Leaders", Icon: Trophy },
+              ].map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setMobileTab(id)}
+                  className={`flex flex-col items-center justify-center gap-0.5 rounded-full py-2 text-xs font-medium transition-colors ${
+                    mobileTab === id
+                      ? "bg-purple-500 text-white shadow"
+                      : "text-slate-600 active:bg-slate-100"
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Filters */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
@@ -178,30 +204,7 @@ export default function StatisticsPage() {
           </div>
         ) : (
           <>
-            {/* MOBILE_STATS_TABS_V1 — segmented control, all views visible, sticky on scroll */}
-            <div className="block md:hidden sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 bg-slate-50/95 backdrop-blur-sm">
-              <div className="grid grid-cols-3 gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
-                {[
-                  { id: "teamstats", label: "Teams", Icon: Shield },
-                  { id: "players", label: "Players", Icon: Users },
-                  { id: "leaders", label: "Leaders", Icon: Trophy },
-                ].map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setMobileTab(id)}
-                    className={`flex flex-col items-center justify-center gap-0.5 rounded-full py-2 text-xs font-medium transition-colors ${
-                      mobileTab === id
-                        ? "bg-purple-500 text-white shadow"
-                        : "text-slate-600 active:bg-slate-100"
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+
 
             {/* Mobile content */}
             <div className="block md:hidden">
