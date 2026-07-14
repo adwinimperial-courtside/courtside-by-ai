@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, BarChart3, CalendarDays, Trophy } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import PlayerDashboardCard from "@/components/player/PlayerDashboardCard";
 // CARD_FORMAT_V1 — per-game points-format detection for the player cards.
 import { buildGameFormatMap } from "@/components/stats/statEngine";
@@ -15,6 +16,7 @@ import PlayerAchievements from "@/components/player/PlayerAchievements";
 
 export default function PlayerProfile() {
   const [selectedLeagueId, setSelectedLeagueId] = useState(null);
+  const navigate = useNavigate(); // PROFILE_SHORTCUTS_V1
   const queryClient = useQueryClient();
 
   const { data: currentUser, isLoading: userLoading } = useQuery({
@@ -235,6 +237,22 @@ export default function PlayerProfile() {
             formatMap={formatMap}
           />
 
+        </div>
+
+        {/* PROFILE_SHORTCUTS_V1 — quick links row */}
+        <div className="mt-3 pt-3 grid grid-cols-3 gap-2.5" style={{ borderTop: "1px solid #2A2114" }}>
+          <button type="button" onClick={() => navigate('/Statistics')} className="rounded-xl py-3.5 px-2 text-center cursor-pointer" style={{ background: "#15110B", border: "1px solid #3A2E1B" }}>
+            <BarChart3 className="w-5 h-5 mx-auto" style={{ color: "#C8A468" }} />
+            <p className="text-[13px] font-medium mt-1.5" style={{ color: "#E5C688" }}>Statistics</p>
+          </button>
+          <button type="button" onClick={() => navigate('/Schedule')} className="rounded-xl py-3.5 px-2 text-center cursor-pointer" style={{ background: "#15110B", border: "1px solid #3A2E1B" }}>
+            <CalendarDays className="w-5 h-5 mx-auto" style={{ color: "#C8A468" }} />
+            <p className="text-[13px] font-medium mt-1.5" style={{ color: "#E5C688" }}>Schedule</p>
+          </button>
+          <button type="button" onClick={() => navigate('/AwardLeaders')} className="rounded-xl py-3.5 px-2 text-center cursor-pointer" style={{ background: "#15110B", border: "1px solid #3A2E1B" }}>
+            <Trophy className="w-5 h-5 mx-auto" style={{ color: "#C8A468" }} />
+            <p className="text-[13px] font-medium mt-1.5" style={{ color: "#E5C688" }}>Award Leaders</p>
+          </button>
         </div>
         </div>
 

@@ -17,7 +17,7 @@ import {
   Wifi
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
-import PlayerHomePanel from "@/components/home/PlayerHomePanel"; // PLAYER_HOME_WIREUP_V1
+import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — players land on the trophy room
 import CoachHomePanel from "@/components/home/CoachHomePanel"; // COACH_HOME_WIREUP_V1
 
 export default function Landing() {
@@ -100,7 +100,7 @@ export default function Landing() {
   };
 
   // PLAYER_HOME_WIREUP_V1 — players get the dedicated cockpit; admin/coach/viewer unchanged.
-  if (role === "player") return <PlayerHomePanel currentUser={currentUser} />;
+  if (role === "player") return <PlayerProfile />; // PROFILE_SHORTCUTS_V1
   if (role === "coach") return <CoachHomePanel currentUser={currentUser} />; // COACH_HOME_WIREUP_V1
 
   return (
