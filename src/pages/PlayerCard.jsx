@@ -18,6 +18,13 @@ export default function PlayerCard() {
   const urlParams = new URLSearchParams(window.location.search);
   const leagueId = urlParams.get("leagueId") || urlParams.get("leagueid");
   const playerId = urlParams.get("playerId") || urlParams.get("playerid");
+  // SCROLL_TOP_V1 — SPA navigation keeps the layout scroll position; reset when this page opens
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+    document.querySelectorAll(".overflow-auto, .overflow-y-auto").forEach((el) => {
+      if (el.scrollTop > 0) el.scrollTop = 0;
+    });
+  }, [leagueId, playerId]);
 
   // PLAYER_CARD_V1 — all league data from the shared cap-agnostic hook
   // (same cache key as Statistics / PlayerProfile, so numbers always agree).
