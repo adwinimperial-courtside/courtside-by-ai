@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
@@ -6,7 +8,9 @@ import { buildPlayerAggregates } from "./statEngine";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // PLAYERSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
-export default function PlayerStats({ players, teams, stats, games = [] }) {
+// PLAYER_CARD_LINK_V1 — the player name cell taps through to the read-only PlayerCard page.
+export default function PlayerStats({ players, teams, stats, games = [], leagueId = null }) {
+  const navigate = useNavigate();
   const [sortField, setSortField] = useState("points");
   const [sortDirection, setSortDirection] = useState("desc");
 
@@ -31,6 +35,12 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
         fpg: p.fpg.toFixed(1),
       }));
   }, [players, teams, games, stats]);
+
+  // PLAYER_CARD_LINK_V1
+  const openPlayerCard = (player) => {
+    if (!leagueId || !player?.id) return;
+    navigate(createPageUrl(`PlayerCard?leagueId=${leagueId}&playerId=${player.id}`));
+  };
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -119,11 +129,15 @@ export default function PlayerStats({ players, teams, stats, games = [] }) {
                  {sortedData.map((player) => (
                   <TableRow key={player.id}>
                     <TableCell>
-                      <div className="flex items-center gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => openPlayerCard(player)}
+                        className={`flex items-center gap-2 min-w-0 text-left ${leagueId ? 'cursor-pointer hover:underline decoration-purple-400 underline-offset-2' : 'cursor-default'}`}
+                      >
                         {/* PLAYER_AVATAR_V1 */}
                         <PlayerAvatar player={player} size={32} teamColor={player.team?.color || '#f97316'} />
                         <span className="font-medium truncate text-sm md:text-base">{player.name}</span>
-                      </div>
+                      </button>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-slate-600 text-sm">{player.team?.name}</TableCell>
                     <TableCell className="text-center">{player.games}</TableCell>

@@ -1,14 +1,25 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { buildLeaderBoards } from "../statEngine";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // MOBILE_LEADERS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
-export default function MobileLeagueLeaders({ players, teams, stats, games = [] }) {
+// PLAYER_CARD_LINK_V1 — leader rows tap through to the read-only PlayerCard page.
+export default function MobileLeagueLeaders({ players, teams, stats, games = [], leagueId = null }) {
+  const navigate = useNavigate();
+
   const boards = React.useMemo(
     () => buildLeaderBoards({ players, teams, games, stats, topN: 5 }),
     [players, teams, games, stats]
   );
+
+  // PLAYER_CARD_LINK_V1
+  const openPlayerCard = (player) => {
+    if (!leagueId || !player?.id) return;
+    navigate(createPageUrl(`PlayerCard?leagueId=${leagueId}&playerId=${player.id}`));
+  };
 
   const categories = [
     { key: 'points', valueKey: 'ppg', label: 'PPG Leaders', icon: '🏀' },
@@ -36,7 +47,12 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
               ) : (
                 <div className="space-y-2">
                   {leaders.map((player, index) => (
-                    <div key={player.id} className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      key={player.id}
+                      onClick={() => openPlayerCard(player)}
+                      className={`w-full flex items-center gap-3 text-left rounded-lg -mx-1 px-1 py-0.5 ${leagueId ? 'cursor-pointer active:bg-slate-100' : 'cursor-default'}`}
+                    >
                       <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                         index === 0 ? 'bg-yellow-400 text-yellow-900' :
                         index === 1 ? 'bg-slate-300 text-slate-700' :
@@ -52,7 +68,7 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [] 
                         <p className="text-[10px] text-slate-500 truncate">{player.team?.name}</p>
                       </div>
                       <p className="font-bold text-purple-600 text-sm">{player[category.valueKey].toFixed(1)}</p>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}

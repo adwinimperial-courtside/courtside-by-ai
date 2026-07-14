@@ -1,11 +1,15 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronUp, User } from "lucide-react";
 import { buildPlayerAggregates } from "../statEngine";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // MOBILE_PLAYERSTATS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
-export default function MobilePlayerStats({ players, teams, stats, games = [] }) {
+// PLAYER_CARD_LINK_V1 — the avatar + name header taps through to the read-only PlayerCard page.
+export default function MobilePlayerStats({ players, teams, stats, games = [], leagueId = null }) {
+  const navigate = useNavigate();
   const [expandedPlayer, setExpandedPlayer] = useState(null);
 
   const playerAggregates = React.useMemo(() => {
@@ -29,6 +33,12 @@ export default function MobilePlayerStats({ players, teams, stats, games = [] })
       .sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
   }, [players, teams, games, stats]);
 
+  // PLAYER_CARD_LINK_V1
+  const openPlayerCard = (player) => {
+    if (!leagueId || !player?.id) return;
+    navigate(createPageUrl(`PlayerCard?leagueId=${leagueId}&playerId=${player.id}`));
+  };
+
   if (playerAggregates.length === 0) {
     return <p className="text-slate-500 text-center py-8">No player stats yet</p>;
   }
@@ -44,14 +54,18 @@ export default function MobilePlayerStats({ players, teams, stats, games = [] })
         return (
           <Card key={player.id} className="border-slate-200 shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-3">
+              <button
+                type="button"
+                onClick={() => openPlayerCard(player)}
+                className={`w-full flex items-center gap-3 mb-3 text-left ${leagueId ? 'cursor-pointer active:opacity-70' : 'cursor-default'}`}
+              >
                 {/* PLAYER_AVATAR_V1 */}
                 <PlayerAvatar player={player} size={36} teamColor={player.team?.color || '#f97316'} />
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-slate-900 text-sm truncate">{player.name}</p>
                   <p className="text-xs text-slate-500">{player.team?.name} • {player.gp} GP</p>
                 </div>
-              </div>
+              </button>
 
               <div className="mb-2">
                 <span className="text-2xl font-extrabold text-purple-600">{player.ppg}</span>

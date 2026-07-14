@@ -214,10 +214,11 @@ export default function StatisticsPage() {
                   teams={teams}
                   stats={filteredStats}
                   games={games}
+                  leagueId={selectedLeague}
                 />
               )}
               {mobileTab === "leaders" && (
-                <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
+                <MobileLeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} leagueId={selectedLeague} />
               )}
 
             </div>
@@ -247,10 +248,11 @@ export default function StatisticsPage() {
                     teams={teams}
                     stats={filteredStats}
                     games={games}
+                    leagueId={selectedLeague}
                   />
                 </TabsContent>
                 <TabsContent value="leaders">
-                  <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} />
+                  <LeagueLeaders players={filteredPlayers} teams={teams} stats={filteredStats} games={games} leagueId={selectedLeague} />
                 </TabsContent>
 
               </Tabs>
