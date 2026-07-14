@@ -2,7 +2,9 @@
 import { useState, useEffect, createContext, useContext } from "react";
 
 const TOAST_LIMIT = 20;
-const TOAST_REMOVE_DELAY = 1000000;
+// PHOTO_CROP_V1 — toasts auto-dismiss after this many ms (was 1000000: effectively never)
+const TOAST_AUTO_DISMISS = 4000;
+const TOAST_REMOVE_DELAY = 300;
 
 const actionTypes = {
   ADD_TOAST: "ADD_TOAST",
@@ -134,6 +136,9 @@ function toast({ ...props }) {
     },
   });
 
+  // PHOTO_CROP_V1 — auto-dismiss so notifications don't pile up on screen
+  setTimeout(dismiss, props.duration || TOAST_AUTO_DISMISS);
+
   return {
     id,
     dismiss,
@@ -161,4 +166,4 @@ function useToast() {
   };
 }
 
-export { useToast, toast }; 
+export { useToast, toast };
