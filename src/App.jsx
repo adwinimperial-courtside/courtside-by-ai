@@ -28,6 +28,7 @@ import GameOverlaySettingsPage from './pages/GameOverlaySettings';
 import CommandCenterPage from './pages/CommandCenter';
 import OnboardingBookingsPage from './pages/OnboardingBookings';
 import JoinKOEPage from './pages/JoinKOE';
+import PlayerCardPage from './pages/PlayerCard';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -106,6 +107,7 @@ const AuthenticatedApp = () => {
             <Route path="/GameOverlaySettings" element={<LayoutWrapper currentPageName="GameOverlaySettings"><GameOverlaySettingsPage /></LayoutWrapper>} />
             <Route path="/CommandCenter" element={<LayoutWrapper currentPageName="CommandCenter"><CommandCenterPage /></LayoutWrapper>} />
             <Route path="/OnboardingBookings" element={<LayoutWrapper currentPageName="OnboardingBookings"><OnboardingBookingsPage /></LayoutWrapper>} />
+            <Route path="/PlayerCard" element={<LayoutWrapper currentPageName="PlayerCard"><PlayerCardPage /></LayoutWrapper>} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </LayoutWrapper>
