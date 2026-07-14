@@ -244,7 +244,7 @@ export default function PlayerDashboardCard({
 
   return (
     <div
-      className="rounded-2xl overflow-hidden relative z-20 mb-8"
+      className="rounded-2xl overflow-hidden relative mb-8"
       style={{ border: `1px solid ${BORDER_GOLD}`, backgroundColor: "#0B0A08" }}
     >
       {/* PROFILE_GOLD_V1 — trophy room background with dark overlay for readability */}
