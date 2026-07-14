@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { BarChart3, Filter, BarChart4 } from "lucide-react";
+import { BarChart3, Filter, Shield, Users, Trophy } from "lucide-react"; // MOBILE_STATS_TABS_V1
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 import TeamStats from "../components/stats/TeamStats";
@@ -178,29 +178,29 @@ export default function StatisticsPage() {
           </div>
         ) : (
           <>
-            {/* Mobile tab selector - only shown on mobile */}
-            <div className="block md:hidden mb-4">
-              <Select value={mobileTab} onValueChange={setMobileTab}>
-                <SelectTrigger className="w-full bg-white border-slate-200">
-                  <div className="flex items-center gap-2">
-                    <BarChart4 className="w-4 h-4 text-purple-600" />
-                    <span>
-                      View: {
-                        mobileTab === "teamstats" ? "Team Stats" :
-                        mobileTab === "players" ? "Player Stats" :
-                        mobileTab === "leaders" ? "League Leaders" :
-                        "Game Stats"
-                      }
-                    </span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="teamstats">Team Stats</SelectItem>
-                  <SelectItem value="players">Player Stats</SelectItem>
-                  <SelectItem value="leaders">League Leaders</SelectItem>
-
-                </SelectContent>
-              </Select>
+            {/* MOBILE_STATS_TABS_V1 — segmented control, all views visible, sticky on scroll */}
+            <div className="block md:hidden sticky top-0 z-20 -mx-4 px-4 py-2 mb-4 bg-slate-50/95 backdrop-blur-sm">
+              <div className="grid grid-cols-3 gap-1 bg-white border border-slate-200 rounded-full p-1 shadow-sm">
+                {[
+                  { id: "teamstats", label: "Teams", Icon: Shield },
+                  { id: "players", label: "Players", Icon: Users },
+                  { id: "leaders", label: "Leaders", Icon: Trophy },
+                ].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => setMobileTab(id)}
+                    className={`flex flex-col items-center justify-center gap-0.5 rounded-full py-2 text-xs font-medium transition-colors ${
+                      mobileTab === id
+                        ? "bg-purple-500 text-white shadow"
+                        : "text-slate-600 active:bg-slate-100"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Mobile content */}
