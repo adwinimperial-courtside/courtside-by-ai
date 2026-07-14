@@ -161,7 +161,7 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8" style={{ background: "#0B0A08" }}>{/* PROFILE_GOLD_V1 */}
+    <div className="min-h-screen p-4 md:p-8" style={{ background: "#050403" }}>{/* PROFILE_GOLD_V1 */}
       
       <div className="max-w-2xl mx-auto relative z-10">
 
@@ -171,7 +171,7 @@ export default function PlayerProfile() {
         </div>
 
         {userLeagues.length > 1 && (
-          <div className="mb-32">
+          <div className="mb-6">
             <label className="block text-sm font-semibold mb-2" style={{ color: "#C8A468" }}>Select League</label>
             <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
               <SelectTrigger className="w-full" style={{ background: "#15110B", border: "1px solid #3A2E1B", color: "#EFE6D4" }}>
@@ -186,7 +186,8 @@ export default function PlayerProfile() {
           </div>
         )}
 
-        <div className="mb-8 -mx-4 md:mx-0">
+        <div className="rounded-3xl overflow-hidden p-2.5 md:p-4" style={{ background: "#0B0A08", border: "1px solid #2A2114" }}>{/* PROFILE_GOLD_CARD_V1 */}
+        <div className="mb-3">
           <PlayerDashboardCard
             currentUser={currentUser}
             team={currentTeam}
@@ -202,7 +203,7 @@ export default function PlayerProfile() {
           />
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-3">
 
           <PlayerAchievements
             myStats={myStats}
@@ -234,6 +235,7 @@ export default function PlayerProfile() {
             formatMap={formatMap}
           />
 
+        </div>
         </div>
 
       </div>
