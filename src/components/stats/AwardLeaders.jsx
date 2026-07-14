@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Shield } from "lucide-react";
 import MobileAwardCards from "./MobileAwardCards";
 import { computeMvpRace, computeDpoyRace } from "./statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // AWARDS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function AwardLeaders({ league, teams, games, players, stats, awardSettings }) {
@@ -62,7 +63,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                       {mvpCandidates.map((candidate, index) => (
                         <TableRow key={candidate.playerId} className={index === 0 ? "bg-yellow-50" : ""}>
                           <TableCell className="font-bold">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{candidate.player.name}</TableCell>
+                          <TableCell className="font-medium"><div className="flex items-center gap-2">{/* PLAYER_AVATAR_V1 */}<PlayerAvatar player={candidate.player} size={28} teamColor={candidate.team?.color || '#f97316'} /><span>{candidate.player.name}</span></div></TableCell>
                           <TableCell>{candidate.team.name}</TableCell>
                           <TableCell className="text-center">{candidate.gp}</TableCell>
                           <TableCell className="text-center">{candidate.avgGis}</TableCell>
@@ -128,7 +129,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                       {dpoyLeaders.map((leader, index) => (
                         <TableRow key={leader.playerId} className={index === 0 ? "bg-blue-50" : ""}>
                           <TableCell className="font-bold">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{leader.player.name}</TableCell>
+                          <TableCell className="font-medium"><div className="flex items-center gap-2"><PlayerAvatar player={leader.player} size={28} teamColor={leader.team?.color || '#f97316'} /><span>{leader.player.name}</span></div></TableCell>
                           <TableCell>{leader.team.name}</TableCell>
                           <TableCell className="text-center">{leader.gp}</TableCell>
                           <TableCell className="text-center">{leader.avgDefGis}</TableCell>

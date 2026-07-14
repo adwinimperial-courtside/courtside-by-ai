@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Shield, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 export default function MobileAwardCards({ candidates, awardType = "mvp", isExpanded, onToggle }) {
   const [showAll, setShowAll] = useState(false);
@@ -47,11 +48,15 @@ export default function MobileAwardCards({ candidates, awardType = "mvp", isExpa
           </div>
 
           {/* Player Name and Team */}
-          <div className="mb-3">
+          <div className="mb-3 flex items-center gap-3">
+            {/* PLAYER_AVATAR_V1 */}
+            <PlayerAvatar player={candidate.player} size={40} teamColor={candidate.team?.color || '#f97316'} />
+            <div>
             <h3 className={`font-bold ${index === 0 ? "text-lg text-slate-900" : "text-base text-slate-900"}`}>
               {candidate.player.name}
             </h3>
             <p className="text-sm text-slate-600">{candidate.team.name} • {candidate.gp} GP</p>
+            </div>
           </div>
 
           {/* Score and Stats */}

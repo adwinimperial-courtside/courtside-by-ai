@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Trophy } from "lucide-react";
 import { computeMvpRace } from "./statEngine";
+import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // TOP20_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function AwardLeadersTop20({ league, teams, games, players, stats, awardSettings }) {
@@ -49,6 +50,8 @@ export default function AwardLeadersTop20({ league, teams, games, players, stats
                 <div key={c.playerId} className={`rounded-xl border p-4 ${rowBg(index)}`}>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-lg font-black text-slate-400 w-7">#{index + 1}</span>
+                    {/* PLAYER_AVATAR_V1 */}
+                    <PlayerAvatar player={c.player} size={32} teamColor={c.team?.color || '#f97316'} />
                     <div className="flex-1 ml-2">
                       <div className="font-bold text-slate-900">{c.player.name}</div>
                       <div className="text-xs text-slate-500">{c.team.name}</div>
@@ -87,7 +90,7 @@ export default function AwardLeadersTop20({ league, teams, games, players, stats
                   {mvpCandidates.map((c, index) => (
                     <TableRow key={c.playerId} className={rowBg(index)}>
                       <TableCell className="font-bold text-slate-500">{index + 1}</TableCell>
-                      <TableCell className="font-semibold text-slate-900">{c.player.name}</TableCell>
+                      <TableCell className="font-semibold text-slate-900"><div className="flex items-center gap-2"><PlayerAvatar player={c.player} size={28} teamColor={c.team?.color || '#f97316'} /><span>{c.player.name}</span></div></TableCell>
                       <TableCell className="text-slate-600">{c.team.name}</TableCell>
                       <TableCell className="text-center">{c.gp}/{c.totalGames}</TableCell>
                       <TableCell className="text-center">{c.gpPct}%</TableCell>
