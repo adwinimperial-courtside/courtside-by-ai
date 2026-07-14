@@ -1,11 +1,48 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X } from "lucide-react";
+import {
+  X, Target, Medal, Bomb, Flame, Handshake, Zap, Crown, Sparkles,
+  Dumbbell, Magnet, Hand, Lock, Ban, Shield, Layers, Gem, Star, Clock, Orbit,
+} from "lucide-react";
 
-export default function BadgeCard({ badgeKey, badgeName, badgeIcon, badgeDescription, badgeRule, count }) {
+// PROFILE_GOLD_V1 — trophy-room palette (matches PlayerDashboardCard)
+const GOLD_HI = "#E5C688";
+const GOLD_MID = "#C8A468";
+const GOLD_DEEP = "#6E5330";
+const WARM_WHITE = "#EFE6D4";
+const WARM_MUTED = "#877A63";
+const BORDER_GOLD = "#3A2E1B";
+const ICON_ON_GOLD = "#241A08";
+
+// PROFILE_GOLD_V1 — one graphic icon per badge key (replaces emoji on this page)
+const BADGE_ICONS = {
+  double_digits: Target,
+  twenty_club: Medal,
+  thirty_bomb: Bomb,
+  scoring_streak: Flame,
+  facilitator: Handshake,
+  playmaker: Zap,
+  floor_general: Crown,
+  glass_cleaner: Sparkles,
+  board_beast: Dumbbell,
+  rebound_machine: Magnet,
+  pickpocket: Hand,
+  lockdown_defender: Lock,
+  shot_blocker: Ban,
+  defensive_wall: Shield,
+  double_double: Layers,
+  triple_double: Gem,
+  player_of_the_game: Star,
+  clutch_performer: Clock,
+  all_around_game: Orbit,
+};
+
+export default function BadgeCard({ badgeKey, badgeName, badgeIcon, badgeDescription, badgeRule, count, locked = false }) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
   const badgeRef = useRef(null);
   const tooltipRef = useRef(null);
+
+  const IconComp = BADGE_ICONS[badgeKey] || Target;
 
   // Handle hover on desktop
   const handleMouseEnter = () => {
@@ -61,54 +98,100 @@ export default function BadgeCard({ badgeKey, badgeName, badgeIcon, badgeDescrip
         onClick={handleTap}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        className="bg-white rounded-full px-4 py-2 shadow-sm border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-200 flex items-center gap-2 cursor-pointer"
+        className="rounded-xl px-1 pt-3 pb-2 text-center transition-transform duration-150 hover:scale-[1.03] cursor-pointer w-full"
+        style={
+          locked
+            ? { background: "#0E0D0B", border: "1px solid #242220" }
+            : {
+                backgroundImage: "linear-gradient(180deg, #1E170D 0%, #120E08 100%)",
+                border: `1px solid ${BORDER_GOLD}`,
+              }
+        }
       >
-        <span className="text-lg">{badgeIcon}</span>
-        <span className="font-semibold text-slate-800 text-sm">{badgeName}</span>
-        <span className="text-xs text-slate-500 font-medium">x{count}</span>
+        <div
+          className="w-12 h-12 mx-auto rounded-full flex items-center justify-center"
+          style={
+            locked
+              ? { backgroundImage: "radial-gradient(circle at 35% 30%, #35322D 0%, #211F1C 60%, #141311 100%)" }
+              : { backgroundImage: `radial-gradient(circle at 35% 30%, ${GOLD_HI} 0%, ${GOLD_MID} 45%, ${GOLD_DEEP} 100%)` }
+          }
+        >
+          {locked ? (
+            <Lock className="w-5 h-5" style={{ color: "#5F5A52" }} />
+          ) : (
+            <IconComp className="w-6 h-6" style={{ color: ICON_ON_GOLD }} />
+          )}
+        </div>
+        <p
+          className="text-[10px] font-semibold tracking-wide uppercase mt-2 leading-tight"
+          style={{ color: locked ? "#5F5A52" : WARM_WHITE }}
+        >
+          {badgeName}
+        </p>
+        <p className="text-[11px] font-bold mt-0.5" style={{ color: locked ? "transparent" : GOLD_MID }}>
+          {locked ? "·" : `×${count}`}
+        </p>
       </button>
 
       {/* Tooltip - Fixed Positioning */}
       {showTooltip && (
         <div
           ref={tooltipRef}
-          className="fixed bg-white rounded-xl shadow-xl border border-slate-200 p-4 z-50 max-w-xs"
+          className="fixed rounded-xl p-4 z-50 max-w-xs"
           style={{
             top: `${tooltipPosition.top}px`,
             left: `${tooltipPosition.left}px`,
+            background: "#15110B",
+            border: `1px solid ${BORDER_GOLD}`,
+            boxShadow: "0 8px 30px rgba(0,0,0,0.6)",
           }}
         >
           {/* Close button on mobile */}
           {window.innerWidth < 768 && (
             <button
               onClick={() => setShowTooltip(false)}
-              className="absolute top-2 right-2 p-1 hover:bg-slate-100 rounded-lg"
+              className="absolute top-2 right-2 p-1 rounded-lg"
             >
-              <X className="w-4 h-4 text-slate-500" />
+              <X className="w-4 h-4" style={{ color: WARM_MUTED }} />
             </button>
           )}
 
           <div className="space-y-3">
             {/* Icon + Name */}
             <div className="flex items-center gap-2">
-              <span className="text-2xl">{badgeIcon}</span>
-              <h3 className="font-bold text-slate-900">{badgeName}</h3>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                style={
+                  locked
+                    ? { backgroundImage: "radial-gradient(circle at 35% 30%, #35322D 0%, #211F1C 60%, #141311 100%)" }
+                    : { backgroundImage: `radial-gradient(circle at 35% 30%, ${GOLD_HI} 0%, ${GOLD_MID} 45%, ${GOLD_DEEP} 100%)` }
+                }
+              >
+                <IconComp className="w-4 h-4" style={{ color: locked ? "#5F5A52" : ICON_ON_GOLD }} />
+              </div>
+              <h3 className="font-bold" style={{ color: WARM_WHITE }}>{badgeName}</h3>
             </div>
 
             {/* Description */}
-            <p className="text-sm text-slate-700">{badgeDescription}</p>
+            <p className="text-sm" style={{ color: "#C9BFA9" }}>{badgeDescription}</p>
 
             {/* Rule */}
-            <div className="bg-slate-50 rounded-lg p-2 border border-slate-100">
-              <p className="text-xs text-slate-600 font-medium">
-                <span className="text-slate-500">Unlock: </span>
+            <div className="rounded-lg p-2" style={{ background: "#100D08", border: "1px solid #2A2114" }}>
+              <p className="text-xs font-medium" style={{ color: WARM_MUTED }}>
+                <span style={{ color: GOLD_MID }}>Unlock: </span>
                 {badgeRule}
               </p>
             </div>
 
             {/* Count */}
-            <p className="text-xs text-slate-500">
-              <span className="font-semibold text-slate-700">Unlocked:</span> {count} {count === 1 ? "time" : "times"}
+            <p className="text-xs" style={{ color: WARM_MUTED }}>
+              {locked ? (
+                <span>Not earned yet</span>
+              ) : (
+                <>
+                  <span className="font-semibold" style={{ color: GOLD_HI }}>Unlocked:</span> {count} {count === 1 ? "time" : "times"}
+                </>
+              )}
             </p>
           </div>
         </div>
