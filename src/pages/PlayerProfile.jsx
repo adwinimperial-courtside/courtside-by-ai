@@ -139,7 +139,7 @@ export default function PlayerProfile() {
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: "#C8A468" }} />
       </div>
     );
   }
@@ -161,22 +161,20 @@ export default function PlayerProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-4 md:p-8">
-      {/* Hero Gradient Background Section */}
-      <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-indigo-50 via-blue-50 to-white pointer-events-none" />
+    <div className="min-h-screen p-4 md:p-8" style={{ background: "#0B0A08" }}>{/* PROFILE_GOLD_V1 */}
       
       <div className="max-w-2xl mx-auto relative z-10">
 
         <div className="pt-4 pb-6">
-          <h1 className="text-3xl font-bold text-slate-900">Player Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">Your performance, achievements & upcoming games</p>
+          <h1 className="text-3xl font-bold" style={{ color: "#E5C688" }}>Player Dashboard</h1>
+          <p className="text-sm mt-1" style={{ color: "#877A63" }}>Your performance, achievements & upcoming games</p>
         </div>
 
         {userLeagues.length > 1 && (
           <div className="mb-32">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Select League</label>
+            <label className="block text-sm font-semibold mb-2" style={{ color: "#C8A468" }}>Select League</label>
             <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
-              <SelectTrigger className="w-full bg-white border-slate-300 shadow-md">
+              <SelectTrigger className="w-full" style={{ background: "#15110B", border: "1px solid #3A2E1B", color: "#EFE6D4" }}>
                 <SelectValue placeholder="Choose a league" />
               </SelectTrigger>
               <SelectContent>
@@ -215,6 +213,12 @@ export default function PlayerProfile() {
             allStats={allCompletedStats}
           />
 
+          <PlayerNextGame
+            games={leagueGames}
+            teams={allTeams}
+            teamId={teamId}
+          />
+
           <PlayerTrendCard
             myStats={myStats}
             games={leagueGames}
@@ -228,12 +232,6 @@ export default function PlayerProfile() {
             teams={allTeams}
             teamId={teamId}
             formatMap={formatMap}
-          />
-
-          <PlayerNextGame
-            games={leagueGames}
-            teams={allTeams}
-            teamId={teamId}
           />
 
         </div>
