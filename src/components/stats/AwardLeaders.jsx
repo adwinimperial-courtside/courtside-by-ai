@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,13 @@ import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // AWARDS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
 export default function AwardLeaders({ league, teams, games, players, stats, awardSettings }) {
+  const navigate = useNavigate();
+
+  // PLAYER_CARD_LINK_V1 — award rows tap through to the read-only PlayerCard page.
+  const openPlayerCard = (playerId) => {
+    if (!league?.id || !playerId) return;
+    navigate(`/PlayerCard?leagueId=${league.id}&playerId=${playerId}`);
+  };
   const mvpCandidates = useMemo(
     () => computeMvpRace({ league, teams, games, players, stats, awardSettings, topN: 10 }),
     [league, teams, games, players, stats, awardSettings]
@@ -42,7 +50,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
               <>
                 {/* Mobile: Stacked Cards */}
                 <div className="block md:hidden">
-                  <MobileAwardCards candidates={mvpCandidates} awardType="mvp" />
+                  <MobileAwardCards candidates={mvpCandidates} awardType="mvp" leagueId={league?.id} />
                 </div>
 
                 {/* Desktop: Table */}
@@ -63,7 +71,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                       {mvpCandidates.map((candidate, index) => (
                         <TableRow key={candidate.playerId} className={index === 0 ? "bg-yellow-50" : ""}>
                           <TableCell className="font-bold">{index + 1}</TableCell>
-                          <TableCell className="font-medium"><div className="flex items-center gap-2">{/* PLAYER_AVATAR_V1 */}<PlayerAvatar player={candidate.player} size={28} teamColor={candidate.team?.color || '#f97316'} /><span>{candidate.player.name}</span></div></TableCell>
+                          <TableCell className="font-medium"><button type="button" onClick={() => openPlayerCard(candidate.playerId)} className="flex items-center gap-2 text-left cursor-pointer hover:underline decoration-purple-400 underline-offset-2">{/* PLAYER_AVATAR_V1 */}{/* PLAYER_CARD_LINK_V1 */}<PlayerAvatar player={candidate.player} size={28} teamColor={candidate.team?.color || '#f97316'} /><span>{candidate.player.name}</span></button></TableCell>
                           <TableCell>{candidate.team.name}</TableCell>
                           <TableCell className="text-center">{candidate.gp}</TableCell>
                           <TableCell className="text-center">{candidate.avgGis}</TableCell>
@@ -108,7 +116,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
               <>
                 {/* Mobile: Stacked Cards */}
                 <div className="block md:hidden">
-                  <MobileAwardCards candidates={dpoyLeaders} awardType="dpoy" />
+                  <MobileAwardCards candidates={dpoyLeaders} awardType="dpoy" leagueId={league?.id} />
                 </div>
 
                 {/* Desktop: Table */}
@@ -129,7 +137,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                       {dpoyLeaders.map((leader, index) => (
                         <TableRow key={leader.playerId} className={index === 0 ? "bg-blue-50" : ""}>
                           <TableCell className="font-bold">{index + 1}</TableCell>
-                          <TableCell className="font-medium"><div className="flex items-center gap-2"><PlayerAvatar player={leader.player} size={28} teamColor={leader.team?.color || '#f97316'} /><span>{leader.player.name}</span></div></TableCell>
+                          <TableCell className="font-medium"><button type="button" onClick={() => openPlayerCard(leader.playerId)} className="flex items-center gap-2 text-left cursor-pointer hover:underline decoration-blue-400 underline-offset-2">{/* PLAYER_CARD_LINK_V1 */}<PlayerAvatar player={leader.player} size={28} teamColor={leader.team?.color || '#f97316'} /><span>{leader.player.name}</span></button></TableCell>
                           <TableCell>{leader.team.name}</TableCell>
                           <TableCell className="text-center">{leader.gp}</TableCell>
                           <TableCell className="text-center">{leader.avgDefGis}</TableCell>

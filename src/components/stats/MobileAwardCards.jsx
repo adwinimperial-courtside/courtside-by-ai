@@ -1,16 +1,25 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Shield, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
-export default function MobileAwardCards({ candidates, awardType = "mvp", isExpanded, onToggle }) {
+// PLAYER_CARD_LINK_V1 — the avatar + name block taps through to the read-only PlayerCard page.
+export default function MobileAwardCards({ candidates, awardType = "mvp", isExpanded, onToggle, leagueId = null }) {
+  const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   
   const displayedCandidates = showAll ? candidates : candidates.slice(0, 5);
   const isMvp = awardType === "mvp";
   const scoreKey = isMvp ? "mvpScore" : "dpoyScore";
   const avgKey = isMvp ? "avgGis" : "avgDefGis";
+
+  // PLAYER_CARD_LINK_V1
+  const openPlayerCard = (playerId) => {
+    if (!leagueId || !playerId) return;
+    navigate(`/PlayerCard?leagueId=${leagueId}&playerId=${playerId}`);
+  };
 
   const getAwardBadge = (index) => {
     if (index === 0) {
@@ -48,7 +57,11 @@ export default function MobileAwardCards({ candidates, awardType = "mvp", isExpa
           </div>
 
           {/* Player Name and Team */}
-          <div className="mb-3 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => openPlayerCard(candidate.playerId)}
+            className={`w-full mb-3 flex items-center gap-3 text-left ${leagueId ? "cursor-pointer active:opacity-70" : "cursor-default"}`}
+          >
             {/* PLAYER_AVATAR_V1 */}
             <PlayerAvatar player={candidate.player} size={40} teamColor={candidate.team?.color || '#f97316'} />
             <div>
@@ -57,7 +70,7 @@ export default function MobileAwardCards({ candidates, awardType = "mvp", isExpa
             </h3>
             <p className="text-sm text-slate-600">{candidate.team.name} • {candidate.gp} GP</p>
             </div>
-          </div>
+          </button>
 
           {/* Score and Stats */}
           <div className="space-y-2">
