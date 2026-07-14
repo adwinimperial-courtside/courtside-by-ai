@@ -24,6 +24,10 @@
         "C"
       ],
       "description": "Player position"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "URL of the player's profile photo uploaded by a league admin. Displayed across the app wherever the player appears. When empty, the app falls back to showing the jersey number circle."
     }
   },
   "required": [
