@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.23';
 
+// ANALYTICS_V2
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -12,19 +14,37 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action, email: targetEmail } = body;
 
-    // Today's date boundaries (UTC)
     const now = new Date();
     const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(todayStart.getTime() - 13 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(todayStart.getTime() - 29 * 24 * 60 * 60 * 1000);
+    const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
+
+    // Paginated fetch: base44 silently caps single fetches around 1500 rows,
+    // so we always loop in pages of 1000 until an incomplete page comes back.
+    const fetchEventsSince = async (sinceIso) => {
+      const PAGE = 1000;
+      let skip = 0;
+      const all = [];
+      while (true) {
+        const page = await base44.asServiceRole.entities.LoginEvent.filter(
+          { logged_at: { '$gte': sinceIso } },
+          '-logged_at',
+          PAGE,
+          skip
+        );
+        if (!page || page.length === 0) break;
+        all.push(...page);
+        skip += page.length;
+        if (page.length < PAGE) break;
+      }
+      return all;
+    };
 
     if (action === 'today') {
-      // Get all login events from today
-      const events = await base44.asServiceRole.entities.LoginEvent.filter(
-        { logged_at: { '$gte': todayStart.toISOString(), '$lt': todayEnd.toISOString() } },
-        '-logged_at',
-        200
-      );
+      const events = (await fetchEventsSince(todayStart.toISOString()))
+        .filter(e => e.logged_at < todayEnd.toISOString());
 
       const logins = events
         .map(e => ({
@@ -39,14 +59,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'daily_active') {
-      // Get all events from last 14 days
-      const events = await base44.asServiceRole.entities.LoginEvent.filter(
-        { logged_at: { '$gte': fourteenDaysAgo.toISOString() } },
-        '-logged_at',
-        2000
-      );
+      const events = await fetchEventsSince(fourteenDaysAgo.toISOString());
 
-      // Build daily buckets
       const dailyMap = {};
       for (let d = 0; d < 14; d++) {
         const day = new Date(todayStart.getTime() - d * 24 * 60 * 60 * 1000);
@@ -54,11 +68,17 @@ Deno.serve(async (req) => {
         dailyMap[key] = { date: key, unique_users: new Set(), total_logins: 0 };
       }
 
+      const weeklyUsers = new Set();
+      const sevenDaysAgoIso = sevenDaysAgo.toISOString();
+
       for (const e of events) {
         const key = new Date(e.logged_at).toISOString().slice(0, 10);
         if (dailyMap[key]) {
           dailyMap[key].unique_users.add(e.user_id);
           dailyMap[key].total_logins += 1;
+        }
+        if (e.logged_at >= sevenDaysAgoIso) {
+          weeklyUsers.add(e.user_id);
         }
       }
 
@@ -70,7 +90,37 @@ Deno.serve(async (req) => {
         }))
         .sort((a, b) => b.date.localeCompare(a.date));
 
-      return Response.json({ rows });
+      return Response.json({ rows, weekly_unique: weeklyUsers.size });
+    }
+
+    if (action === 'most_active') {
+      const events = await fetchEventsSince(thirtyDaysAgo.toISOString());
+
+      const byUser = {};
+      for (const e of events) {
+        const key = e.user_email || 'unknown';
+        if (!byUser[key]) {
+          byUser[key] = {
+            email: e.user_email,
+            full_name: e.full_name,
+            user_type: e.user_type,
+            sessions: 0,
+            last_seen: e.logged_at,
+          };
+        }
+        byUser[key].sessions += 1;
+        if (e.logged_at > byUser[key].last_seen) {
+          byUser[key].last_seen = e.logged_at;
+          byUser[key].full_name = e.full_name || byUser[key].full_name;
+          byUser[key].user_type = e.user_type || byUser[key].user_type;
+        }
+      }
+
+      const leaders = Object.values(byUser)
+        .sort((a, b) => b.sessions - a.sessions)
+        .slice(0, 10);
+
+      return Response.json({ leaders });
     }
 
     if (action === 'user_history') {
