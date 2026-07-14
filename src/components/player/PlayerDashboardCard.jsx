@@ -1,7 +1,9 @@
 import React, { useRef, useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp, TrendingDown } from "lucide-react";
+import { Camera, Upload, Trash2, Loader2, Flame, TrendingUp, TrendingDown, Crop } from "lucide-react";
 import { getRankMovement } from "@/components/utils/rankMovementTracker";
+import PhotoCropDialog, { fetchPhotoAsFile } from "@/components/shared/PhotoCropDialog"; // PHOTO_CROP_V1
+import { useToast } from "@/components/ui/use-toast"; // PHOTO_CROP_V1
 import { getMilestoneProgress } from "./milestoneCalculator";
 // CARD_FORMAT_V1 — points math comes from the stat engine (format-aware).
 import { calcPoints as enginePoints } from "@/components/stats/statEngine";
@@ -180,6 +182,9 @@ export default function PlayerDashboardCard({
 }) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+  // PHOTO_CROP_V1 — picked file waiting in the crop dialog
+  const [pendingCropFile, setPendingCropFile] = useState(null);
+  const { toast } = useToast();
 
   const displayName = currentUser?.display_name || currentUser?.full_name || "Player";
   const handle = currentUser?.handle;
@@ -197,16 +202,48 @@ export default function PlayerDashboardCard({
   // Milestone progress — CARD_FORMAT_V1
   const milestone = useMemo(() => getMilestoneProgress(myStats, games, formatMap), [myStats, games, formatMap]);
 
-  const handleFileSelect = async (e) => {
+  // PHOTO_CROP_V1 — picked photo opens the crop dialog instead of uploading directly
+  const handleFileSelect = (e) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Photo must be less than 5MB"); return; }
-    setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.auth.updateMe({ profile_photo_url: file_url });
-    setUploading(false);
-    onPhotoUpdate?.();
     e.target.value = "";
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Photo too large", description: "Please choose a photo under 10MB.", variant: "destructive" });
+      return;
+    }
+    setPendingCropFile(file);
+  };
+
+  // PHOTO_CROP_V1 — upload the cropped headshot to the player's account photo
+  const handleCropSave = async (croppedFile) => {
+    setPendingCropFile(null);
+    setUploading(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: croppedFile });
+      await base44.auth.updateMe({ profile_photo_url: file_url });
+      onPhotoUpdate?.();
+      toast({ title: "Photo saved", description: "Your profile photo has been updated." });
+    } catch (error) {
+      console.error("Error uploading profile photo:", error);
+      toast({ title: "Upload failed", description: "Could not upload the photo. Please try again.", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // PHOTO_CROP_V1 — re-crop the existing profile photo without re-uploading
+  const handleEditPhoto = async () => {
+    if (!photoUrl) return;
+    setUploading(true);
+    try {
+      const file = await fetchPhotoAsFile(photoUrl);
+      setPendingCropFile(file);
+    } catch (error) {
+      console.error("Error loading photo for editing:", error);
+      toast({ title: "Could not load photo", description: "The current photo could not be opened for editing. Upload a new photo instead.", variant: "destructive" });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleRemovePhoto = async () => {
@@ -334,6 +371,11 @@ export default function PlayerDashboardCard({
                   <Upload className="w-4 h-4 mr-2" /> Upload Photo
                 </DropdownMenuItem>
                 {photoUrl && (
+                  <DropdownMenuItem onClick={handleEditPhoto}>
+                    <Crop className="w-4 h-4 mr-2" /> Edit Crop
+                  </DropdownMenuItem>
+                )}
+                {photoUrl && (
                   <DropdownMenuItem onClick={handleRemovePhoto} className="text-red-600">
                     <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
                   </DropdownMenuItem>
@@ -391,6 +433,13 @@ export default function PlayerDashboardCard({
         )}
 
       </div>
+
+      {/* PHOTO_CROP_V1 — crop dialog for profile photo uploads */}
+      <PhotoCropDialog
+        file={pendingCropFile}
+        onSave={handleCropSave}
+        onCancel={() => setPendingCropFile(null)}
+      />
     </div>
   );
 }

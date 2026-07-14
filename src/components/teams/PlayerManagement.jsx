@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit2, Trash2, Crown, Upload, AlertTriangle, Camera, X, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, Crown, Upload, AlertTriangle, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Dialog,
@@ -26,38 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-// PLAYER_PHOTO_V1 — compress an image file client-side before upload (max 512px, JPEG)
-async function compressPlayerPhoto(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const maxDim = 512;
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { reject(new Error("Image processing failed")); return; }
-          resolve(new File([blob], "player_photo.jpg", { type: "image/jpeg" }));
-        },
-        "image/jpeg",
-        0.85
-      );
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Could not read image")); };
-    img.src = url;
-  });
-}
+import PhotoCropDialog, { fetchPhotoAsFile } from "@/components/shared/PhotoCropDialog"; // PHOTO_CROP_V1
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"; // PHOTO_CROP_V1
+import { Crop } from "lucide-react"; // PHOTO_CROP_V1
 
 export default function PlayerManagement({ teamId, team, userType }) {
    const isViewer = userType === "viewer";
@@ -76,6 +52,8 @@ export default function PlayerManagement({ teamId, team, userType }) {
   const [photoUploadingIndex, setPhotoUploadingIndex] = useState(null);
   const photoInputRef = useRef(null);
   const photoTargetIndexRef = useRef(null);
+  // PHOTO_CROP_V1 — picked file waiting in the crop dialog, with its target row
+  const [pendingCrop, setPendingCrop] = useState(null);
 
   const { data: players = [], isLoading } = useQuery({
     queryKey: ['players', teamId],
@@ -208,8 +186,8 @@ export default function PlayerManagement({ teamId, team, userType }) {
     photoInputRef.current?.click();
   };
 
-  // PLAYER_PHOTO_V1 — compress, upload, and save the photo to the player record
-  const handlePhotoSelected = async (e) => {
+  // PHOTO_CROP_V1 — picked photo opens the crop dialog instead of uploading directly
+  const handlePhotoSelected = (e) => {
     const file = e.target.files?.[0];
     if (photoInputRef.current) photoInputRef.current.value = "";
     const index = photoTargetIndexRef.current;
@@ -220,10 +198,20 @@ export default function PlayerManagement({ teamId, team, userType }) {
       toast({ title: "Save the player first", description: "Add the name and jersey number, press Save All, then upload the photo.", variant: "destructive" });
       return;
     }
+    setPendingCrop({ file, index });
+  };
+
+  // PHOTO_CROP_V1 — upload the cropped headshot and save it to the player record
+  const handleCropSave = async (croppedFile) => {
+    const pending = pendingCrop;
+    setPendingCrop(null);
+    if (!pending) return;
+    const { index } = pending;
+    const row = tableData[index];
+    if (!row?.id) return;
     setPhotoUploadingIndex(index);
     try {
-      const compressed = await compressPlayerPhoto(file);
-      const { file_url } = await base44.integrations.Core.UploadFile({ file: compressed });
+      const { file_url } = await base44.integrations.Core.UploadFile({ file: croppedFile });
       await base44.entities.Player.update(row.id, { photo_url: file_url });
       handleRowChange(index, 'photo_url', file_url);
       queryClient.invalidateQueries({ queryKey: ['players', teamId] });
@@ -231,6 +219,22 @@ export default function PlayerManagement({ teamId, team, userType }) {
     } catch (error) {
       console.error("Error uploading player photo:", error);
       toast({ title: "Upload failed", description: "Could not upload the photo. Please try again.", variant: "destructive" });
+    } finally {
+      setPhotoUploadingIndex(null);
+    }
+  };
+
+  // PHOTO_CROP_V1 — re-crop a player's existing photo without re-uploading
+  const handleEditPhoto = async (index) => {
+    const row = tableData[index];
+    if (!row?.id || !row.photo_url) return;
+    setPhotoUploadingIndex(index);
+    try {
+      const file = await fetchPhotoAsFile(row.photo_url);
+      setPendingCrop({ file, index });
+    } catch (error) {
+      console.error("Error loading photo for editing:", error);
+      toast({ title: "Could not load photo", description: "The current photo could not be opened for editing. Upload a new photo instead.", variant: "destructive" });
     } finally {
       setPhotoUploadingIndex(null);
     }
@@ -365,28 +369,34 @@ export default function PlayerManagement({ teamId, team, userType }) {
                               <Loader2 className="w-4 h-4 text-slate-400 animate-spin" />
                             </div>
                           ) : row.photo_url ? (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => canManage && openPhotoPicker(index)}
-                                disabled={!canManage || isSaving}
-                                title={canManage ? "Change photo" : undefined}
-                                className="block w-10 h-10 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-orange-500"
-                              >
-                                <img src={row.photo_url} alt={row.name || "Player"} className="w-10 h-10 rounded-full object-cover" />
-                              </button>
-                              {canManage && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemovePhoto(index)}
-                                  disabled={isSaving}
-                                  title="Remove photo"
-                                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-white border border-slate-300 flex items-center justify-center hover:bg-red-50"
-                                >
-                                  <X className="w-3 h-3 text-slate-500" />
-                                </button>
-                              )}
-                            </>
+                            /* PHOTO_CROP_V1 — photo menu: upload new / edit crop / remove */
+                            canManage ? (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    disabled={isSaving}
+                                    title="Photo options"
+                                    className="block w-10 h-10 rounded-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                  >
+                                    <img src={row.photo_url} alt={row.name || "Player"} className="w-10 h-10 rounded-full object-cover" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="start">
+                                  <DropdownMenuItem onClick={() => openPhotoPicker(index)}>
+                                    <Upload className="w-4 h-4 mr-2" /> Upload New Photo
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditPhoto(index)}>
+                                    <Crop className="w-4 h-4 mr-2" /> Edit Crop
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleRemovePhoto(index)} className="text-red-600">
+                                    <Trash2 className="w-4 h-4 mr-2" /> Remove Photo
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            ) : (
+                              <img src={row.photo_url} alt={row.name || "Player"} className="w-10 h-10 rounded-full object-cover" />
+                            )
                           ) : (
                             <button
                               type="button"
@@ -558,6 +568,13 @@ export default function PlayerManagement({ teamId, team, userType }) {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* PHOTO_CROP_V1 — crop dialog for player photo uploads */}
+      <PhotoCropDialog
+        file={pendingCrop?.file || null}
+        onSave={handleCropSave}
+        onCancel={() => setPendingCrop(null)}
+      />
     </div>
   );
 }
