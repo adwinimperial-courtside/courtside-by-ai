@@ -1,11 +1,14 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Key, TrendingUp, Users, Clock, Search, Calendar, RefreshCw } from "lucide-react";
+import { Key, TrendingUp, TrendingDown, Clock, Search, RefreshCw, Flame, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
+
+// ANALYTICS_PAGE_V2
 
 const ROLE_LABELS = {
   league_admin: "League Owner",
@@ -24,10 +27,19 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
 }
 
-function formatDateTime(iso) {
+function formatShortDay(dateStr) {
+  return new Date(dateStr + "T12:00:00Z").toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function relativeDay(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
-  return d.toLocaleDateString([], { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const today = new Date();
+  const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((startOf(today) - startOf(d)) / 86400000);
+  if (diffDays <= 0) return "today " + formatTime(iso);
+  if (diffDays === 1) return "yesterday";
+  return diffDays + " days ago";
 }
 
 function RoleBadge({ role }) {
@@ -41,6 +53,29 @@ function RoleBadge({ role }) {
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[role] || "bg-slate-100 text-slate-600"}`}>
       {ROLE_LABELS[role] || role}
     </span>
+  );
+}
+
+function TrendChip({ pct }) {
+  if (pct === null || !isFinite(pct)) return <div className="text-xs text-slate-400 mt-1">no comparison yet</div>;
+  const up = pct >= 0;
+  return (
+    <div className={`text-xs mt-1 inline-flex items-center gap-1 font-medium ${up ? "text-green-600" : "text-red-500"}`}>
+      {up ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+      {Math.abs(Math.round(pct))}% vs 7-day avg
+    </div>
+  );
+}
+
+function ChartTooltip({ active, payload }) {
+  if (!active || !payload || !payload.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="bg-white border border-slate-200 rounded-lg shadow-lg px-3 py-2 text-xs">
+      <div className="font-semibold text-slate-900 mb-1">{d.label}</div>
+      <div className="text-indigo-600 font-medium">{d.unique} unique users</div>
+      <div className="text-slate-500">{d.total} total logins</div>
+    </div>
   );
 }
 
@@ -66,6 +101,12 @@ export default function Analytics() {
   const { data: dailyData, isLoading: loadingDaily } = useQuery({
     queryKey: ["analytics_daily"],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "daily_active" }).then(r => r.data),
+    enabled: isAdmin,
+  });
+
+  const { data: activeData, isLoading: loadingActive } = useQuery({
+    queryKey: ["analytics_most_active"],
+    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "most_active" }).then(r => r.data),
     enabled: isAdmin,
   });
 
@@ -95,11 +136,42 @@ export default function Analytics() {
 
   const logins = todayData?.logins || [];
   const dailyRows = dailyData?.rows || [];
+  const weeklyUnique = dailyData?.weekly_unique ?? null;
+  const leaders = activeData?.leaders || [];
   const searchUsers = searchData?.users || [];
   const historyEvents = historyData?.events || [];
 
   const todayTotal = logins.length;
   const todayUnique = new Set(logins.map(l => l.email)).size;
+
+  // Trend vs the average of the previous 7 days (rows are sorted newest first; index 0 is today)
+  const prev7 = dailyRows.slice(1, 8);
+  const avgOf = (arr, key) => arr.length ? arr.reduce((s, r) => s + r[key], 0) / arr.length : 0;
+  const avgLogins = avgOf(prev7, "total_logins");
+  const avgUnique = avgOf(prev7, "unique_users");
+  const loginsTrend = avgLogins > 0 ? ((todayTotal - avgLogins) / avgLogins) * 100 : null;
+  const uniqueTrend = avgUnique > 0 ? ((todayUnique - avgUnique) / avgUnique) * 100 : null;
+
+  // Chart data, oldest to newest
+  const chartData = [...dailyRows]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((r, i, arr) => ({
+      label: formatShortDay(r.date),
+      unique: r.unique_users,
+      total: r.total_logins,
+      isToday: i === arr.length - 1,
+    }));
+
+  // Group today's logins per user
+  const groupedToday = Object.values(
+    logins.reduce((acc, l) => {
+      const k = l.email || "unknown";
+      if (!acc[k]) acc[k] = { ...l, sessions: 0, last: l.time };
+      acc[k].sessions += 1;
+      if (l.time > acc[k].last) acc[k].last = l.time;
+      return acc;
+    }, {})
+  ).sort((a, b) => new Date(b.last) - new Date(a.last));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-6 overflow-x-hidden">
@@ -122,149 +194,131 @@ export default function Analytics() {
           </Button>
         </div>
 
-        {/* Today summary KPIs */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* KPI cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-orange-600">{todayTotal}</div>
-              <div className="text-xs text-slate-500 mt-1">Logins Today</div>
+            <CardContent className="p-4">
+              <div className="text-xs text-slate-500">Logins Today</div>
+              <div className="text-3xl font-bold text-orange-600 mt-1">{todayTotal}</div>
+              <TrendChip pct={loginsTrend} />
             </CardContent>
           </Card>
           <Card className="border-slate-200 shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-3xl font-bold text-indigo-600">{todayUnique}</div>
-              <div className="text-xs text-slate-500 mt-1">Unique Users Today</div>
+            <CardContent className="p-4">
+              <div className="text-xs text-slate-500">Unique Users Today</div>
+              <div className="text-3xl font-bold text-indigo-600 mt-1">{todayUnique}</div>
+              <TrendChip pct={uniqueTrend} />
+            </CardContent>
+          </Card>
+          <Card className="border-slate-200 shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-xs text-slate-500">Active This Week</div>
+              <div className="text-3xl font-bold text-slate-800 mt-1">{weeklyUnique ?? "—"}</div>
+              <div className="text-xs text-slate-400 mt-1">unique users, last 7 days</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Section A: Logins Today */}
+        {/* Daily active users chart */}
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Clock className="w-5 h-5 text-orange-500" />
-              Logins Today
-              {todayTotal > 0 && <Badge className="bg-orange-100 text-orange-700 ml-1">{todayTotal}</Badge>}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            {loadingToday ? (
-              <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
-            ) : logins.length === 0 ? (
-              <div className="py-8 text-center text-slate-400 text-sm">No logins recorded today yet</div>
-            ) : (
-              <>
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-left text-slate-500 text-xs">
-                        <th className="px-4 py-2.5 font-semibold">Time</th>
-                        <th className="px-4 py-2.5 font-semibold">Full Name</th>
-                        <th className="px-4 py-2.5 font-semibold">Email</th>
-                        <th className="px-4 py-2.5 font-semibold">Role</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {logins.map((l, i) => (
-                        <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                          <td className="px-4 py-2.5 font-mono text-slate-700">{formatTime(l.time)}</td>
-                          <td className="px-4 py-2.5 font-medium text-slate-900">{l.full_name || "—"}</td>
-                          <td className="px-4 py-2.5 text-slate-600">{l.email}</td>
-                          <td className="px-4 py-2.5"><RoleBadge role={l.user_type} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Mobile list */}
-                <div className="md:hidden divide-y divide-slate-100">
-                  {logins.map((l, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3">
-                      <div className="text-xs font-mono text-slate-400 w-12 flex-shrink-0">{formatTime(l.time)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-slate-900 text-sm truncate">{l.full_name || l.email}</div>
-                        <div className="text-xs text-slate-500 truncate">{l.email}</div>
-                      </div>
-                      <RoleBadge role={l.user_type} />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Section B: Daily Active Users (Last 14 days) */}
-        <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Calendar className="w-5 h-5 text-indigo-500" />
+              <BarChart3 className="w-5 h-5 text-indigo-500" />
               Daily Active Users — Last 14 Days
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="pt-4">
             {loadingDaily ? (
               <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
             ) : (
-              <>
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-100 text-left text-slate-500 text-xs">
-                        <th className="px-4 py-2.5 font-semibold">Date</th>
-                        <th className="px-4 py-2.5 font-semibold text-right">Unique Users</th>
-                        <th className="px-4 py-2.5 font-semibold text-right">Total Logins</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {dailyRows.map((row) => (
-                        <tr key={row.date} className="border-b border-slate-50 hover:bg-slate-50">
-                          <td className="px-4 py-2.5 text-slate-700">{formatDate(row.date + "T12:00:00Z")}</td>
-                          <td className="px-4 py-2.5 text-right">
-                            {row.unique_users > 0 ? (
-                              <span className="font-bold text-indigo-600">{row.unique_users}</span>
-                            ) : (
-                              <span className="text-slate-300">—</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-right">
-                            {row.total_logins > 0 ? (
-                              <span className="font-bold text-slate-700">{row.total_logins}</span>
-                            ) : (
-                              <span className="text-slate-300">—</span>
-                            )}
-                          </td>
-                        </tr>
+              <div className="h-52 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} interval="preserveStartEnd" />
+                    <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickLine={false} axisLine={false} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(148,163,184,0.08)" }} />
+                    <Bar dataKey="unique" radius={[4, 4, 0, 0]}>
+                      {chartData.map((d, i) => (
+                        <Cell key={i} fill={d.isToday ? "#F26B1F" : "#818cf8"} />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
-                {/* Mobile list */}
-                <div className="md:hidden divide-y divide-slate-100">
-                  {dailyRows.map((row) => (
-                    <div key={row.date} className="flex items-center justify-between px-4 py-3">
-                      <span className="text-sm text-slate-700">{formatDate(row.date + "T12:00:00Z")}</span>
-                      <div className="flex items-center gap-4 text-right">
-                        <div className="text-xs text-slate-400">
-                          <div className="font-bold text-indigo-600 text-sm">{row.unique_users}</div>
-                          <div>unique</div>
-                        </div>
-                        <div className="text-xs text-slate-400">
-                          <div className="font-bold text-slate-700 text-sm">{row.total_logins}</div>
-                          <div>total</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Section C: User Drilldown */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+          {/* Most active users */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Flame className="w-5 h-5 text-orange-500" />
+                Most Active Users — Last 30 Days
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingActive ? (
+                <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
+              ) : leaders.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-sm">No activity recorded yet</div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {leaders.map((u, i) => (
+                    <div key={u.email || i} className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-6 text-sm font-semibold text-slate-400 flex-shrink-0">{i + 1}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-slate-900 text-sm truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-slate-400">last seen {relativeDay(u.last_seen)}</div>
+                      </div>
+                      <RoleBadge role={u.user_type} />
+                      <div className="text-sm font-semibold text-slate-800 flex-shrink-0 w-20 text-right">
+                        {u.sessions} <span className="text-xs font-normal text-slate-400">sessions</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Logins today, grouped per user */}
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Clock className="w-5 h-5 text-orange-500" />
+                Logins Today
+                {todayTotal > 0 && <Badge className="bg-orange-100 text-orange-700 ml-1">{todayTotal}</Badge>}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingToday ? (
+                <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
+              ) : groupedToday.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-sm">No logins recorded today yet</div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {groupedToday.map((u, i) => (
+                    <div key={u.email || i} className="flex items-center gap-3 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-slate-900 text-sm truncate">{u.full_name || u.email}</div>
+                        <div className="text-xs text-slate-500 truncate">{u.email}</div>
+                      </div>
+                      <RoleBadge role={u.user_type} />
+                      <div className="text-xs text-slate-500 flex-shrink-0 w-16 text-right">{u.sessions} session{u.sessions !== 1 ? "s" : ""}</div>
+                      <div className="text-xs font-mono text-slate-400 flex-shrink-0 w-12 text-right">{formatTime(u.last)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+        </div>
+
+        {/* User drilldown */}
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -283,7 +337,6 @@ export default function Analytics() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 className="pl-9"
               />
-              {/* Search dropdown */}
               {searchFocused && userSearch.length >= 1 && (
                 <div className="absolute z-10 top-full left-0 right-0 bg-white border border-slate-200 rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
                   {loadingSearch ? (
