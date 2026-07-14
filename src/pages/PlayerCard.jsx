@@ -16,8 +16,8 @@ export default function PlayerCard() {
   const navigate = useNavigate();
 
   const urlParams = new URLSearchParams(window.location.search);
-  const leagueId = urlParams.get("leagueId");
-  const playerId = urlParams.get("playerId");
+  const leagueId = urlParams.get("leagueId") || urlParams.get("leagueid");
+  const playerId = urlParams.get("playerId") || urlParams.get("playerid");
 
   // PLAYER_CARD_V1 — all league data from the shared cap-agnostic hook
   // (same cache key as Statistics / PlayerProfile, so numbers always agree).

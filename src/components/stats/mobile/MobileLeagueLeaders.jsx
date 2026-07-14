@@ -18,7 +18,7 @@ export default function MobileLeagueLeaders({ players, teams, stats, games = [],
   // PLAYER_CARD_LINK_V1
   const openPlayerCard = (player) => {
     if (!leagueId || !player?.id) return;
-    navigate(createPageUrl(`PlayerCard?leagueId=${leagueId}&playerId=${player.id}`));
+    navigate(`/PlayerCard?leagueId=${leagueId}&playerId=${player.id}`);
   };
 
   const categories = [

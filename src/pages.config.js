@@ -70,6 +70,7 @@ import LeagueSelection from './pages/LeagueSelection';
 import Leagues from './pages/Leagues';
 import LiveBoxScore from './pages/LiveBoxScore';
 import LiveGame from './pages/LiveGame';
+import PlayerCard from './pages/PlayerCard';
 import PlayerProfile from './pages/PlayerProfile';
 import Players from './pages/Players';
 import RequestManagement from './pages/RequestManagement';
@@ -105,6 +106,7 @@ export const PAGES = {
     "Leagues": Leagues,
     "LiveBoxScore": LiveBoxScore,
     "LiveGame": LiveGame,
+    "PlayerCard": PlayerCard,
     "PlayerProfile": PlayerProfile,
     "Players": Players,
     "RequestManagement": RequestManagement,
