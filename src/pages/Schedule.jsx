@@ -235,6 +235,7 @@ export default function SchedulePage() {
         <CreateGameDialog
            open={showCreateDialog}
            onOpenChange={setShowCreateDialog}
+           defaultLeagueId={selectedLeague}
            onSubmit={(data) => createGameMutation.mutate(data)}
            isLoading={createGameMutation.isPending}
            leagues={visibleLeagues}

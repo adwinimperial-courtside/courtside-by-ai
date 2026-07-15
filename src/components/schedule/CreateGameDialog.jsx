@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,9 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 const DEFAULT_FORM = { league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5, personalFoulLimit: 5 };
 
-export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams }) {
+export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams, defaultLeagueId }) {
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [diffTimePeriod, setDiffTimePeriod] = useState(false);
+
+  // LEAGUE_PREFILL_V1: when the dialog opens, pre-select the league from the page filter
+  useEffect(() => {
+    if (!open) return;
+    if (!defaultLeagueId || defaultLeagueId === "all") return;
+    setFormData(prev => {
+      if (prev.league_id === defaultLeagueId) return prev;
+      return { ...prev, league_id: defaultLeagueId, home_team_id: "", away_team_id: "" };
+    });
+  }, [open, defaultLeagueId]);
   const [perPeriodMinutes, setPerPeriodMinutes] = useState([10, 10, 10, 10]);
   const [diffTimeoutPeriod, setDiffTimeoutPeriod] = useState(false);
   const [perPeriodTimeouts, setPerPeriodTimeouts] = useState([2, 2, 2, 2]);
