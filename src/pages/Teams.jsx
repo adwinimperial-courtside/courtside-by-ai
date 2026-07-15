@@ -19,6 +19,7 @@ import CreateTeamDialog from "../components/teams/CreateTeamDialog";
 import EditTeamDialog from "../components/teams/EditTeamDialog";
 import TeamDetailView from "../components/teams/TeamDetailView";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import RosterDeadlinePanel from "../components/teams/RosterDeadlinePanel";
 
 export default function TeamsPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -336,6 +337,12 @@ export default function TeamsPage() {
              )}
            </div>
          )}
+
+        {canManageTeams && selectedLeague && selectedLeague !== 'all' && (
+          <div className="mb-8">
+            <RosterDeadlinePanel leagueId={selectedLeague} teams={filteredTeams} currentUser={currentUser} />
+          </div>
+        )}
 
         {checkResults && (
           <div className="mb-8 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
