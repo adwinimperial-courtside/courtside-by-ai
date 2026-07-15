@@ -1,0 +1,67 @@
+{
+  "name": "CoachInviteCode",
+  "type": "object",
+  "properties": {
+    "code": {
+      "type": "string",
+      "description": "The invite code the coach types on the signup page, e.g. FNB-7K2M. Stored uppercase."
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league this code belongs to"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team this code assigns the coach to. One code per team."
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Team name snapshot at creation time, for admin readability in the data editor"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "used"
+      ],
+      "default": "active",
+      "description": "active = code can be redeemed; used = code has been redeemed and can no longer be used. An admin can flip a record back to active in the data editor if an applicant is rejected."
+    },
+    "used_by_email": {
+      "type": "string",
+      "description": "Email of the user who redeemed this code"
+    },
+    "used_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the code was redeemed"
+    }
+  },
+  "required": [
+    "code",
+    "league_id",
+    "team_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
