@@ -9,9 +9,9 @@ export const DEFAULT_AWARD_SETTINGS = {
   mvp_foul_penalty: 0.5,
   mvp_tech_penalty: 3.0,
   mvp_unsportsmanlike_penalty: 4.0,
-  mvp_avg_gis_weight: 0.6,
-  mvp_gp_percent_weight: 20.0,
-  mvp_team_win_percent_weight: 20.0,
+  mvp_avg_gis_weight: 1.5, // NEW_MVP_DEFAULTS_V1
+  mvp_gp_percent_weight: 10.0,
+  mvp_team_win_percent_weight: 10.0,
   mvp_min_games_percent: 60.0,
   mvp_tech_final_penalty: 3.0,
   mvp_unsp_final_penalty: 5.0,

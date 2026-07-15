@@ -52,15 +52,15 @@
     },
     "mvp_avg_gis_weight": {
       "type": "number",
-      "default": 0.6
+      "default": 1.5
     },
     "mvp_gp_percent_weight": {
       "type": "number",
-      "default": 20
+      "default": 10
     },
     "mvp_team_win_percent_weight": {
       "type": "number",
-      "default": 20
+      "default": 10
     },
     "mvp_min_games_percent": {
       "type": "number",
