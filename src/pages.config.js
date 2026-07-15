@@ -51,6 +51,7 @@ import AdminTools from './pages/AdminTools';
 import FixManualStats from './pages/FixManualStats';
 import RosterUserMatching from './pages/RosterUserMatching';
 import LeagueAwardSettings from './pages/LeagueAwardSettings';
+import CoachRoster from './pages/CoachRoster';
 import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
@@ -121,6 +122,7 @@ export const PAGES = {
     "FixManualStats": FixManualStats,
     "RosterUserMatching": RosterUserMatching,
     "LeagueAwardSettings": LeagueAwardSettings,
+    "CoachRoster": CoachRoster,
 }
 
 export const pagesConfig = {
