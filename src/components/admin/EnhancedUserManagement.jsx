@@ -671,7 +671,8 @@ export default function EnhancedUserManagement() {
                             {entry.role === "player" && entry.playerName && (
                               <span className="text-xs text-slate-500">· {entry.playerName}</span>
                             )}
-                            {entry.role === "player" && entry.team && (
+                            {/* COACH_TEAM_BADGE_V1 */}
+                            {(entry.role === "player" || entry.role === "coach") && entry.team && (
                               <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium">
                                 {entry.team.name}
                               </span>
