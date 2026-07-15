@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CalendarClock, Lock, LockOpen, Loader2, ChevronDown, ChevronUp, CheckCircle2, RotateCcw } from "lucide-react";
+import { CalendarClock, Lock, LockOpen, Loader2, ChevronDown, ChevronUp, CheckCircle2, RotateCcw, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -10,9 +10,11 @@ import { useToast } from "@/components/ui/use-toast";
 // window. Lets a league admin / app admin set the roster deadline, lock or
 // unlock coach editing manually, see which teams have marked their roster
 // final, and reopen editing for a team that finished by mistake.
-// Settings live in RosterSettings (one record per league); per-team "final"
-// state lives in TeamRosterStatus. Coach-side enforcement happens in the
-// manageCoachRoster backend function — these controls just set the rules.
+// ROSTER_AUDIT_PANEL_V1 — admin actions here are written to RosterAuditLog,
+// and the History section shows the full roster audit trail for the league
+// (coach saves and mark-done events are logged server-side by the
+// manageCoachRoster function). Panel renders only for league/app admins
+// (gated by canManageTeams in Teams.jsx).
 
 const ORANGE = "#F26B1F";
 
@@ -24,11 +26,22 @@ const toLocalInputValue = (iso) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
+const ACTION_TEXT = {
+  roster_save: (e) => `${e.performed_by_name || e.performed_by} updated ${e.team_name || "a team"}'s roster`,
+  roster_done: (e) => `${e.performed_by_name || e.performed_by} marked ${e.team_name || "a team"}'s roster final`,
+  deadline_set: (e) => `${e.performed_by_name || e.performed_by} set the roster deadline`,
+  deadline_removed: (e) => `${e.performed_by_name || e.performed_by} removed the roster deadline`,
+  league_locked: (e) => `${e.performed_by_name || e.performed_by} locked roster editing for the league`,
+  league_unlocked: (e) => `${e.performed_by_name || e.performed_by} unlocked roster editing for the league`,
+  team_reopened: (e) => `${e.performed_by_name || e.performed_by} reopened editing for ${e.team_name || "a team"}`,
+};
+
 export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const [expanded, setExpanded] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [dueInput, setDueInput] = useState("");
   const [savingDeadline, setSavingDeadline] = useState(false);
   const [togglingLock, setTogglingLock] = useState(false);
@@ -45,6 +58,12 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     queryKey: ["teamRosterStatus", leagueId],
     enabled: !!leagueId,
     queryFn: () => base44.entities.TeamRosterStatus.filter({ league_id: leagueId }),
+  });
+
+  const { data: auditEntries = [] } = useQuery({
+    queryKey: ["rosterAudit", leagueId],
+    enabled: !!leagueId && showHistory,
+    queryFn: () => base44.entities.RosterAuditLog.filter({ league_id: leagueId }, "-performed_at", 50),
   });
 
   useEffect(() => {
@@ -65,11 +84,29 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
   const dueDate = settings?.due_date ? new Date(settings.due_date) : null;
   const deadlinePassed = !!(dueDate && new Date() > dueDate);
   const locked = settings?.locked === true;
-  const windowOpen = !locked && !deadlinePassed;
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ["rosterSettings", leagueId] });
     queryClient.invalidateQueries({ queryKey: ["teamRosterStatus", leagueId] });
+    queryClient.invalidateQueries({ queryKey: ["rosterAudit", leagueId] });
+  };
+
+  const logAudit = async (action, details, teamRef) => {
+    try {
+      await base44.entities.RosterAuditLog.create({
+        league_id: leagueId,
+        team_id: teamRef?.id || "",
+        team_name: teamRef?.name || "",
+        action,
+        performed_by: currentUser?.email || "",
+        performed_by_name: currentUser?.full_name || currentUser?.email || "",
+        performed_role: currentUser?.user_type || "",
+        performed_at: new Date().toISOString(),
+        details: details || [],
+      });
+    } catch (e) {
+      console.error("Audit log failed:", e);
+    }
   };
 
   const upsertSettings = async (patch) => {
@@ -85,13 +122,21 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     setSavingDeadline(true);
     try {
       const iso = dueInput ? new Date(dueInput).toISOString() : null;
+      const oldDue = settings?.due_date ? format(new Date(settings.due_date), "d.M.yyyy HH:mm") : null;
       await upsertSettings({ due_date: iso });
+      if (iso) {
+        await logAudit("deadline_set", [
+          (oldDue ? `Deadline changed from ${oldDue} to ` : "Deadline set to ") + format(new Date(iso), "d.M.yyyy HH:mm"),
+        ]);
+      } else {
+        await logAudit("deadline_removed", [oldDue ? `Deadline ${oldDue} removed` : "Deadline removed"]);
+      }
       refresh();
       toast({
         title: iso ? "Deadline saved" : "Deadline removed",
         description: iso
           ? `Coaches can edit their rosters until ${format(new Date(iso), "d.M.yyyy HH:mm")}.`
-          : "There is no roster deadline for this league now.",
+          : "There is no roster deadline for this league now. Coach editing is closed.",
       });
     } catch (e) {
       console.error("Saving deadline failed:", e);
@@ -107,6 +152,7 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     setTogglingLock(true);
     try {
       await upsertSettings({ locked: goingToLock });
+      await logAudit(goingToLock ? "league_locked" : "league_unlocked", []);
       refresh();
       toast({
         title: goingToLock ? "Roster editing locked" : "Roster editing unlocked",
@@ -133,6 +179,7 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
         reopened_at: new Date().toISOString(),
         reopened_by: currentUser?.email || "",
       });
+      await logAudit("team_reopened", [], team);
       refresh();
       toast({ title: "Editing reopened", description: `${team.name}'s coach can edit the roster again.` });
     } catch (e) {
@@ -154,6 +201,11 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
   const sortedTeams = useMemo(
     () => [...teams].sort((a, b) => (a.name || "").localeCompare(b.name || "")),
     [teams]
+  );
+
+  const sortedAudit = useMemo(
+    () => [...auditEntries].sort((a, b) => new Date(b.performed_at) - new Date(a.performed_at)),
+    [auditEntries]
   );
 
   return (
@@ -205,15 +257,23 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
             )}
           </Button>
         )}
-        {teams.length > 0 && (
+        <div className="flex items-center gap-3 ml-auto">
           <button
-            className="text-sm font-medium ml-auto inline-flex items-center gap-1"
-            style={{ color: ORANGE }}
-            onClick={() => setExpanded((v) => !v)}
+            className="text-sm font-medium inline-flex items-center gap-1 text-slate-600"
+            onClick={() => setShowHistory((v) => !v)}
           >
-            {expanded ? <>Hide teams <ChevronUp className="w-4 h-4" /></> : <>Show teams <ChevronDown className="w-4 h-4" /></>}
+            <History className="w-4 h-4" /> {showHistory ? "Hide history" : "History"}
           </button>
-        )}
+          {teams.length > 0 && (
+            <button
+              className="text-sm font-medium inline-flex items-center gap-1"
+              style={{ color: ORANGE }}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? <>Hide teams <ChevronUp className="w-4 h-4" /></> : <>Show teams <ChevronDown className="w-4 h-4" /></>}
+            </button>
+          )}
+        </div>
       </div>
 
       {expanded && (
@@ -254,6 +314,33 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
               </div>
             );
           })}
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="border-t border-slate-100">
+          {sortedAudit.length === 0 ? (
+            <div className="px-4 py-3 text-sm text-slate-500">No roster activity recorded yet.</div>
+          ) : (
+            sortedAudit.map((e) => (
+              <div key={e.id} className="px-4 py-2.5 border-t border-slate-50 first:border-t-0">
+                <div className="text-sm text-slate-900">
+                  {(ACTION_TEXT[e.action] || ((x) => x.action))(e)}
+                </div>
+                <div className="text-xs text-slate-500 mt-0.5">
+                  {e.performed_at ? format(new Date(e.performed_at), "d.M.yyyy HH:mm") : ""}
+                  {e.performed_role ? ` · ${e.performed_role === "app_admin" ? "app admin" : e.performed_role === "league_admin" ? "league admin" : e.performed_role}` : ""}
+                </div>
+                {Array.isArray(e.details) && e.details.length > 0 && (
+                  <ul className="mt-1 text-xs text-slate-600 space-y-0.5">
+                    {e.details.map((d, i) => (
+                      <li key={i}>· {d}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>

@@ -1,0 +1,87 @@
+{
+  "name": "RosterAuditLog",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team (empty for league-wide events like deadline or lock changes)"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Team name at the time of the event, for display"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "roster_save",
+        "roster_done",
+        "deadline_set",
+        "deadline_removed",
+        "league_locked",
+        "league_unlocked",
+        "team_reopened"
+      ],
+      "description": "What happened"
+    },
+    "performed_by": {
+      "type": "string",
+      "description": "Email of the person who did it"
+    },
+    "performed_by_name": {
+      "type": "string",
+      "description": "Display name of the person who did it"
+    },
+    "performed_role": {
+      "type": "string",
+      "description": "Role of the person at the time (coach, league_admin, app_admin)"
+    },
+    "performed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When it happened"
+    },
+    "details": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Plain-English lines describing the changes, e.g. 'Added Antti Virtanen #23', 'Changed Mikko Laine: jersey #7 to #12', 'Deadline set to 31.8.2026 23:59'"
+    }
+  },
+  "required": [
+    "league_id",
+    "action",
+    "performed_by",
+    "performed_at"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}

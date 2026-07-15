@@ -112,6 +112,8 @@ Deno.serve(async (req) => {
       // Existing roster, for sanity checks
       const existing = await base44.asServiceRole.entities.Player.filter({ team_id: teamId });
       const existingIds = new Set(existing.map(p => p.id));
+      const existingById = new Map(existing.map(p => [p.id, p]));
+      const auditLines = [];
 
       // Deletions: only players on this team, and never a player with stat rows
       for (const pid of toDelete) {
@@ -121,17 +123,25 @@ Deno.serve(async (req) => {
           return Response.json({ error: 'One of the removed players already has recorded stats and cannot be deleted. Contact your league admin.' }, { status: 400 });
         }
         await base44.asServiceRole.entities.Player.delete(pid);
+        const gone = existingById.get(pid);
+        if (gone) auditLines.push('Removed ' + (gone.name || 'Unnamed') + ' #' + (gone.jersey_number ?? '?'));
       }
 
       // Creates and updates
       let saved = 0;
       for (const row of cleaned) {
         if (row.id && existingIds.has(row.id)) {
+          const before = existingById.get(row.id);
+          const changes = [];
+          if (before && String(before.name || '') !== row.name) changes.push('name "' + (before.name || '') + '" to "' + row.name + '"');
+          if (before && Number(before.jersey_number) !== row.jersey_number) changes.push('jersey #' + (before.jersey_number ?? '?') + ' to #' + row.jersey_number);
+          if (before && String(before.position || '') !== row.position) changes.push('position ' + (before.position || '?') + ' to ' + row.position);
           await base44.asServiceRole.entities.Player.update(row.id, {
             name: row.name,
             jersey_number: row.jersey_number,
             position: row.position
           });
+          if (changes.length > 0) auditLines.push('Changed ' + row.name + ': ' + changes.join(', '));
         } else {
           await base44.asServiceRole.entities.Player.create({
             name: row.name,
@@ -139,8 +149,28 @@ Deno.serve(async (req) => {
             position: row.position,
             team_id: teamId
           });
+          auditLines.push('Added ' + row.name + ' #' + row.jersey_number);
         }
         saved++;
+      }
+
+      if (auditLines.length > 0) {
+        try {
+          const teamsForAudit = await base44.asServiceRole.entities.Team.filter({ id: teamId });
+          await base44.asServiceRole.entities.RosterAuditLog.create({
+            league_id: leagueId,
+            team_id: teamId,
+            team_name: (teamsForAudit[0] && teamsForAudit[0].name) || '',
+            action: 'roster_save',
+            performed_by: user.email || '',
+            performed_by_name: user.full_name || user.email || '',
+            performed_role: user.user_type || '',
+            performed_at: new Date().toISOString(),
+            details: auditLines
+          });
+        } catch (e) {
+          console.error('Audit log failed:', e);
+        }
       }
 
       return Response.json({ success: true, saved: saved, deleted: toDelete.length });
@@ -182,6 +212,22 @@ Deno.serve(async (req) => {
       }
 
       // Notify league admin(s); fall back to the app admin if none found
+      try {
+        await base44.asServiceRole.entities.RosterAuditLog.create({
+          league_id: leagueId,
+          team_id: teamId,
+          team_name: teamName,
+          action: 'roster_done',
+          performed_by: user.email || '',
+          performed_by_name: user.full_name || user.email || '',
+          performed_role: user.user_type || '',
+          performed_at: new Date().toISOString(),
+          details: ['Marked roster final (' + players.length + ' players)']
+        });
+      } catch (e) {
+        console.error('Audit log failed:', e);
+      }
+
       const users = await base44.asServiceRole.entities.User.list();
       const leagueAdmins = users.filter(u =>
         u.user_type === 'league_admin' &&
