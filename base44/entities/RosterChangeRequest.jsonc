@@ -1,0 +1,103 @@
+{
+  "name": "RosterChangeRequest",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "ID of the team whose roster is being changed"
+    },
+    "team_name": {
+      "type": "string",
+      "description": "Team name snapshot at submission time, for admin display"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "ID of the league the team belongs to"
+    },
+    "coach_user_id": {
+      "type": "string",
+      "description": "ID of the coach user who created this request"
+    },
+    "coach_email": {
+      "type": "string",
+      "description": "Email of the coach, used for approval/rejection notifications"
+    },
+    "coach_name": {
+      "type": "string",
+      "description": "Display name of the coach at submission time"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected",
+        "withdrawn"
+      ],
+      "default": "draft",
+      "description": "draft = coach editing; submitted = waiting for league admin; approved = applied to live roster; rejected = returned to coach with note; withdrawn = coach pulled it back"
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "add",
+              "edit",
+              "remove"
+            ],
+            "description": "What to do with this roster entry"
+          },
+          "player_id": {
+            "type": "string",
+            "description": "Existing Player record ID. Required for edit and remove. Empty for add."
+          },
+          "name": {
+            "type": "string",
+            "description": "Player name. For add: the new player's name. For edit: the new value."
+          },
+          "jersey_number": {
+            "type": "string",
+            "description": "Jersey number. For add: the new player's number. For edit: the new value."
+          },
+          "position": {
+            "type": "string",
+            "description": "Position. For add: the new player's position. For edit: the new value."
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "description": "The list of roster operations in this request. Diff shown to the admin is computed against the CURRENT live roster at review time, not stored here."
+    },
+    "admin_note": {
+      "type": "string",
+      "description": "Optional note from the league admin, mainly on rejection"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the coach submitted the draft for approval"
+    },
+    "reviewed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the league admin approved or rejected the request"
+    },
+    "reviewed_by": {
+      "type": "string",
+      "description": "User ID of the league admin who approved or rejected"
+    }
+  },
+  "required": [
+    "team_id",
+    "league_id",
+    "coach_user_id",
+    "status"
+  ]
+}
