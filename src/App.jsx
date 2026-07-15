@@ -28,6 +28,7 @@ import GameOverlaySettingsPage from './pages/GameOverlaySettings';
 import CommandCenterPage from './pages/CommandCenter';
 import OnboardingBookingsPage from './pages/OnboardingBookings';
 import JoinKOEPage from './pages/JoinKOE';
+import JoinFinNoyCoachPage from './pages/JoinFinNoyCoach';
 import CoachRosterPage from './pages/CoachRoster';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -62,6 +63,10 @@ const AuthenticatedApp = () => {
         if (window.location.pathname.toLowerCase().includes('joinkoe')) {
           localStorage.setItem('koe_signup_intent', '1');
         }
+        // JOIN_FINNOY_COACH_V1 — same pattern for the Fin-Noy coach signup link
+        if (window.location.pathname.toLowerCase().includes('finoy40upseason6-coach')) {
+          localStorage.setItem('finnoy_coach_intent', '1');
+        }
       } catch (e) {}
       // Redirect to login automatically
       navigateToLogin();
@@ -78,6 +83,14 @@ const AuthenticatedApp = () => {
       window.location.replace('/JoinKOE');
       return null;
     }
+    // JOIN_FINNOY_COACH_V1 — once authenticated, send Fin-Noy-link arrivals back to the
+    // coach signup page (which renders outside the Layout, bypassing the RegistrationGate).
+    if (localStorage.getItem('finnoy_coach_intent') === '1' &&
+        !window.location.pathname.toLowerCase().includes('finoy40upseason6-coach')) {
+      localStorage.removeItem('finnoy_coach_intent');
+      window.location.replace('/Finoy40upSeason6-Coach');
+      return null;
+    }
   } catch (e) {}
 
   // Render the main app — overlay is layout-free
@@ -86,6 +99,8 @@ const AuthenticatedApp = () => {
       <Route path="/GameOverlay" element={<GameOverlayPage />} />
       {/* JOIN_KOE_ROUTE_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new KOE signups */}
       <Route path="/JoinKOE" element={<JoinKOEPage />} />
+      {/* JOIN_FINNOY_COACH_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new coach signups */}
+      <Route path="/Finoy40upSeason6-Coach" element={<JoinFinNoyCoachPage />} />
       <Route path="*" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <Routes>
