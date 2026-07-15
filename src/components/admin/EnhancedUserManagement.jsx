@@ -99,28 +99,48 @@ export default function EnhancedUserManagement() {
 
   const updateUserMutation = useMutation({
     mutationFn: async (data) => {
+      // COACH_TEAM_ASSIGN_V1: rebuild league_team_pairs for leagues where this user is a coach.
+      // Pairs for leagues where the user is NOT a coach (or not assigned) are left untouched.
+      const leagueRoleMap = data.league_role_map || {};
+      const leagueTeamMap = data.league_team_map || {};
+      const effectiveRole = (lid) => leagueRoleMap[lid] || data.user_type || "viewer";
+      const coachLeagueIds = (data.assigned_league_ids || []).filter(
+        (lid) => effectiveRole(lid) === "coach"
+      );
+      const keptPairs = (selectedUser.league_team_pairs || []).filter(
+        (p) => !coachLeagueIds.includes(p?.league_id)
+      );
+      const coachPairs = coachLeagueIds
+        .filter((lid) => leagueTeamMap[lid])
+        .map((lid) => ({ league_id: lid, team_id: leagueTeamMap[lid] }));
+
       // Update core user fields
       await base44.entities.User.update(selectedUser.id, {
         user_type: data.user_type,
         assigned_league_ids: data.assigned_league_ids,
         default_league_id: data.default_league_id || null,
+        league_team_pairs: [...keptPairs, ...coachPairs],
       });
 
       // Update or create UserLeagueIdentity records with per-league roles
-      const leagueRoleMap = data.league_role_map || {};
       for (const leagueId of data.assigned_league_ids) {
         const role = leagueRoleMap[leagueId];
         if (!role) continue;
         const existing = userLeagueIdentities.find(
           uli => uli.user_id === selectedUser.id && uli.league_id === leagueId
         );
+        // COACH_TEAM_ASSIGN_V1: coaches also get team_id synced; other roles' team_id is untouched
+        const uliPayload = { role };
+        if (role === "coach") {
+          uliPayload.team_id = leagueTeamMap[leagueId] || null;
+        }
         if (existing) {
-          await base44.entities.UserLeagueIdentity.update(existing.id, { role });
+          await base44.entities.UserLeagueIdentity.update(existing.id, uliPayload);
         } else {
           await base44.entities.UserLeagueIdentity.create({
             user_id: selectedUser.id,
             league_id: leagueId,
-            role,
+            ...uliPayload,
           });
         }
       }
@@ -198,6 +218,7 @@ export default function EnhancedUserManagement() {
       assigned_league_ids: [],
       default_league_id: "",
       league_role_map: {},
+      league_team_map: {},
     });
   };
 
@@ -215,6 +236,15 @@ export default function EnhancedUserManagement() {
       leagueRoleMap[uli.league_id] = uli.role;
     });
 
+    // COACH_TEAM_ASSIGN_V1: per-league team map — league_team_pairs first, ULI team_id as fallback
+    const leagueTeamMap = {};
+    (user.league_team_pairs || []).forEach(p => {
+      if (p?.league_id && p?.team_id) leagueTeamMap[p.league_id] = p.team_id;
+    });
+    userLeagueIdentities
+      .filter(uli => uli.user_id === user.id && uli.team_id && !leagueTeamMap[uli.league_id])
+      .forEach(uli => { leagueTeamMap[uli.league_id] = uli.team_id; });
+
     setFormData({
       email: user.email,
       full_name: user.full_name,
@@ -222,6 +252,7 @@ export default function EnhancedUserManagement() {
       assigned_league_ids: user.assigned_league_ids || [],
       default_league_id: user.default_league_id || "",
       league_role_map: leagueRoleMap,
+      league_team_map: leagueTeamMap,
     });
   };
 
@@ -430,6 +461,29 @@ export default function EnhancedUserManagement() {
                             <SelectItem value="video_admin">Video Admin</SelectItem>
                           </SelectContent>
                         </Select>
+                        {(formData.league_role_map?.[league.id] || formData.user_type || "viewer") === "coach" && (
+                          <Select
+                            value={formData.league_team_map?.[league.id] || "none"}
+                            onValueChange={(val) =>
+                              setFormData(prev => ({
+                                ...prev,
+                                league_team_map: { ...prev.league_team_map, [league.id]: val === "none" ? "" : val },
+                              }))
+                            }
+                          >
+                            <SelectTrigger className="w-48 h-7 text-xs bg-white mt-2">
+                              <SelectValue placeholder="Team in this league..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No team assigned</SelectItem>
+                              {teams
+                                .filter(t => t.league_id === league.id)
+                                .map(t => (
+                                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                       </div>
                     )}
                   </div>
