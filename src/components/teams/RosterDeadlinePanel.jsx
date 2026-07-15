@@ -188,21 +188,23 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
         >
           {savingDeadline ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save deadline"}
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9"
-          onClick={handleToggleLock}
-          disabled={togglingLock}
-        >
-          {togglingLock ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : locked ? (
-            <><LockOpen className="w-4 h-4 mr-1.5" /> Unlock editing</>
-          ) : (
-            <><Lock className="w-4 h-4 mr-1.5" /> Lock now</>
-          )}
-        </Button>
+        {(locked || (dueDate && !deadlinePassed)) && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9"
+            onClick={handleToggleLock}
+            disabled={togglingLock}
+          >
+            {togglingLock ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : locked ? (
+              <><LockOpen className="w-4 h-4 mr-1.5" /> Unlock editing</>
+            ) : (
+              <><Lock className="w-4 h-4 mr-1.5" /> Lock now</>
+            )}
+          </Button>
+        )}
         {teams.length > 0 && (
           <button
             className="text-sm font-medium ml-auto inline-flex items-center gap-1"
