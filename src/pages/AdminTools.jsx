@@ -22,6 +22,10 @@ export default function AdminTools() {
   const [backfillBusy, setBackfillBusy] = useState(false);
   const [backfillResult, setBackfillResult] = useState(null);
   const [backfillError, setBackfillError] = useState('');
+  // PIN_AWARD_SETTINGS_V1 — one-time pin of pre-change award defaults
+  const [pinBusy, setPinBusy] = useState(false);
+  const [pinResult, setPinResult] = useState(null);
+  const [pinError, setPinError] = useState('');
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
@@ -186,6 +190,57 @@ export default function AdminTools() {
       alert('Error recalculating standings: ' + error.message);
     } finally {
       setIsRecalculatingStandings(false);
+    }
+  };
+
+  // PIN_AWARD_SETTINGS_V1 — writes the ORIGINAL default award settings (hardcoded
+  // snapshot, July 2026) for every league that has no saved settings record, so
+  // existing leagues keep scoring exactly as today when the defaults change.
+  const runPinAwardSettings = async (dryRun) => {
+    setPinBusy(true);
+    setPinError('');
+    if (dryRun) setPinResult(null);
+    const ORIGINAL_DEFAULTS = {
+      mvp_pts_weight: 1.0, mvp_oreb_weight: 1.2, mvp_dreb_weight: 1.0,
+      mvp_ast_weight: 1.5, mvp_stl_weight: 2.5, mvp_blk_weight: 2.0,
+      mvp_turnover_penalty: 2.0, mvp_foul_penalty: 0.5, mvp_tech_penalty: 3.0,
+      mvp_unsportsmanlike_penalty: 4.0, mvp_avg_gis_weight: 0.6,
+      mvp_gp_percent_weight: 20.0, mvp_team_win_percent_weight: 20.0,
+      mvp_min_games_percent: 60.0, mvp_tech_final_penalty: 3.0, mvp_unsp_final_penalty: 5.0,
+      dpoy_stl_weight: 3.0, dpoy_blk_weight: 2.5, dpoy_oreb_weight: 1.5,
+      dpoy_dreb_weight: 1.0, dpoy_foul_penalty: 1.5, dpoy_turnover_penalty: 2.0,
+      dpoy_tech_penalty: 3.0, dpoy_unsportsmanlike_penalty: 4.0,
+      dpoy_gp_percent_weight: 10.0, dpoy_min_games_percent: 60.0,
+      dpoy_tech_final_penalty: 2.0, dpoy_unsp_final_penalty: 3.0,
+      pog_pts_weight: 1.0, pog_oreb_weight: 1.2, pog_dreb_weight: 1.0,
+      pog_ast_weight: 1.5, pog_stl_weight: 2.5, pog_blk_weight: 2.0,
+      pog_turnover_penalty: 2.0, pog_foul_penalty: 0.5, pog_tech_penalty: 3.0,
+      pog_unsportsmanlike_penalty: 4.0, pog_winning_team_only: true,
+      mythical_five_source: 'mvp_rankings', mythical_five_count: 5,
+    };
+    try {
+      const allSettings = await base44.entities.AwardSettings.list();
+      const haveIds = new Set((allSettings || []).map(s => s.league_id));
+      const missing = (leagues || []).filter(l => !haveIds.has(l.id));
+      if (dryRun) {
+        setPinResult({ mode: 'preview', count: missing.length, names: missing.map(l => l.name) });
+      } else {
+        const done = [];
+        const errors = [];
+        for (const l of missing) {
+          try {
+            await base44.entities.AwardSettings.create({ ...ORIGINAL_DEFAULTS, league_id: l.id, league_name: l.name });
+            done.push(l.name);
+          } catch (e) {
+            errors.push(`${l.name}: ${e?.message || 'failed'}`);
+          }
+        }
+        setPinResult({ mode: 'committed', count: done.length, names: done, errors });
+      }
+    } catch (e) {
+      setPinError(e?.message || 'Failed to load award settings');
+    } finally {
+      setPinBusy(false);
     }
   };
 
@@ -469,6 +524,66 @@ export default function AdminTools() {
                             {backfillResult.errors.map((e, i) => (
                               <li key={i}>• {e.email}: {e.error}</li>
                             ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* PIN_AWARD_SETTINGS_V1 — one-time pin before the default MVP weights change */}
+              <Card className="border-slate-200 shadow-lg border-indigo-200">
+                <CardHeader className="border-b border-slate-200 bg-indigo-50">
+                  <CardTitle className="text-xl flex items-center gap-2 text-indigo-800">
+                    <Settings className="w-5 h-5" />
+                    Pin Award Settings
+                  </CardTitle>
+                  <p className="text-sm text-indigo-700 mt-2">
+                    One-time step before the new default MVP weights ship: saves today's default award settings as a record for every league that never customized them, so existing leagues keep scoring exactly as they do now. Leagues with saved settings are skipped. Safe to run more than once. Preview first, then Run.
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => runPinAwardSettings(true)}
+                      disabled={pinBusy}
+                      className="bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${pinBusy ? 'animate-spin' : ''}`} />
+                      Preview
+                    </Button>
+                    <Button
+                      onClick={() => runPinAwardSettings(false)}
+                      disabled={pinBusy || !pinResult || pinResult.mode !== 'preview' || pinResult.count === 0}
+                      variant="outline"
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 disabled:opacity-50"
+                    >
+                      Run pin
+                    </Button>
+                  </div>
+                  {pinError && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{pinError}</div>
+                  )}
+                  {pinResult && (
+                    <div className="text-sm">
+                      <div className={`rounded-lg px-3 py-2 mb-3 font-medium ${pinResult.mode === 'committed' ? 'bg-indigo-50 text-indigo-800 border border-indigo-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}`}>
+                        {pinResult.mode === 'committed'
+                          ? `Done. Pinned ${pinResult.count} league${pinResult.count === 1 ? '' : 's'}.`
+                          : `Preview — would pin ${pinResult.count} league${pinResult.count === 1 ? '' : 's'}.`}
+                      </div>
+                      {(pinResult.names || []).length > 0 && (
+                        <ul className="space-y-1">
+                          {pinResult.names.map((n, i) => (
+                            <li key={i} className="text-slate-600">• {n}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {(pinResult.errors || []).length > 0 && (
+                        <div className="text-red-600 mt-2">
+                          <div className="font-semibold mb-1">{pinResult.errors.length} error(s):</div>
+                          <ul className="space-y-1">
+                            {pinResult.errors.map((e, i) => (<li key={i}>• {e}</li>))}
                           </ul>
                         </div>
                       )}
