@@ -112,8 +112,10 @@ export default function PrivacyConsentStep({ onAccept, onBack }) {
           </Section>
 
           <Section title="Profile photos">
-            <p>Uploading a profile photo is optional. If you upload one, it may be displayed inside Courtside by AI as part of your player profile, league profile, or game results.</p>
-            <p className="mt-2">League organizers are responsible for ensuring they have proper permission before publishing player photos outside Courtside by AI, including on social media.</p>
+            <p>Player photos are optional. A photo may be uploaded by you, or by your league organizer on your behalf as part of managing the league roster.</p>
+            <p className="mt-2">If a photo is uploaded, it may be displayed inside Courtside by AI as part of your player profile, league profile, or game results.</p>
+            <p className="mt-2">League organizers are responsible for making sure they have the player's permission before uploading a photo of them, and before publishing player photos outside Courtside by AI, including on social media. For players under 18, a parent or guardian's permission is required before a photo is uploaded.</p>
+            <p className="mt-2">You can ask your league organizer, or contact us at <a href="mailto:info@courtside-by-ai.com" className="text-orange-500 hover:underline">info@courtside-by-ai.com</a>, to have your photo removed at any time.</p>
           </Section>
 
           <Section title="Story Builder & AI-generated content">

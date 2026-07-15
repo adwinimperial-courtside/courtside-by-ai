@@ -18,7 +18,7 @@ const OUTPUT_SIZE = 512;
 const JPEG_QUALITY = 0.85;
 const MAX_ZOOM = 3;
 
-export default function PhotoCropDialog({ file, onSave, onCancel }) {
+export default function PhotoCropDialog({ file, onSave, onCancel, showPermissionNote = false }) {
   const [imgUrl, setImgUrl] = useState(null);
   const [imgDims, setImgDims] = useState(null); // { w, h }
   const [zoom, setZoom] = useState(1);
@@ -214,6 +214,14 @@ export default function PhotoCropDialog({ file, onSave, onCancel }) {
           <ZoomIn className="w-5 h-5 text-slate-400 flex-shrink-0" />
         </div>
 
+        {/* PHOTO_PERMISSION_NOTE_V1 — admin-only consent reminder */}
+        {showPermissionNote && (
+          <div className="mt-4 px-3 py-2.5 rounded-lg border border-orange-200 bg-orange-50">
+            <p className="text-xs text-orange-800 leading-relaxed">
+              Make sure you have this player's permission to upload their photo. For players under 18, a parent or guardian's permission is required.
+            </p>
+          </div>
+        )}
         <div className="flex justify-end gap-2 mt-4">
           <button
             onClick={onCancel}

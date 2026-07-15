@@ -574,6 +574,7 @@ export default function PlayerManagement({ teamId, team, userType }) {
         file={pendingCrop?.file || null}
         onSave={handleCropSave}
         onCancel={() => setPendingCrop(null)}
+        showPermissionNote
       />
     </div>
   );
