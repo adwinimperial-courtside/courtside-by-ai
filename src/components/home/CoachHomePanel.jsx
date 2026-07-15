@@ -523,7 +523,7 @@ export default function CoachHomePanel({ currentUser }) {
 
           {/* Quick links (full width) */}
           <div className="flex gap-2 mb-3 max-w-md md:max-w-2xl md:mx-auto">
-            {[{ i: "🎯", t: "Coach Insights", p: "CoachInsights" }, { i: "📊", t: "Statistics", p: "Statistics" }, { i: "📅", t: "Schedule", p: "Schedule" }].map((q) => (
+            {[{ i: "📋", t: "My Roster", p: "CoachRoster" }, { i: "🎯", t: "Coach Insights", p: "CoachInsights" }, { i: "📊", t: "Statistics", p: "Statistics" }, { i: "📅", t: "Schedule", p: "Schedule" }].map((q) => (
               <button key={q.p} onClick={() => go(q.p)} className="flex-1 bg-white border border-slate-200 rounded-xl py-3 text-center hover:border-orange-300 transition-colors">
                 <div className="text-[17px]">{q.i}</div>
                 <div className="text-[11px] font-bold text-slate-600 mt-1">{q.t}</div>
