@@ -7,14 +7,15 @@ import {
   Users, 
   Target, 
   User,
-  GitBranch,
   Clock,
   RefreshCw,
-  SlidersHorizontal,
-  MessageSquare,
   UserCheck,
-  Zap,
-  Wifi
+  Wifi,
+  Shirt,
+  Camera,
+  Pencil,
+  Smartphone,
+  Home
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — players land on the trophy room
@@ -191,28 +192,53 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">What's New</div>
           <div className="space-y-3">
+            {/* WHATS_NEW_V2 */}
             {[
+              {
+                icon: Trophy,
+                bg: "bg-orange-100",
+                color: "#F26B1F",
+                title: "Player Cards",
+                badge: "Flagship",
+                desc: "Every player now has their own trophy room — a cinematic gold profile with their stats, badges and awards. Tap any player's name in Stats Leaders, Award Leaders, Statistics or the Schedule to open it",
+              },
               ...(role === "league_admin" || role === "app_admin" ? [
                 {
-                  icon: UserCheck,
+                  icon: Shirt,
+                  bg: "bg-teal-100",
+                  color: "#0D9488",
+                  title: "Roster Validation",
+                  desc: "No more mixed-up stats from two players wearing the same number — duplicate jerseys are blocked before they're saved, and one tap on Check Rosters scans every team in your league",
+                },
+                {
+                  icon: Camera,
                   bg: "bg-blue-100",
                   color: "#3B82F6",
-                  title: "User Requests",
-                  desc: "When someone asks to join one of your leagues, you can review and approve them yourself — right from the sidebar",
+                  title: "Player Profile Photos",
+                  desc: "Put faces on your league — upload player photos with drag-and-zoom cropping, then edit or remove them anytime. Photos show up on player cards and rosters",
                 },
                 {
-                  icon: Zap,
-                  bg: "bg-orange-100",
-                  color: "#F26B1F",
-                  title: "Faster live stat tracking",
-                  desc: "Every tap registers instantly — the score, player cards and activity feed update the moment you tap, with no waiting on the network",
+                  icon: Pencil,
+                  bg: "bg-amber-100",
+                  color: "#D97706",
+                  title: "Edit Finished Live Games",
+                  desc: "Spotted a wrong stat after the final buzzer? Completed live-tracked games can now be fixed in Edit Game, with a running score check at the top while you type",
                 },
+              ] : []),
+              {
+                icon: Smartphone,
+                bg: "bg-purple-100",
+                color: "#7C3AED",
+                title: "Faster Stats on Mobile",
+                desc: "Browse stat categories with one thumb — quick-switch tabs replace the old dropdown on the Statistics page, and they stay pinned while you scroll",
+              },
+              ...(role === "league_admin" || role === "app_admin" ? [
                 {
-                  icon: Wifi,
+                  icon: Home,
                   bg: "bg-green-100",
                   color: "#16A34A",
-                  title: "Reliable on slow connections",
-                  desc: "Built for shaky gym Wi-Fi: stats keep saving in the background, the tracker won't freeze if your signal drops, and a live badge shows green, yellow or red for your connection",
+                  title: "A New Home for Players & Coaches",
+                  desc: "Your players and coaches now land on their own personal dashboard — season stats, last game, badges and the next tip-off, front and center. Nothing changes for you as admin",
                 },
                 {
                   icon: RefreshCw,
@@ -223,34 +249,30 @@ export default function Landing() {
                   desc: "Rebuilt by popular demand: tap SUB on a player, then tap a benched player to swap them in — a clean one-tap substitution, with each player's fouls shown on their chip and an instant undo if you tap the wrong name",
                 },
                 {
-                  icon: SlidersHorizontal,
-                  bg: "bg-orange-100",
-                  color: "#F26B1F",
-                  title: "Award Settings",
-                  desc: "Decide what matters in your league — tune the formulas behind MVP, DPOY, the Mythical 5 and Player of the Game to fit your style of play",
+                  icon: UserCheck,
+                  bg: "bg-blue-100",
+                  color: "#3B82F6",
+                  title: "User Requests",
+                  badge: null,
+                  desc: "When someone asks to join one of your leagues, you can review and approve them yourself — right from the sidebar",
                 },
                 {
-                  icon: MessageSquare,
-                  bg: "bg-purple-100",
-                  color: "#7C3AED",
-                  title: "Report a Bug or Suggestion",
-                  desc: "Spotted something off, or have an idea? Send it to us straight from the button at the bottom of the sidebar — we read every one",
+                  icon: Wifi,
+                  bg: "bg-green-100",
+                  color: "#16A34A",
+                  title: "Reliable on slow connections",
+                  badge: null,
+                  desc: "Built for shaky gym Wi-Fi: stats keep saving in the background, the tracker won't freeze if your signal drops, and a live badge shows green, yellow or red for your connection",
+                },
+                {
+                  icon: Clock,
+                  bg: "bg-blue-100",
+                  color: "#3B82F6",
+                  title: "Per-period game rules",
+                  badge: null,
+                  desc: "Match your league's format exactly — set clock length, timeouts and foul limits separately for each quarter or half",
                 },
               ] : []),
-              {
-                icon: GitBranch,
-                bg: "bg-green-100",
-                color: "#16A34A",
-                title: "Bracket-based standings",
-                desc: "Running pools or divisions? Split your league into brackets, each with its own standings table",
-              },
-              {
-                icon: Clock,
-                bg: "bg-blue-100",
-                color: "#3B82F6",
-                title: "Per-period game rules",
-                desc: "Match your league's format exactly — set clock length, timeouts and foul limits separately for each quarter or half",
-              },
             ].map((item, idx) => {
               const Icon = item.icon;
               return (
@@ -265,9 +287,11 @@ export default function Landing() {
                     <div className="text-sm font-bold text-slate-900">{item.title}</div>
                     <div className="text-xs text-slate-500">{item.desc}</div>
                   </div>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={item.badge === "Most requested" ? { backgroundColor: "#F26B1F", color: "#fff" } : { backgroundColor: "#FEF0E7", color: "#F26B1F" }}>
-                    {item.badge || "New"}
-                  </span>
+                  {item.badge !== null && (
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full flex-shrink-0" style={(item.badge === "Most requested" || item.badge === "Flagship") ? { backgroundColor: "#F26B1F", color: "#fff" } : { backgroundColor: "#FEF0E7", color: "#F26B1F" }}>
+                      {item.badge || "New"}
+                    </span>
+                  )}
                 </div>
               );
             })}
