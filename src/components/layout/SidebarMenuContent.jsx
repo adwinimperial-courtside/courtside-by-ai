@@ -167,6 +167,13 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     icon: UserCircle
   };
 
+  // COACH_ROSTER_MENU_V1
+  const coachRosterNavItem = {
+    title: "My Roster",
+    url: createPageUrl("CoachRoster"),
+    icon: ClipboardList
+  };
+
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
       const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
@@ -175,11 +182,15 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
         ? [playerNavItem, ...base]
         : base;
+      // COACH_ROSTER_MENU_V1: coaches also get a direct link to their roster editor
+      const withCoach = currentUser.user_type === "coach"
+        ? [coachRosterNavItem, ...withRole]
+        : withRole;
       // Add "Request League Access" for all approved non-admin users (not staff roles)
       if (currentUser.user_type && currentUser.user_type !== "app_admin" && currentUser.user_type !== "ops_admin") {
-        return [...withRole, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }];
+        return [...withCoach, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }];
       }
-      return withRole;
+      return withCoach;
     };
 
   const getVisibleAdminItems = () => {
