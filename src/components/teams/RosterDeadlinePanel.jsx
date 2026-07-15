@@ -145,6 +145,8 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
 
   const chip = locked
     ? { text: "Locked by admin", bg: "#FEF2F2", border: "#FECACA", color: "#991B1B" }
+    : !dueDate
+    ? { text: "Closed · set a deadline to open editing", bg: "#FFFBEB", border: "#FDE68A", color: "#92400E" }
     : deadlinePassed
     ? { text: "Deadline passed", bg: "#FEF2F2", border: "#FECACA", color: "#991B1B" }
     : { text: teams.length ? `Open · ${doneCount} of ${teams.length} teams done` : "Open", bg: "#F0FDF4", border: "#BBF7D0", color: "#166534" };

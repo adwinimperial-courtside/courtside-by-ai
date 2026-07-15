@@ -122,10 +122,11 @@ export default function CoachRoster() {
   }, [games, teamId]);
 
   const dueDate = settings?.due_date ? new Date(settings.due_date) : null;
+  const notOpened = !dueDate;
   const deadlinePassed = !!(dueDate && new Date() > dueDate);
   const manualLocked = settings?.locked === true;
   const markedDone = teamStatus?.done === true;
-  const windowOpen = !!teamId && !teamHasPlayed && !deadlinePassed && !manualLocked && !markedDone;
+  const windowOpen = !!teamId && !teamHasPlayed && !notOpened && !deadlinePassed && !manualLocked && !markedDone;
 
   const lockReason = markedDone
     ? "You marked this roster as final. Only your league admin can reopen editing."
@@ -133,6 +134,8 @@ export default function CoachRoster() {
     ? "Roster editing is locked after your first game. Contact your league admin for corrections."
     : manualLocked
     ? "Roster editing has been closed by your league admin."
+    : notOpened
+    ? "Roster editing is not open yet. Your league admin needs to set a roster deadline first."
     : deadlinePassed
     ? "The roster deadline has passed. Contact your league admin for changes."
     : null;

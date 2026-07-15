@@ -56,7 +56,10 @@ Deno.serve(async (req) => {
     if (settings && settings.locked === true) {
       return Response.json({ error: 'Roster editing has been closed by your league admin.' }, { status: 400 });
     }
-    if (settings && settings.due_date && new Date() > new Date(settings.due_date)) {
+    if (!settings || !settings.due_date) {
+      return Response.json({ error: 'Roster editing is not open yet. Ask your league admin to set a roster deadline.' }, { status: 400 });
+    }
+    if (new Date() > new Date(settings.due_date)) {
       return Response.json({ error: 'The roster deadline has passed. Contact your league admin for changes.' }, { status: 400 });
     }
 
