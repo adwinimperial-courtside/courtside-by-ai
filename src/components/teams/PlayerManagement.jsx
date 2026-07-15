@@ -151,6 +151,20 @@ export default function PlayerManagement({ teamId, team, userType }) {
     },
   });
 
+  // DELETE_STATS_WARNING_V1 — when a delete is requested, check whether the player has recorded game stats
+  const { data: deleteStatsRows = [], isLoading: checkingDeleteStats } = useQuery({
+    queryKey: ['playerDeleteStats', playerToDelete?.id],
+    queryFn: () => base44.entities.PlayerStats.filter({ player_id: playerToDelete.id }),
+    enabled: !!playerToDelete?.id,
+  });
+  const deleteGamesCount = React.useMemo(() => {
+    const gameIds = new Set();
+    for (const row of deleteStatsRows) {
+      if (row && row.game_id) gameIds.add(row.game_id);
+    }
+    return gameIds.size;
+  }, [deleteStatsRows]);
+
   const setAsCaptainMutation = useMutation({
     mutationFn: (playerId) => base44.entities.Team.update(teamId, { team_captain: playerId }),
     onSuccess: () => {
@@ -541,11 +555,26 @@ export default function PlayerManagement({ teamId, team, userType }) {
       <AlertDialog open={!!playerToDelete} onOpenChange={(open) => !open && setPlayerToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Player</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteGamesCount > 0 ? "Delete player with game history?" : "Delete Player"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{playerToDelete?.name}"? This action cannot be undone.
+              {checkingDeleteStats
+                ? `Checking ${playerToDelete?.name}'s game history...`
+                : deleteGamesCount > 0
+                  ? `"${playerToDelete?.name}" has stats recorded in ${deleteGamesCount} ${deleteGamesCount === 1 ? "game" : "games"}. Deleting this player cannot be undone and will affect those games.`
+                  : `Are you sure you want to delete "${playerToDelete?.name}"? This action cannot be undone.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {/* DELETE_STATS_WARNING_V1 — plain-language effects when the player has stats */}
+          {!checkingDeleteStats && deleteGamesCount > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 space-y-1">
+              <p>• Their lines in those box scores will show gaps</p>
+              <p>• Team game totals will no longer match the final scores</p>
+              <p>• They will disappear from stat leaders and award races</p>
+              <p className="pt-1 font-medium">If the player just left the team, keep them on the roster instead — their stats stay intact.</p>
+            </div>
+          )}
           <div className="flex justify-end gap-3">
             <AlertDialogCancel disabled={isSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
@@ -560,10 +589,10 @@ export default function PlayerManagement({ teamId, team, userType }) {
                   setIsSaving(false);
                 }
               }}
-              disabled={isSaving}
+              disabled={isSaving || checkingDeleteStats}
               className="bg-red-600 hover:bg-red-700"
             >
-              {isSaving ? "Deleting..." : "Delete"}
+              {isSaving ? "Deleting..." : deleteGamesCount > 0 ? "Delete anyway" : "Delete"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>
