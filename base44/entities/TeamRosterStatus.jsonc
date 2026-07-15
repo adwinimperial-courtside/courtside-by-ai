@@ -1,0 +1,54 @@
+{
+  "name": "TeamRosterStatus",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "Reference to the team"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league"
+    },
+    "done": {
+      "type": "boolean",
+      "default": true,
+      "description": "true = the coach marked this roster as final and coach editing is locked for this team; false = a league admin reopened editing for this team"
+    },
+    "done_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the coach marked the roster as final"
+    },
+    "coach_user_id": {
+      "type": "string",
+      "description": "ID of the coach who marked the roster done"
+    },
+    "coach_name": {
+      "type": "string",
+      "description": "Display name of the coach at that moment"
+    },
+    "coach_email": {
+      "type": "string",
+      "description": "Email of the coach at that moment"
+    },
+    "player_count": {
+      "type": "number",
+      "description": "How many players were on the roster when it was marked final"
+    },
+    "reopened_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When a league admin reopened editing for this team"
+    },
+    "reopened_by": {
+      "type": "string",
+      "description": "Email of the admin who reopened editing"
+    }
+  },
+  "required": [
+    "team_id",
+    "league_id",
+    "done"
+  ]
+}

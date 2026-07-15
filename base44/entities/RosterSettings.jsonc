@@ -1,0 +1,71 @@
+{
+  "name": "RosterSettings",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league. One RosterSettings record per league."
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Deadline for coach roster editing. After this moment coaches can no longer add, edit, or remove players. Empty means no deadline is set."
+    },
+    "locked": {
+      "type": "boolean",
+      "default": false,
+      "description": "Manual league-wide lock. When true, coach roster editing is closed for ALL teams in the league regardless of the due date."
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "Email of the admin who last changed these settings"
+    }
+  },
+  "required": [
+    "league_id"
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    }
+  }
+}
