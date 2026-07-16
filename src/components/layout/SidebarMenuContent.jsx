@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2, MonitorPlay } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -174,6 +174,43 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     icon: ClipboardList
   };
 
+  // COACH_MENU_GROUPS_V1: grouped sidebar shown ONLY when user_type === "coach".
+  // Players, viewers, video_admins, and all admin roles keep the existing flat Navigation group.
+  const coachMyTeamItems = [
+    { title: "My Roster", url: createPageUrl("CoachRoster"), icon: ClipboardList },
+    { title: "Coach Insights", url: createPageUrl("CoachInsights"), icon: Target },
+    { title: "Whiteboard", url: createPageUrl("Whiteboard"), icon: Layout },
+    { title: "My Player Profile", url: createPageUrl("PlayerProfile"), icon: UserCircle }
+  ];
+
+  const coachLeagueItems = [
+    { title: "Schedule", url: createPageUrl("Schedule"), icon: Calendar },
+    { title: "Standings", url: createPageUrl("Standings"), icon: ListOrdered },
+    { title: "Statistics", url: createPageUrl("Statistics"), icon: BarChart3 },
+    { title: "Award Leaders", url: createPageUrl("AwardLeaders"), icon: Medal },
+    { title: "Teams", url: createPageUrl("Teams"), icon: Users },
+    { title: "Leagues", url: createPageUrl("Leagues"), icon: Trophy }
+  ];
+
+  const coachRequestItem = { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle };
+
+  // COACH_MENU_GROUPS_V1: shared renderer so coach groups match existing menu item styling exactly
+  const renderCoachNavItem = (item) => (
+    <SidebarMenuItem key={item.title}>
+      <SidebarMenuButton
+        asChild
+        className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+          location.pathname === item.url ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+        }`}
+      >
+        <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+          <item.icon className="w-5 h-5" />
+          <span>{item.title}</span>
+        </Link>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
       const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
@@ -230,6 +267,32 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   return (
     <SidebarContent className="p-3">
+      {currentUser?.user_type === "coach" ? (
+        <>
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+              My Team
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {coachMyTeamItems.map(renderCoachNavItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
+              League
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {coachLeagueItems.map(renderCoachNavItem)}
+                <div className="border-t border-slate-200 my-2 mx-3" />
+                {renderCoachNavItem(coachRequestItem)}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </>
+      ) : (
       <SidebarGroup>
         <SidebarGroupLabel className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 py-2">
           Navigation
@@ -254,6 +317,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
           </SidebarMenu>
         </SidebarGroupContent>
       </SidebarGroup>
+      )}
 
       {getVisibleAdminItems().length > 0 && (
         <SidebarGroup>
