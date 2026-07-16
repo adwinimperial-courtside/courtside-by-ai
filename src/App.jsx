@@ -29,6 +29,7 @@ import CommandCenterPage from './pages/CommandCenter';
 import OnboardingBookingsPage from './pages/OnboardingBookings';
 import JoinKOEPage from './pages/JoinKOE';
 import JoinFinNoyCoachPage from './pages/JoinFinNoyCoach';
+import JoinLeaguePage from './pages/JoinLeague';
 import CoachRosterPage from './pages/CoachRoster';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -67,6 +68,10 @@ const AuthenticatedApp = () => {
         if (window.location.pathname.toLowerCase().includes('finoy40upseason6-coach')) {
           localStorage.setItem('finnoy_coach_intent', '1');
         }
+        // JOIN_LEAGUE_GENERIC_V1 — same pattern for generic /Join/<slug> campaign links
+        if (window.location.pathname.toLowerCase().startsWith('/join/')) {
+          localStorage.setItem('join_league_intent', window.location.pathname);
+        }
       } catch (e) {}
       // Redirect to login automatically
       navigateToLogin();
@@ -91,6 +96,14 @@ const AuthenticatedApp = () => {
       window.location.replace('/Finoy40upSeason6-Coach');
       return null;
     }
+    // JOIN_LEAGUE_GENERIC_V1 — return campaign-link arrivals to their /Join/<slug> page after sign-in
+    const joinIntent = localStorage.getItem('join_league_intent');
+    if (joinIntent && joinIntent.toLowerCase().startsWith('/join/') &&
+        !window.location.pathname.toLowerCase().startsWith('/join/')) {
+      localStorage.removeItem('join_league_intent');
+      window.location.replace(joinIntent);
+      return null;
+    }
   } catch (e) {}
 
   // Render the main app — overlay is layout-free
@@ -101,6 +114,8 @@ const AuthenticatedApp = () => {
       <Route path="/JoinKOE" element={<JoinKOEPage />} />
       {/* JOIN_FINNOY_COACH_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new coach signups */}
       <Route path="/Finoy40upSeason6-Coach" element={<JoinFinNoyCoachPage />} />
+      {/* JOIN_LEAGUE_GENERIC_V1 — generic campaign signup page, rendered OUTSIDE the Layout */}
+      <Route path="/Join/:slug" element={<JoinLeaguePage />} />
       <Route path="*" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <Routes>

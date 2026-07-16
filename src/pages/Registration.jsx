@@ -43,6 +43,7 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
   );
   const [uploading, setUploading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [slugInput, setSlugInput] = useState("");
 
   const toggleRole = (key) => {
     setRoles((prev) => (prev.includes(key) ? prev.filter((r) => r !== key) : [...prev, key]));
@@ -73,6 +74,7 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
     }
     setFormError("");
     onSubmit({
+      ...(initial ? {} : { slug: slugInput.trim() }),
       hero_title: heroTitle.trim(),
       season_text: seasonText.trim(),
       crest_url: crestUrl,
@@ -157,6 +159,22 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
           </div>
         </div>
       </div>
+      {!initial && (
+        <div>
+          <label className="block text-sm text-slate-600 mb-1">Custom link (optional)</label>
+          <div className="flex items-center gap-0 border border-slate-200 rounded-lg overflow-hidden">
+            <span className="text-xs text-slate-400 bg-slate-50 px-3 py-2.5 border-r border-slate-200 whitespace-nowrap">courtside-by-ai.com/Join/</span>
+            <input
+              type="text"
+              value={slugInput}
+              onChange={(e) => setSlugInput(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+              className="flex-1 px-3 py-2 text-sm font-mono outline-none min-w-0"
+              placeholder="auto-generated"
+            />
+          </div>
+          <p className="text-xs text-slate-400 mt-1">Short and memorable, e.g. fnbopen. Leave empty to auto-generate from the league name. Cannot be changed after creation.</p>
+        </div>
+      )}
       <div>
         <label className="block text-sm text-slate-600 mb-2">Who can sign up</label>
         <div className="flex flex-wrap gap-4">
@@ -252,7 +270,7 @@ export default function Registration() {
     }
   };
 
-  const shareUrl = campaign ? `${window.location.origin}/Join/${campaign.slug}` : "";
+  const shareUrl = campaign ? `https://courtside-by-ai.com/Join/${campaign.slug}` : "";
 
   const copyLink = async () => {
     try {
@@ -340,7 +358,7 @@ export default function Registration() {
               <div>
                 <h2 className="font-semibold text-slate-900">{selectedLeague.name}</h2>
                 <p className="text-sm text-slate-500">
-                  {campaign.roles_enabled.map((r) => r.charAt(0).toUpperCase() + r.slice(1) + "s").join(" · ")}
+                  {campaign.roles_enabled.map((r) => ({ coach: "Coaches", player: "Players", viewer: "Viewers" }[r] || r)).join(" · ")}
                 </p>
               </div>
               <StatusPill status={campaign.status} />
