@@ -214,6 +214,23 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
 
   const getVisibleNavigationItems = () => {
       if (!currentUser) return navigationItems;
+      // LEAGUE_ADMIN_NAV_V1: task-ordered menu for league admins only.
+      // Home first, weekly pages next, setup pages lower, distinct Standings icon.
+      // Request League Access is intentionally NOT appended here — it renders
+      // at the bottom of the sidebar for league admins (see LEAGUE_ADMIN_REQUEST_BOTTOM_V1).
+      if (currentUser.user_type === "league_admin") {
+        return [
+          { title: "Home", url: "/", icon: Home },
+          { title: "Schedule", url: createPageUrl("Schedule"), icon: Calendar },
+          { title: "Standings", url: createPageUrl("Standings"), icon: ListOrdered },
+          { title: "Statistics", url: createPageUrl("Statistics"), icon: BarChart3 },
+          { title: "Award Leaders", url: createPageUrl("AwardLeaders"), icon: Medal },
+          { title: "Teams", url: createPageUrl("Teams"), icon: Users },
+          { title: "Leagues", url: createPageUrl("Leagues"), icon: Trophy },
+          { title: "Coach Insights", url: createPageUrl("CoachInsights"), icon: Target },
+          { title: "Whiteboard", url: createPageUrl("Whiteboard"), icon: Layout }
+        ];
+      }
       const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
         ? navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title))
         : currentUser.user_type === "player"
@@ -374,6 +391,30 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      )}
+
+      {currentUser?.user_type === "league_admin" && (
+        <SidebarGroup>
+          {/* LEAGUE_ADMIN_REQUEST_BOTTOM_V1: rarely-used action lives below the admin groups */}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <div className="border-t border-slate-200 my-2 mx-3" />
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  className={`hover:bg-orange-50 hover:text-orange-600 transition-all duration-200 rounded-lg mb-1 ${
+                    location.pathname === createPageUrl("ApplyForLeague") ? 'bg-orange-50 text-orange-600 font-semibold' : ''
+                  }`}
+                >
+                  <Link to={createPageUrl("ApplyForLeague")} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
+                    <PlusCircle className="w-5 h-5" />
+                    <span>Request League Access</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
