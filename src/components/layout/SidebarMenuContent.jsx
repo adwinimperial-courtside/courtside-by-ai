@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -177,6 +177,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   // COACH_MENU_GROUPS_V1: grouped sidebar shown ONLY when user_type === "coach".
   // Players, viewers, video_admins, and all admin roles keep the existing flat Navigation group.
   const coachMyTeamItems = [
+    { title: "Home", url: "/", icon: Home }, // COACH_MENU_HOME_V1: coach landing page lives at the root route
     { title: "My Roster", url: createPageUrl("CoachRoster"), icon: ClipboardList },
     { title: "Coach Insights", url: createPageUrl("CoachInsights"), icon: Target },
     { title: "Whiteboard", url: createPageUrl("Whiteboard"), icon: Layout },
