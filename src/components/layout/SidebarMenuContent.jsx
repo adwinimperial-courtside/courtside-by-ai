@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, UserPlus, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -63,6 +63,7 @@ const adminItems = [
   { title: "League Users", url: createPageUrl("LeagueUsers"), icon: Users },
   { title: "Game Log", url: createPageUrl("GameLog"), icon: ScrollText },
   { title: "Admin Tools", url: createPageUrl("AdminTools"), icon: Settings },
+  { title: "Registration", url: createPageUrl("Registration"), icon: UserPlus },
   { title: "Award Settings", url: createPageUrl("LeagueAwardSettings"), icon: SlidersHorizontal },
   { title: "Story Builder", url: createPageUrl("StoryBuilder"), icon: Newspaper }
 ];
