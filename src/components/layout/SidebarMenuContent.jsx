@@ -216,7 +216,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       if (!currentUser) return navigationItems;
       const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
         ? navigationItems.filter(item => !["Leagues", "Teams", "Coach Insights", "Whiteboard"].includes(item.title))
-        : navigationItems;
+        : currentUser.user_type === "player"
+          ? navigationItems.filter(item => item.title !== "Coach Insights") // PLAYER_MENU_TRIM_V1: Coach Insights is a coach/staff tool
+          : navigationItems;
       const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
         ? [playerNavItem, ...base]
         : base;

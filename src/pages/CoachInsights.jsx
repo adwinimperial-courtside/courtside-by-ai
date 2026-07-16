@@ -462,14 +462,16 @@ export default function CoachInsights() {
   const selectedTeamName = teams.find(t => t.id === selectedTeam)?.name || "";
   const selectedOpponentName = teams.find(t => t.id === selectedOpponent)?.name || "";
 
-  // Early return for viewers — AFTER all hooks
-  if (currentUser && coachIsViewer) {
+  // COACH_INSIGHTS_GUARD_V1: page is restricted to coaches and league staff,
+  // even via direct URL. Early return AFTER all hooks.
+  const COACH_INSIGHTS_ALLOWED_ROLES = ["coach", "league_admin", "ops_admin", "app_admin"];
+  if (currentUser && (coachIsViewer || !COACH_INSIGHTS_ALLOWED_ROLES.includes(currentUser.user_type))) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-6">
         <div className="text-center">
           <Target className="w-16 h-16 text-slate-300 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-slate-700 mb-2">Access Restricted</h2>
-          <p className="text-slate-500">Coach Insights is not available for viewers.</p>
+          <p className="text-slate-500">Coach Insights is only available to coaches and league staff.</p>
         </div>
       </div>
     );
