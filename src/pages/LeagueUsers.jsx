@@ -57,6 +57,27 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
   const playerTeamId = primaryIdentity?.team_id || (user.league_team_pairs?.[0]?.team_id);
   const playerTeam = playerTeamId ? teams.find(t => t.id === playerTeamId) : null;
 
+  // TEAM_VISIBILITY_V1: resolve team + role per league (pairs first, identity fallback)
+  const teamForLeague = (lid) => {
+    const pairTeamId = user.league_team_pairs?.find(p => p.league_id === lid)?.team_id;
+    const uliTeamId = userLeagueIdentities.find(u => u.league_id === lid)?.team_id;
+    const tid = pairTeamId || uliTeamId;
+    return tid ? teams.find(t => t.id === tid) : null;
+  };
+  const roleInLeague = (lid) =>
+    userLeagueIdentities.find(u => u.league_id === lid && u.role)?.role || user.user_type;
+  const showsTeam = effectiveRole === "player" || effectiveRole === "coach";
+  const rowTeam = (() => {
+    if (!showsTeam) return null;
+    if (selectedLeague && selectedLeague !== "all") return teamForLeague(selectedLeague);
+    if (isPlayer && playerTeam) return playerTeam;
+    for (const lid of relevantLeagueIds) {
+      const t = teamForLeague(lid);
+      if (t) return t;
+    }
+    return null;
+  })();
+
   return (
     <div className="border-b border-slate-100 last:border-0">
       <div
@@ -82,9 +103,9 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
                   <p className="text-xs text-slate-400 truncate">{secondaryName}</p>
                 )}
                 <p className="text-xs text-slate-500 truncate">{user.email}</p>
-          {isPlayer && playerTeam && (
+          {showsTeam && rowTeam && (
             <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium mt-0.5">
-              {playerTeam.name}
+              {rowTeam.name}
             </span>
           )}
               </div>
@@ -107,11 +128,22 @@ function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = 
           ) : (
             <div className="space-y-1">
               {leagueDetails.map(({ league, leagueId }) => {
-                const leagueTeams = teams.filter(t => t.league_id === leagueId);
+                const leagueTeam = teamForLeague(leagueId);
+                const lgRole = roleInLeague(leagueId);
+                const teamApplies = lgRole === "player" || lgRole === "coach";
                 return (
-                  <div key={leagueId} className="flex items-center gap-2 text-sm">
+                  <div key={leagueId} className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="text-slate-700 font-medium">{league?.name || "Unknown League"}</span>
                     {league?.season && <span className="text-slate-400 text-xs">({league.season})</span>}
+                    {teamApplies && (leagueTeam ? (
+                      <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-orange-100 text-orange-800 font-medium">
+                        {leagueTeam.name}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-400">
+                        No team
+                      </span>
+                    ))}
                   </div>
                 );
               })}
