@@ -83,6 +83,7 @@ import UserManagement from './pages/UserManagement';
 import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
+import Registration from './pages/Registration';
 import __Layout from './Layout.jsx';
 
 
@@ -123,6 +124,7 @@ export const PAGES = {
     "RosterUserMatching": RosterUserMatching,
     "LeagueAwardSettings": LeagueAwardSettings,
     "CoachRoster": CoachRoster,
+    "Registration": Registration,
 }
 
 export const pagesConfig = {
