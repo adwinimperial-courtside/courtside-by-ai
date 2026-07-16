@@ -1,0 +1,90 @@
+{
+  "name": "SignupCampaign",
+  "type": "object",
+  "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the league this registration campaign belongs to. One campaign per league."
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL path segment for the public signup page, e.g. finnoy-open-s5. Lowercase, letters/numbers/dashes only, unique across campaigns."
+    },
+    "hero_title": {
+      "type": "string",
+      "description": "Title shown in the hero band of the public signup page, e.g. FIN-NOY BALLERS OPEN AGE"
+    },
+    "season_text": {
+      "type": "string",
+      "description": "Season line shown under the title, e.g. Season starts August 2026"
+    },
+    "crest_url": {
+      "type": "string",
+      "description": "Optional URL of the league crest image shown in the hero"
+    },
+    "color_primary": {
+      "type": "string",
+      "default": "#0B1F3A",
+      "description": "Hero background color (hex). Defaults to Courtside navy."
+    },
+    "color_accent": {
+      "type": "string",
+      "default": "#F26B1F",
+      "description": "Accent color for buttons and stripes (hex). Defaults to Courtside orange."
+    },
+    "roles_enabled": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "coach",
+          "player",
+          "viewer"
+        ]
+      },
+      "default": [
+        "coach"
+      ],
+      "description": "Which roles can sign up through this campaign. Coach signups require a team invite code; player and viewer signups do not."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "default": "open",
+      "description": "open = the public page accepts signups; closed = the page shows a registration-closed message."
+    },
+    "created_by_email": {
+      "type": "string",
+      "description": "Email of the admin who created the campaign"
+    }
+  },
+  "required": [
+    "league_id",
+    "slug"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
