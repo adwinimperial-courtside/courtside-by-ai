@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { format, isToday, isTomorrow } from "date-fns";
-import { ChevronDown } from "lucide-react";
+import { ChevronRight, ClipboardList, Target, BarChart3, Calendar } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   buildPlayerAggregates,
@@ -13,16 +13,29 @@ import {
 } from "@/components/stats/statEngine";
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
-// COACH_HOME_V1 — Responsive "cockpit" home for coaches: single column on
-// phones, two columns on iPad/laptop (>=md). Renders only for user_type ===
-// 'coach' (gated by Landing.jsx). Record + league standing are computed with
+// COACH_HOME_SLATE_V1 — "Midnight Slate" dark redesign of the coach home.
+// Renders only for user_type === 'coach' (gated by Landing.jsx). All data
+// logic is carried over from COACH_HOME_V1 unchanged: record + standing use
 // the SAME algorithm as the Standings page (default-game aware, win% with
-// head-to-head / points-diff tiebreaks). Team scoring comes from game scores;
-// per-player season averages come from the shared stat engine. The coach's team
-// is read from their league_team_pairs; if none is linked, a team picker is shown.
+// head-to-head / points-diff tiebreaks); per-player averages come from the
+// shared stat engine with per-game points-format detection. New in this
+// version: opponent scouting on the next-game card (their last 3 results,
+// scoring average, record), a last-result card that deep-links to the box
+// score (query param appended OUTSIDE createPageUrl so gameId keeps its
+// camelCase and is readable by LiveBoxScore), and a current win/loss streak.
 
-const NAVY = "#0B1F3A";
-const ORANGE = "#F26B1F";
+const BG = "#111820";
+const DEEP = "#0D141B";
+const CARD = "#19232D";
+const RAISED = "#202C37";
+const BORDER = "#34424E";
+const STEEL = "#5B7FA3";
+const BTN_BLUE = "#315D85";
+const IVORY = "#F1F0EC";
+const MUTED = "#AAB4BD";
+const SAGE = "#6FA184";
+const COPPER = "#B7895B";
+const BRICK = "#B76560";
 
 const ordinal = (n) => {
   const s = ["th", "st", "nd", "rd"];
@@ -105,18 +118,30 @@ function computeStandings(teams, games) {
 
 function Shell({ children }) {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#f1f5f9" }}>
+    <div className="min-h-screen" style={{ backgroundColor: BG }}>
       <div className="max-w-md md:max-w-4xl mx-auto px-4 pt-5 pb-2">{children}</div>
     </div>
   );
 }
 
-function Eyebrow({ children, right }) {
+function Eyebrow({ children, color }) {
   return (
-    <div className="flex items-center justify-between mb-2.5">
-      <span className="text-[10px] font-extrabold tracking-[0.12em] uppercase text-slate-400">{children}</span>
-      {right}
+    <div className="text-[10px] font-bold tracking-[0.12em] uppercase mb-2" style={{ color: color || MUTED }}>
+      {children}
     </div>
+  );
+}
+
+function SlateCard({ children, onClick, className = "" }) {
+  const Tag = onClick ? "button" : "div";
+  return (
+    <Tag
+      onClick={onClick}
+      className={`rounded-xl p-3.5 ${onClick ? "w-full text-left" : ""} ${className}`}
+      style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+    >
+      {children}
+    </Tag>
   );
 }
 
@@ -128,35 +153,37 @@ function StatsBar() {
     { n: "200+", l: "Teams" },
   ];
   return (
-    <div className="mt-1 -mx-4 px-4 pt-4 pb-6 bg-slate-50 border-t border-slate-200">
-      <div className="flex text-center max-w-md md:max-w-2xl mx-auto">
+    <div className="mt-3 mb-4">
+      <div className="rounded-xl px-2 pt-3 pb-2.5 flex text-center" style={{ backgroundColor: DEEP }}>
         {items.map((s, i) => (
-          <div key={i} className={`flex-1 ${i > 0 ? "border-l border-slate-200" : ""}`}>
-            <div className="text-[22px] font-black leading-none" style={{ color: ORANGE }}>{s.n}</div>
-            <div className="text-[10.5px] text-slate-500 mt-1">{s.l}</div>
+          <div key={i} className="flex-1" style={i > 0 ? { borderLeft: `1px solid ${BORDER}` } : undefined}>
+            <div className="text-[17px] font-bold leading-none" style={{ color: STEEL }}>{s.n}</div>
+            <div className="text-[10px] mt-1" style={{ color: MUTED }}>{s.l}</div>
           </div>
         ))}
       </div>
-      <p className="text-center text-[10px] text-slate-400 tracking-[0.04em] mt-3">
+      <p className="text-center text-[10px] tracking-[0.06em] mt-2.5" style={{ color: MUTED }}>
         POWERED BY COURTSIDE BY AI · NUMBERS DON'T LIE
       </p>
     </div>
   );
 }
 
-function WatchRow({ initials, name, sub, pillText, hot }) {
+function WatchRow({ initials, name, sub, pillText, hot, isLast }) {
   return (
-    <div className="flex items-center gap-2.5 py-2 border-b last:border-b-0 border-slate-100">
-      <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-extrabold text-[13px] flex-shrink-0" style={{ backgroundColor: NAVY }}>
+    <div className="flex items-center gap-2.5 py-2" style={!isLast ? { borderBottom: `1px solid ${BORDER}` } : undefined}>
+      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] flex-shrink-0" style={{ backgroundColor: RAISED, color: MUTED }}>
         {initials}
       </div>
       <div className="min-w-0">
-        <div className="text-[13px] font-bold text-slate-900 truncate">{name}</div>
-        <div className="text-[11px] text-slate-500 truncate">{sub}</div>
+        <div className="text-[13px] font-medium truncate" style={{ color: IVORY }}>{name}</div>
+        <div className="text-[11px] truncate" style={{ color: MUTED }}>{sub}</div>
       </div>
       <span
-        className="ml-auto flex-shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-full"
-        style={hot ? { backgroundColor: "#FEF0E7", color: ORANGE } : { backgroundColor: "#DCFCE7", color: "#16A34A" }}
+        className="ml-auto flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
+        style={hot
+          ? { backgroundColor: "rgba(91,127,163,0.16)", color: STEEL }
+          : { backgroundColor: "rgba(111,161,132,0.14)", color: SAGE }}
       >
         {pillText}
       </span>
@@ -189,7 +216,6 @@ export default function CoachHomePanel({ currentUser }) {
     }
   }, [userLeagues, selectedLeagueId, currentUser]);
 
-  // On league change, restore the coach's previously chosen team (remembered locally).
   useEffect(() => {
     let saved = null;
     try { if (currentUser?.id && selectedLeagueId) saved = localStorage.getItem(`coachTeam:${currentUser.id}:${selectedLeagueId}`); } catch (_e) {}
@@ -200,7 +226,6 @@ export default function CoachHomePanel({ currentUser }) {
 
   const selectedLeague = useMemo(() => allLeagues.find((l) => l.id === selectedLeagueId) || null, [allLeagues, selectedLeagueId]);
 
-  // The coach's team for this league comes from their league_team_pairs.
   const linkedTeamId = useMemo(() => {
     const pairs = currentUser?.league_team_pairs || [];
     const p = pairs.find((pp) => pp && pp.league_id === selectedLeagueId);
@@ -218,7 +243,6 @@ export default function CoachHomePanel({ currentUser }) {
     return m;
   }, [aggregates]);
 
-  // Completed games involving this team (default games included for W/L).
   const teamCompleted = useMemo(() => {
     if (!teamId) return [];
     return games
@@ -226,7 +250,6 @@ export default function CoachHomePanel({ currentUser }) {
       .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
   }, [games, teamId]);
 
-  // Record + scoring (scoring excludes default games, matching Standings).
   const record = useMemo(() => {
     let wins = 0, losses = 0, pf = 0, pa = 0, played = 0;
     teamCompleted.forEach((g) => {
@@ -243,7 +266,6 @@ export default function CoachHomePanel({ currentUser }) {
       wins, losses,
       ppg: played ? pf / played : 0,
       oppPpg: played ? pa / played : 0,
-      diff: played ? (pf - pa) / played : 0,
       played,
     };
   }, [teamCompleted, teamId]);
@@ -253,17 +275,23 @@ export default function CoachHomePanel({ currentUser }) {
     const sorted = computeStandings(teams, games);
     const idx = sorted.findIndex((t) => t.id === teamId);
     if (idx < 0) return null;
-    if ((sorted[idx].wins + sorted[idx].losses) === 0) return null; // no decided games yet -> no real standing
+    if ((sorted[idx].wins + sorted[idx].losses) === 0) return null;
     return { rank: idx + 1, total: sorted.length };
   }, [teams, games, teamId]);
 
-  // Last 5 results (oldest -> newest) for the form strip.
-  const form = useMemo(
-    () => teamCompleted.slice(0, 5).map((g) => gameResultFor(g, teamId)).filter(Boolean).reverse(),
-    [teamCompleted, teamId]
-  );
+  // COACH_HOME_SLATE_V1: current W/L streak, e.g. "W3" or "L2".
+  const streak = useMemo(() => {
+    if (!teamCompleted.length || !teamId) return null;
+    const first = gameResultFor(teamCompleted[0], teamId);
+    if (!first) return null;
+    let n = 0;
+    for (const g of teamCompleted) {
+      if (gameResultFor(g, teamId) === first) n++;
+      else break;
+    }
+    return `${first}${n}`;
+  }, [teamCompleted, teamId]);
 
-  // Next scheduled game.
   const nextGame = useMemo(() => {
     if (!teamId || !games.length) return null;
     const now = new Date();
@@ -272,13 +300,33 @@ export default function CoachHomePanel({ currentUser }) {
       .sort((a, b) => new Date(a.game_date) - new Date(b.game_date))[0] || null;
   }, [games, teamId]);
 
-  // Players to watch: top scorer in the team's last game (hot) + most improved
-  // (last-3-game scoring average vs season average).
+  // COACH_HOME_SLATE_V1: opponent scouting for the next game — their last 3
+  // results (oldest -> newest), scoring average (default games excluded), and
+  // overall record. Computed from the league-wide game list already fetched.
+  const oppScout = useMemo(() => {
+    if (!nextGame || !teamId) return null;
+    const oppId = nextGame.home_team_id === teamId ? nextGame.away_team_id : nextGame.home_team_id;
+    if (!oppId) return null;
+    const oppCompleted = games
+      .filter((g) => g.status === "completed" && (g.home_team_id === oppId || g.away_team_id === oppId))
+      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date));
+    let wins = 0, losses = 0, pf = 0, played = 0;
+    oppCompleted.forEach((g) => {
+      const r = gameResultFor(g, oppId);
+      if (r === "W") wins++; else if (r === "L") losses++;
+      if (!g.is_default_result) {
+        pf += g.home_team_id === oppId ? (g.home_score || 0) : (g.away_score || 0);
+        played++;
+      }
+    });
+    const last3 = oppCompleted.slice(0, 3).map((g) => gameResultFor(g, oppId)).filter(Boolean).reverse();
+    return { last3, ppg: played ? pf / played : 0, wins, losses, hasGames: wins + losses > 0 };
+  }, [nextGame, teamId, games]);
+
   const watch = useMemo(() => {
     if (!teamId) return { hot: null, improved: null };
     const teamPlayers = players.filter((p) => p.team_id === teamId);
 
-    // Hot — top scorer in the most recent played game.
     let hot = null;
     const lastPlayed = teamCompleted.find((g) => !g.is_default_result);
     if (lastPlayed) {
@@ -295,7 +343,6 @@ export default function CoachHomePanel({ currentUser }) {
       }
     }
 
-    // Most improved — biggest jump in last-3 scoring vs season average (>=3 games).
     let improved = null;
     const playedGames = teamCompleted.filter((g) => !g.is_default_result);
     const playedAsc = [...playedGames].sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
@@ -311,7 +358,7 @@ export default function CoachHomePanel({ currentUser }) {
       const last3Avg = last3.reduce((s, v) => s + v, 0) / last3.length;
       const season = ppgById.get(p.id) || 0;
       const jump = last3Avg - season;
-      if (hot && p.id === hot.player.id) return; // don't repeat the hot player
+      if (hot && p.id === hot.player.id) return;
       if (jump > 0 && (!improved || jump > improved.jump)) {
         improved = { player: p, jump: Math.round(jump * 10) / 10 };
       }
@@ -328,56 +375,122 @@ export default function CoachHomePanel({ currentUser }) {
   const noLeague = !leaguesLoading && allLeagues.length > 0 && userLeagues.length === 0;
   const needsTeam = !loading && !noLeague && !teamId;
 
-  const heroChip = standing ? `${ordinal(standing.rank)} in league` : "Coach";
+  const heroChip = standing ? `${ordinal(standing.rank)} of ${standing.total}` : "Coach";
+
+  const resultLetterColor = (r) => (r === "W" ? SAGE : BRICK);
 
   // ---- Cards ----
 
-  const KpiCard = (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 mb-3">
-      <div className="flex text-center">
-        {[{ v: record.ppg, l: "Team PPG" }, { v: record.oppPpg, l: "Opp PPG" }, { v: record.diff, l: "Diff", signed: true }].map((k, i) => (
-          <div key={i} className={`flex-1 ${i > 0 ? "border-l border-slate-100" : ""}`}>
-            <div className="text-[24px] font-black leading-none tracking-tight" style={{ color: record.played ? NAVY : "#94a3b8" }}>
-              {record.played ? `${k.signed && k.v >= 0 ? "+" : ""}${k.v.toFixed(1)}` : "—"}
+  const NextGameCard = (
+    <SlateCard className="mb-2.5">
+      {nextGame ? (() => {
+        const isHome = nextGame.home_team_id === teamId;
+        const oppId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
+        const opp = teams.find((t) => t.id === oppId);
+        const d = new Date(nextGame.game_date);
+        const dayDiff = Math.round((new Date(d.toDateString()) - new Date(new Date().toDateString())) / 86400000);
+        const when = isToday(d) ? "TODAY" : isTomorrow(d) ? "TOMORROW" : `IN ${dayDiff} DAYS`;
+        return (
+          <>
+            <Eyebrow color={COPPER}>Next game · {format(d, "EEE HH:mm")} · {when}</Eyebrow>
+            <div className="text-[16px] font-semibold" style={{ color: IVORY }}>
+              vs {opp?.name || "TBD"} <span className="text-[11px] font-normal" style={{ color: MUTED }}>· {isHome ? "home" : "away"}</span>
             </div>
-            <div className="text-[11px] text-slate-500 mt-1.5 font-semibold">{k.l}</div>
-          </div>
-        ))}
-      </div>
-      <div className="text-[11px] text-slate-500 text-center mt-2.5 pt-2.5 border-t border-slate-100">
-        {currentTeam?.name || "Your team"}{record.played ? ` · ${record.played} game${record.played !== 1 ? "s" : ""}` : ""}
-      </div>
-    </div>
+            {oppScout?.hasGames && (
+              <div className="flex gap-4 mt-2.5">
+                <div>
+                  <div className="text-[9.5px] tracking-[0.08em] uppercase" style={{ color: MUTED }}>Last 3 games</div>
+                  <div className="text-[13px] font-semibold mt-0.5">
+                    {oppScout.last3.map((r, i) => (
+                      <span key={i} style={{ color: resultLetterColor(r) }}>{r}{i < oppScout.last3.length - 1 ? " " : ""}</span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[9.5px] tracking-[0.08em] uppercase" style={{ color: MUTED }}>Scoring</div>
+                  <div className="text-[13px] font-semibold mt-0.5" style={{ color: IVORY }}>{oppScout.ppg.toFixed(1)} ppg</div>
+                </div>
+                <div>
+                  <div className="text-[9.5px] tracking-[0.08em] uppercase" style={{ color: MUTED }}>Record</div>
+                  <div className="text-[13px] font-semibold mt-0.5" style={{ color: IVORY }}>{oppScout.wins}–{oppScout.losses}</div>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => go("CoachInsights")}
+                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold py-2 rounded-lg"
+                style={{ backgroundColor: BTN_BLUE, color: IVORY }}
+              >
+                <Target className="w-4 h-4" /> Open insights
+              </button>
+              <button
+                onClick={() => go("Statistics")}
+                className="flex-1 flex items-center justify-center gap-1.5 text-[12px] font-semibold py-2 rounded-lg"
+                style={{ border: `1px solid ${BORDER}`, color: MUTED, backgroundColor: "transparent" }}
+              >
+                <BarChart3 className="w-4 h-4" /> View stats
+              </button>
+            </div>
+          </>
+        );
+      })() : (
+        <>
+          <Eyebrow color={COPPER}>Next game</Eyebrow>
+          <p className="text-sm" style={{ color: MUTED }}>No upcoming games scheduled.</p>
+        </>
+      )}
+    </SlateCard>
   );
 
-  const RecordCard = (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4">
-      <Eyebrow>Record</Eyebrow>
-      <div className="flex items-center gap-4">
-        <div className="text-[38px] font-black leading-none tracking-tight" style={{ color: NAVY }}>{record.wins}–{record.losses}</div>
-        <div className="flex-1">
-          {standing && (
-            <span className="inline-block text-[11px] font-extrabold px-2.5 py-0.5 rounded-full" style={{ backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", color: "#9a3412" }}>
-              {ordinal(standing.rank)} of {standing.total} teams
-            </span>
-          )}
-          {form.length > 0 && (
-            <>
-              <div className="text-[10px] font-extrabold tracking-[0.06em] uppercase text-slate-400 mt-2.5 mb-1.5">Last {form.length}</div>
-              <div className="flex gap-1.5">
-                {form.map((r, i) => (
-                  <span key={i} className="w-[18px] h-[18px] rounded-[5px] text-[10px] font-extrabold text-white flex items-center justify-center" style={{ backgroundColor: r === "W" ? "#16A34A" : "#DC2626" }}>{r}</span>
-                ))}
-              </div>
-            </>
-          )}
+  const lastGame = teamCompleted[0] || null;
+  const LastResultCard = (() => {
+    if (!lastGame) {
+      return (
+        <SlateCard className="h-full">
+          <Eyebrow>Last result</Eyebrow>
+          <p className="text-sm" style={{ color: MUTED }}>No games played yet.</p>
+        </SlateCard>
+      );
+    }
+    const r = gameResultFor(lastGame, teamId);
+    const isHome = lastGame.home_team_id === teamId;
+    const oppId = isHome ? lastGame.away_team_id : lastGame.home_team_id;
+    const opp = teams.find((t) => t.id === oppId);
+    const ts = isHome ? (lastGame.home_score || 0) : (lastGame.away_score || 0);
+    const os = isHome ? (lastGame.away_score || 0) : (lastGame.home_score || 0);
+    const tappable = !lastGame.is_default_result;
+    // Query param is appended OUTSIDE createPageUrl on purpose: createPageUrl
+    // lowercases whole URL strings, which would break LiveBoxScore's
+    // case-sensitive 'gameId' param read.
+    const openBox = () => navigate(`${createPageUrl("LiveBoxScore")}?gameId=${lastGame.id}`);
+    return (
+      <SlateCard className="h-full" onClick={tappable ? openBox : undefined}>
+        <Eyebrow>Last result</Eyebrow>
+        <div className="text-[15px] font-semibold" style={{ color: resultLetterColor(r) }}>
+          {r} {lastGame.is_default_result ? "(forfeit)" : `${ts}–${os}`}
         </div>
+        <div className="text-[11px] mt-0.5 truncate" style={{ color: MUTED }}>vs {opp?.name || "Unknown"}</div>
+        {tappable && <div className="text-[10px] mt-1.5" style={{ color: STEEL }}>Tap for box score</div>}
+      </SlateCard>
+    );
+  })();
+
+  const RecordCard = (
+    <SlateCard className="h-full">
+      <Eyebrow>Record</Eyebrow>
+      <div className="text-[15px] font-semibold" style={{ color: IVORY }}>
+        {record.wins}–{record.losses}
+        {streak && <span className="text-[11px] font-semibold ml-1.5" style={{ color: COPPER }}>· {streak}</span>}
       </div>
-    </div>
+      <div className="text-[11px] mt-0.5" style={{ color: MUTED }}>
+        {record.played > 0 ? `${record.ppg.toFixed(1)} for · ${record.oppPpg.toFixed(1)} against` : "No scored games yet"}
+      </div>
+    </SlateCard>
   );
 
   const WatchCard = (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4 h-full">
+    <SlateCard className="h-full">
       <Eyebrow>Players to watch</Eyebrow>
       {watch.hot || watch.improved ? (
         <div>
@@ -386,8 +499,9 @@ export default function CoachHomePanel({ currentUser }) {
               initials={initialsOf(watch.hot.player.name)}
               name={watch.hot.player.name}
               sub={`${watch.hot.pts} pts last game`}
-              pillText={`🔥 ${watch.hot.delta >= 0 ? "+" : ""}${watch.hot.delta} vs avg`}
+              pillText={`${watch.hot.delta >= 0 ? "+" : ""}${watch.hot.delta} vs avg`}
               hot
+              isLast={!watch.improved}
             />
           )}
           {watch.improved && (
@@ -395,74 +509,59 @@ export default function CoachHomePanel({ currentUser }) {
               initials={initialsOf(watch.improved.player.name)}
               name={watch.improved.player.name}
               sub="Most improved · last 3 games"
-              pillText={`▲ +${watch.improved.jump} PPG`}
+              pillText={`+${watch.improved.jump} ppg`}
+              isLast
             />
           )}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">Once your team plays a few games, your standout performers show up here.</p>
+        <p className="text-sm" style={{ color: MUTED }}>Once your team plays a few games, your standout performers show up here.</p>
       )}
-    </div>
+    </SlateCard>
   );
 
-  const NextGameCard = (
-    <div className="bg-white border border-slate-200 rounded-2xl p-4">
-      {nextGame ? (() => {
-        const isHome = nextGame.home_team_id === teamId;
-        const oppId = isHome ? nextGame.away_team_id : nextGame.home_team_id;
-        const opp = teams.find((t) => t.id === oppId);
-        const d = new Date(nextGame.game_date);
-        const dateLabel = isToday(d) ? "Today" : isTomorrow(d) ? "Tomorrow" : format(d, "EEE, MMM d");
-        return (
-          <button className="w-full text-left" onClick={() => go("Schedule")}>
-            <Eyebrow>Next game</Eyebrow>
-            <div className="text-[15px] font-extrabold text-slate-900">{dateLabel} · {format(d, "HH:mm")}</div>
-            <div className="text-[13px] text-slate-600 mt-0.5">{currentTeam?.name || "Your team"} vs {opp?.name || "TBD"}</div>
-            <div className="text-[11.5px] text-slate-400 mt-0.5">{isHome ? "🏠 Home" : "🚌 Away"}</div>
-            <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-bold px-3 py-1.5 rounded-lg" style={{ backgroundColor: "#FFF7ED", border: "1px solid #FED7AA", color: ORANGE }} onClick={(e) => { e.stopPropagation(); go("CoachInsights"); }}>
-              📈 Open Coach Insights
-            </div>
-          </button>
-        );
-      })() : (
-        <>
-          <Eyebrow>Next game</Eyebrow>
-          <p className="text-sm text-slate-500">No upcoming games scheduled.</p>
-        </>
-      )}
-    </div>
-  );
+  const quickActions = [
+    { icon: ClipboardList, t: "Roster", p: "CoachRoster" },
+    { icon: Target, t: "Insights", p: "CoachInsights" },
+    { icon: BarChart3, t: "Stats", p: "Statistics" },
+    { icon: Calendar, t: "Schedule", p: "Schedule" },
+  ];
 
   return (
     <Shell>
-      {/* Hero */}
-      <div className="rounded-2xl p-4 mb-3" style={{ backgroundColor: NAVY }}>
-        <div className="flex items-center justify-between gap-2.5 mb-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-white text-lg flex-shrink-0" style={{ backgroundColor: ORANGE }}>
-              {initial}
-            </div>
-            <div className="min-w-0">
-              <div className="text-[11px] text-slate-400 font-medium leading-none">Coach</div>
-              <div className="text-[17px] font-bold text-white leading-tight truncate mt-0.5">
-                {firstName ? `Welcome back, ${firstName}.` : "Welcome back."}
-              </div>
-            </div>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2.5 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0" style={{ backgroundColor: BTN_BLUE, color: IVORY }}>
+            {initial}
           </div>
-          <div
-            className="text-[11px] font-bold px-2.5 py-1.5 rounded-full flex-shrink-0"
-            style={standing
-              ? { backgroundColor: "rgba(242,107,31,0.16)", color: ORANGE, border: "1px solid rgba(242,107,31,0.4)" }
-              : { backgroundColor: "rgba(255,255,255,0.08)", color: "#cbd5e1", border: "1px solid rgba(255,255,255,0.16)" }}
-          >
-            {heroChip}
+          <div className="min-w-0">
+            <div className="text-[11px] leading-none truncate" style={{ color: MUTED }}>
+              Coach{currentTeam ? ` · ${currentTeam.name}` : ""}
+            </div>
+            <div className="text-[16px] font-semibold leading-tight truncate mt-0.5" style={{ color: IVORY }}>
+              {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+            </div>
           </div>
         </div>
+        <div
+          className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full flex-shrink-0"
+          style={standing
+            ? { backgroundColor: "rgba(183,137,91,0.14)", color: COPPER, border: "1px solid rgba(183,137,91,0.45)" }
+            : { backgroundColor: RAISED, color: MUTED, border: `1px solid ${BORDER}` }}
+        >
+          {heroChip}
+        </div>
+      </div>
 
+      {/* League picker */}
+      <div className="mb-3">
         {userLeagues.length > 1 ? (
           <Select value={selectedLeagueId || ""} onValueChange={setSelectedLeagueId}>
-            <SelectTrigger className="w-full md:w-auto md:min-w-[18rem] bg-white/10 border-white/15 text-white text-sm font-semibold rounded-xl h-auto py-2">
-              <span className="mr-1">🏀</span>
+            <SelectTrigger
+              className="w-full md:w-auto md:min-w-[18rem] text-sm font-semibold rounded-xl h-auto py-2"
+              style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: IVORY }}
+            >
               <SelectValue placeholder="Choose a league" />
             </SelectTrigger>
             <SelectContent>
@@ -472,61 +571,68 @@ export default function CoachHomePanel({ currentUser }) {
             </SelectContent>
           </Select>
         ) : (
-          <div className="inline-flex items-center gap-2 bg-white/[0.07] border border-white/15 text-white text-sm font-semibold px-3 py-2 rounded-xl">
-            <span>🏀</span> {selectedLeague?.name || "Your league"}
+          <div className="inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl" style={{ backgroundColor: CARD, border: `1px solid ${BORDER}`, color: IVORY }}>
+            {selectedLeague?.name || "Your league"}
           </div>
         )}
       </div>
 
       {noLeague ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 text-center text-sm text-slate-500">
-          You're not assigned to a league yet. Once a league organizer adds you, your team's dashboard will show up here.
-        </div>
+        <SlateCard className="text-center">
+          <p className="text-sm py-3" style={{ color: MUTED }}>
+            You're not assigned to a league yet. Once a league organizer adds you, your team's dashboard will show up here.
+          </p>
+        </SlateCard>
       ) : loading ? (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-4">
-              <div className="h-3 w-20 bg-slate-100 rounded mb-3" />
-              <div className="h-7 w-full bg-slate-100 rounded" />
+            <div key={i} className="rounded-xl p-3.5" style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}>
+              <div className="h-3 w-20 rounded mb-3" style={{ backgroundColor: RAISED }} />
+              <div className="h-7 w-full rounded" style={{ backgroundColor: RAISED }} />
             </div>
           ))}
         </div>
       ) : needsTeam ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-4">
+        <SlateCard>
           <Eyebrow>Pick your team</Eyebrow>
-          <p className="text-sm text-slate-500 mb-3">We couldn't find a team linked to your coach account in this league. Choose your team to see its dashboard.</p>
+          <p className="text-sm mb-3" style={{ color: MUTED }}>We couldn't find a team linked to your coach account in this league. Choose your team to see its dashboard.</p>
           <Select value={overrideTeamId || ""} onValueChange={(v) => { setOverrideTeamId(v); try { if (currentUser?.id && selectedLeagueId) localStorage.setItem(`coachTeam:${currentUser.id}:${selectedLeagueId}`, v); } catch (_e) {} }}>
-            <SelectTrigger className="w-full"><SelectValue placeholder="Choose your team" /></SelectTrigger>
+            <SelectTrigger className="w-full" style={{ backgroundColor: RAISED, border: `1px solid ${BORDER}`, color: IVORY }}>
+              <SelectValue placeholder="Choose your team" />
+            </SelectTrigger>
             <SelectContent>
               {[...teams].sort((a, b) => (a.name || "").localeCompare(b.name || "")).map((t) => (
                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </SlateCard>
       ) : (
         <>
-          {/* Team KPIs (full width) */}
-          {KpiCard}
-
-          {/* Responsive band: phones stack; >=md is two columns
-              (left: record + next game, right: players to watch). */}
-          <div className="md:grid md:grid-cols-2 md:gap-3 md:items-start mb-3">
-            <div className="space-y-3 mb-3 md:mb-0">
-              {RecordCard}
+          <div className="md:grid md:grid-cols-2 md:gap-2.5 md:items-start mb-2.5">
+            <div>
               {NextGameCard}
+              <div className="flex gap-2.5">
+                <div className="flex-1">{LastResultCard}</div>
+                <div className="flex-1">{RecordCard}</div>
+              </div>
             </div>
-            <div className="md:h-full">
+            <div className="mt-2.5 md:mt-0 md:h-full">
               {WatchCard}
             </div>
           </div>
 
-          {/* Quick links (full width) */}
-          <div className="flex gap-2 mb-3 max-w-md md:max-w-2xl md:mx-auto">
-            {[{ i: "📋", t: "My Roster", p: "CoachRoster" }, { i: "🎯", t: "Coach Insights", p: "CoachInsights" }, { i: "📊", t: "Statistics", p: "Statistics" }, { i: "📅", t: "Schedule", p: "Schedule" }].map((q) => (
-              <button key={q.p} onClick={() => go(q.p)} className="flex-1 bg-white border border-slate-200 rounded-xl py-3 text-center hover:border-orange-300 transition-colors">
-                <div className="text-[17px]">{q.i}</div>
-                <div className="text-[11px] font-bold text-slate-600 mt-1">{q.t}</div>
+          {/* Quick actions */}
+          <div className="flex gap-2 mb-1">
+            {quickActions.map((q) => (
+              <button
+                key={q.p}
+                onClick={() => go(q.p)}
+                className="flex-1 rounded-xl py-2.5 text-center transition-colors"
+                style={{ backgroundColor: CARD, border: `1px solid ${BORDER}` }}
+              >
+                <q.icon className="w-[18px] h-[18px] mx-auto" style={{ color: STEEL }} />
+                <div className="text-[10px] font-semibold mt-1" style={{ color: MUTED }}>{q.t}</div>
               </button>
             ))}
           </div>
