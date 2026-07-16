@@ -116,10 +116,17 @@ function computeStandings(teams, games) {
   return sorted;
 }
 
+// COACH_HOME_CARD_SHELL_V1: content lives inside one rounded container card
+// on the deeper canvas, matching the player profile page framing.
 function Shell({ children }) {
   return (
-    <div className="min-h-screen" style={{ backgroundColor: BG }}>
-      <div className="max-w-md md:max-w-4xl mx-auto px-4 pt-5 pb-2">{children}</div>
+    <div className="min-h-screen px-3 py-4 md:px-6 md:py-6" style={{ backgroundColor: DEEP }}>
+      <div
+        className="max-w-md md:max-w-4xl mx-auto rounded-2xl px-4 pt-5 pb-2 md:px-6"
+        style={{ backgroundColor: BG, border: `1px solid ${BORDER}` }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
