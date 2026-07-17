@@ -198,6 +198,58 @@ export default function LiveBoxScorePage() {
   const homeScore = calcScore(homePlayerStats);
   const awayScore = calcScore(awayPlayerStats);
 
+  // FOULS_TIMEOUTS_V1 — team fouls & timeouts for timed live games only
+  const showFoulsTimeouts = displayGame.game_mode === 'timed';
+  const ftPeriodType = displayGame.period_type || 'quarters';
+  const ftTotalPeriods = displayGame.period_count || (ftPeriodType === 'halves' ? 2 : 4);
+  const ftPeriod = displayGame.clock_period || 1;
+  const ftFoulKey = ftPeriod > ftTotalPeriods
+    ? String(ftPeriod)
+    : (ftPeriodType === 'halves' ? (ftPeriod === 1 ? 'h1' : 'h2') : String(ftPeriod));
+  const ftSegmentKey = ftPeriod > ftTotalPeriods
+    ? 'OVERTIME'
+    : (ftPeriodType === 'halves'
+        ? (ftPeriod === 1 ? 'FIRST_HALF' : 'SECOND_HALF')
+        : (ftPeriod <= 2 ? 'FIRST_HALF' : 'SECOND_HALF'));
+  const ftAllowance = (() => {
+    const configured = displayGame.game_rules?.timeoutsPerSegment;
+    if (Array.isArray(configured)) {
+      const idx = ftPeriod - 1;
+      return (idx >= 0 && idx < configured.length) ? configured[idx] : 1;
+    }
+    if (configured != null) return configured;
+    if (ftSegmentKey === 'OVERTIME') return 1;
+    if (ftSegmentKey === 'FIRST_HALF') return 2;
+    if (ftPeriodType === 'halves') return 2;
+    return 3;
+  })();
+  const ftBonusThreshold = displayGame.game_rules?.teamFoulBonusThreshold || (ftPeriodType === 'halves' ? 7 : 5);
+  const homeFouls = displayGame.home_team_fouls?.[ftFoulKey] || 0;
+  const awayFouls = displayGame.away_team_fouls?.[ftFoulKey] || 0;
+  const homeTimeoutsLeft = Math.max(0, ftAllowance - (displayGame.home_timeouts?.[ftSegmentKey] || 0));
+  const awayTimeoutsLeft = Math.max(0, ftAllowance - (displayGame.away_timeouts?.[ftSegmentKey] || 0));
+
+  const FoulsTimeouts = ({ fouls, timeoutsLeft }) => (
+    <div className="flex flex-col items-center gap-1 mt-1">
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-slate-500">Fouls</span>
+        {fouls >= ftBonusThreshold ? (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">{fouls} · Bonus</span>
+        ) : (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{fouls}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-slate-500">Timeouts</span>
+        <span className="flex gap-1">
+          {Array.from({ length: ftAllowance }).map((_, i) => (
+            <span key={i} className={`w-2 h-2 rounded-full ${i < timeoutsLeft ? 'bg-blue-600' : 'border border-slate-300'}`} />
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+
   const StatTable = ({ team, playerStats }) => {
     const teamPlayers = playerStats
       .map(stat => ({ ...stat, player: players.find(p => p.id === stat.player_id) }))
@@ -363,6 +415,7 @@ export default function LiveBoxScorePage() {
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{homeTeam?.name}</h3>
                   <p className="text-4xl font-bold text-slate-900">{homeScore}</p>
+                  {showFoulsTimeouts && <FoulsTimeouts fouls={homeFouls} timeoutsLeft={homeTimeoutsLeft} />}
                 </div>
               </div>
 
@@ -382,6 +435,7 @@ export default function LiveBoxScorePage() {
                 <div className="text-center">
                   <h3 className="font-bold text-lg text-slate-900">{awayTeam?.name}</h3>
                   <p className="text-4xl font-bold text-slate-900">{awayScore}</p>
+                  {showFoulsTimeouts && <FoulsTimeouts fouls={awayFouls} timeoutsLeft={awayTimeoutsLeft} />}
                 </div>
               </div>
             </div>
