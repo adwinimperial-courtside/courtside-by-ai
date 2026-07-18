@@ -19,7 +19,8 @@ import {
   Link,
   ClipboardList,
   Timer,
-  LayoutDashboard
+  LayoutDashboard,
+  HelpCircle
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — players land on the trophy room
@@ -198,6 +199,15 @@ export default function Landing() {
           <div className="space-y-3">
             {/* WHATS_NEW_V3 */}
             {[
+              {
+                icon: HelpCircle,
+                bg: "bg-orange-100",
+                color: "#F26B1F",
+                title: "In-App Help, Right Where You Need It",
+                badge: "New",
+                date: "Jul 18, 2026",
+                desc: "Tap the orange ? next to any page title for a quick explanation of that page, or open the new Help Center from the menu for a full guide tailored to your role",
+              },
               ...(role === "league_admin" || role === "app_admin" ? [
                 {
                   icon: Link,
@@ -248,15 +258,7 @@ export default function Landing() {
                 desc: "Every player now has their own trophy room — a cinematic gold profile with their stats, badges and awards. Tap any player's name in Stats Leaders, Award Leaders, Statistics or the Schedule to open it",
               },
               ...(role === "league_admin" || role === "app_admin" ? [
-                {
-                  icon: Shirt,
-                  bg: "bg-teal-100",
-                  color: "#0D9488",
-                  title: "Roster Validation",
-                  badge: null,
-                  date: "Jun 19, 2026",
-                  desc: "No more mixed-up stats from two players wearing the same number — duplicate jerseys are blocked before they're saved, and one tap on Check Rosters scans every team in your league",
-                },
+
                 {
                   icon: Camera,
                   bg: "bg-blue-100",
