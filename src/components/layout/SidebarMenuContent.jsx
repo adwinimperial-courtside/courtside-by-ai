@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, UserPlus, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, UserPlus, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home, HelpCircle } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -125,7 +125,8 @@ const opsItems = [
   { title: "User Requests", url: createPageUrl("RequestManagement"), icon: ClipboardList },
   { title: "Onboarding Bookings", url: createPageUrl("OnboardingBookings"), icon: Calendar },
   { title: "Command Center", url: createPageUrl("CommandCenter"), icon: MonitorPlay },
-  { title: "Feedback", url: createPageUrl("Feedback"), icon: MessageSquare }
+  { title: "Feedback", url: createPageUrl("Feedback"), icon: MessageSquare },
+  { title: "Help Center", url: createPageUrl("HelpCenter"), icon: HelpCircle }
 ];
 
 export default function SidebarMenuContent({ currentUser, location, isViewerWithoutAdminAccess }) {
@@ -229,7 +230,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
           { title: "Teams", url: createPageUrl("Teams"), icon: Users },
           { title: "Leagues", url: createPageUrl("Leagues"), icon: Trophy },
           { title: "Coach Insights", url: createPageUrl("CoachInsights"), icon: Target },
-          { title: "Whiteboard", url: createPageUrl("Whiteboard"), icon: Layout }
+          { title: "Whiteboard", url: createPageUrl("Whiteboard"), icon: Layout },
+          { title: "Help Center", url: createPageUrl("HelpCenter"), icon: HelpCircle }
         ];
       }
       const base = (currentUser.user_type === "viewer" || currentUser.user_type === "video_admin")
@@ -246,9 +248,9 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
         : withRole;
       // Add "Request League Access" for all approved non-admin users (not staff roles)
       if (currentUser.user_type && currentUser.user_type !== "app_admin" && currentUser.user_type !== "ops_admin") {
-        return [...withCoach, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }];
+        return [...withCoach, { title: "Request League Access", url: createPageUrl("ApplyForLeague"), icon: PlusCircle }, { title: "Help Center", url: createPageUrl("HelpCenter"), icon: HelpCircle }];
       }
-      return withCoach;
+      return [...withCoach, { title: "Help Center", url: createPageUrl("HelpCenter"), icon: HelpCircle }];
     };
 
   const getVisibleAdminItems = () => {
