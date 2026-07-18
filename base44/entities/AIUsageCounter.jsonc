@@ -17,7 +17,7 @@
     },
     "monthly_limit": {
       "type": "number",
-      "default": 5,
+      "default": 10,
       "description": "Monthly limit for AI briefings"
     }
   },
@@ -27,20 +27,33 @@
   ],
   "rls": {
     "create": {
-      "created_by": "{{user.email}}",
-      "data.league_id": {
-        "$in": "{{user.data.assigned_league_ids}}"
-      },
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "user_type": "app_admin"
-          }
+          "created_by": "{{user.email}}"
         },
         {
-          "user_condition": {
-            "user_type": "league_admin"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "user_type": "app_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "ops_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "league_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "coach"
+              }
+            }
+          ]
         }
       ]
     },
@@ -53,47 +66,58 @@
           "user_condition": {
             "user_type": "app_admin"
           }
-        },
-        {
-          "data.league_id": {
-            "$in": "{{user.data.assigned_league_ids}}"
-          }
         }
       ]
     },
     "update": {
-      "created_by": "{{user.email}}",
-      "data.league_id": {
-        "$in": "{{user.data.assigned_league_ids}}"
-      },
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "user_type": "app_admin"
-          }
+          "created_by": "{{user.email}}"
         },
         {
-          "user_condition": {
-            "user_type": "league_admin"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "user_type": "app_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "ops_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "league_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "coach"
+              }
+            }
+          ]
         }
       ]
     },
     "delete": {
-      "created_by": "{{user.email}}",
-      "data.league_id": {
-        "$in": "{{user.data.assigned_league_ids}}"
-      },
-      "$or": [
+      "$and": [
         {
-          "user_condition": {
-            "user_type": "app_admin"
-          }
+          "created_by": "{{user.email}}"
         },
         {
-          "user_condition": {
-            "user_type": "league_admin"
-          }
+          "$or": [
+            {
+              "user_condition": {
+                "user_type": "app_admin"
+              }
+            },
+            {
+              "user_condition": {
+                "user_type": "league_admin"
+              }
+            }
+          ]
         }
       ]
     }
