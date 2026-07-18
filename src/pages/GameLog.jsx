@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format } from "date-fns";
 import { FileText, User, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import HelpButton from "../components/help/HelpButton";
 
 export default function GameLogPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
@@ -189,6 +190,7 @@ export default function GameLogPage() {
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <FileText className="w-6 h-6 text-orange-500" />
           Game Log
+          <HelpButton pageKey="gamelog" />
         </h1>
         <p className="text-slate-500 text-sm mt-1">Track every action recorded during a game</p>
       </div>

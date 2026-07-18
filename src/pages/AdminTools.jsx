@@ -10,6 +10,7 @@ import ManualGameEntry from "../components/admin/ManualGameEntry";
 import EditGameEntry from "../components/admin/EditGameEntry";
 import DeleteGameEntry from "../components/admin/DeleteGameEntry";
 import { findPlayerOfGame } from "../components/utils/pogCalculator";
+import HelpButton from "../components/help/HelpButton";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -269,6 +270,7 @@ export default function AdminTools() {
             <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
               <Settings className="w-8 h-8 text-orange-600" />
               Admin Tools
+              <HelpButton pageKey="admintools" />
             </h1>
             <p className="text-slate-600 mt-2">Manage and maintain league data</p>
           </div>

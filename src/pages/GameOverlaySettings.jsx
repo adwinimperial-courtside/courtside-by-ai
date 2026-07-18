@@ -6,6 +6,7 @@ import { MonitorPlay, Upload, CheckCircle, Trash2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import HelpButton from "../components/help/HelpButton";
 
 function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload }) {
   return (
@@ -175,7 +176,7 @@ export default function GameOverlaySettingsPage() {
             <MonitorPlay className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Game Overlay</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Game Overlay</h1><HelpButton pageKey="gameoverlay" /></div>
             <p className="text-slate-500 text-sm">Configure your personal OBS live game overlay</p>
           </div>
         </div>

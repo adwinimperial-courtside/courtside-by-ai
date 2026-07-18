@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import HelpButton from "../components/help/HelpButton";
 
 const ROLE_COLORS = {
   player: "bg-blue-100 text-blue-800",
@@ -287,7 +288,7 @@ export default function LeagueUsers() {
             <Users className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">League Users</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">League Users</h1><HelpButton pageKey="leagueusers" /></div>
             <p className="text-slate-500 text-sm">
               {isAppAdmin ? "All leagues" : `${visibleLeagues.length} league${visibleLeagues.length !== 1 ? 's' : ''} you manage`}
             </p>

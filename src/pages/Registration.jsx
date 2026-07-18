@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, Link2, Copy, RefreshCw, Upload, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import HelpButton from "../components/help/HelpButton";
 
 // REGISTRATION_ADMIN_V1 — self-serve registration campaigns for league admins.
 // Backed entirely by the manageRegistrationCampaign backend function; this page
@@ -307,7 +308,7 @@ export default function Registration() {
           <UserPlus className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Registration</h1>
+          <div className="flex items-center gap-2"><h1 className="text-2xl font-bold text-slate-900">Registration</h1><HelpButton pageKey="registration" /></div>
           <p className="text-sm text-slate-500">Create a signup page and invite codes for your league</p>
         </div>
       </div>

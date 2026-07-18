@@ -12,6 +12,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import HelpButton from "../components/help/HelpButton";
 
 const FIELD_LABELS = {
   mvp_pts_weight: "MVP — Points weight",
@@ -295,7 +296,7 @@ export default function LeagueAwardSettings() {
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Award Settings</h1>
+              <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Award Settings</h1><HelpButton pageKey="awardsettings" /></div>
               <p className="text-slate-500 text-sm mt-0.5">Adjust how awards are calculated for the selected league. These settings only affect this league.</p>
             </div>
           </div>

@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { ClipboardList, Key } from "lucide-react";
 import UserApplicationsReview from "../components/admin/UserApplicationsReview";
 import ApprovalLogView from "../components/admin/ApprovalLogView";
+import HelpButton from "../components/help/HelpButton";
 
 export default function RequestManagement() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -39,7 +40,7 @@ export default function RequestManagement() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <ClipboardList className="w-8 h-8 text-orange-600" />
-            <h1 className="text-3xl font-bold text-slate-900">New User Applications</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">New User Applications</h1><HelpButton pageKey="userrequests" /></div>
           </div>
           <p className="text-slate-600">Review and manage new user role applications</p>
         </div>

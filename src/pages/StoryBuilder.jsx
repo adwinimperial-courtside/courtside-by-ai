@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper } from "lucide-react";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { calcPoints, groupStatsByGameAndPlayer } from "@/components/stats/statEngine";
+import HelpButton from "../components/help/HelpButton";
 
 // STORY_ENGINE_V1 — Story Builder wired to the stat engine (single source of
 // truth: duplicate rows merged per player, points via calcPoints) + clutch
@@ -575,6 +576,7 @@ MANDATORY RULES:
             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
               <Newspaper className="w-6 h-6 text-orange-500" />
               Story Builder
+              <HelpButton pageKey="storybuilder" />
             </h1>
             <p className="text-slate-500 text-sm mt-1">Generate a Facebook-ready post-game story powered by AI.</p>
           </div>
