@@ -14,6 +14,7 @@ import LeagueLeaders from "../components/stats/LeagueLeaders";
 import MobileTeamStats from "../components/stats/mobile/MobileTeamStats";
 import MobilePlayerStats from "../components/stats/mobile/MobilePlayerStats";
 import MobileLeagueLeaders from "../components/stats/mobile/MobileLeagueLeaders";
+import HelpButton from "../components/help/HelpButton";
 
 
 export default function StatisticsPage() {
@@ -100,7 +101,7 @@ export default function StatisticsPage() {
             <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
               <BarChart3 className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Statistics & Analytics</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl md:text-4xl font-bold text-slate-900">Statistics & Analytics</h1><HelpButton pageKey="statistics" /></div>
           </div>
           <p className="text-slate-600 ml-15">Comprehensive league, team, and player statistics</p>
         </div>

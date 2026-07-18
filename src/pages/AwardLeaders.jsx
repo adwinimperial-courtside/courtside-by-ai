@@ -7,6 +7,7 @@ import { Trophy, Filter } from "lucide-react";
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 
 import AwardLeadersComponent from "../components/stats/AwardLeaders";
+import HelpButton from "../components/help/HelpButton";
 
 export default function AwardLeadersPage() {
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -65,7 +66,7 @@ export default function AwardLeadersPage() {
             <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl flex items-center justify-center shadow-lg">
               <Trophy className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Award Leaders</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl md:text-4xl font-bold text-slate-900">Award Leaders</h1><HelpButton pageKey="awardleaders" /></div>
           </div>
           <p className="text-slate-600 ml-15">MVP candidates, Mythical 5, and Defensive Player of the Year</p>
         </div>

@@ -11,6 +11,7 @@ import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 // data via the shared cap-agnostic league stats hook.
 import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
+import HelpButton from "../components/help/HelpButton";
 
 // Leagues where turnovers are not tracked / should be excluded
 const LEAGUES_NO_TURNOVERS = ['698c39d164c376418918321d', '698b4d0c05fbeef938b93720'];
@@ -485,7 +486,7 @@ export default function CoachInsights() {
             <Target className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Coach Insights</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Coach Insights</h1><HelpButton pageKey="coachinsights" /></div>
             <p className="text-slate-600">Tactical game preparation and team analysis</p>
           </div>
         </div>

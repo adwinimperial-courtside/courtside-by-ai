@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { MessageSquare, Bug, Lightbulb, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import HelpButton from "../components/help/HelpButton";
 
 const TABS = ["all", "new", "reviewed", "dismissed"];
 
@@ -56,7 +57,7 @@ export default function FeedbackPage() {
             <MessageSquare className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Feedback</h1>
+            <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Feedback</h1><HelpButton pageKey="feedback" /></div>
             <p className="text-slate-500 text-sm mt-0.5">Bug reports and suggestions from users.</p>
           </div>
         </div>

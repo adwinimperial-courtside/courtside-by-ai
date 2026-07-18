@@ -6,6 +6,7 @@ import { Trophy, Filter } from "lucide-react";
 
 import TeamStandings from "../components/stats/TeamStandings";
 import BracketStandings from "../components/stats/BracketStandings";
+import HelpButton from "../components/help/HelpButton";
 
 export default function StandingsPage() {
   const [selectedLeague, setSelectedLeague] = useState(null);
@@ -77,7 +78,7 @@ export default function StandingsPage() {
             <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
               <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900">Team Standings</h1>
+            <div className="flex items-center gap-2"><h1 className="text-xl sm:text-3xl md:text-4xl font-bold text-slate-900">Team Standings</h1><HelpButton pageKey="standings" /></div>
           </div>
           <p className="text-slate-600 text-xs sm:text-sm pl-1">Team rankings and records</p>
         </div>

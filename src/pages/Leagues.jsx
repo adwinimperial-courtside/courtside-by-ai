@@ -11,6 +11,7 @@ import LeagueCard from "../components/leagues/LeagueCard";
 import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 import EditLeagueDialog from "../components/leagues/EditLeagueDialog";
 import DeleteLeagueDialog from "../components/leagues/DeleteLeagueDialog";
+import HelpButton from "../components/help/HelpButton";
 
 export default function LeaguesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -141,7 +142,7 @@ export default function LeaguesPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Leagues</h1>
+              <div className="flex items-center gap-2"><h1 className="text-3xl md:text-4xl font-bold text-slate-900">Leagues</h1><HelpButton pageKey="leagues" /></div>
             </div>
             <p className="text-slate-600 ml-15">Manage your basketball leagues and competitions</p>
           </div>

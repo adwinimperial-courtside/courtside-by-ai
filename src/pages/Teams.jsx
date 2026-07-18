@@ -20,6 +20,7 @@ import EditTeamDialog from "../components/teams/EditTeamDialog";
 import TeamDetailView from "../components/teams/TeamDetailView";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import RosterDeadlinePanel from "../components/teams/RosterDeadlinePanel";
+import HelpButton from "../components/help/HelpButton";
 
 export default function TeamsPage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -293,7 +294,7 @@ export default function TeamsPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Teams</h1>
+              <div className="flex items-center gap-2"><h1 className="text-3xl md:text-4xl font-bold text-slate-900">Teams</h1><HelpButton pageKey="teams" /></div>
             </div>
             <p className="text-slate-600 ml-15">View and manage your team rosters</p>
           </div>

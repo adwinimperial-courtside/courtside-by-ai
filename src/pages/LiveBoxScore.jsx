@@ -10,6 +10,7 @@ import { createPageUrl } from "@/utils";
 import TeamLogo from "@/components/teams/TeamLogo";
 import ClockDisplay from "@/components/live/ClockDisplay";
 import LatestActivity from "@/components/live/LatestActivity";
+import HelpButton from "../components/help/HelpButton";
 
 function mergeStatsByPlayer(statRows) {
   const groups = {};
@@ -402,7 +403,7 @@ export default function LiveBoxScorePage() {
           <div className="bg-white rounded-xl shadow-sm p-6 border border-slate-200">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-5 h-5 text-blue-600" />
-              <h1 className="text-2xl font-bold text-slate-900">Live Box Score</h1>
+              <div className="flex items-center gap-2"><h1 className="text-2xl font-bold text-slate-900">Live Box Score</h1><HelpButton pageKey="liveboxscore" /></div>
             </div>
 
             {displayGame.status === 'in_progress' && (

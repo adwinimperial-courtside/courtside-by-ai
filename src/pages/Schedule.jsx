@@ -10,6 +10,7 @@ import { createPageUrl } from "@/utils";
 import CreateGameDialog from "../components/schedule/CreateGameDialog";
 import GameCard from "../components/schedule/GameCard";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import HelpButton from "../components/help/HelpButton";
 
 export default function SchedulePage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -127,7 +128,7 @@ export default function SchedulePage() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
                 <Calendar className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold text-slate-900">Schedule</h1>
+              <div className="flex items-center gap-2"><h1 className="text-3xl md:text-4xl font-bold text-slate-900">Schedule</h1><HelpButton pageKey="schedule" /></div>
             </div>
             <p className="text-slate-600 ml-15">Manage game schedules and matchups</p>
           </div>
