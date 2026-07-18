@@ -6,6 +6,7 @@ import { Loader2, Plus, Trash2, Lock, ChevronRight, AlertTriangle, Flag, CheckCi
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import HelpButton from "../components/help/HelpButton";
 
 // COACH_ROSTER_V1 — mobile-first roster editor for coaches. Coaches can add,
 // edit, and remove players on their own team while the editing window is open.
@@ -279,8 +280,11 @@ export default function CoachRoster() {
             <div className="text-[17px] font-bold text-white leading-tight truncate">
               {currentTeam?.name || "My roster"}
             </div>
-            <div className="text-[12px] text-slate-400 mt-0.5">
-              My roster{filledCount ? ` · ${filledCount} player${filledCount !== 1 ? "s" : ""}` : ""}
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="text-[12px] text-slate-400">
+                My roster{filledCount ? ` · ${filledCount} player${filledCount !== 1 ? "s" : ""}` : ""}
+              </div>
+              <HelpButton pageKey="coachroster" />
             </div>
           </div>
           {windowOpen ? (
