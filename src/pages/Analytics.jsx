@@ -110,6 +110,12 @@ export default function Analytics() {
     enabled: isAdmin,
   });
 
+  const { data: leagueActData, isLoading: loadingLeagueAct } = useQuery({
+    queryKey: ["analytics_league_activity"],
+    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "league_activity" }).then(r => r.data),
+    enabled: isAdmin,
+  });
+
   const { data: searchData, isLoading: loadingSearch } = useQuery({
     queryKey: ["analytics_search_users", userSearch],
     queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "search_users", query: userSearch }).then(r => r.data),
@@ -138,6 +144,7 @@ export default function Analytics() {
   const dailyRows = dailyData?.rows || [];
   const weeklyUnique = dailyData?.weekly_unique ?? null;
   const leaders = activeData?.leaders || [];
+  const leagueRows = leagueActData?.rows || [];
   const searchUsers = searchData?.users || [];
   const historyEvents = historyData?.events || [];
 
@@ -317,6 +324,44 @@ export default function Analytics() {
           </Card>
 
         </div>
+
+        {/* LEAGUE_ACTIVITY_V1: active users per league */}
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/60 pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <BarChart3 className="w-5 h-5 text-orange-500" />
+              Active Users by League — Last 30 Days
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            {loadingLeagueAct ? (
+              <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
+            ) : leagueRows.length === 0 ? (
+              <div className="py-8 text-center text-slate-400 text-sm">No league activity recorded yet</div>
+            ) : (
+              <div className="space-y-3">
+                {leagueRows.map((lg) => {
+                  const max = leagueRows[0]?.users || 1;
+                  const pct = lg.users > 0 ? Math.max((lg.users / max) * 100, 4) : 0;
+                  return (
+                    <div key={lg.league_id}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="font-medium text-slate-900 truncate pr-3">{lg.league_name}</span>
+                        <span className="text-slate-500 flex-shrink-0">
+                          {lg.users} user{lg.users !== 1 ? "s" : ""} · {lg.sessions} session{lg.sessions !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 rounded-full" style={{ width: `${pct}%`, backgroundColor: "#F26B1F" }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="text-xs text-slate-400 pt-1">Users assigned to several leagues count in each league.</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* User drilldown */}
         <Card className="border-slate-200 shadow-sm">

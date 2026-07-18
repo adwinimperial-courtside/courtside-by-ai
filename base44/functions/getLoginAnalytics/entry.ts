@@ -42,16 +42,46 @@ Deno.serve(async (req) => {
       return all;
     };
 
+    // ROLE_LOOKUP_V1: historical login events were stamped user_type 'unknown'
+    // due to a wrong field path in recordLoginEvent. Resolve roles from current
+    // User records at read time so old events display correctly too.
+    const fetchAllUsers = async () => {
+      const PAGE = 500;
+      let skip = 0;
+      const all = [];
+      while (true) {
+        const page = await base44.asServiceRole.entities.User.list('-created_date', PAGE, skip);
+        if (!page || page.length === 0) break;
+        all.push(...page);
+        skip += page.length;
+        if (page.length < PAGE) break;
+      }
+      return all;
+    };
+    const buildRoleMap = async () => {
+      const users = await fetchAllUsers();
+      const map = {};
+      for (const u of users) {
+        if (u.email) map[u.email.toLowerCase()] = u.user_type || 'unknown';
+      }
+      return map;
+    };
+    const resolveType = (map, email, stamped) => {
+      if (stamped && stamped !== 'unknown') return stamped;
+      return map[(email || '').toLowerCase()] || 'unknown';
+    };
+
     if (action === 'today') {
       const events = (await fetchEventsSince(todayStart.toISOString()))
         .filter(e => e.logged_at < todayEnd.toISOString());
 
+      const roleMap = await buildRoleMap();
       const logins = events
         .map(e => ({
           time: e.logged_at,
           full_name: e.full_name,
           email: e.user_email,
-          user_type: e.user_type,
+          user_type: resolveType(roleMap, e.user_email, e.user_type),
         }))
         .sort((a, b) => new Date(b.time) - new Date(a.time));
 
@@ -116,9 +146,11 @@ Deno.serve(async (req) => {
         }
       }
 
+      const roleMap = await buildRoleMap();
       const leaders = Object.values(byUser)
         .sort((a, b) => b.sessions - a.sessions)
-        .slice(0, 10);
+        .slice(0, 10)
+        .map(l => ({ ...l, user_type: resolveType(roleMap, l.email, l.user_type) }));
 
       return Response.json({ leaders });
     }
@@ -132,14 +164,56 @@ Deno.serve(async (req) => {
         30
       );
 
+      const roleMap = await buildRoleMap();
       return Response.json({
         events: events.map(e => ({
           time: e.logged_at,
           full_name: e.full_name,
           email: e.user_email,
-          user_type: e.user_type,
+          user_type: resolveType(roleMap, e.user_email, e.user_type),
         }))
       });
+    }
+
+    // LEAGUE_ACTIVITY_V1: unique active users and sessions per league (last 30 days),
+    // joined via User.assigned_league_ids. Users in several leagues count in each.
+    if (action === 'league_activity') {
+      const events = await fetchEventsSince(thirtyDaysAgo.toISOString());
+
+      const sessionsByEmail = {};
+      for (const e of events) {
+        const em = (e.user_email || '').toLowerCase();
+        if (!em) continue;
+        sessionsByEmail[em] = (sessionsByEmail[em] || 0) + 1;
+      }
+
+      const allUsers = await fetchAllUsers();
+      const userLeagues = {};
+      for (const u of allUsers) {
+        if (u.email && Array.isArray(u.assigned_league_ids)) {
+          userLeagues[u.email.toLowerCase()] = u.assigned_league_ids;
+        }
+      }
+
+      const leagues = await base44.asServiceRole.entities.League.list('-created_date', 500);
+      const byLeague = {};
+      for (const lg of leagues) {
+        byLeague[lg.id] = { league_id: lg.id, league_name: lg.name || 'Unnamed league', users: 0, sessions: 0 };
+      }
+
+      for (const [em, sessions] of Object.entries(sessionsByEmail)) {
+        const ids = userLeagues[em] || [];
+        for (const id of ids) {
+          if (!byLeague[id]) continue;
+          byLeague[id].users += 1;
+          byLeague[id].sessions += sessions;
+        }
+      }
+
+      const rows = Object.values(byLeague)
+        .sort((a, b) => b.users - a.users || b.sessions - a.sessions);
+
+      return Response.json({ rows });
     }
 
     if (action === 'search_users') {

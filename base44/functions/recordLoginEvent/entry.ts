@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       user_email: user.email,
       full_name: user.full_name,
-      user_type: user.data?.user_type || 'unknown',
+      user_type: user.user_type || user.data?.user_type || 'unknown',
       logged_at: new Date().toISOString(),
     });
 
