@@ -165,18 +165,22 @@ Keep output:
 
       await base44.entities.TacticalBriefing.create(briefingData);
 
-      // Update or create usage counter (per user per month)
-      if (usageCounter) {
-        await base44.entities.AIUsageCounter.update(usageCounter.id, {
-          briefings_generated: briefingsUsed + 1
-        });
-      } else {
-        await base44.entities.AIUsageCounter.create({
-          league_id: selectedLeague,
-          month_year: currentMonthYear,
-          briefings_generated: 1,
-          monthly_limit: 10
-        });
+      // BRIEFING_COUNTER_FIX_V1: counter failure must not fail a successful briefing
+      try {
+        if (usageCounter) {
+          await base44.entities.AIUsageCounter.update(usageCounter.id, {
+            briefings_generated: briefingsUsed + 1
+          });
+        } else {
+          await base44.entities.AIUsageCounter.create({
+            league_id: selectedLeague,
+            month_year: currentMonthYear,
+            briefings_generated: 1,
+            monthly_limit: 10
+          });
+        }
+      } catch (counterError) {
+        console.warn('BRIEFING_COUNTER_FIX_V1: usage counter write failed', counterError);
       }
 
       return briefingData;
@@ -189,7 +193,7 @@ Keep output:
     },
     onError: (error) => {
       console.error('Error generating briefing:', error);
-      alert('Failed to generate briefing. Please try again.');
+      alert('Failed to generate briefing: ' + (error?.message || 'Unknown error') + '. Please try again.');
       setIsGenerating(false);
       setShowConfirmDialog(false);
     }
