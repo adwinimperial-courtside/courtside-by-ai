@@ -180,7 +180,7 @@ export default function Landing() {
             {[
               { number: "900+", label: "Completed games" },
               { number: "30+", label: "Leagues" },
-              { number: "350+", label: "Users" },
+              { number: "360+", label: "Users" },
               { number: "200+", label: "Teams" },
             ].map((stat, idx) => (
               <div key={idx} className={`flex-1 ${idx > 0 ? "sm:border-l sm:border-slate-200" : ""}`}>
