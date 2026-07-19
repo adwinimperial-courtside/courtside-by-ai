@@ -231,7 +231,7 @@ export default function LeaguesPage() {
                   canManageSeason={canManageSeason}
                   onEdit={setEditingLeague}
                   onDelete={setDeletingLeague}
-                  onNewSeason={isAppAdmin ? setNewSeasonGroup : null}
+                  onNewSeason={isAppAdmin || isLeagueAdmin ? setNewSeasonGroup : null}
                 />
               ))}
               {standaloneLeagues.map((league) => {

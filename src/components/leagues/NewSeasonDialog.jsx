@@ -30,6 +30,12 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
   const [teamSelections, setTeamSelections] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
 
+  const { data: currentUser } = useQuery({
+    queryKey: ['user'],
+    queryFn: () => base44.auth.me(),
+    initialData: null,
+  });
+
   useEffect(() => {
     if (open) {
       setSeasonName("");
@@ -124,19 +130,30 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         }
       }
 
-      const groupLeagueIds = groupSeasons.map(l => l.id);
-      const allUsers = await base44.entities.User.list();
-      const groupAdmins = allUsers.filter(u =>
-        u.user_type === 'league_admin' &&
-        (u.assigned_league_ids || []).some(id => groupLeagueIds.includes(id))
-      );
-      for (const admin of groupAdmins) {
-        const existing = admin.assigned_league_ids || [];
-        if (!existing.includes(newLeague.id)) {
-          await base44.entities.User.update(admin.id, {
-            assigned_league_ids: [...existing, newLeague.id],
-          });
+      if (currentUser?.user_type === 'league_admin') {
+        const mine = currentUser.assigned_league_ids || [];
+        if (!mine.includes(newLeague.id)) {
+          await base44.auth.updateMe({ assigned_league_ids: [...mine, newLeague.id] });
         }
+      }
+      try {
+        const groupLeagueIds = groupSeasons.map(l => l.id);
+        const allUsers = await base44.entities.User.list();
+        const groupAdmins = allUsers.filter(u =>
+          u.user_type === 'league_admin' &&
+          u.id !== currentUser?.id &&
+          (u.assigned_league_ids || []).some(id => groupLeagueIds.includes(id))
+        );
+        for (const admin of groupAdmins) {
+          const existing = admin.assigned_league_ids || [];
+          if (!existing.includes(newLeague.id)) {
+            await base44.entities.User.update(admin.id, {
+              assigned_league_ids: [...existing, newLeague.id],
+            });
+          }
+        }
+      } catch (propagationError) {
+        console.warn('NEW_SEASON_ADMIN_V1: could not update other group admins', propagationError);
       }
 
       return newLeague;
