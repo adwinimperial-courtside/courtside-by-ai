@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { CalendarPlus, ChevronDown, ChevronRight, ChevronUp, Pencil, Star, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -105,15 +105,7 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
               League · {currentSeasons.length} current season{currentSeasons.length === 1 ? "" : "s"}
             </p>
           </div>
-          {onNewSeason && (
-            <button
-              onClick={() => onNewSeason(group)}
-              className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-green-50 border border-green-300 text-green-700 hover:bg-green-100 transition-colors whitespace-nowrap"
-            >
-              <CalendarPlus className="w-3.5 h-3.5" />
-              New season
-            </button>
-          )}
+
         </div>
         <div className="px-2 pb-3">
           {currentSeasons.map((l) => (
@@ -121,6 +113,15 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
           ))}
           {currentSeasons.length === 0 && (
             <p className="text-sm text-slate-400 px-2 py-3 border-t border-slate-100">No current seasons</p>
+          )}
+          {onNewSeason && (
+            <button
+              onClick={() => onNewSeason(group)}
+              className="w-full mt-2 flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 rounded-xl border-2 border-dashed border-orange-400 text-orange-600 hover:bg-orange-50 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              New season
+            </button>
           )}
           {archivedSeasons.length > 0 && (
             <>
