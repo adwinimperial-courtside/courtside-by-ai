@@ -71,7 +71,7 @@ export default function RegistrationGate({ user }) {
     queryKey: ['publicLeagues'],
     queryFn: async () => {
       const res = await base44.functions.invoke('getPublicLeagues', {});
-      return res.data.leagues || [];
+      return (res.data.leagues || []).filter(l => !l.is_archived);
     },
   });
 
