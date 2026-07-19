@@ -18,9 +18,11 @@ export const HELP_TOPICS = [
     title: "Leagues",
     category: "main",
     roles: ["player", "coach", "league_admin", "app_admin"],
-    summary: "Browse the leagues you belong to and switch between them.",
+    summary: "Browse your leagues. Leagues with several seasons show as one card with each season listed inside.",
     tips: [
-      "Tap a league to make it your active league — most pages show data for the active league.",
+      "Tap a season row or a league card to open it — most pages show data for the league you opened.",
+      "Past seasons sit under Archived seasons at the bottom of a league card — tap to expand and view their stats.",
+      "The star sets your default league; the green New season button (admins) starts the next season.",
       "If a league you expect is missing, ask your league admin to add you.",
     ],
   },

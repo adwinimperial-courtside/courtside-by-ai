@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 
 import LeagueCard from "../components/leagues/LeagueCard";
+import GroupCard from "../components/leagues/GroupCard";
 import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 import EditLeagueDialog from "../components/leagues/EditLeagueDialog";
 import DeleteLeagueDialog from "../components/leagues/DeleteLeagueDialog";
@@ -130,9 +131,36 @@ export default function LeaguesPage() {
     ? leagues
     : leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id));
 
-  const visibleLeagues = searchQuery.trim()
-    ? assignedLeagues.filter(l => l.name.toLowerCase().includes(searchQuery.toLowerCase()) || (l.season || "").toLowerCase().includes(searchQuery.toLowerCase()))
+  const searchTerm = searchQuery.trim().toLowerCase();
+  const matchingGroupIds = searchTerm
+    ? new Set(leagueGroups.filter(g => (g.name || "").toLowerCase().includes(searchTerm)).map(g => g.id))
+    : null;
+  const visibleLeagues = searchTerm
+    ? assignedLeagues.filter(l =>
+        l.name.toLowerCase().includes(searchTerm) ||
+        (l.season || "").toLowerCase().includes(searchTerm) ||
+        (l.group_id && matchingGroupIds.has(l.group_id))
+      )
     : assignedLeagues;
+
+  // GROUPED_LEAGUES_V1 — partition visible leagues into group cards vs standalone cards
+  const groupsById = {};
+  leagueGroups.forEach(g => { groupsById[g.id] = g; });
+  const seasonsByGroup = {};
+  const standaloneLeagues = [];
+  visibleLeagues.forEach(l => {
+    if (l.group_id && groupsById[l.group_id]) {
+      if (!seasonsByGroup[l.group_id]) seasonsByGroup[l.group_id] = [];
+      seasonsByGroup[l.group_id].push(l);
+    } else {
+      standaloneLeagues.push(l);
+    }
+  });
+  const visibleGroups = Object.keys(seasonsByGroup)
+    .map(id => groupsById[id])
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const canManageSeason = (league) => isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
+  const showSetDefault = isLeagueAdmin || visibleLeagues.length > 1;
 
   React.useEffect(() => {
     if (currentUser && assignedLeagues.length === 1 && !currentUser.default_league_id) {
@@ -191,20 +219,33 @@ export default function LeaguesPage() {
              </p>
            </div>
          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {visibleLeagues.map((league) => {
-                const canManageLeague = isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
+              {visibleGroups.map((group) => (
+                <GroupCard
+                  key={group.id}
+                  group={group}
+                  seasons={seasonsByGroup[group.id]}
+                  userType={currentUser?.user_type}
+                  defaultLeagueId={currentUser?.default_league_id}
+                  onSetDefault={showSetDefault ? setDefaultLeagueMutation.mutate : null}
+                  canManageSeason={canManageSeason}
+                  onEdit={setEditingLeague}
+                  onDelete={setDeletingLeague}
+                  onNewSeason={isAppAdmin ? setNewSeasonGroup : null}
+                />
+              ))}
+              {standaloneLeagues.map((league) => {
+                const canManageLeague = canManageSeason(league);
                 return (
                   <LeagueCard 
                     key={league.id} 
                     league={league} 
                     userType={currentUser?.user_type}
                     isDefault={currentUser?.default_league_id === league.id}
-                    onSetDefault={isLeagueAdmin || visibleLeagues.length > 1 ? setDefaultLeagueMutation.mutate : null}
+                    onSetDefault={showSetDefault ? setDefaultLeagueMutation.mutate : null}
                     multipleLeagues={visibleLeagues.length > 1}
                     onEdit={canManageLeague ? setEditingLeague : null}
                     onDelete={canManageLeague ? setDeletingLeague : null}
-                    onNewSeason={isAppAdmin && league.group_id ? (lg) => setNewSeasonGroup(leagueGroups.find(g => g.id === lg.group_id) || null) : null}
                   />
                 );
               })}
@@ -219,6 +260,7 @@ export default function LeaguesPage() {
         />
 
         <EditLeagueDialog
+          showAdminInfo={isAppAdmin}
           open={!!editingLeague}
           onOpenChange={(open) => { if (!open) setEditingLeague(null); }}
           league={editingLeague}
