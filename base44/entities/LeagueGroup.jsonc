@@ -1,39 +1,42 @@
 {
-  "name": "League",
+  "name": "LeagueGroup",
   "type": "object",
   "properties": {
     "name": {
       "type": "string",
-      "description": "Name of the league"
-    },
-    "season": {
-      "type": "string",
-      "description": "Season year (e.g., 2024-2025)"
-    },
-    "group_id": {
-      "type": "string",
-      "description": "Optional LeagueGroup ID this league (season) belongs to. LEAGUE_GROUP_V1"
+      "description": "Name of the league group / franchise, e.g. Fin-Noy"
     },
     "description": {
       "type": "string",
-      "description": "League description"
+      "description": "Optional description of the group"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "Optional logo image URL for the group"
+    },
+    "country": {
+      "type": "string",
+      "description": "Optional country of the group"
     },
     "owner_user_id": {
       "type": "string",
-      "description": "User ID of the league owner"
+      "description": "User ID of the group owner"
     },
     "owner_email": {
       "type": "string",
-      "description": "Email of the league owner"
+      "description": "Email of the group owner"
     },
     "owner_name": {
       "type": "string",
-      "description": "Name of the league owner"
+      "description": "Name of the group owner"
+    },
+    "current_league_id": {
+      "type": "string",
+      "description": "League ID of the group's current/active season. LEAGUE_GROUP_V1"
     }
   },
   "required": [
-    "name",
-    "season"
+    "name"
   ],
   "rls": {
     "delete": {
