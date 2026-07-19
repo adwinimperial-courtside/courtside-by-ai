@@ -207,6 +207,7 @@ export const HELP_TOPICS = [
     tips: [
       "A group can run several current seasons at the same time — use Archive when a season finishes and Make current to reactivate one.",
       "Removing a season from a group never deletes the league or its stats.",
+      "Archived seasons are hidden from new signups and league applications — only current seasons appear in the pickers.",
     ],
   },
   {

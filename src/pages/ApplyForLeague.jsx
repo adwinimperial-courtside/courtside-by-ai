@@ -52,7 +52,7 @@ export default function ApplyForLeague() {
   const assignedLeagueIds = currentUser?.assigned_league_ids || [];
 
   // Leagues this user does NOT already have access to
-  const availableLeagues = leagues.filter(l => !assignedLeagueIds.includes(l.id));
+  const availableLeagues = leagues.filter(l => !assignedLeagueIds.includes(l.id) && !l.is_archived);
 
   const teamsInSelectedLeague = teams.filter(t => t.league_id === selectedLeagueId);
 
