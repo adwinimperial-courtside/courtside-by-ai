@@ -277,6 +277,30 @@ export default function AdminTools() {
         </div>
 
         <div className="grid gap-6">
+          {isAppAdmin && (
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">League Structure</h2>
+              <Card className="border-slate-200 shadow-lg">
+                <CardHeader className="border-b border-slate-200 bg-white">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-orange-600" />
+                    League Groups
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 mt-2">
+                    Group seasons under one league name and mark the current season. App admin only.
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <Button
+                    onClick={() => { window.location.href = "/LeagueGroups"; }}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+                  >
+                    Open League Groups
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
           {/* Game Management Section */}
           <div>
             <h2 className="text-2xl font-bold text-slate-900 mb-4">Game Management</h2>

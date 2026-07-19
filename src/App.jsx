@@ -32,6 +32,7 @@ import JoinFinNoyCoachPage from './pages/JoinFinNoyCoach';
 import JoinLeaguePage from './pages/JoinLeague';
 import CoachRosterPage from './pages/CoachRoster';
 import HelpCenterPage from './pages/HelpCenter';
+import LeagueGroupsPage from './pages/LeagueGroups';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -140,6 +141,7 @@ const AuthenticatedApp = () => {
             <Route path="/OnboardingBookings" element={<LayoutWrapper currentPageName="OnboardingBookings"><OnboardingBookingsPage /></LayoutWrapper>} />
             <Route path="/CoachRoster" element={<LayoutWrapper currentPageName="CoachRoster"><CoachRosterPage /></LayoutWrapper>} />
             <Route path="/HelpCenter" element={<LayoutWrapper currentPageName="HelpCenter"><HelpCenterPage /></LayoutWrapper>} />
+            <Route path="/LeagueGroups" element={<LayoutWrapper currentPageName="LeagueGroups"><LeagueGroupsPage /></LayoutWrapper>} />
             <Route path="*" element={<PageNotFound />} />
           </Routes>
         </LayoutWrapper>
