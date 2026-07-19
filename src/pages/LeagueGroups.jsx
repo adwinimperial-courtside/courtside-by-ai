@@ -50,8 +50,8 @@ export default function LeagueGroups() {
     .filter((l) => !l.group_id)
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
-  const ownerLabel = (group, seasons) => {
-    const current = seasons.find((s) => s.id === group.current_league_id) || seasons[0];
+  const ownerLabel = (seasons) => {
+    const current = seasons.find((s) => !s.is_archived) || seasons[0];
     if (!current) return "No seasons yet";
     return current.owner_name || current.owner_email || current.created_by || "Unknown owner";
   };
@@ -121,9 +121,6 @@ export default function LeagueGroups() {
       for (const id of checkedIds) {
         await base44.entities.League.update(id, { group_id: addTarget.id });
       }
-      if (!addTarget.current_league_id) {
-        await base44.entities.LeagueGroup.update(addTarget.id, { current_league_id: checkedIds[0] });
-      }
       setAddTarget(null);
       setCheckedIds([]);
       refresh();
@@ -135,14 +132,14 @@ export default function LeagueGroups() {
     }
   };
 
-  const makeCurrent = async (group, leagueId) => {
+  const setArchived = async (league, archived) => {
     setBusy(true);
     try {
-      await base44.entities.LeagueGroup.update(group.id, { current_league_id: leagueId });
+      await base44.entities.League.update(league.id, { is_archived: archived });
       refresh();
-      ok("Current season updated.");
+      ok(archived ? "Season archived." : "Season marked as current.");
     } catch (e) {
-      fail("Could not update current season: " + (e?.message || "unknown error"));
+      fail("Could not update season status: " + (e?.message || "unknown error"));
     } finally {
       setBusy(false);
     }
@@ -153,9 +150,6 @@ export default function LeagueGroups() {
     setBusy(true);
     try {
       await base44.entities.League.update(league.id, { group_id: "" });
-      if (group.current_league_id === league.id) {
-        await base44.entities.LeagueGroup.update(group.id, { current_league_id: "" });
-      }
       refresh();
       ok("Season removed from group.");
     } catch (e) {
@@ -167,7 +161,7 @@ export default function LeagueGroups() {
 
   if (currentUser && !isAppAdmin) {
     return (
-      <div className="p-6 max-w-3xl mx-auto" data-marker="LEAGUE_GROUPS_TOOL_V1">
+      <div className="p-6 max-w-3xl mx-auto" data-marker="LEAGUE_GROUPS_TOOL_V2">
         <Card className="border-red-200">
           <CardContent className="pt-6 flex items-center gap-3 text-red-700">
             <ShieldAlert className="w-6 h-6" />
@@ -179,7 +173,7 @@ export default function LeagueGroups() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto" data-marker="LEAGUE_GROUPS_TOOL_V1">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto" data-marker="LEAGUE_GROUPS_TOOL_V2">
       <div className="flex items-center justify-between mb-2">
         <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-3">
           <Layers className="w-8 h-8 text-orange-600" />
@@ -194,7 +188,7 @@ export default function LeagueGroups() {
           New Group
         </Button>
       </div>
-      <p className="text-slate-600 mb-4">Group seasons under one league name and mark the current season.</p>
+      <p className="text-slate-600 mb-4">Group seasons under one league name. A group can run several current seasons at the same time — archive the finished ones.</p>
 
       {banner && (
         <div
@@ -227,7 +221,7 @@ export default function LeagueGroups() {
                     <div>
                       <CardTitle className="text-xl">{group.name}</CardTitle>
                       <p className="text-sm text-slate-600 mt-1">
-                        {ownerLabel(group, seasons)} · {seasons.length} season{seasons.length === 1 ? "" : "s"}
+                        {ownerLabel(seasons)} · {seasons.length} season{seasons.length === 1 ? "" : "s"}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -273,7 +267,7 @@ export default function LeagueGroups() {
                   ) : (
                     <div className="divide-y divide-slate-100">
                       {seasons.map((league) => {
-                        const isCurrent = group.current_league_id === league.id;
+                        const isCurrent = !league.is_archived;
                         return (
                           <div key={league.id} className="flex items-center justify-between gap-2 py-2 flex-wrap">
                             <span className="text-sm text-slate-900">
@@ -281,21 +275,34 @@ export default function LeagueGroups() {
                             </span>
                             <div className="flex items-center gap-2">
                               {isCurrent ? (
-                                <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium">
-                                  Current season
-                                </span>
-                              ) : (
                                 <>
+                                  <span className="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium">
+                                    Current season
+                                  </span>
                                   <Button
                                     variant="outline"
                                     size="sm"
                                     className="h-7 text-xs"
                                     disabled={busy}
-                                    onClick={() => makeCurrent(group, league.id)}
+                                    onClick={() => setArchived(league, true)}
+                                  >
+                                    Archive
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full font-medium">
+                                    Archived
+                                  </span>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs"
+                                    disabled={busy}
+                                    onClick={() => setArchived(league, false)}
                                   >
                                     Make current
                                   </Button>
-                                  <span className="text-xs text-slate-400">Archived</span>
                                 </>
                               )}
                               <Button

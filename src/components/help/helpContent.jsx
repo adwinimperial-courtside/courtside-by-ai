@@ -205,7 +205,7 @@ export const HELP_TOPICS = [
     summary:
       "Group multiple seasons under one league name (for example Fin-Noy) and mark which season is current. Archived seasons stay fully browsable and are never deleted.",
     tips: [
-      "Exactly one season per group is the current season — use Make current to switch.",
+      "A group can run several current seasons at the same time — use Archive when a season finishes and Make current to reactivate one.",
       "Removing a season from a group never deletes the league or its stats.",
     ],
   },

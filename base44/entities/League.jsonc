@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Optional LeagueGroup ID this league (season) belongs to. LEAGUE_GROUP_V1"
     },
+    "is_archived": {
+      "type": "boolean",
+      "description": "True when this season is finished/archived. Absent or false means the season is current. LEAGUE_GROUP_V2"
+    },
     "description": {
       "type": "string",
       "description": "League description"
