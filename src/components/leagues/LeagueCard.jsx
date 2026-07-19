@@ -1,12 +1,12 @@
 import React from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Trophy, Users, Calendar, Star, Pencil, Trash2 } from "lucide-react";
+import { Trophy, Users, Calendar, Star, Pencil, Trash2, CalendarPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
 
-export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues, onEdit, onDelete }) {
+export default function LeagueCard({ league, userType, isDefault, onSetDefault, multipleLeagues, onEdit, onDelete, onNewSeason }) {
   const isViewer = userType === "viewer";
   const canManage = onEdit && onDelete;
 
@@ -39,6 +39,15 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
+                {onNewSeason && (
+                  <button
+                    onClick={(e) => { e.preventDefault(); onNewSeason(league); }}
+                    title="New season"
+                    className="p-1.5 rounded-lg bg-white border border-slate-200 hover:bg-green-50 hover:border-green-300 text-slate-500 hover:text-green-600 transition-colors"
+                  >
+                    <CalendarPlus className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             )}
             <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-xl flex items-center justify-center group-hover:from-indigo-600 group-hover:to-blue-700 transition-all shadow-lg">

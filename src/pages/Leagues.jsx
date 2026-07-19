@@ -11,6 +11,7 @@ import LeagueCard from "../components/leagues/LeagueCard";
 import CreateLeagueDialog from "../components/leagues/CreateLeagueDialog";
 import EditLeagueDialog from "../components/leagues/EditLeagueDialog";
 import DeleteLeagueDialog from "../components/leagues/DeleteLeagueDialog";
+import NewSeasonDialog from "../components/leagues/NewSeasonDialog";
 import HelpButton from "../components/help/HelpButton";
 
 export default function LeaguesPage() {
@@ -19,6 +20,7 @@ export default function LeaguesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingLeague, setEditingLeague] = useState(null);
   const [deletingLeague, setDeletingLeague] = useState(null);
+  const [newSeasonGroup, setNewSeasonGroup] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -37,6 +39,11 @@ export default function LeaguesPage() {
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list('-created_date', 200),
     initialData: [],
+  });
+
+  const { data: leagueGroups = [] } = useQuery({
+    queryKey: ['leagueGroups'],
+    queryFn: () => base44.entities.LeagueGroup.list(),
   });
 
   const createLeagueMutation = useMutation({
@@ -197,6 +204,7 @@ export default function LeaguesPage() {
                     multipleLeagues={visibleLeagues.length > 1}
                     onEdit={canManageLeague ? setEditingLeague : null}
                     onDelete={canManageLeague ? setDeletingLeague : null}
+                    onNewSeason={isAppAdmin && league.group_id ? (lg) => setNewSeasonGroup(leagueGroups.find(g => g.id === lg.group_id) || null) : null}
                   />
                 );
               })}
@@ -216,6 +224,13 @@ export default function LeaguesPage() {
           league={editingLeague}
           onSubmit={(data) => editLeagueMutation.mutate({ id: editingLeague.id, data })}
           isLoading={editLeagueMutation.isPending}
+        />
+
+        <NewSeasonDialog
+          open={!!newSeasonGroup}
+          onOpenChange={(open) => { if (!open) setNewSeasonGroup(null); }}
+          group={newSeasonGroup}
+          groupSeasons={newSeasonGroup ? leagues.filter(l => l.group_id === newSeasonGroup.id && !l.is_archived) : []}
         />
 
         <DeleteLeagueDialog
