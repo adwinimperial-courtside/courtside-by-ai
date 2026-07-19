@@ -525,6 +525,7 @@ function DormantLeaguesTab({ currentUser }) {
     const now = Date.now();
     const rows = [];
     for (const league of leagues) {
+      if (league.is_archived) continue; // ARCHIVED_EXEMPT_V1 — archived seasons are never dormant
       const teamCount = teamCountByLeague[league.id] || 0;
       if (teamCount > 0) continue;
       const lastActivityStr = league.updated_date || league.created_date;

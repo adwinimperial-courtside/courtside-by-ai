@@ -92,12 +92,12 @@ export default function CommandCenter() {
     const gamesLast7 = lGames.filter((g) => g.created_date && new Date(g.created_date) >= weekAgo).length;
     const dates = lGames.map((g) => (g.game_date ? new Date(g.game_date).getTime() : 0)).filter(Boolean);
     const lastGame = dates.length ? new Date(Math.max(...dates)) : null;
-    return { id: L.id, name: L.name, gameCount: lGames.length, teamCount: tCount, gamesLast7, lastGame };
+    return { id: L.id, name: L.name, gameCount: lGames.length, teamCount: tCount, gamesLast7, lastGame, isArchived: !!L.is_archived };
   });
   const rising = leagueAgg.filter((a) => a.gamesLast7 > 0).sort((a, b) => b.gamesLast7 - a.gamesLast7).slice(0, 3);
   const power = [...leagueAgg].sort((a, b) => b.gameCount - a.gameCount).slice(0, 3);
   const stalled = leagueAgg
-    .filter((a) => a.gameCount === 0 || a.teamCount === 0 || (a.lastGame && now - a.lastGame > 14 * DAY))
+    .filter((a) => !a.isArchived && (a.gameCount === 0 || a.teamCount === 0 || (a.lastGame && now - a.lastGame > 14 * DAY)))
     .sort((a, b) => (a.lastGame ? a.lastGame.getTime() : 0) - (b.lastGame ? b.lastGame.getTime() : 0))
     .slice(0, 4);
   const recentSignups = applications.filter((a) => a.created_date && new Date(a.created_date) >= new Date(now.getTime() - 2 * DAY)).length;
