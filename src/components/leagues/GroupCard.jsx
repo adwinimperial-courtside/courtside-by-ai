@@ -120,7 +120,7 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
               className="w-full mt-2 flex items-center justify-center gap-1.5 text-sm font-semibold py-2.5 rounded-xl border-2 border-dashed border-orange-400 text-orange-600 hover:bg-orange-50 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              New season
+              Create season
             </button>
           )}
           {archivedSeasons.length > 0 && (

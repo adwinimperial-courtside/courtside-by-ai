@@ -48,26 +48,39 @@ export default function LeaguesPage() {
   });
 
   const createLeagueMutation = useMutation({
-    mutationFn: async (leagueData) => {
+    mutationFn: async ({ leagueName, description, seasonName, seasonYear }) => {
       const ownerInfo = currentUser ? {
         owner_user_id: currentUser.id,
         owner_email: currentUser.email,
         owner_name: currentUser.full_name,
       } : {};
-      const newLeague = await base44.entities.League.create({ ...leagueData, ...ownerInfo });
-      
-      // If user is league_admin, add the new league to their assigned leagues
+
+      const newGroup = await base44.entities.LeagueGroup.create({
+        name: leagueName,
+        ...(description ? { description } : {}),
+        ...ownerInfo,
+      });
+
+      const newLeague = await base44.entities.League.create({
+        name: seasonName,
+        season: seasonYear,
+        ...(description ? { description } : {}),
+        group_id: newGroup.id,
+        ...ownerInfo,
+      });
+
       if (currentUser?.user_type === 'league_admin') {
         const currentAssignedLeagues = currentUser.assigned_league_ids || [];
         await base44.auth.updateMe({
           assigned_league_ids: [...currentAssignedLeagues, newLeague.id]
         });
       }
-      
+
       return newLeague;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
+      queryClient.invalidateQueries({ queryKey: ['leagueGroups'] });
       queryClient.invalidateQueries({ queryKey: ['user'] });
       setShowCreateDialog(false);
     },

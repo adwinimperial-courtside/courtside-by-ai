@@ -18,12 +18,12 @@ export const HELP_TOPICS = [
     title: "Leagues",
     category: "main",
     roles: ["player", "coach", "league_admin", "app_admin"],
-    summary: "Browse your leagues. Leagues with several seasons show as one card with each season listed inside.",
+    summary: "A league is the club or competition itself; each season lives inside it. League cards list their seasons — tap a season to open it.",
     tips: [
-      "Tap a season row or a league card to open it — most pages show data for the league you opened.",
+      "Create League starts a new league together with its first season.",
+      "The Create season button on a league card (admins) adds the next season — optionally copying teams from a previous one.",
       "Past seasons sit under Archived seasons at the bottom of a league card — tap to expand and view their stats.",
-      "The star sets your default league; the green New season button (admins) starts the next season.",
-      "If a league you expect is missing, ask your league admin to add you.",
+      "The star sets your default season; if a league you expect is missing, ask your league admin to add you.",
     ],
   },
   {
@@ -210,7 +210,7 @@ export const HELP_TOPICS = [
       "A group can run several current seasons at the same time — use Archive when a season finishes and Make current to reactivate one.",
       "Removing a season from a group never deletes the league or its stats.",
       "Archived seasons are hidden from new signups and league applications — only current seasons appear in the pickers.",
-      "Use the New season button on a grouped league card (Leagues page) to create the next season — optionally copying teams from a previous season, with or without rosters.",
+      "Use the Create season button on a league card (Leagues page) to create the next season — optionally copying teams from a previous season, with or without rosters.",
     ],
   },
   {
