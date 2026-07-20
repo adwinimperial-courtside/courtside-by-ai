@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
           const d = decisionFor(app, lid);
           if (d.decision === 'pending') anyPending = true;
           let team = null;
-          if (role === 'player') {
+          if (role === 'player' || role === 'coach') {
             let tid = null;
             if (Array.isArray(app.league_team_pairs)) { const p = app.league_team_pairs.find(pp => pp && pp.league_id === lid); if (p) tid = p.team_id; }
             if (!tid && app.league_id === lid) tid = app.team_id;
@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
         for (const lid of targets) {
           const d = decisionFor(app, lid);
           let team = null;
-          if (role === 'player') {
+          if (role === 'player' || role === 'coach') {
             let tid = null;
             if (Array.isArray(app.league_team_pairs)) { const p = app.league_team_pairs.find(pp => pp && pp.league_id === lid); if (p) tid = p.team_id; }
             if (!tid && app.league_id === lid) tid = app.team_id;

@@ -125,6 +125,7 @@ export default function UserApplicationsReview() {
               <div key={l.league_id} className="flex items-center justify-between py-2.5 border-b border-slate-100 last:border-b-0">
                 <div className="text-sm">
                   <span className="font-semibold text-slate-900">{l.league_name}</span>
+                  {l.team && l.team.team_name && <span className="text-slate-500"> · Team: <span className="font-medium text-slate-700">{l.team.team_name}</span></span>}
                   {!isAppAdmin && <span className="ml-2 text-[11px] text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">your league</span>}
                   <span className="ml-2 text-xs text-slate-400">{ROLE_LABELS[role]}</span>
                 </div>
