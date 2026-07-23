@@ -41,6 +41,14 @@ async function grantLeague(base44, application, applicantUser, leagueId, role) {
   if (existing.user_type !== 'app_admin') {
     userUpdate.user_type = highestRole(existing.user_type || 'viewer', role);
   }
+  // ROLE_MAP_PERSIST_V1: record the per-league role for coaches so the app can tell
+  // "this user coaches in league X" even when their global type is a higher role
+  // (e.g. a league admin who also coaches a team). Entries for other leagues are
+  // never touched.
+  if (role === 'coach') {
+    const existingRoleMap = (existing.league_role_map && typeof existing.league_role_map === 'object') ? existing.league_role_map : {};
+    userUpdate.league_role_map = { ...existingRoleMap, [leagueId]: 'coach' };
+  }
   // COACH_TEAM_PERSIST_V1 — persist the picked team for coaches too (mirrors the player path).
   // A coach's application carries league_team_pairs / team_id in the same shape as a player's,
   // so resolving and saving the team here lets the coach home auto-detect it (no team picker).
