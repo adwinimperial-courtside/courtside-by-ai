@@ -221,9 +221,17 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       // Request League Access is intentionally NOT appended here — it renders
       // at the bottom of the sidebar for league admins (see LEAGUE_ADMIN_REQUEST_BOTTOM_V1).
       if (currentUser.user_type === "league_admin") {
-        // ADMIN_COACH_MENU_V2: league admins who also coach a team somewhere get a
-        // My Roster link right under Home (detected via their per-league role map).
-        const adminCoachItems = Object.values(currentUser.league_role_map || {}).includes("coach")
+        // ADMIN_COACH_MENU_V3: league admins who also coach a team somewhere get a
+        // My Roster link right under Home. Detection uses league_team_pairs (a team
+        // link, written when a coach is assigned a team) because that field reliably
+        // arrives with the logged-in user, unlike league_role_map. The role map check
+        // is kept as a secondary signal. The roster backend independently verifies a
+        // real coach identity on every save, so a stray team link can never grant
+        // editing rights - at worst the link shows a read-only "not linked" page.
+        const adminHasTeamLink = Array.isArray(currentUser.league_team_pairs)
+          && currentUser.league_team_pairs.some(p => p && p.league_id && p.team_id);
+        const adminCoachItems = (adminHasTeamLink
+          || Object.values(currentUser.league_role_map || {}).includes("coach"))
           ? [coachRosterNavItem]
           : [];
         return [
