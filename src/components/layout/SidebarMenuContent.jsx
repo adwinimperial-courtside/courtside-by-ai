@@ -221,8 +221,14 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       // Request League Access is intentionally NOT appended here — it renders
       // at the bottom of the sidebar for league admins (see LEAGUE_ADMIN_REQUEST_BOTTOM_V1).
       if (currentUser.user_type === "league_admin") {
+        // ADMIN_COACH_MENU_V2: league admins who also coach a team somewhere get a
+        // My Roster link right under Home (detected via their per-league role map).
+        const adminCoachItems = Object.values(currentUser.league_role_map || {}).includes("coach")
+          ? [coachRosterNavItem]
+          : [];
         return [
           { title: "Home", url: "/", icon: Home },
+          ...adminCoachItems,
           { title: "Schedule", url: createPageUrl("Schedule"), icon: Calendar },
           { title: "Standings", url: createPageUrl("Standings"), icon: ListOrdered },
           { title: "Statistics", url: createPageUrl("Statistics"), icon: BarChart3 },
