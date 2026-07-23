@@ -123,10 +123,11 @@ export const HELP_TOPICS = [
     key: "coachroster",
     title: "My Roster",
     category: "coach",
-    roles: ["coach"],
+    roles: ["coach", "league_admin", "ops_admin", "app_admin"],
     summary:
       "Build and manage your team's roster while the roster window is open.",
     tips: [
+      "League admins who also coach a team see My Roster in their menu too.",
       "Add players, set jersey numbers, then review everything carefully.",
       "Mark roster done locks the roster permanently — only your league admin can change it after that.",
       "If the window shows as closed, the roster deadline has passed — contact your league admin.",
