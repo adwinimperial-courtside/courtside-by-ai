@@ -33,9 +33,10 @@ Deno.serve(async (req) => {
     // --- Who is allowed: the coach linked to this team, or the app admin ---
     const isAppAdmin = user.user_type === 'app_admin';
     let isTeamCoach = false;
+    const coachPairs = Array.isArray(user.league_team_pairs) ? user.league_team_pairs : [];
+    const pairMatchesTeam = coachPairs.some(p => p && p.league_id === leagueId && p.team_id === teamId);
     if (user.user_type === 'coach') {
-      const pairs = Array.isArray(user.league_team_pairs) ? user.league_team_pairs : [];
-      if (pairs.some(p => p && p.league_id === leagueId && p.team_id === teamId)) {
+      if (pairMatchesTeam) {
         isTeamCoach = true;
       } else {
         const identities = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
@@ -44,6 +45,19 @@ Deno.serve(async (req) => {
           role: 'coach'
         });
         if (identities.some(i => i.team_id === teamId)) isTeamCoach = true;
+      }
+    } else if (!isAppAdmin) {
+      // ADMIN_COACH_AUTH_V1: a user whose global type is not "coach" (e.g. a league admin
+      // who also coaches a team) may still edit this roster, but ONLY if they hold a
+      // verified coach identity in this exact league AND are linked to this exact team.
+      // Players can never pass this check because their identity role is "player".
+      const identities = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+        user_id: user.id,
+        league_id: leagueId,
+        role: 'coach'
+      });
+      if (identities.length > 0 && (pairMatchesTeam || identities.some(i => i.team_id === teamId))) {
+        isTeamCoach = true;
       }
     }
     if (!isAppAdmin && !isTeamCoach) {
