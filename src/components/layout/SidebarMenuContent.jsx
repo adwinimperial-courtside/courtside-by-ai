@@ -242,8 +242,13 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
       const withRole = (currentUser.user_type === "player" || currentUser.user_type === "coach")
         ? [playerNavItem, ...base]
         : base;
-      // COACH_ROSTER_MENU_V1: coaches also get a direct link to their roster editor
-      const withCoach = currentUser.user_type === "coach"
+      // COACH_ROSTER_MENU_V1: coaches also get a direct link to their roster editor.
+      // ADMIN_COACH_MENU_V1: so do users of any other role (e.g. league admins) who
+      // also coach a team somewhere - detected via a "coach" entry in their per-league
+      // role map (written by the People page and by coach approvals).
+      const coachesSomewhere = currentUser.user_type === "coach"
+        || Object.values(currentUser.league_role_map || {}).includes("coach");
+      const withCoach = coachesSomewhere
         ? [coachRosterNavItem, ...withRole]
         : withRole;
       // Add "Request League Access" for all approved non-admin users (not staff roles)
