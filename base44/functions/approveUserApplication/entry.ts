@@ -413,6 +413,27 @@ Deno.serve(async (req) => {
       await writeLog(base44, application, lid, entry.decision, decider);
     }
 
+    // NAME_FALLBACK_V1 — if the account name is an email/relay prefix, adopt the real name we now know
+    if (applicantUser) {
+      try {
+        const looksReal = (s) => !!(s && String(s).trim().includes(' '));
+        const matchName = Array.isArray(playerMatches)
+          ? ((playerMatches.find(m => m && m.matched_player_name) || {}).matched_player_name || null)
+          : null;
+        const pool = [matchName, application.display_name, application.user_name];
+        const bestName = pool.find(looksReal) || pool.find(c => c && String(c).trim()) || '';
+        const current = (applicantUser.full_name || '').trim();
+        const localpart = ((applicantUser.email || '').split('@')[0] || '').trim();
+        const isRelay = (applicantUser.email || '').toLowerCase().includes('privaterelay.appleid.com');
+        const needsFix = !current || current === localpart || (isRelay && !current.includes(' '));
+        const bn = String(bestName).trim();
+        if (needsFix && bn && bn !== current && bn !== localpart) {
+          await base44.asServiceRole.entities.User.update(application.user_id, { full_name: bn });
+          applicantUser.full_name = bn;
+        }
+      } catch (_e) { /* never block approval on a name fix */ }
+    }
+
     const anyPending = decisions.some(d => d.decision === 'pending');
     const anyApprovedOverall = decisions.some(d => d.decision === 'approved');
     let newStatus = anyPending ? 'Pending' : (anyApprovedOverall ? 'Approved' : 'Rejected');

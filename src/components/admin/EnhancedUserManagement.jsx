@@ -711,9 +711,11 @@ export default function EnhancedUserManagement() {
                 >
                   <button onClick={() => handleUserSelect(user)} className="flex-1 text-left min-w-0">
                     {(() => {
-                      const app = userApplications.find(a => a.user_id === user.id && a.user_name);
-                      const fullNameLooksReal = user.full_name && user.full_name.includes(" ");
-                      const primaryName = fullNameLooksReal ? user.full_name : (app?.user_name || user.full_name || "—");
+                      // NAME_FALLBACK_V1 — prefer any real (spaced) name; relay/email prefixes are last resort
+                      const app = userApplications.find(a => a.user_id === user.id && (a.display_name || a.user_name));
+                      const matchedName = userLeagueIdentities.find(u => u.user_id === user.id && u.matched_player_name)?.matched_player_name || null;
+                      const nameCandidates = [user.full_name, matchedName, app?.display_name, app?.user_name];
+                      const primaryName = nameCandidates.find(c => c && c.includes(" ")) || nameCandidates.find(c => c && c.trim()) || "—";
                       const secondaryName = user.display_name && user.display_name !== primaryName ? user.display_name : null;
                       return (
                         <>

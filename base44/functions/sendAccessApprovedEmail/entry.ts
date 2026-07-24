@@ -765,7 +765,7 @@ Deno.serve(async (req) => {
     }
 
     const role = (application.requested_role || '').toLowerCase();
-    const firstName = application.user_name?.split(' ')[0] || null;
+    const firstName = (application.display_name || application.user_name)?.split(' ')[0] || null; // NAME_FALLBACK_V1
     const htmlBody = buildEmailHtml(firstName, role, application);
 
     await base44.asServiceRole.integrations.Core.SendEmail({
