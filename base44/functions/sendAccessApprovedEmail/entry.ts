@@ -466,14 +466,171 @@ function genericBody(greeting) {
 ${ctaBlock()}`;
 }
 
+function leagueAdminBody(greeting) {
+  return `
+              <p style="margin:0 0 18px 0;font-size:16px;color:${NAVY};font-weight:700;">${greeting}</p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                Your league organizer access has been approved. You can log in any time at <a href="https://www.courtside-by-ai.com" style="color:${ORANGE};font-weight:700;text-decoration:none;">www.courtside-by-ai.com</a>.
+              </p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                You hold the biggest role in Courtside. Everything your players, coaches and fans see &mdash; the standings, the statistics, the award races, the trophies &mdash; grows out of the league you're about to set up.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;">
+                <tr>
+                  <td style="background-color:${NAVY};border-radius:10px;padding:22px 24px;">
+                    <p style="margin:0 0 10px 0;font-size:15px;font-weight:700;color:#ffffff;">Why Courtside exists</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#d7dcea;line-height:1.7;">Grassroots basketball has always lived on paper &mdash; score sheets that get lost, wet or thrown away, and results typed into a spreadsheet at midnight. We built Courtside so none of it is ever on paper again. Every basket, every game, every season is saved in a database instead &mdash; no printing, no binders, and a little less paper in the world.</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#d7dcea;line-height:1.7;">That record is what gives your players memories. Any time they open their profile they can relive the season they're having &mdash; every game, every trophy, every milestone &mdash; something a score sheet in a drawer never gave anyone. And a league people can see is a league people follow: live stats and public standings keep everyone engaged during the week, visibility raises the level of competition, and people show up on game day because something is on the line.</p>
+                    <p style="margin:0;font-size:14px;color:#d7dcea;line-height:1.7;">Best of all, the arguments end. When every point, rebound and foul is on record, awards and bragging rights go to the numbers &mdash; not to whoever talks loudest. No bias, no debates. <span style="color:${ORANGE};font-weight:700;">Numbers Don't Lie.</span></p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 30px 0;font-size:15px;color:#444;line-height:1.7;">
+                The principle behind all of it: <strong style="color:${NAVY};">you track each game live, once, and everything else builds itself.</strong> No spreadsheets, no Sunday-night typing, no chasing results. And there is nothing to install &mdash; Courtside runs in the browser on any phone, tablet, laptop or PC with an internet connection, anywhere on the planet.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <p style="margin:0 0 8px 0;font-size:20px;font-weight:700;color:${NAVY};">Your league in four steps</p>
+                    <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="width:60px;height:3px;background-color:${ORANGE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CARD 1: SET UP -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(1)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">SETUP</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127942; &nbsp;Build your season</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Create your league and its first season on the <strong>Leagues</strong> page, add your teams on the <strong>Teams</strong> page, and set your fixtures on the <strong>Schedule</strong> page. That's the whole skeleton of a season &mdash; three pages.</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">When the season ends, you don't start from scratch: add a new season under the same league and your club's history stays in one place.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CARD 2: REGISTRATION -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(2)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">SIGNUPS</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128279; &nbsp;Fill it with one shareable link</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">On the <strong>Registration</strong> page, create a signup campaign in your league's own identity &mdash; your name, your crest, your colours. Choose who can register: players, coaches (with team codes so each coach lands on the right team), or viewers. Open and close it whenever you want.</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Then copy one link and drop it in your group chat or Facebook page. Everyone who signs up appears in your <strong>User Requests</strong> queue &mdash; approving them is one click, and the moment you approve someone, Courtside sends them their own welcome email for their role. You never write one.</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">Get the details right at this stage &mdash; especially jersey numbers. If a jersey number is wrong on the roster, that player's points land on someone else's line all season.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CARD 3: GAME DAY -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(3)}
+                      <span style="font-size:10px;font-weight:700;color:#a32d2d;letter-spacing:1px;margin-left:8px;vertical-align:middle;">LIVE</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128308; &nbsp;Track once on game day &mdash; everything else is automatic</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">You open the game from the Schedule and track it live as it's played &mdash; from a laptop at the scorer's table or a phone on the bench. And this is where your league comes alive: while you track, everyone else watches. Players, coaches, family and fans follow the live box score from their own devices &mdash; score, team fouls, timeouts, every player's numbers updating in real time &mdash; whether they're in the gym or on the other side of the world.</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">The moment the game ends, the work is done. Standings update. Season statistics update. The MVP and Defensive Player of the Year races recalculate. Players' trophy cabinets and milestones fill in on their own profiles. That is the whole point of Courtside: one person tracks the game, and the entire league's records take care of themselves.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CARD 4: AI -->
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 30px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(4)}
+                      <span style="display:inline-block;background-color:${ORANGE};color:#ffffff;font-size:10px;font-weight:700;letter-spacing:1px;padding:4px 10px;border-radius:12px;margin-left:8px;vertical-align:middle;">POWERED BY AI</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127908; &nbsp;Tell your league's story</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">After any tracked game, open <strong>Story Builder</strong> and Courtside's AI writes a Facebook-ready post-game report from the actual game data &mdash; the run that decided it, the players who stood out, the numbers that mattered. Post it while the result is still fresh. No two stories read the same.</p>
+                    <p style="margin:0 0 12px 0;font-size:14px;color:#444;line-height:1.7;">Streaming your games? <strong>Game Overlay</strong> puts a live scoreboard with your league's logos on top of your broadcast, fed by the same live tracking.</p>
+                    <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background-color:#fff5ed;border-radius:6px;padding:10px 14px;">
+                      <p style="margin:0;font-size:13px;color:#8a3d0b;line-height:1.6;"><strong>You have 10 AI story generations a month</strong>, resetting at the start of each month.</p>
+                    </td></tr></table>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <p style="margin:0 0 8px 0;font-size:20px;font-weight:700;color:${NAVY};">The people in your league</p>
+                    <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="width:60px;height:3px;background-color:${ORANGE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 14px 0;font-size:14px;color:#444;line-height:1.7;">
+                Everyone you approve gets a role, and each role sees a different Courtside. Knowing them helps you sign people up as the right thing:
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 30px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:6px 22px;">
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #eef1f6;">
+                      <tr><td style="padding:14px 0;">
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#127919; &nbsp;Coach</p>
+                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">Runs a team. Manages their roster, follows live stats during games, and gets the full preparation toolkit &mdash; the AI Tactical Briefing, Coach Insights and the Whiteboard.</p>
+                      </td></tr>
+                    </table>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #eef1f6;">
+                      <tr><td style="padding:14px 0;">
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#127936; &nbsp;Player</p>
+                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">Gets a personal profile that fills itself: season averages, game-by-game history, a trophy cabinet, milestones, and a place in the MVP and Defensive Player of the Year races.</p>
+                      </td></tr>
+                    </table>
+
+                    <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #eef1f6;">
+                      <tr><td style="padding:14px 0;">
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#128064; &nbsp;Viewer</p>
+                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">The role most leagues underuse. Viewers follow everything &mdash; schedule, standings, statistics, award leaders &mdash; and watch the live box score while games are on, from anywhere in the world. Sign up family, fans and sponsors, and your league has an audience every game day.</p>
+                      </td></tr>
+                    </table>
+
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                      <tr><td style="padding:14px 0;">
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#127909; &nbsp;Video Admin</p>
+                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">For whoever runs your livestream. Their only tool is the Game Overlay &mdash; the live scoreboard on your broadcast &mdash; so they can't touch anything else.</p>
+                      </td></tr>
+                    </table>
+
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 30px 0;font-size:14px;color:#444;line-height:1.7;">
+                And because organizers usually coach too: every coaching tool is yours as well &mdash; the AI Tactical Briefing, Coach Insights and the tactics Whiteboard. You'll also find <strong>Award Settings</strong> in your admin menu to shape how your league's award races are decided.
+              </p>
+${ctaBlock()}`;
+}
+
 function buildEmailHtml(firstName, role, app) {
   const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
+  if (role === 'league_admin') return shell(leagueAdminBody(greeting));
   if (role === 'coach') return shell(coachBody(greeting));
   if (role === 'player') return shell(playerBody(greeting, app || {}));
   return shell(genericBody(greeting));
 }
 
 function buildSubject(role) {
+  if (role === 'league_admin') return "Your league is ready to run on Courtside \u{1F3C0}";
   if (role === 'coach') return "Your Courtside coach access is ready \u{1F3C0}";
   if (role === 'player') return "You're in \u2014 your Courtside player profile is live \u{1F3C0}";
   return "Welcome to Courtside by AI \u2014 built for everyone in the game \u{1F3C0}";
@@ -516,7 +673,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player') ? role : 'generic' });
+    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player' || role === 'league_admin') ? role : 'generic' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
