@@ -276,6 +276,51 @@ Deno.serve(async (req) => {
     const { applicationId, action, override_league_id } = body;
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
     const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
+    // RELEASE_CLAIM_V1 — app_admin frees a roster slot held by a stale UserLeagueIdentity
+    if (action === 'release_claim') {
+      if (!isAppAdmin) return Response.json({ error: 'Forbidden: only app admins can release a roster link' }, { status: 403 });
+      const releaseLeagueId = body.league_id;
+      const releasePlayerId = body.player_id;
+      if (!releaseLeagueId || !releasePlayerId) return Response.json({ error: 'league_id and player_id are required' }, { status: 400 });
+      let rows = [];
+      try {
+        rows = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+          league_id: releaseLeagueId, matched_player_id: releasePlayerId,
+        });
+      } catch (_e) { rows = []; }
+      let removed = 0;
+      const removedEmails = [];
+      for (const row of (rows || [])) {
+        if (!row || !row.id) continue;
+        let ownerEmail = '';
+        try {
+          const owner = await base44.asServiceRole.entities.User.get(row.user_id);
+          if (owner && owner.email) ownerEmail = owner.email;
+        } catch (_e) {}
+        try {
+          await base44.asServiceRole.entities.UserLeagueIdentity.delete(row.id);
+          removed += 1;
+          if (ownerEmail) removedEmails.push(ownerEmail);
+        } catch (_e) {}
+      }
+      try {
+        const releaseLeagueName = await getLeagueName(base44, releaseLeagueId);
+        await base44.asServiceRole.entities.ApprovalLog.create({
+          application_id: applicationId || '',
+          league_id: releaseLeagueId,
+          league_name: releaseLeagueName,
+          event_type: 'direct_revoke',
+          decision: 'rejected',
+          approved_by_email: (caller && caller.email) || me.email || '',
+          approved_by_name: (caller && (caller.full_name || caller.name)) || me.email || '',
+          approver_type: 'app_admin',
+          decided_at: new Date().toISOString(),
+          notes: 'RELEASE_CLAIM_V1 released roster link for player ' + releasePlayerId + (removedEmails.length ? ' previously held by ' + removedEmails.join(', ') : '') + ' (' + removed + ' identity row(s) removed)',
+        });
+      } catch (_e) {}
+      return Response.json({ success: true, released: removed });
+    }
+
     if (action !== 'approve' && action !== 'reject') return Response.json({ error: 'Invalid action' }, { status: 400 });
 
     const application = await base44.asServiceRole.entities.UserApplication.get(applicationId);

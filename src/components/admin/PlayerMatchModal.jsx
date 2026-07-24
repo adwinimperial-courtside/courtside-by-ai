@@ -4,9 +4,10 @@ import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, User, AlertTriangle } from "lucide-react";
+import { Check, X, User, AlertTriangle, Unlink } from "lucide-react";
 
 // PLAYER_MATCH_MODAL_V2 — known-team roster only, server-side identity write, on-page errors
+// RELEASE_CLAIM_V1 — app_admin can free a roster slot held by a stale UserLeagueIdentity, then retry
 
 const CONFIDENCE_META = {
   strong: { cls: "bg-green-100 text-green-700", label: "Strong match" },
@@ -22,6 +23,14 @@ export default function PlayerMatchModal({ application, leagues, teams, onClose,
   const [banner, setBanner] = useState(null); // { type, text }
   const [isProcessing, setIsProcessing] = useState(false);
   const [initialized, setInitialized] = useState(false);
+  const [releasable, setReleasable] = useState([]); // RELEASE_CLAIM_V1
+
+  // RELEASE_CLAIM_V1 — only app admins may release a roster link
+  const { data: me } = useQuery({
+    queryKey: ['me_for_match_modal', 'RELEASE_CLAIM_V1'],
+    queryFn: () => base44.auth.me(),
+  });
+  const isAppAdmin = !!me && (me.role === 'admin' || me.user_type === 'app_admin');
 
   const pairs = useMemo(() => {
     if (application.league_team_pairs?.length > 0) {
@@ -103,16 +112,51 @@ export default function PlayerMatchModal({ application, leagues, teams, onClose,
           }
           return `${league?.name || c.league_id}: ${c.reason}.`;
         });
+        // RELEASE_CLAIM_V1 — remember which slots could be released
+        const rel = [];
+        conflicts.forEach(c => {
+          if (c.reason !== 'already_claimed') return;
+          const pair = pairs.find(p => p.league_id === c.league_id);
+          const pid = pair ? selections[pair.team_id] : null;
+          if (pid) rel.push({ league_id: c.league_id, player_id: pid, claimed_by: c.claimed_by || '' });
+        });
+        setReleasable(rel);
         setBanner({ type: 'error', text: `Could not approve — ${msgs.join(' ')} Pick a different roster player or decline.` });
         setIsProcessing(false);
         return;
       }
+
+      setReleasable([]);
 
       queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
       queryClient.invalidateQueries({ queryKey: ['review_requests'] });
       onApproved();
     } catch (error) {
       setBanner({ type: 'error', text: "Failed to approve: " + (error?.message || "unknown error") });
+      setIsProcessing(false);
+    }
+  };
+
+  // RELEASE_CLAIM_V1 — delete the stale identity row(s), then retry the approval
+  const handleRelease = async () => {
+    if (releasable.length === 0) return;
+    if (!window.confirm("Release the existing roster link and approve this applicant? The other account will lose its link to this roster player.")) return;
+    setIsProcessing(true);
+    setBanner(null);
+    try {
+      for (const r of releasable) {
+        await base44.functions.invoke('approveUserApplication', {
+          applicationId: application.id,
+          action: 'release_claim',
+          league_id: r.league_id,
+          player_id: r.player_id,
+        });
+      }
+      setReleasable([]);
+      setIsProcessing(false);
+      await handleApprove();
+    } catch (error) {
+      setBanner({ type: 'error', text: "Could not release the existing link: " + (error?.message || "unknown error") });
       setIsProcessing(false);
     }
   };
@@ -150,9 +194,21 @@ export default function PlayerMatchModal({ application, leagues, teams, onClose,
         </div>
 
         {banner && (
-          <div className={`rounded-lg p-3 text-sm flex items-start gap-2 ${banner.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
-            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>{banner.text}</span>
+          <div className={`rounded-lg p-3 text-sm ${banner.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-blue-50 text-blue-700 border border-blue-200'}`}>
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{banner.text}</span>
+            </div>
+            {/* RELEASE_CLAIM_V1 */}
+            {isAppAdmin && releasable.length > 0 && (
+              <div className="mt-2.5">
+                <Button onClick={handleRelease} disabled={isProcessing} variant="outline" className="w-full border-red-300 text-red-700 hover:bg-red-100 bg-white">
+                  <Unlink className="w-4 h-4 mr-1.5" />
+                  Release that link and approve
+                </Button>
+                <p className="text-xs text-red-600/80 mt-1.5 text-center">Removes the old link, then approves. This is logged.</p>
+              </div>
+            )}
           </div>
         )}
 
