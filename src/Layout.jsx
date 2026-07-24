@@ -106,7 +106,11 @@ export default function Layout({ children }) {
       }
     };
     fetchUser();
-  }, [navigate, location.pathname]);
+  // NAV_FIX_V1 — run once on mount; re-running auth.me() on every navigation
+  // caused render churn that stalled React Router v7 page transitions
+  // (URL updated but the page content did not switch).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track page navigation (exclude app_admin) - debounced to avoid rate limiting
   useEffect(() => {
