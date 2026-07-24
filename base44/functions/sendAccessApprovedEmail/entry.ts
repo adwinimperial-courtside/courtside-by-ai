@@ -621,11 +621,118 @@ function leagueAdminBody(greeting) {
 ${ctaBlock()}`;
 }
 
+function fanBody(greeting) {
+  return `
+              <p style="margin:0 0 18px 0;font-size:16px;color:${NAVY};font-weight:700;">${greeting}</p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                You're now a <strong>Fan</strong> on Courtside &mdash; which means you can follow your favourite teams <strong>live</strong>, every game, as it happens, from anywhere with an internet connection. Log in any time at <a href="https://www.courtside-by-ai.com" style="color:${ORANGE};font-weight:700;text-decoration:none;">www.courtside-by-ai.com</a>.
+              </p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                If you're a friend or family member living in another city or another country, this is the app that puts you back inside the league. Open it and you're courtside &mdash; the live score, the box score, the standings, the stat leaders &mdash; as if you were right there on the court.
+              </p>
+
+              <p style="margin:0 0 30px 0;font-size:15px;color:#444;line-height:1.7;">
+                And there's nothing to set up and nothing to record. The league's score committee tracks every game live as it's played. You just open the app and watch it unfold.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <p style="margin:0 0 8px 0;font-size:20px;font-weight:700;color:${NAVY};">Here's everything you can follow</p>
+                    <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="width:60px;height:3px;background-color:${ORANGE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(1)}
+                      <span style="font-size:10px;font-weight:700;color:#a32d2d;letter-spacing:1px;margin-left:8px;vertical-align:middle;">LIVE</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128308; &nbsp;Follow your teams as they play</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">While a game is in progress the score updates live on your screen &mdash; and you can open it to watch the box score fill in player by player. You don't have to be in the building to be part of it.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(2)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">SCHEDULE</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128197; &nbsp;Never miss a game</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">Every upcoming fixture and every past result in one place, so you always know when your team plays next and how the last one finished.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(3)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">THE NUMBERS</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128202; &nbsp;Every stat, every player</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">Player stats and full season statistics for everyone in the league &mdash; points, rebounds, assists and more. Find the leading scorer, compare two teams, or follow how your favourite player is doing. Numbers Don't Lie.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(4)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">STANDINGS</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127942; &nbsp;See where every team stands</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">The full standings &mdash; wins, losses, and the race for top spot &mdash; updated as results come in.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 30px 0;">
+                <tr>
+                  <td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                    <p style="margin:0 0 10px 0;">
+                      ${numberBadge(5)}
+                      <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">THE RACE</span>
+                    </p>
+                    <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127941; &nbsp;Follow the award leaders</p>
+                    <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">The season's MVP race and Defensive Player of the Year race, ranked automatically as the games play out. Watch your favourite climb the board.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td style="background-color:${NAVY};border-radius:10px;padding:24px 22px;">
+                    <p style="margin:0 0 6px 0;font-size:18px;font-weight:700;color:#ffffff;">&#128640; &nbsp;Getting started &mdash; about 10 seconds</p>
+                    <p style="margin:0 0 12px 0;font-size:14px;color:#d5dae6;line-height:1.7;">Nothing to set up. Log in and everything above is already waiting for you.</p>
+                    <p style="margin:0;font-size:14px;color:#d5dae6;line-height:1.7;">Want to follow another league too? Use <strong style="color:#ffffff;">Request League Access</strong> from the menu and we'll get you added.</p>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 24px 0;font-size:15px;color:#444;line-height:1.7;">
+                Know someone who'd love to follow the league &mdash; a friend, a teammate's family, or someone back home? Just tell them about Courtside. Anyone with the app can be right there on the court, wherever they are.
+              </p>
+${ctaBlock()}`;
+}
+
 function buildEmailHtml(firstName, role, app) {
   const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
   if (role === 'league_admin') return shell(leagueAdminBody(greeting));
   if (role === 'coach') return shell(coachBody(greeting));
   if (role === 'player') return shell(playerBody(greeting, app || {}));
+  if (role === 'viewer') return shell(fanBody(greeting));
   return shell(genericBody(greeting));
 }
 
@@ -633,6 +740,7 @@ function buildSubject(role) {
   if (role === 'league_admin') return "Your league is ready to run on Courtside \u{1F3C0}";
   if (role === 'coach') return "Your Courtside coach access is ready \u{1F3C0}";
   if (role === 'player') return "You're in \u2014 your Courtside player profile is live \u{1F3C0}";
+  if (role === 'viewer') return "Follow your team live, wherever you are \u2014 welcome to Courtside \u{1F3C0}";
   return "Welcome to Courtside by AI \u2014 built for everyone in the game \u{1F3C0}";
 }
 
@@ -673,7 +781,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player' || role === 'league_admin') ? role : 'generic' });
+    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player' || role === 'league_admin' || role === 'viewer') ? role : 'generic' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
