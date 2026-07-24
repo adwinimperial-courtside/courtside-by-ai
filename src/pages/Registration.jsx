@@ -17,7 +17,7 @@ const DEFAULT_ACCENT = "#F26B1F";
 const ROLE_OPTIONS = [
   { key: "coach", label: "Coaches (team codes)" },
   { key: "player", label: "Players" },
-  { key: "viewer", label: "Viewers" },
+  { key: "viewer", label: "Fans" },
 ];
 
 function StatusPill({ status }) {
@@ -359,7 +359,7 @@ export default function Registration() {
               <div>
                 <h2 className="font-semibold text-slate-900">{selectedLeague.name}</h2>
                 <p className="text-sm text-slate-500">
-                  {campaign.roles_enabled.map((r) => ({ coach: "Coaches", player: "Players", viewer: "Viewers" }[r] || r)).join(" · ")}
+                  {campaign.roles_enabled.map((r) => ({ coach: "Coaches", player: "Players", viewer: "Fans" }[r] || r)).join(" · ")}
                 </p>
               </div>
               <StatusPill status={campaign.status} />

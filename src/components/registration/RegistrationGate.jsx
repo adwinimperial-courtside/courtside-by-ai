@@ -31,7 +31,7 @@ const ROLE_OPTIONS = [
   },
   {
     id: "viewer",
-    label: "Viewer",
+    label: "Fan",
     icon: Eye,
     color: "from-purple-500 to-purple-600",
     description: "Follow league stats, standings, and game results"

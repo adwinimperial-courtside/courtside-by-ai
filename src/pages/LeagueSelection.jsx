@@ -140,7 +140,7 @@ export default function LeagueSelection() {
   const roles = [
     { value: "player", label: "Player", emoji: "🏀" },
     { value: "coach",  label: "Coach",  emoji: "📋" },
-    { value: "viewer", label: "Viewer", emoji: "👁" },
+    { value: "viewer", label: "Fan", emoji: "👁" },
   ];
 
   const renderLeagueRow = (league, { showSeasonLabel = true } = {}) => {

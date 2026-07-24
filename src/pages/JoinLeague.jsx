@@ -24,7 +24,7 @@ const DEFAULT_ACCENT = "#F26B1F";
 const ROLE_META = {
   coach: { label: "Coach", badge: "COACH REGISTRATION", icon: ClipboardList, description: "I have a team code from the league admin" },
   player: { label: "Player", badge: "PLAYER REGISTRATION", icon: Users, description: "I play on one of the teams" },
-  viewer: { label: "Viewer", badge: "VIEWER REGISTRATION", icon: Eye, description: "I follow the league as a fan or family member" },
+  viewer: { label: "Fan", badge: "FAN REGISTRATION", icon: Eye, description: "I follow the league as a fan or family member" },
 };
 
 function darken(hex) {

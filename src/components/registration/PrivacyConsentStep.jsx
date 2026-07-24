@@ -83,7 +83,7 @@ export default function PrivacyConsentStep({ onAccept, onBack }) {
             <ul className="list-disc list-inside space-y-1 mt-1">
               <li>Your email address</li>
               <li>Your country</li>
-              <li>Your selected role (League Organizer, Coach, Player, or Viewer)</li>
+              <li>Your selected role (League Organizer, Coach, Player, or Fan)</li>
               <li>Your league access information</li>
               <li>Your player profile information, if applicable</li>
               <li>Your game statistics, awards, badges, rankings, and activity inside the platform</li>

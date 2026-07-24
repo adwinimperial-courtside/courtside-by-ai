@@ -20,7 +20,7 @@ const KOE_LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563
 const ROLE_OPTIONS = [
   { id: "player", label: "Player", icon: User, description: "Join your team, own your stats" },
   { id: "coach", label: "Coach", icon: Users, description: "Insights & team analytics" },
-  { id: "viewer", label: "Viewer", icon: Eye, description: "Follow standings & results" },
+  { id: "viewer", label: "Fan", icon: Eye, description: "Follow standings & results" },
 ];
 
 function Shell({ children, stepNumber }) {
@@ -362,7 +362,7 @@ export default function JoinKOE() {
   }
 
   // step === "details"
-  const roleLabel = selectedRole === "player" ? "Player" : selectedRole === "coach" ? "Coach" : "Viewer";
+  const roleLabel = selectedRole === "player" ? "Player" : selectedRole === "coach" ? "Coach" : "Fan";
   return (
     <Shell stepNumber={3}>
       <button

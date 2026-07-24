@@ -10,7 +10,7 @@ import { PlusCircle, CheckCircle, AlertCircle, ChevronDown, ChevronUp } from "lu
 const ROLE_LABELS = {
   player: "Player",
   coach: "Coach",
-  viewer: "Viewer",
+  viewer: "Fan",
   league_admin: "League Admin",
 };
 
