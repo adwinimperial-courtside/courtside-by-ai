@@ -37,6 +37,7 @@ export default function EnhancedUserManagement() {
   const [emailSentTo, setEmailSentTo] = useState(new Set());
   // COPY_EMAIL_V1
   const [copiedEmail, setCopiedEmail] = useState(null);
+  const [linkBanner, setLinkBanner] = useState(null); // PLAYER_ROSTER_LINK_V1
   const copyEmailToClipboard = (userId, email) => {
     const text = email || "";
     const done = () => {
@@ -97,6 +98,28 @@ export default function EnhancedUserManagement() {
     queryFn: () => base44.entities.Team.list(),
   });
 
+  // PLAYER_ROSTER_LINK_V1: load roster for teams selected in player rows
+  const playerTeamIds = React.useMemo(() => {
+    const ids = new Set();
+    (formData.assigned_league_ids || []).forEach((lid) => {
+      const role = formData.league_role_map?.[lid] || formData.user_type;
+      const tid = formData.league_team_map?.[lid];
+      if (role === "player" && tid) ids.add(tid);
+    });
+    return Array.from(ids).sort();
+  }, [formData]);
+
+  const { data: rosterPlayers = [] } = useQuery({
+    queryKey: ["rosterPlayersForLink", playerTeamIds.join(",")],
+    enabled: playerTeamIds.length > 0,
+    queryFn: async () => {
+      const groups = await Promise.all(
+        playerTeamIds.map((tid) => base44.entities.Player.filter({ team_id: tid }))
+      );
+      return groups.flat();
+    },
+  });
+
   const updateUserMutation = useMutation({
     mutationFn: async (data) => {
       // COACH_TEAM_ASSIGN_V1: rebuild league_team_pairs for leagues where this user is a coach.
@@ -126,6 +149,7 @@ export default function EnhancedUserManagement() {
       for (const leagueId of data.assigned_league_ids) {
         const role = leagueRoleMap[leagueId];
         if (!role) continue;
+        if (role === "player") continue; // PLAYER_ROSTER_LINK_V1: player identities are owned by linkPlayerToRoster
         const existing = userLeagueIdentities.find(
           uli => uli.user_id === selectedUser.id && uli.league_id === leagueId
         );
@@ -143,6 +167,27 @@ export default function EnhancedUserManagement() {
             ...uliPayload,
           });
         }
+      }
+
+      // PLAYER_ROSTER_LINK_V1: link player accounts to roster slots via the guarded function
+      const linkConflicts = [];
+      for (const leagueId of data.assigned_league_ids) {
+        if (leagueRoleMap[leagueId] !== "player") continue;
+        const matchedPlayerId = data.league_player_map?.[leagueId] || "";
+        try {
+          const res = await base44.functions.invoke("linkPlayerToRoster", {
+            user_id: selectedUser.id,
+            league_id: leagueId,
+            matched_player_id: matchedPlayerId,
+          });
+          const out = res && res.data;
+          if (out && out.ok === false && out.reason === "already_claimed") {
+            linkConflicts.push(out.claimed_by || "another user");
+          }
+        } catch (_e) { /* conflict / errors surfaced via banner below */ }
+      }
+      if (linkConflicts.length > 0) {
+        throw new Error("Some roster links couldn't be set — already claimed by: " + linkConflicts.join(", ") + ". Use the release option or pick a different player.");
       }
 
       // Audit: record this direct grant/revoke in the ApprovalLog ledger.
@@ -172,8 +217,12 @@ export default function EnhancedUserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["userLeagueIdentities"] });
+      setLinkBanner(null);
       setSelectedUser(null);
       resetForm();
+    },
+    onError: (error) => {
+      setLinkBanner((error && error.message) || "Save failed — please try again.");
     },
   });
 
@@ -219,6 +268,7 @@ export default function EnhancedUserManagement() {
       default_league_id: "",
       league_role_map: {},
       league_team_map: {},
+      league_player_map: {},
     });
   };
 
@@ -245,6 +295,12 @@ export default function EnhancedUserManagement() {
       .filter(uli => uli.user_id === user.id && uli.team_id && !leagueTeamMap[uli.league_id])
       .forEach(uli => { leagueTeamMap[uli.league_id] = uli.team_id; });
 
+    // PLAYER_ROSTER_LINK_V1: per-league matched roster player
+    const leaguePlayerMap = {};
+    userLeagueIdentities
+      .filter(uli => uli.user_id === user.id && uli.matched_player_id)
+      .forEach(uli => { leaguePlayerMap[uli.league_id] = uli.matched_player_id; });
+
     setFormData({
       email: user.email,
       full_name: user.full_name,
@@ -253,6 +309,7 @@ export default function EnhancedUserManagement() {
       default_league_id: user.default_league_id || "",
       league_role_map: leagueRoleMap,
       league_team_map: leagueTeamMap,
+      league_player_map: leaguePlayerMap,
     });
   };
 
@@ -461,29 +518,70 @@ export default function EnhancedUserManagement() {
                             <SelectItem value="video_admin">Video Admin</SelectItem>
                           </SelectContent>
                         </Select>
-                        {(formData.league_role_map?.[league.id] || formData.user_type || "viewer") === "coach" && (
-                          <Select
-                            value={formData.league_team_map?.[league.id] || "none"}
-                            onValueChange={(val) =>
-                              setFormData(prev => ({
-                                ...prev,
-                                league_team_map: { ...prev.league_team_map, [league.id]: val === "none" ? "" : val },
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="w-48 h-7 text-xs bg-white mt-2">
-                              <SelectValue placeholder="Team in this league..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No team assigned</SelectItem>
-                              {teams
-                                .filter(t => t.league_id === league.id)
-                                .map(t => (
-                                  <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                        {(() => {
+                          const effRole = formData.league_role_map?.[league.id] || formData.user_type || "viewer";
+                          if (effRole !== "coach" && effRole !== "player") return null;
+                          const teamVal = formData.league_team_map?.[league.id] || "none";
+                          const linkedId = formData.league_player_map?.[league.id] || "none";
+                          const roster = teamVal !== "none" ? rosterPlayers.filter(p => p.team_id === teamVal) : [];
+                          const linkedPlayer = rosterPlayers.find(p => p.id === linkedId);
+                          return (
+                            <div className="mt-2 space-y-2">
+                              <Select
+                                value={teamVal}
+                                onValueChange={(val) =>
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    league_team_map: { ...prev.league_team_map, [league.id]: val === "none" ? "" : val },
+                                    league_player_map: effRole === "player"
+                                      ? { ...prev.league_player_map, [league.id]: "" }
+                                      : prev.league_player_map,
+                                  }))
+                                }
+                              >
+                                <SelectTrigger className="w-56 h-7 text-xs bg-white">
+                                  <SelectValue placeholder="Team in this league..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">No team assigned</SelectItem>
+                                  {teams
+                                    .filter(t => t.league_id === league.id)
+                                    .map(t => (
+                                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                              {effRole === "player" && teamVal !== "none" && (
+                                <Select
+                                  value={linkedId}
+                                  onValueChange={(val) =>
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      league_player_map: { ...prev.league_player_map, [league.id]: val === "none" ? "" : val },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="w-56 h-7 text-xs bg-white">
+                                    <SelectValue placeholder="Roster player..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="none">Not linked</SelectItem>
+                                    {roster.map(p => (
+                                      <SelectItem key={p.id} value={p.id}>
+                                        {p.name}{p.jersey_number ? ` #${p.jersey_number}` : ""}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {effRole === "player" && linkedPlayer && (
+                                <p className="text-xs text-emerald-600">
+                                  Linked to {linkedPlayer.name}{linkedPlayer.jersey_number ? ` #${linkedPlayer.jersey_number}` : ""}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -511,6 +609,12 @@ export default function EnhancedUserManagement() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          )}
+
+          {linkBanner && (
+            <div className="mb-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-sm text-amber-800">
+              {linkBanner}
             </div>
           )}
 
