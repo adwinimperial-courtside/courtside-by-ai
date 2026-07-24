@@ -14,7 +14,7 @@ const ROLE_LABELS = {
   league_admin: "League Owner",
   coach: "Coach",
   player: "Player",
-  viewer: "Viewer",
+  viewer: "Fan",
 };
 
 function formatTime(iso) {

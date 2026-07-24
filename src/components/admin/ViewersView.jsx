@@ -73,9 +73,9 @@ export default function ViewersView() {
       <CardHeader className="border-b border-slate-200 bg-white">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl">Viewers</CardTitle>
+            <CardTitle className="text-xl">Fans</CardTitle>
             <p className="text-sm text-slate-600 mt-2">
-              Users with Viewer access
+              Users with Fan access
             </p>
           </div>
           <Badge className="bg-blue-100 text-blue-800 text-lg px-3 py-1">
@@ -135,7 +135,7 @@ export default function ViewersView() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-slate-500">
-                    No viewers found
+                    No fans found
                   </TableCell>
                 </TableRow>
               )}

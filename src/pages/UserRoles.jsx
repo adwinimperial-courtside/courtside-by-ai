@@ -15,7 +15,7 @@ const TAB_LABELS = {
   league_owners: "League Owners",
   coaches: "Coaches",
   players: "Players",
-  viewers: "Viewers",
+  viewers: "Fans",
 };
 const TAB_USER_TYPE = {
   league_owners: "league_admin",
@@ -165,7 +165,7 @@ function MobileLeagueRow({ row }) {
           </div>
           <div className="bg-blue-50 rounded-lg p-2 text-center">
             <div className="text-sm font-bold text-blue-700">{row.viewers}</div>
-            <div className="text-xs text-slate-500">Viewers</div>
+            <div className="text-xs text-slate-500">Fans</div>
           </div>
         </div>
       )}
@@ -289,7 +289,7 @@ export default function UserRoles() {
     { label: "League Owners", count: counts.league_owners, color: "bg-purple-50 border-purple-200", textColor: "text-purple-700", tab: "league_owners" },
     { label: "Coaches", count: counts.coaches, color: "bg-green-50 border-green-200", textColor: "text-green-700", tab: "coaches" },
     { label: "Players", count: counts.players, color: "bg-indigo-50 border-indigo-200", textColor: "text-indigo-700", tab: "players" },
-    { label: "Viewers", count: counts.viewers, color: "bg-blue-50 border-blue-200", textColor: "text-blue-700", tab: "viewers" },
+    { label: "Fans", count: counts.viewers, color: "bg-blue-50 border-blue-200", textColor: "text-blue-700", tab: "viewers" },
   ];
 
   const tabBadgeColor = {
@@ -442,7 +442,7 @@ export default function UserRoles() {
                         <TableHead className="text-center">Owners</TableHead>
                         <TableHead className="text-center">Coaches</TableHead>
                         <TableHead className="text-center">Players</TableHead>
-                        <TableHead className="text-center">Viewers</TableHead>
+                        <TableHead className="text-center">Fans</TableHead>
                         <TableHead className="text-center font-bold pr-6">Total</TableHead>
                       </TableRow>
                     </TableHeader>

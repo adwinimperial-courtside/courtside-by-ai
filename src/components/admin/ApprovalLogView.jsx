@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X } from "lucide-react";
 
 // APPROVAL_LOG_VIEW_V1
-const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Viewer" };
+const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Fan" };
 const EVENT_LABELS = {
   application_approved: "Application approved",
   application_rejected: "Application rejected",

@@ -20,7 +20,7 @@ const ROLE_LABELS = {
   coach: "Coach",
   player: "Player",
   video_admin: "Video Admin",
-  viewer: "Viewer",
+  viewer: "Fan",
 };
 
 export default function HelpCenter() {
@@ -60,7 +60,7 @@ export default function HelpCenter() {
       <p className="text-sm text-slate-600 mb-6">
         {loading
           ? "Loading topics…"
-          : `Showing topics for your role: ${ROLE_LABELS[role] || "Viewer"}`}
+          : `Showing topics for your role: ${ROLE_LABELS[role] || "Fan"}`}
       </p>
 
       {!loading && grouped.length === 0 && (

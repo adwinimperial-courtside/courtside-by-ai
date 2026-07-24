@@ -118,7 +118,7 @@ export default function UserManagement() {
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="viewer">Fan</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-500 mt-1">Determines feature access and permissions</p>

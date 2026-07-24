@@ -38,9 +38,9 @@ export default function Viewers() {
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
             <Eye className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl font-bold text-slate-900">Viewers</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Fans</h1>
           </div>
-          <p className="text-slate-600">View users with Viewer access</p>
+          <p className="text-slate-600">View users with Fan access</p>
         </div>
 
         <ViewersView />

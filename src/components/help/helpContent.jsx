@@ -163,7 +163,7 @@ export const HELP_TOPICS = [
     category: "admin",
     roles: ["league_admin", "ops_admin", "app_admin"],
     summary:
-      "Approve or reject people asking to join your league as a player, coach or viewer.",
+      "Approve or reject people asking to join your league as a player, coach or fan.",
     tips: [
       "Each league you manage gets its own approve/reject decision per request.",
       "Approved users receive a welcome email automatically.",

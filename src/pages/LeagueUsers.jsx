@@ -19,7 +19,7 @@ const ROLE_LABELS = {
   player: "Player",
   coach: "Coach",
   league_admin: "League Admin",
-  viewer: "Viewer",
+  viewer: "Fan",
 };
 
 function UserRow({ user, teams, leagues, adminLeagueIds, userLeagueIdentities = [], selectedLeague, userApplications = [] }) {
@@ -338,7 +338,7 @@ export default function LeagueUsers() {
               <SelectItem value="player">Player</SelectItem>
               <SelectItem value="coach">Coach</SelectItem>
               <SelectItem value="league_admin">League Admin</SelectItem>
-              <SelectItem value="viewer">Viewer</SelectItem>
+              <SelectItem value="viewer">Fan</SelectItem>
             </SelectContent>
           </Select>
         </div>

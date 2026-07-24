@@ -156,7 +156,7 @@ export default function PendingUserManagement() {
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="viewer">Fan</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -235,7 +235,7 @@ export default function PendingUserManagement() {
               <SelectContent>
                 <SelectItem value="app_admin">App Admin</SelectItem>
                 <SelectItem value="league_admin">League Admin</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="viewer">Fan</SelectItem>
               </SelectContent>
             </Select>
           </div>

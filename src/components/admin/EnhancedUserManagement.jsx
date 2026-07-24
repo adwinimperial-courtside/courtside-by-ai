@@ -334,7 +334,7 @@ export default function EnhancedUserManagement() {
                 <SelectItem value="league_admin">League Admin</SelectItem>
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="viewer">Fan</SelectItem>
                 <SelectItem value="video_admin">Video Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -413,7 +413,7 @@ export default function EnhancedUserManagement() {
                 <SelectItem value="league_admin">League Admin</SelectItem>
                 <SelectItem value="coach">Coach</SelectItem>
                 <SelectItem value="player">Player</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
+                <SelectItem value="viewer">Fan</SelectItem>
                 <SelectItem value="video_admin">Video Admin</SelectItem>
               </SelectContent>
             </Select>
@@ -457,7 +457,7 @@ export default function EnhancedUserManagement() {
                             <SelectItem value="league_admin">League Admin</SelectItem>
                             <SelectItem value="coach">Coach</SelectItem>
                             <SelectItem value="player">Player</SelectItem>
-                            <SelectItem value="viewer">Viewer</SelectItem>
+                            <SelectItem value="viewer">Fan</SelectItem>
                             <SelectItem value="video_admin">Video Admin</SelectItem>
                           </SelectContent>
                         </Select>

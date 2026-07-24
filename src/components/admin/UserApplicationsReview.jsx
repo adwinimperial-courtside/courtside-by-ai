@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Check, X, Lock } from "lucide-react";
 
 // REVIEW_SCREEN_V2 per-league
-const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Viewer" };
+const ROLE_LABELS = { league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Fan" };
 const ROLE_BADGE_COLORS = {
   league_admin: "bg-yellow-100 text-yellow-800 border-yellow-200",
   coach: "bg-blue-100 text-blue-800 border-blue-200",
