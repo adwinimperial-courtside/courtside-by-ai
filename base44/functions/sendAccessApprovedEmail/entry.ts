@@ -197,6 +197,213 @@ function coachBody(greeting) {
 ${ctaBlock()}`;
 }
 
+function initialsFrom(name) {
+  if (!name) return "?";
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+
+function lockedTrophy(label) {
+  return `<td align="center" width="25%" style="padding:3px;"><table width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#221e16" align="center" style="background-color:#221e16;border:1px solid #332c20;border-radius:6px;padding:11px 3px;"><p style="margin:0 0 5px 0;font-size:15px;color:#6b6250;">&#128274;</p><p style="margin:0;font-size:7px;color:#8a7d63;letter-spacing:0.5px;">${label}</p></td></tr></table></td>`;
+}
+
+function playerCard(app) {
+  const fullName = app.display_name || app.user_name || "Player";
+  const initials = initialsFrom(fullName);
+  const jersey = app.jersey_number ? String(app.jersey_number).replace(/^#/, '') : null;
+
+  const metaParts = [];
+  if (app.league_name) metaParts.push(String(app.league_name).toUpperCase());
+  if (app.handle) metaParts.push('@' + String(app.handle).replace(/^@/, '').toUpperCase());
+  const metaLine = metaParts.length ? metaParts.join(' &middot; ') : '';
+
+  const jerseyLine = jersey
+    ? `<p style="margin:0 0 6px 0;font-size:13px;font-weight:700;color:#c9a961;letter-spacing:1px;">#${jersey}</p>`
+    : '';
+  const metaHtml = metaLine
+    ? `<p style="margin:0;font-size:10px;color:#8a7d63;letter-spacing:1px;">${metaLine}</p>`
+    : '';
+
+  const statCell = (label) => `<td align="center" width="20%"><p style="margin:0 0 4px 0;font-size:18px;color:#6b6250;">&mdash;</p><p style="margin:0;font-size:9px;color:#8a7d63;letter-spacing:1px;">${label}</p></td>`;
+
+  return `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 12px 0;">
+              <tr><td bgcolor="#12100c" style="background-color:#12100c;border:1px solid #3d3527;border-radius:12px;padding:20px;">
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:14px;">
+                <tr><td bgcolor="#1c1913" style="background-color:#1c1913;border:1px solid #332c20;border-radius:10px;padding:20px;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td valign="middle" style="padding-right:12px;">
+                      <p style="margin:0 0 6px 0;font-size:23px;font-weight:700;color:#e8d4a0;letter-spacing:0.5px;">${String(fullName).toUpperCase()}</p>
+                      ${jerseyLine}
+                      ${metaHtml}
+                    </td>
+                    <td valign="middle" width="72" align="right">
+                      <table cellpadding="0" cellspacing="0" width="68" style="border:2px solid #c9a961;border-radius:34px;">
+                        <tr><td height="64" align="center" valign="middle" style="font-size:26px;font-weight:700;color:#e8d4a0;">${initials}</td></tr>
+                      </table>
+                    </td>
+                  </tr>
+                  </table>
+
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:18px;">
+                  <tr><td bgcolor="#221e16" style="background-color:#221e16;border:1px solid #332c20;border-radius:8px;padding:14px 6px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>${statCell('PPG')}${statCell('RPG')}${statCell('APG')}${statCell('SPG')}${statCell('BPG')}</tr>
+                    </table>
+                    <p style="margin:10px 0 0 0;text-align:center;font-size:9px;color:#6b6250;letter-spacing:1px;">NO GAMES YET</p>
+                  </td></tr>
+                  </table>
+                </td></tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+                <tr><td bgcolor="#1c1913" style="background-color:#1c1913;border:1px solid #332c20;border-radius:10px;padding:18px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+                  <tr>
+                    <td><p style="margin:0;font-size:11px;font-weight:700;color:#c9a961;letter-spacing:1px;">TROPHY CABINET</p></td>
+                    <td align="right"><p style="margin:0;font-size:10px;color:#8a7d63;letter-spacing:0.5px;">0 / 19 EARNED</p></td>
+                  </tr>
+                  </table>
+                  <p style="margin:0 0 14px 0;font-size:11px;color:#8a7d63;line-height:1.5;">Play games to start earning trophies.</p>
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>${lockedTrophy('DOUBLE DIGITS')}${lockedTrophy('20 CLUB')}${lockedTrophy('30 BOMB')}${lockedTrophy('SCORING STREAK')}</tr>
+                  </table>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:6px;">
+                  <tr>${lockedTrophy('FACILITATOR')}${lockedTrophy('PLAYMAKER')}${lockedTrophy('FLOOR GENERAL')}${lockedTrophy('GLASS CLEANER')}</tr>
+                  </table>
+                  <p style="margin:14px 0 0 0;text-align:center;font-size:10px;color:#c9a961;letter-spacing:0.5px;">+ 11 MORE TO UNLOCK</p>
+                </td></tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:12px;">
+                <tr><td bgcolor="#1c1913" style="background-color:#1c1913;border:1px solid #332c20;border-radius:10px;padding:16px 18px;">
+                  <p style="margin:0 0 8px 0;font-size:10px;font-weight:700;color:#c9a961;letter-spacing:1px;">NEXT GAME</p>
+                  <p style="margin:0;font-size:14px;color:#8a7d63;">Your schedule appears here once your league sets it.</p>
+                </td></tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+                <tr><td bgcolor="#1c1913" style="background-color:#1c1913;border:1px solid #332c20;border-radius:10px;padding:16px 18px;">
+                  <p style="margin:0 0 8px 0;font-size:10px;font-weight:700;color:#c9a961;letter-spacing:1px;">RECENT GAMES</p>
+                  <p style="margin:0;font-size:14px;color:#8a7d63;">Your box scores land here after your first game.</p>
+                </td></tr>
+                </table>
+
+                <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="33%" style="padding-right:5px;">
+                    <table width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#1c1913" align="center" style="background-color:#1c1913;border:1px solid #3d3527;border-radius:8px;padding:14px 4px;">
+                      <a href="https://www.courtside-by-ai.com" style="text-decoration:none;color:#e8d4a0;"><span style="font-size:15px;">&#128202;</span><br/><span style="font-size:12px;color:#e8d4a0;">Statistics</span></a>
+                    </td></tr></table>
+                  </td>
+                  <td width="34%" style="padding:0 5px;">
+                    <table width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#1c1913" align="center" style="background-color:#1c1913;border:1px solid #3d3527;border-radius:8px;padding:14px 4px;">
+                      <a href="https://www.courtside-by-ai.com" style="text-decoration:none;color:#e8d4a0;"><span style="font-size:15px;">&#128197;</span><br/><span style="font-size:12px;color:#e8d4a0;">Schedule</span></a>
+                    </td></tr></table>
+                  </td>
+                  <td width="33%" style="padding-left:5px;">
+                    <table width="100%" cellpadding="0" cellspacing="0"><tr><td bgcolor="#1c1913" align="center" style="background-color:#1c1913;border:1px solid #3d3527;border-radius:8px;padding:14px 4px;">
+                      <a href="https://www.courtside-by-ai.com" style="text-decoration:none;color:#e8d4a0;"><span style="font-size:15px;">&#127942;</span><br/><span style="font-size:12px;color:#e8d4a0;">Award Leaders</span></a>
+                    </td></tr></table>
+                  </td>
+                </tr>
+                </table>
+
+              </td></tr>
+              </table>`;
+}
+
+function playerBody(greeting, app) {
+  return `
+              <p style="margin:0 0 18px 0;font-size:16px;color:${NAVY};font-weight:700;">${greeting}</p>
+
+              <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
+                Your player access has been approved. You can log in any time at <a href="https://www.courtside-by-ai.com" style="color:${ORANGE};font-weight:700;text-decoration:none;">www.courtside-by-ai.com</a>.
+              </p>
+
+              <p style="margin:0 0 24px 0;font-size:15px;color:#444;line-height:1.7;">
+                This is your dashboard. Right now it's empty. It fills in as you play.
+              </p>
+${playerCard(app)}
+              <p style="margin:0 0 30px 0;font-size:13px;color:#888;line-height:1.6;text-align:center;">Every dash above turns into a number the moment your first game is recorded.</p>
+
+              <p style="margin:0 0 30px 0;font-size:15px;color:#444;line-height:1.7;">
+                You don't have to record any of it. Every point, rebound, assist, steal and block is tracked live by your league's score committee as the game is played, and saved to your profile automatically. Just play. Courtside keeps the record.
+              </p>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+                <tr>
+                  <td align="center">
+                    <p style="margin:0 0 8px 0;font-size:20px;font-weight:700;color:${NAVY};">Four things waiting for you</p>
+                    <table cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr><td style="width:60px;height:3px;background-color:${ORANGE};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr><td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                  <p style="margin:0 0 10px 0;">${numberBadge(1)}<span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">YOUR PROFILE</span></p>
+                  <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128100; &nbsp;A profile that's actually yours</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Your photo, your team, your jersey number, and every statistic you've recorded this season in one place. Points, rebounds, assists, steals, blocks. Your averages. Your best game.</p>
+                  <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">After every game you'll see exactly how you did, broken down the way a real box score does it.</p>
+                </td></tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr><td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                  <p style="margin:0 0 10px 0;">${numberBadge(2)}<span style="font-size:10px;font-weight:700;color:#3a4a75;letter-spacing:1px;margin-left:8px;vertical-align:middle;">PROGRESSION</span></p>
+                  <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128200; &nbsp;Watch yourself get better</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Courtside doesn't just store your numbers &mdash; it shows you the direction they're moving. Your current trend tells you whether you're rising or falling across recent games, so a slump shows up before it costs you, and a hot run is there in black and white.</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">You'll also track season milestones as you close in on them &mdash; points, rebounds, assists, and Player of the Game awards. Watch the bar fill up.</p>
+                  <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">And you earn trophies for what you actually do on the floor: Double Digits, 20 Club, 30 Bomb, Scoring Streak, Floor General, Glass Cleaner and more. Nobody hands these out. They come out of the box score.</p>
+                </td></tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;">
+                <tr><td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                  <p style="margin:0 0 10px 0;">${numberBadge(3)}<span style="font-size:10px;font-weight:700;color:#8a6d0f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">THE RACE</span></p>
+                  <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127942; &nbsp;League leaders and award races</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">See where you rank against every other player in your league &mdash; scoring, rebounding, assists, steals, blocks. Not a guess, not an argument in the group chat. The actual list.</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Your league also runs season awards, including an MVP race and a Defensive Player of the Year race, for the players whose work doesn't always show up in the scoring column. Both update as games are played, so you can see who's leading and how close you are.</p>
+                  <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">How those awards are calculated, and who qualifies, is set by your league &mdash; so the rules can differ from one league to the next. Your league organizer can tell you exactly how yours works.</p>
+                </td></tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 30px 0;">
+                <tr><td style="border:1px solid ${BORDER};border-radius:10px;padding:20px 22px;">
+                  <p style="margin:0 0 10px 0;">${numberBadge(4)}<span style="font-size:10px;font-weight:700;color:#a32d2d;letter-spacing:1px;margin-left:8px;vertical-align:middle;">LIVE</span></p>
+                  <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#128308; &nbsp;Watch it happen in real time</p>
+                  <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Live statistics are on screen while games are being played &mdash; the score, team fouls, timeouts, and every player's numbers as they happen. Follow your own team, or scout the side you play next.</p>
+                  <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">Schedules, standings and results for your whole league are there too, so you always know when you play and who's ahead.</p>
+                </td></tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 30px 0;">
+                <tr><td bgcolor="${NAVY}" style="background-color:${NAVY};border-radius:10px;padding:24px 22px;">
+                  <p style="margin:0 0 6px 0;font-size:18px;font-weight:700;color:#ffffff;">&#128640; &nbsp;Get set up</p>
+                  <p style="margin:0 0 18px 0;font-size:13px;color:#9aa5c0;">About 2 minutes.</p>
+
+                  <p style="margin:0 0 4px 0;font-size:14px;color:#d5dae6;line-height:1.6;">${numberBadge(1)} <span style="color:#ffffff;font-weight:700;">Add your photo.</span></p>
+                  <p style="margin:0 0 14px 30px;font-size:13px;color:#9aa5c0;line-height:1.6;">It appears on your profile, in the league leaders, and next to your name across the app.</p>
+
+                  <p style="margin:0 0 4px 0;font-size:14px;color:#d5dae6;line-height:1.6;">${numberBadge(2)} <span style="color:#ffffff;font-weight:700;">Check your team and jersey number.</span></p>
+                  <p style="margin:0 0 14px 30px;font-size:13px;color:#9aa5c0;line-height:1.6;">Your stats are recorded against your jersey number, so if it's wrong your points land on someone else's line. Tell your coach if anything looks off.</p>
+
+                  <p style="margin:0;font-size:14px;color:#d5dae6;line-height:1.6;">${numberBadge(3)} Open <span style="color:#ffffff;font-weight:700;">Schedule</span> to see when you play next.</p>
+                </td></tr>
+              </table>
+
+              <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">Why we built this</p>
+              <p style="margin:0 0 14px 0;font-size:15px;color:#444;line-height:1.7;">Grassroots basketball is played with the same commitment as the professional game, but it has rarely been recorded like it. Big performances get forgotten by the following week. Careers leave no trace.</p>
+              <p style="margin:0 0 14px 0;font-size:15px;color:#444;line-height:1.7;">Courtside exists to change that. Your numbers, your progress, your best nights &mdash; kept properly, season after season.</p>
+              <p style="margin:0 0 28px 0;font-size:15px;color:${NAVY};line-height:1.7;font-weight:700;">Go get some.</p>
+${ctaBlock()}`;
+}
+
 function genericBody(greeting) {
   return `
               <p style="margin:0 0 20px 0;font-size:16px;color:${NAVY};font-weight:600;">${greeting}</p>
@@ -259,14 +466,16 @@ function genericBody(greeting) {
 ${ctaBlock()}`;
 }
 
-function buildEmailHtml(firstName, role) {
+function buildEmailHtml(firstName, role, app) {
   const greeting = firstName ? `Hi ${firstName},` : "Hi there,";
   if (role === 'coach') return shell(coachBody(greeting));
+  if (role === 'player') return shell(playerBody(greeting, app || {}));
   return shell(genericBody(greeting));
 }
 
 function buildSubject(role) {
   if (role === 'coach') return "Your Courtside coach access is ready \u{1F3C0}";
+  if (role === 'player') return "You're in \u2014 your Courtside player profile is live \u{1F3C0}";
   return "Welcome to Courtside by AI \u2014 built for everyone in the game \u{1F3C0}";
 }
 
@@ -292,7 +501,7 @@ Deno.serve(async (req) => {
 
     const role = (application.requested_role || '').toLowerCase();
     const firstName = application.user_name?.split(' ')[0] || null;
-    const htmlBody = buildEmailHtml(firstName, role);
+    const htmlBody = buildEmailHtml(firstName, role, application);
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: application.user_email,
@@ -307,7 +516,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ success: true, sent_to: application.user_email, role_template: role === 'coach' ? 'coach' : 'generic' });
+    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player') ? role : 'generic' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

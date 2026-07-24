@@ -185,6 +185,10 @@ async function sendWelcomeOnce(base44, application) {
         user_email: application.user_email,
         user_name: application.user_name,
         requested_role: application.requested_role,
+        display_name: application.display_name,
+        handle: application.handle,
+        jersey_number: application.jersey_number,
+        league_name: application.league_name,
         status: 'Approved',
         approval_email_sent: false,
       }
