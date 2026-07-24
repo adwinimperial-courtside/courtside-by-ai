@@ -115,7 +115,15 @@ async function claimRosterPlayer(base44, application, leagueId, match) {
   } catch (_e) { existingClaims = []; }
   const conflict = (existingClaims || []).find(r => r.user_id && r.user_id !== application.user_id);
   if (conflict) {
-    return { ok: false, reason: 'already_claimed', claimed_by: conflict.matched_player_name || conflict.user_id || '' };
+    // CLAIM_OWNER_EMAIL_V1 — include the owning account's email so the admin can see who holds the link
+    let ownerLabel = conflict.matched_player_name || '';
+    try {
+      const owner = await base44.asServiceRole.entities.User.get(conflict.user_id);
+      if (owner && owner.email) {
+        ownerLabel = ownerLabel ? (ownerLabel + ' — ' + owner.email) : owner.email;
+      }
+    } catch (_e) {}
+    return { ok: false, reason: 'already_claimed', claimed_by: ownerLabel || conflict.user_id || '' };
   }
 
   const identityData = {
