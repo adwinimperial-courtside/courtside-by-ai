@@ -184,6 +184,7 @@ async function sendWelcomeOnce(base44, application) {
         id: application.id,
         user_email: application.user_email,
         user_name: application.user_name,
+        requested_role: application.requested_role,
         status: 'Approved',
         approval_email_sent: false,
       }
