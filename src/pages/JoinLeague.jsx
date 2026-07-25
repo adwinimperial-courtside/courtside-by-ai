@@ -182,8 +182,10 @@ export default function JoinLeague() {
         }
 
         const apps = await base44.entities.UserApplication.filter({ user_id: me.id });
+        // JOIN_REJECTED_REAPPLY_V1 — a Rejected application must not block a fresh /Join attempt
         const alreadyApplied = (apps || []).some(
-          (a) => a.league_id === camp.league_id || (Array.isArray(a.league_ids) && a.league_ids.includes(camp.league_id))
+          (a) => a.status !== "Rejected" &&
+            (a.league_id === camp.league_id || (Array.isArray(a.league_ids) && a.league_ids.includes(camp.league_id)))
         );
         if (cancelled) return;
         if (alreadyApplied) { setStep("already_applied"); return; }
