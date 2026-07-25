@@ -301,7 +301,18 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     return [];
   };
 
-  const handleNavigationClick = () => {
+  const handleNavigationClick = (e) => {
+    // LEAGUES_NAV_ESCAPE_V1 — in-app route changes are silently dropped when leaving
+    // the Leagues page (the router's page swap never happens). Use a full page load
+    // for any menu click made from /leagues so navigation always works.
+    if (window.location.pathname.toLowerCase() === "/leagues") {
+      const href = e && e.currentTarget ? e.currentTarget.getAttribute("href") : null;
+      if (href) {
+        e.preventDefault();
+        window.location.assign(href);
+        return;
+      }
+    }
     if (isMobile) {
       setOpenMobile(false);
     }

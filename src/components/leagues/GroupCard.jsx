@@ -15,7 +15,8 @@ function initialsOf(name) {
 function SeasonRow({ league, isViewer, isDefault, onSetDefault, canManage, onEdit, onDelete, isArchived, navigate }) {
   const openSeason = () => {
     if (isViewer) return;
-    navigate(`${createPageUrl("Teams")}?league=${league.id}`);
+    // LEAGUES_NAV_ESCAPE_V1 — full page load; in-app navigation is dropped from this page
+    window.location.assign(`${createPageUrl("Teams")}?league=${league.id}`);
   };
   return (
     <div

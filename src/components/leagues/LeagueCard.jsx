@@ -118,7 +118,16 @@ export default function LeagueCard({ league, userType, isDefault, onSetDefault, 
   return isViewer ? (
     wrappedContent
   ) : (
-    <Link to={`${createPageUrl("Teams")}?league=${league.id}`}>
+    <Link
+      to={`${createPageUrl("Teams")}?league=${league.id}`}
+      onClick={(e) => {
+        // LEAGUES_NAV_ESCAPE_V1 — full page load; in-app navigation is dropped from this page.
+        // Inner buttons (star/edit/delete) preventDefault first, so respect that and do nothing.
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+        window.location.assign(`${createPageUrl("Teams")}?league=${league.id}`);
+      }}
+    >
       {wrappedContent}
     </Link>
   );
