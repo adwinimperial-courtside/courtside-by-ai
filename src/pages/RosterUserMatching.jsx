@@ -57,6 +57,16 @@ export default function RosterUserMatching() {
     enabled: currentUser?.user_type === "app_admin",
   });
 
+  const { data: loginData } = useQuery({
+    queryKey: ["rosterMatchLoginCounts"],
+    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "login_counts" }).then(r => r.data),
+    enabled: currentUser?.user_type === "app_admin",
+    staleTime: 5 * 60 * 1000,
+  });
+  const loginCounts = loginData?.counts || {};
+  const lastSeenMap = loginData?.lastSeen || {};
+  const loginCountOf = (u) => loginCounts[(u?.email || "").toLowerCase()] || 0;
+
   if (!userLoaded) return null;
 
   const targetLeague = leagues.find(l => l.id === targetLeagueId);
@@ -175,7 +185,12 @@ export default function RosterUserMatching() {
       else if (tokens.some(t => name.includes(t))) score = 1;
       if (score > 0) scored.push({ u, score });
     }
-    scored.sort((a, b) => b.score - a.score);
+    const ls = (u) => lastSeenMap[(u.email || "").toLowerCase()] || "";
+    scored.sort((a, b) =>
+      (b.score - a.score) ||
+      (loginCountOf(b.u) - loginCountOf(a.u)) ||
+      (ls(b.u) > ls(a.u) ? 1 : ls(b.u) < ls(a.u) ? -1 : 0)
+    );
     return scored.slice(0, 3).map(x => x.u);
   };
 
@@ -484,7 +499,7 @@ export default function RosterUserMatching() {
                                           <div key={u.id} className="flex items-center justify-between gap-2 border border-slate-200 rounded-md px-2 py-1.5">
                                             <div className="min-w-0">
                                               <div className="text-xs font-medium text-slate-800 truncate">{u.full_name || u.email}</div>
-                                              <div className="text-[11px] text-slate-400 truncate">{u.email}{u.user_type ? " \u00b7 " + u.user_type.replace(/_/g, " ") : " \u00b7 no role"}</div>
+                                              <div className="text-[11px] text-slate-400 truncate">{u.email}{u.user_type ? " \u00b7 " + u.user_type.replace(/_/g, " ") : " \u00b7 no role"}{" \u00b7 " + loginCountOf(u) + " logins"}</div>
                                             </div>
                                             <button onClick={() => selectOverrideUser(row.idx, u)} className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md px-2.5 py-1 whitespace-nowrap">Assign</button>
                                           </div>

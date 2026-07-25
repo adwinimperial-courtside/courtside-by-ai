@@ -155,6 +155,20 @@ Deno.serve(async (req) => {
       return Response.json({ leaders });
     }
 
+    if (action === 'login_counts') {
+      const ninetyDaysAgo = new Date(todayStart.getTime() - 89 * 24 * 60 * 60 * 1000);
+      const events = await fetchEventsSince(ninetyDaysAgo.toISOString());
+      const counts = {};
+      const lastSeen = {};
+      for (const e of events) {
+        const key = (e.user_email || '').toLowerCase();
+        if (!key) continue;
+        counts[key] = (counts[key] || 0) + 1;
+        if (!lastSeen[key] || e.logged_at > lastSeen[key]) lastSeen[key] = e.logged_at;
+      }
+      return Response.json({ counts, lastSeen });
+    }
+
     if (action === 'user_history') {
       if (!targetEmail) return Response.json({ events: [] });
 
