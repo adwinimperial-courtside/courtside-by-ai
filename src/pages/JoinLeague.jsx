@@ -20,6 +20,7 @@ const LOGO_URL = "https://media.base44.com/images/public/68fa0e7f8bbf24ed563563d
 const GENERIC_CODE_ERROR = "That code is not valid or has already been used. Please contact the league admin.";
 const DEFAULT_PRIMARY = "#0B1F3A";
 const DEFAULT_ACCENT = "#F26B1F";
+const COUNTRIES = ["Finland","Norway","Sweden","Denmark","Iceland","Italy","Spain","Germany","France","United Kingdom","Ireland","Netherlands","Belgium","Switzerland","Austria","Poland","Portugal","Estonia","Canada","United States","Philippines","Australia","United Arab Emirates","Qatar","Saudi Arabia","Japan","Singapore","Other"];
 
 const ROLE_META = {
   coach: { label: "Coach", badge: "COACH REGISTRATION", icon: ClipboardList, description: "I have a team code from the league admin" },
@@ -210,7 +211,7 @@ export default function JoinLeague() {
       setStep("code");
       return;
     }
-    if (key === "player" && !teams.length && campaign) {
+    if ((key === "player" || key === "viewer") && !teams.length && campaign) {
       try {
         const rows = await base44.entities.Team.filter({ league_id: campaign.league_id });
         setTeams((rows || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name))));
@@ -297,10 +298,39 @@ export default function JoinLeague() {
         applicationData.league_team_pairs = [{ league_id: leagueId, team_id: selectedTeamId }];
       }
 
+      if (roleKey === "viewer") {
+        applicationData.status = "Approved";
+        applicationData.approval_email_sent = true;
+        if (selectedTeamId) applicationData.team_id = selectedTeamId;
+      }
+
       const createdApp = await base44.entities.UserApplication.create(applicationData);
 
       if (roleKey === "player" && createdApp?.id) {
         try { await base44.functions.invoke("suggestPlayerMatch", { applicationId: createdApp.id }); } catch (e) {}
+      }
+
+      if (roleKey === "viewer") {
+        const existingIds = Array.isArray(user.assigned_league_ids) ? user.assigned_league_ids : [];
+        const mergedIds = existingIds.includes(leagueId) ? existingIds : [...existingIds, leagueId];
+        const raiseType = (!user.user_type || user.user_type === "user") ? { user_type: "viewer" } : {};
+        await base44.auth.updateMe({
+          application_status: "Approved",
+          assigned_league_ids: mergedIds,
+          ...raiseType,
+          ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
+          ...(consentData || {}),
+        });
+        if (selectedTeamId) {
+          try { await base44.auth.updateMe({ favorite_team_id: selectedTeamId }); } catch (e) {}
+        }
+        try {
+          await base44.functions.invoke("sendAccessApprovedEmail", {
+            data: { user_email: user.email, user_name: (fullName || user.full_name || "").trim(), requested_role: "viewer" },
+          });
+        } catch (e) {}
+        setStep("success");
+        return;
       }
 
       await base44.auth.updateMe({
@@ -388,20 +418,41 @@ export default function JoinLeague() {
   }
 
   if (step === "success") {
+    const favTeam = teams.find((t) => t.id === selectedTeamId);
+    const isViewer = roleKey === "viewer";
     return (
       <Shell campaign={campaign} roleKey={roleKey} compact>
-        <div className="text-center py-4">
+        <div className="text-center py-4" data-marker="FAN_INSTANT_FOLLOW_V1">
           <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-7 h-7 text-green-500" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">You're in — pending approval</h2>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">
+            {isViewer ? "You're in — you're now following!" : "You're in — pending approval"}
+          </h2>
+          {isViewer && favTeam && (
+            <div className="inline-flex items-center gap-2 bg-slate-100 rounded-full px-3 py-1 mb-3">
+              {favTeam.logo_url ? (
+                <img src={favTeam.logo_url} alt={favTeam.name} className="w-4 h-4 rounded-full object-cover" />
+              ) : (
+                <span className="w-4 h-4 rounded-full" style={{ backgroundColor: favTeam.color || accent }} />
+              )}
+              <span className="text-xs text-slate-700">Your team · {favTeam.name}</span>
+            </div>
+          )}
           <p className="text-sm text-slate-600 leading-relaxed">
-            {roleKey === "coach" ? (
+            {isViewer ? (
+              <>You're now following <span className="font-semibold text-slate-800">{campaign?.hero_title || "the league"}</span>. Live scores, standings and stats are all yours — a welcome email is on its way.</>
+            ) : roleKey === "coach" ? (
               <>The league admin will review your registration. Once approved, you'll find <span className="font-semibold text-slate-800">My Roster</span> in your menu to set up your team.</>
             ) : (
               <>The league admin will review your registration. You'll get an email as soon as you're approved.</>
             )}
           </p>
+          {isViewer && (
+            <Button onClick={() => window.location.replace("/")} className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+              Open the league
+            </Button>
+          )}
         </div>
       </Shell>
     );
@@ -508,16 +559,57 @@ export default function JoinLeague() {
             </div>
           )}
 
+          {roleKey === "viewer" && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Favorite team <span className="text-slate-400 font-normal">(optional)</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {teams.map((t) => {
+                  const selected = selectedTeamId === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => { setSelectedTeamId(t.id); setFormError(""); }}
+                      className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-left transition-colors ${selected ? "border-orange-400 bg-orange-50" : "border-slate-200 hover:border-orange-200"}`}
+                    >
+                      {t.logo_url ? (
+                        <img src={t.logo_url} alt={t.name} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                      ) : (
+                        <span className="w-6 h-6 rounded-full flex-shrink-0" style={{ backgroundColor: t.color || accent }} />
+                      )}
+                      <span className="text-sm text-slate-800 truncate">{t.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSelectedTeamId(""); setFormError(""); }}
+                className={`mt-2 w-full rounded-xl border-2 border-dashed px-3 py-2 text-sm transition-colors ${selectedTeamId === "" ? "border-orange-300 bg-orange-50 text-slate-700" : "border-slate-200 text-slate-500 hover:border-orange-200"}`}
+              >
+                No favorite — follow the whole league
+              </button>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
-            <Input
-              value={country}
-              onChange={(e) => { setCountry(e.target.value); setFormError(""); }}
-              placeholder="e.g., Finland"
-            />
+            <Select value={country} onValueChange={(v) => { setCountry(v); setFormError(""); }}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select your country" />
+              </SelectTrigger>
+              <SelectContent>
+                {COUNTRIES.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <Button
+            data-marker="FAN_INSTANT_FOLLOW_V1"
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold disabled:opacity-60"
@@ -527,12 +619,14 @@ export default function JoinLeague() {
                 <Loader2 className="w-4 h-4 animate-spin" /> Submitting…
               </span>
             ) : (
-              "Submit for approval"
+              roleKey === "viewer" ? "Start following" : "Submit for approval"
             )}
           </Button>
 
           <p className="text-xs text-slate-500 text-center leading-relaxed">
-            You'll get an email once the league admin approves you.
+            {roleKey === "viewer"
+              ? "Free — you'll start following instantly."
+              : "You'll get an email once the league admin approves you."}
           </p>
         </div>
       </Shell>
