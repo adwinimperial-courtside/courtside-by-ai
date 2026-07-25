@@ -216,6 +216,7 @@ function playerCard(app) {
 
   const metaParts = [];
   if (app.league_name) metaParts.push(String(app.league_name).toUpperCase());
+  if (app.team_name) metaParts.push(String(app.team_name).toUpperCase());
   if (app.handle) metaParts.push('@' + String(app.handle).replace(/^@/, '').toUpperCase());
   const metaLine = metaParts.length ? metaParts.join(' &middot; ') : '';
 
@@ -318,16 +319,34 @@ function playerCard(app) {
 }
 
 function playerBody(greeting, app) {
-  return `
-              <p style="margin:0 0 18px 0;font-size:16px;color:${NAVY};font-weight:700;">${greeting}</p>
+  const isRosterAdd = (app.variant === 'roster_add');
+  const teamName = app.team_name ? String(app.team_name) : 'your team';
+  const leagueName = app.league_name ? String(app.league_name) : 'a new league';
 
+  const rosterAddBanner = isRosterAdd ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px 0;">
+                <tr><td style="background-color:#fff4ec;border:1px solid #f6d3b8;border-left:4px solid ${ORANGE};border-radius:10px;padding:18px 20px;">
+                  <p style="margin:0 0 6px 0;font-size:11px;font-weight:700;color:${ORANGE};letter-spacing:0.6px;">ADDED TO A NEW LEAGUE</p>
+                  <p style="margin:0 0 8px 0;font-size:17px;font-weight:700;color:${NAVY};line-height:1.4;">You've been added to <span style="color:${ORANGE};">${teamName}</span>, in <span style="color:${ORANGE};">${leagueName}</span>.</p>
+                  <p style="margin:0;font-size:14px;color:#5a4a3a;line-height:1.6;">You already have a Courtside account, so there's nothing to set up. ${app.team_name ? `Your coach has placed you on the ${teamName} roster &mdash; just` : 'Just'} log in and your stats, schedule and profile for this league are ready to go.</p>
+                </td></tr>
+              </table>` : '';
+
+  const intro = isRosterAdd ? `
+              <p style="margin:0 0 24px 0;font-size:15px;color:#444;line-height:1.7;">
+                This is your dashboard for this league. Right now it's empty. It fills in as you play.
+              </p>` : `
               <p style="margin:0 0 16px 0;font-size:15px;color:#444;line-height:1.7;">
                 Your player access has been approved. You can log in any time at <a href="https://www.courtside-by-ai.com" style="color:${ORANGE};font-weight:700;text-decoration:none;">www.courtside-by-ai.com</a>.
               </p>
 
               <p style="margin:0 0 24px 0;font-size:15px;color:#444;line-height:1.7;">
                 This is your dashboard. Right now it's empty. It fills in as you play.
-              </p>
+              </p>`;
+
+  return `
+              <p style="margin:0 0 18px 0;font-size:16px;color:${NAVY};font-weight:700;">${greeting}</p>
+${rosterAddBanner}${intro}
 ${playerCard(app)}
               <p style="margin:0 0 30px 0;font-size:13px;color:#888;line-height:1.6;text-align:center;">Every dash above turns into a number the moment your first game is recorded.</p>
 
@@ -736,7 +755,12 @@ function buildEmailHtml(firstName, role, app) {
   return shell(genericBody(greeting));
 }
 
-function buildSubject(role) {
+function buildSubject(role, app) {
+  if (app && app.variant === 'roster_add') {
+    const t = app.team_name ? String(app.team_name) : 'a new team';
+    const l = app.league_name ? String(app.league_name) : 'a new league';
+    return `You're on a new team \u2014 ${t}, in ${l} \u{1F3C0}`;
+  }
   if (role === 'league_admin') return "Your league is ready to run on Courtside \u{1F3C0}";
   if (role === 'coach') return "Your Courtside coach access is ready \u{1F3C0}";
   if (role === 'player') return "You're in \u2014 your Courtside player profile is live \u{1F3C0}";
@@ -770,7 +794,7 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: application.user_email,
-      subject: buildSubject(role),
+      subject: buildSubject(role, application),
       body: htmlBody,
       from_name: "Courtside by AI",
     });

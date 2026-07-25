@@ -58,6 +58,27 @@ Deno.serve(async (req) => {
           });
         }
 
+        // ROSTER_ADD_EMAIL_V1 — notify the player (best-effort; never blocks the match)
+        try {
+          let teamName = null;
+          let leagueName = null;
+          try { if (teamId) { const t = await base44.asServiceRole.entities.Team.get(teamId); teamName = t?.name || null; } } catch (_e) {}
+          try { const l = await base44.asServiceRole.entities.League.get(targetLeagueId); leagueName = l?.name || null; } catch (_e) {}
+          if (targetUser?.email) {
+            await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
+              application: {
+                user_email: targetUser.email,
+                user_name: targetUser.full_name,
+                display_name: targetUser.full_name,
+                requested_role: 'player',
+                league_name: leagueName,
+                team_name: teamName,
+                variant: 'roster_add',
+              },
+            });
+          }
+        } catch (emailErr) { console.error('Roster-add email failed:', emailErr.message); }
+
         applied++;
       } catch (err) {
         errors.push({ userId: match.userId, error: err.message });
