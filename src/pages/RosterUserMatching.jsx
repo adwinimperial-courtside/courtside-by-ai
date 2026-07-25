@@ -34,6 +34,7 @@ export default function RosterUserMatching() {
   const [userSearchResults, setUserSearchResults] = useState({}); // rowIndex -> [users]
   const [overrideUser, setOverrideUser] = useState({}); // rowIndex -> user object
   const [sourceUserIds, setSourceUserIds] = useState(() => new Set()); // users with an identity in the source league
+  const [assignedUserIds, setAssignedUserIds] = useState(() => new Set()); // users already matched to a player in the target league
 
   useEffect(() => {
     base44.auth.me().then(u => { setCurrentUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
@@ -101,6 +102,7 @@ export default function RosterUserMatching() {
       );
       setAlreadyAssignedCount(existingTargetIdentities.filter(i => i.match_status === 'matched').length);
       setSourceUserIds(new Set(sourceIdentities.map(i => i.user_id).filter(Boolean)));
+      setAssignedUserIds(new Set(existingTargetIdentities.filter(i => i.match_status === 'matched' && i.user_id).map(i => i.user_id)));
 
       const rows = [];
       const newApprovalState = {};
@@ -175,8 +177,12 @@ export default function RosterUserMatching() {
     const tokens = full.split(" ").filter(t => t.length >= 2);
     const scored = [];
     if (sourceUserIds.size === 0) return [];
+    const takenIds = new Set(assignedUserIds);
+    Object.values(overrideUser).forEach(ou => { if (ou?.id) takenIds.add(ou.id); });
+    (previewRows || []).forEach((r, i) => { if (r.user?.id && approvalState[i] === "approved") takenIds.add(r.user.id); });
     for (const u of allUsers) {
       if (!sourceUserIds.has(u.id)) continue;
+      if (takenIds.has(u.id)) continue;
       const name = normalize(u.full_name);
       if (!name) continue;
       let score = 0;
