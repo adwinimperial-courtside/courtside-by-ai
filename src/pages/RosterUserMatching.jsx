@@ -172,7 +172,7 @@ export default function RosterUserMatching() {
       if (score > 0) scored.push({ u, score });
     }
     scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, 10).map(x => x.u);
+    return scored.slice(0, 3).map(x => x.u);
   };
 
   const approvedCount = previewRows ? previewRows.filter((_, i) => approvalState[i] === "approved").length : 0;
