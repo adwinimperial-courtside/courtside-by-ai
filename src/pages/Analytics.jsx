@@ -91,16 +91,18 @@ export default function Analytics() {
 
   const isAdmin = currentUser?.role === "admin" || currentUser?.user_type === "app_admin";
 
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
   const { data: todayData, isLoading: loadingToday, refetch: refetchToday } = useQuery({
-    queryKey: ["analytics_today"],
-    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "today" }).then(r => r.data),
+    queryKey: ["analytics_today", tz],
+    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "today", tz }).then(r => r.data),
     enabled: isAdmin,
     refetchInterval: 60000,
   });
 
   const { data: dailyData, isLoading: loadingDaily } = useQuery({
-    queryKey: ["analytics_daily"],
-    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "daily_active" }).then(r => r.data),
+    queryKey: ["analytics_daily", tz],
+    queryFn: () => base44.functions.invoke("getLoginAnalytics", { action: "daily_active", tz }).then(r => r.data),
     enabled: isAdmin,
   });
 

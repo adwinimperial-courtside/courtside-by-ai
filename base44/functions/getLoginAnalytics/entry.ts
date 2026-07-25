@@ -15,8 +15,28 @@ Deno.serve(async (req) => {
     const { action, email: targetEmail } = body;
 
     const now = new Date();
-    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    // TZ_VIEWER_V1: count on the viewer's browser timezone (passed as body.tz),
+    // DST-safe; falls back to Europe/Helsinki if missing/invalid.
+    const TZ = (() => {
+      const t = body.tz;
+      if (typeof t === 'string' && t) { try { new Intl.DateTimeFormat('en-US', { timeZone: t }); return t; } catch (_e) {} }
+      return 'Europe/Helsinki';
+    })();
+    const dayKeyTZ = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    const tzOffsetMs = (date) => {
+      const p = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        .formatToParts(date).reduce((a, x) => { a[x.type] = x.value; return a; }, {});
+      const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+      return asUTC - date.getTime();
+    };
+    const zonedMidnight = (dateStr) => {
+      const naive = new Date(dateStr + 'T00:00:00Z').getTime();
+      const utc = naive - tzOffsetMs(new Date(naive - tzOffsetMs(new Date(naive))));
+      return new Date(utc);
+    };
+    const todayStart = zonedMidnight(dayKeyTZ(now));
+    const todayEnd = zonedMidnight(dayKeyTZ(new Date(todayStart.getTime() + 26 * 60 * 60 * 1000)));
     const fourteenDaysAgo = new Date(todayStart.getTime() - 13 * 24 * 60 * 60 * 1000);
     const thirtyDaysAgo = new Date(todayStart.getTime() - 29 * 24 * 60 * 60 * 1000);
     const sevenDaysAgo = new Date(todayStart.getTime() - 6 * 24 * 60 * 60 * 1000);
@@ -94,7 +114,7 @@ Deno.serve(async (req) => {
       const dailyMap = {};
       for (let d = 0; d < 14; d++) {
         const day = new Date(todayStart.getTime() - d * 24 * 60 * 60 * 1000);
-        const key = day.toISOString().slice(0, 10);
+        const key = dayKeyTZ(day);
         dailyMap[key] = { date: key, unique_users: new Set(), total_logins: 0 };
       }
 
@@ -102,7 +122,7 @@ Deno.serve(async (req) => {
       const sevenDaysAgoIso = sevenDaysAgo.toISOString();
 
       for (const e of events) {
-        const key = new Date(e.logged_at).toISOString().slice(0, 10);
+        const key = dayKeyTZ(new Date(e.logged_at));
         if (dailyMap[key]) {
           dailyMap[key].unique_users.add(e.user_id);
           dailyMap[key].total_logins += 1;
