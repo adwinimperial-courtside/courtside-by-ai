@@ -33,6 +33,7 @@ export default function RosterUserMatching() {
   const [searchOverride, setSearchOverride] = useState({}); // rowIndex -> search query
   const [userSearchResults, setUserSearchResults] = useState({}); // rowIndex -> [users]
   const [overrideUser, setOverrideUser] = useState({}); // rowIndex -> user object
+  const [sourceUserIds, setSourceUserIds] = useState(() => new Set()); // users with an identity in the source league
 
   useEffect(() => {
     base44.auth.me().then(u => { setCurrentUser(u); setUserLoaded(true); }).catch(() => setUserLoaded(true));
@@ -89,6 +90,7 @@ export default function RosterUserMatching() {
           .map(i => i.matched_player_id)
       );
       setAlreadyAssignedCount(existingTargetIdentities.filter(i => i.match_status === 'matched').length);
+      setSourceUserIds(new Set(sourceIdentities.map(i => i.user_id).filter(Boolean)));
 
       const rows = [];
       const newApprovalState = {};
@@ -162,7 +164,9 @@ export default function RosterUserMatching() {
     if (!full) return [];
     const tokens = full.split(" ").filter(t => t.length >= 2);
     const scored = [];
+    if (sourceUserIds.size === 0) return [];
     for (const u of allUsers) {
+      if (!sourceUserIds.has(u.id)) continue;
       const name = normalize(u.full_name);
       if (!name) continue;
       let score = 0;
