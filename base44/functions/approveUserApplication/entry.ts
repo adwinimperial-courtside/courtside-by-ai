@@ -33,6 +33,21 @@ async function getLeagueName(base44, leagueId) {
   } catch (_e) { return leagueId; }
 }
 
+// ROLE_CONFLICT_GUARD_V1 — the applicant's current effective role in one league, so an
+// approval never silently overwrites a role they already hold there. Mirrors useEffectiveRole:
+// an explicit UserLeagueIdentity role wins; otherwise app_admin/league_admin membership counts.
+async function existingRoleInLeague(base44, userId, applicantUser, leagueId) {
+  try {
+    const rows = await base44.asServiceRole.entities.UserLeagueIdentity.filter({ user_id: userId, league_id: leagueId });
+    if (rows && rows.length > 0 && rows[0].role) return rows[0].role;
+  } catch (_e) { /* no identity row */ }
+  if (!applicantUser) return null;
+  const assigned = Array.isArray(applicantUser.assigned_league_ids) ? applicantUser.assigned_league_ids : [];
+  if (applicantUser.user_type === 'app_admin') return 'app_admin';
+  if (applicantUser.user_type === 'league_admin' && assigned.includes(leagueId)) return 'league_admin';
+  return null;
+}
+
 async function grantLeague(base44, application, applicantUser, leagueId, role) {
   const existing = applicantUser || {};
   const existingLeagueIds = Array.isArray(existing.assigned_league_ids) ? existing.assigned_league_ids : [];
@@ -281,6 +296,7 @@ Deno.serve(async (req) => {
     const { applicationId, action, override_league_id } = body;
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
     const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
+    const forceConflicts = Array.isArray(body.force_conflicts) ? body.force_conflicts : [];
     // RELEASE_CLAIM_V1 — app_admin frees a roster slot held by a stale UserLeagueIdentity
     if (action === 'release_claim') {
       if (!isAppAdmin) return Response.json({ error: 'Forbidden: only app admins can release a roster link' }, { status: 403 });
@@ -387,6 +403,21 @@ Deno.serve(async (req) => {
       const entry = decisions.find(d => d.league_id === lid);
       if (!entry) continue;
       if (entry.decision === 'approved' || entry.decision === 'rejected') continue;
+      // ROLE_CONFLICT_GUARD_V1 — pause (do not silently overwrite) if the applicant already
+      // holds a DIFFERENT role in this league, unless the approver explicitly forced it.
+      if (action === 'approve' && !forceConflicts.includes(lid)) {
+        const priorRole = await existingRoleInLeague(base44, application.user_id, applicantUser, lid);
+        if (priorRole && priorRole !== role) {
+          conflicts.push({
+            league_id: lid,
+            reason: 'role_conflict',
+            existing_role: priorRole,
+            requested_role: role,
+            league_name: await getLeagueName(base44, lid),
+          });
+          continue; // leave this league pending; approver must confirm the override
+        }
+      }
 
       // PLAYER_CLAIM_GUARD — confirmed roster match must be claimed before this league is approved
       if (action === 'approve' && role === 'player' && playerMatches) {

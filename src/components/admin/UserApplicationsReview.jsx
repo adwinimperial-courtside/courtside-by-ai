@@ -47,12 +47,34 @@ export default function UserApplicationsReview() {
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['review_requests'] });
 
+  // ROLE_CONFLICT_GUARD_V1 — friendly labels for the override confirm box.
+  const roleLabel = (r) => ({ app_admin: 'App Admin', league_admin: 'League Admin', coach: 'Coach', player: 'Player', viewer: 'Fan' }[r] || r);
+
   const decide = async (app, action, leagueIds) => {
     if (action === 'reject' && !window.confirm(`Reject ${app.user_name || app.user_email}'s request for this league?`)) return;
     setActionError(null);
     setProcessingAppId(app.id);
     try {
-      await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action, league_ids: leagueIds });
+      const res = await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action, league_ids: leagueIds });
+      // ROLE_CONFLICT_GUARD_V1 — a league is paused (not overwritten) when the applicant already
+      // holds a different role there. Confirm the override, then re-send forced for those leagues.
+      const conflicts = (res && res.data && Array.isArray(res.data.conflicts)) ? res.data.conflicts : [];
+      const roleConflicts = conflicts.filter(c => c && c.reason === 'role_conflict');
+      if (action === 'approve' && roleConflicts.length > 0) {
+        const who = app.user_name || app.user_email || 'This person';
+        const body = roleConflicts.map(c =>
+          `${who} is already ${roleLabel(c.existing_role)} in ${c.league_name || 'this league'}.\nApproving as ${roleLabel(c.requested_role)} will replace that role in this league.`
+        ).join('\n\n');
+        const ok = window.confirm(`${body}\n\nOther leagues are unaffected. Continue?`);
+        if (ok) {
+          await base44.functions.invoke('approveUserApplication', {
+            applicationId: app.id,
+            action: 'approve',
+            league_ids: roleConflicts.map(c => c.league_id),
+            force_conflicts: roleConflicts.map(c => c.league_id),
+          });
+        }
+      }
       refresh();
     } catch (e) {
       setActionError((e && e.message) || 'Action failed');
