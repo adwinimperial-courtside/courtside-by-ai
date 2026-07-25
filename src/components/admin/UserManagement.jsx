@@ -193,7 +193,7 @@ export default function UserManagement() {
                     {user.role === "admin" ? "Admin" : "User"}
                   </Badge>
                   <Badge variant="secondary" className="text-xs">
-                    {user.user_type || "viewer"}
+                    {user.user_type || "No role"}
                   </Badge>
                   {user.assigned_league_ids?.length > 0 && (
                     <Badge className="text-xs bg-blue-100 text-blue-800">

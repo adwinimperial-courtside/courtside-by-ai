@@ -322,7 +322,7 @@ export default function PendingUserManagement() {
                 </div>
                 <div className="flex gap-2 mt-2">
                   <Badge variant="secondary" className="text-xs">
-                    {pending.user_type || "viewer"}
+                    {pending.user_type || "No role"}
                   </Badge>
                   {pending.assigned_league_ids?.length > 0 && (
                     <Badge className="text-xs bg-blue-100 text-blue-800">

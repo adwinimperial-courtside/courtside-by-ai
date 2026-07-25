@@ -516,7 +516,7 @@ export default function NoLeagueUsers() {
                     </Badge>
                   )}
                   <Badge className={roleColors[user.user_type] || roleColors.viewer}>
-                    {user.user_type || "viewer"}
+                    {user.user_type || "No role"}
                   </Badge>
                   <span className="text-xs text-slate-400 hidden sm:block">
                     {user.created_date ? format(new Date(user.created_date), "MMM d, yyyy") : "—"}

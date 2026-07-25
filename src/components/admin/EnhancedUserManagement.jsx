@@ -767,7 +767,7 @@ export default function EnhancedUserManagement() {
                         {leagueRoleEntries.length > 0 ? leagueRoleEntries.map((entry, i) => (
                           <div key={i} className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(entry.role)}`}>
-                              {entry.role || "viewer"}
+                              {entry.role || "No role"}
                             </span>
                             <span className="text-xs text-slate-500">@</span>
                             <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
@@ -786,7 +786,7 @@ export default function EnhancedUserManagement() {
                           </div>
                         )) : (
                           <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
-                            {user.user_type || "no role"} · no league assigned
+                            {user.user_type || "No role"} · no league assigned
                           </span>
                         )}
                       </div>
