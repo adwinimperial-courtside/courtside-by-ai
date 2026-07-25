@@ -409,7 +409,10 @@ export default function Layout({ children }) {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">
+          {/* NAV_FIX_V2 — key the page area on the URL so React always renders the new page
+              on navigation. Without this, a concurrent-render stall can change the URL while
+              leaving the previous page's content on screen (intermittent "stuck page" bug). */}
+          <div key={location.pathname} className="flex-1 overflow-auto">
             {children}
           </div>
         </main>
