@@ -242,6 +242,30 @@ export default function NoLeagueUsers() {
     setApplySuccess(false);
     try {
       await base44.functions.invoke("applyRosterMatchForUsers", { approvedMatches });
+
+      const userById = Object.fromEntries(noLeagueUsers.map((u) => [u.id, u]));
+      const uniqueUserIds = [...new Set(approvedMatches.map((m) => m.userId))];
+      for (const uid of uniqueUserIds) {
+        const u = userById[uid];
+        const m = approvedMatches.find((x) => x.userId === uid);
+        const email = u?.email || m?.userEmail;
+        const name = u?.full_name || m?.userName;
+        if (!email) continue;
+        try {
+          await base44.functions.invoke("sendAccessApprovedEmail", {
+            application: {
+              id: u?.application_id || undefined,
+              user_email: email,
+              user_name: name,
+              display_name: u?.application_name || name,
+              requested_role: "player",
+            },
+          });
+        } catch (e) {
+          // welcome email is best-effort
+        }
+      }
+
       setApplySuccess(true);
       setRosterMatchResults(null);
       queryClient.invalidateQueries({ queryKey: ["noLeagueUsers"] });
