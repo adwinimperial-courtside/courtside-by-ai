@@ -446,6 +446,7 @@ export default function RosterUserMatching() {
                               onSearch={(q) => searchUsers(row.idx, q)}
                               onSelect={(u) => selectOverrideUser(row.idx, u)}
                               reason={row.reason}
+                              loginCountOf={loginCountOf}
                             />
                           </td>
                         </tr>
@@ -520,6 +521,7 @@ export default function RosterUserMatching() {
                                       onSelect={(u) => selectOverrideUser(row.idx, u)}
                                       reason={null}
                                       placeholder={suggestions.length ? "Or search another user..." : "Search user to assign..."}
+                                      loginCountOf={loginCountOf}
                                     />
                                   </div>
                                 );
@@ -600,7 +602,7 @@ function UserCell({ user }) {
   );
 }
 
-function UserSearchInline({ idx, searchQuery, searchResults, onSearch, onSelect, reason, placeholder }) {
+function UserSearchInline({ idx, searchQuery, searchResults, onSearch, onSelect, reason, placeholder, loginCountOf }) {
   return (
     <div className="space-y-1">
       {reason && <p className="text-xs text-slate-400">{reason}</p>}
@@ -622,7 +624,7 @@ function UserSearchInline({ idx, searchQuery, searchResults, onSearch, onSelect,
               className="w-full text-left px-3 py-2 text-xs hover:bg-blue-50 border-b border-slate-100 last:border-0"
             >
               <div className="font-medium text-slate-800">{u.full_name}</div>
-              <div className="text-slate-400">{u.email}</div>
+              <div className="text-slate-400">{u.email}{loginCountOf ? " \u00b7 " + loginCountOf(u) + " logins" : ""}</div>
             </button>
           ))}
         </div>
