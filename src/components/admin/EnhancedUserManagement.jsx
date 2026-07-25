@@ -130,8 +130,9 @@ export default function EnhancedUserManagement() {
       const coachLeagueIds = (data.assigned_league_ids || []).filter(
         (lid) => effectiveRole(lid) === "coach"
       );
+      const assignedSet = new Set(data.assigned_league_ids || []);
       const keptPairs = (selectedUser.league_team_pairs || []).filter(
-        (p) => !coachLeagueIds.includes(p?.league_id)
+        (p) => assignedSet.has(p?.league_id) && !coachLeagueIds.includes(p?.league_id)
       );
       const coachPairs = coachLeagueIds
         .filter((lid) => leagueTeamMap[lid])
@@ -167,6 +168,18 @@ export default function EnhancedUserManagement() {
             ...uliPayload,
           });
         }
+      }
+
+      // ROLE_UNASSIGN_CLEANUP_V1: delete stale per-league role records for leagues no longer
+      // assigned (coach / viewer / league_admin). Player identities are owned by the roster
+      // link/release flow, so they are intentionally left untouched here.
+      const staleIdentities = (userLeagueIdentities || []).filter(
+        (uli) => uli.user_id === selectedUser.id
+          && !assignedSet.has(uli.league_id)
+          && uli.role !== "player"
+      );
+      for (const uli of staleIdentities) {
+        try { await base44.entities.UserLeagueIdentity.delete(uli.id); } catch (_e) {}
       }
 
       // PLAYER_ROSTER_LINK_V1: link player accounts to roster slots via the guarded function
