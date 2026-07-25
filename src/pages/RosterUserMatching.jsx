@@ -157,6 +157,24 @@ export default function RosterUserMatching() {
 
   const getEffectiveUser = (idx, row) => overrideUser[idx] || row.user;
 
+  const suggestUsersForPlayer = (playerName) => {
+    const full = normalize(playerName);
+    if (!full) return [];
+    const tokens = full.split(" ").filter(t => t.length >= 2);
+    const scored = [];
+    for (const u of allUsers) {
+      const name = normalize(u.full_name);
+      if (!name) continue;
+      let score = 0;
+      if (name === full) score = 3;
+      else if (name.includes(full) || full.includes(name)) score = 2;
+      else if (tokens.some(t => name.includes(t))) score = 1;
+      if (score > 0) scored.push({ u, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, 10).map(x => x.u);
+  };
+
   const approvedCount = previewRows ? previewRows.filter((_, i) => approvalState[i] === "approved").length : 0;
   const skippedCount = previewRows ? previewRows.filter((_, i) => approvalState[i] === "skipped").length : 0;
 
@@ -451,15 +469,36 @@ export default function RosterUserMatching() {
                                 </button>
                               </div>
                             ) : (
-                              <UserSearchInline
-                                idx={row.idx}
-                                searchQuery={searchOverride[row.idx] || ""}
-                                searchResults={userSearchResults[row.idx] || []}
-                                onSearch={(q) => searchUsers(row.idx, q)}
-                                onSelect={(u) => selectOverrideUser(row.idx, u)}
-                                reason={null}
-                                placeholder="Search user to assign..."
-                              />
+                              (() => {
+                                const suggestions = suggestUsersForPlayer(row.player?.name);
+                                return (
+                                  <div className="space-y-1.5">
+                                    {suggestions.length > 0 && (
+                                      <div className="space-y-1">
+                                        <p className="text-[11px] uppercase tracking-wide text-slate-400">Suggested ({suggestions.length})</p>
+                                        {suggestions.map(u => (
+                                          <div key={u.id} className="flex items-center justify-between gap-2 border border-slate-200 rounded-md px-2 py-1.5">
+                                            <div className="min-w-0">
+                                              <div className="text-xs font-medium text-slate-800 truncate">{u.full_name || u.email}</div>
+                                              <div className="text-[11px] text-slate-400 truncate">{u.email}{u.user_type ? " \u00b7 " + u.user_type.replace(/_/g, " ") : " \u00b7 no role"}</div>
+                                            </div>
+                                            <button onClick={() => selectOverrideUser(row.idx, u)} className="text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md px-2.5 py-1 whitespace-nowrap">Assign</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    <UserSearchInline
+                                      idx={row.idx}
+                                      searchQuery={searchOverride[row.idx] || ""}
+                                      searchResults={userSearchResults[row.idx] || []}
+                                      onSearch={(q) => searchUsers(row.idx, q)}
+                                      onSelect={(u) => selectOverrideUser(row.idx, u)}
+                                      reason={null}
+                                      placeholder={suggestions.length ? "Or search another user..." : "Search user to assign..."}
+                                    />
+                                  </div>
+                                );
+                              })()
                             )}
                           </td>
                           <td className="px-4 py-3 text-xs text-slate-400">{row.reason}</td>
