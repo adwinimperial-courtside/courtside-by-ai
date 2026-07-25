@@ -58,6 +58,7 @@ export default function RegistrationGate({ user }) {
   const [step, setStep] = useState(getInitialStep);
   const [selectedRole, setSelectedRole] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
   const [formData, setFormData] = useState({});
   const [selectedLeagues, setSelectedLeagues] = useState([]);
   const [selectedTeam, setSelectedTeam] = useState("");
@@ -113,34 +114,36 @@ export default function RegistrationGate({ user }) {
     setSelectedTeam("");
     setLeagueTeamMap({});
     setSelectedAdminLeagueId("");
+    setFormError("");
     setStep("privacy_consent");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
 
     if (selectedRole === "league_admin") {
       if (adminLeagueMode === "new") {
-        if (!formData.league_name?.trim()) { alert("Please enter a league name."); return; }
-        if (!formData.season_start_date) { alert("Please enter the season start date."); return; }
+        if (!formData.league_name?.trim()) { setFormError("Please enter a league name."); return; }
+        if (!formData.season_start_date) { setFormError("Please enter the season start date."); return; }
         const teams = Number.parseInt(formData.number_of_teams, 10);
-        if (!Number.isInteger(teams) || teams < 2) { alert("Please enter the number of teams (at least 2)."); return; }
+        if (!Number.isInteger(teams) || teams < 2) { setFormError("Please enter the number of teams (at least 2)."); return; }
         const players = Number.parseInt(formData.avg_players_per_team, 10);
-        if (!Number.isInteger(players) || players < 5) { alert("Please enter the average players per team (at least 5)."); return; }
-        if (!formData.phone?.trim()) { alert("Please enter your mobile number so we can reach you about your league."); return; }
+        if (!Number.isInteger(players) || players < 5) { setFormError("Please enter the average players per team (at least 5)."); return; }
+        if (!formData.phone?.trim()) { setFormError("Please enter your mobile number so we can reach you about your league."); return; }
         if (formData.onboarding_call !== false && (!formData.onboarding_date || !formData.onboarding_time)) {
-          alert("Please pick a preferred date and time for your onboarding call, or untick the onboarding call option."); return;
+          setFormError("Please pick a preferred date and time for your onboarding call, or untick the onboarding call option."); return;
         }
       }
       if (adminLeagueMode === "existing" && !selectedAdminLeagueId) {
-        alert("Please select an existing league."); return;
+        setFormError("Please select an existing league."); return;
       }
-      if (!formData.country?.trim()) { alert("Please enter your country."); return; }
+      if (!formData.country?.trim()) { setFormError("Please enter your country."); return; }
     } else {
-      if (selectedLeagues.length === 0) { alert("Please select at least one league."); return; }
+      if (selectedLeagues.length === 0) { setFormError("Please select at least one league."); return; }
       if (selectedRole === "player" || selectedRole === "coach") {
         const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
-        if (missingTeam) { alert("Please select a team for each selected league."); return; }
+        if (missingTeam) { setFormError("Please select a team for each selected league."); return; }
       }
     }
 
@@ -238,7 +241,7 @@ export default function RegistrationGate({ user }) {
       setJustSubmitted(true);
       setStep("pending");
     } catch (error) {
-      alert("Failed to submit application: " + error.message);
+      setFormError("Failed to submit application: " + error.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -326,7 +329,7 @@ export default function RegistrationGate({ user }) {
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-8">
+        <div data-marker="REGGATE_BANNERS_V1" className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-8">
           <button
             onClick={() => setStep("select_role")}
             className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-6 transition-colors"
@@ -623,6 +626,12 @@ export default function RegistrationGate({ user }) {
                   )}
                 </>
               )}
+
+            {formError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">
+                {formError}
+              </div>
+            )}
 
             {(() => {
               let canSubmit = true;
