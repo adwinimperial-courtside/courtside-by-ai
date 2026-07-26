@@ -55,6 +55,14 @@ export default function GameOverlayPage() {
       setHomeTeam(ht);
       setAwayTeam(at);
       setLeague(lg);
+      if (!settings?.league_logo_url && lg?.group_id) {
+        try {
+          const grp = await base44.entities.LeagueGroup.get(lg.group_id);
+          if (grp?.logo_url) setLeagueLogo(grp.logo_url);
+        } catch (err) {
+          console.warn("OVERLAY_GROUP_LOGO_V1 fallback failed", err);
+        }
+      }
     };
     loadData();
 
