@@ -31,15 +31,13 @@ export default function GameOverlayPage() {
       setGame(g);
 
       // Find settings: prefer matching userId param, then fall back to league match, then first
+      const leagueSettings = allSettings.filter(s => s.league_id === g.league_id);
       let settings = null;
       if (userId) {
-        settings = allSettings.find(s => s.user_id === userId || s.created_by_id === userId);
+        settings = leagueSettings.find(s => s.user_id === userId || s.created_by_id === userId);
       }
-      if (!settings) {
-        settings = allSettings.find(s => s.league_id === g.league_id);
-      }
-      if (!settings && allSettings.length > 0) {
-        settings = allSettings[0];
+      if (!settings && leagueSettings.length > 0) {
+        settings = leagueSettings[0];
       }
 
       if (settings?.logo_url) setOverlayLogo(settings.logo_url);
