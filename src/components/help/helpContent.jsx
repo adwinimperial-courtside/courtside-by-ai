@@ -20,7 +20,7 @@ export const HELP_TOPICS = [
     roles: ["player", "coach", "league_admin", "app_admin"],
     summary: "A league is the club or competition itself; each season lives inside it. League cards list their seasons — tap a season to open it.",
     tips: [
-      "Create League starts a new league together with its first season.",
+      "Create League starts a new empty league — then use the New Season button on its card to add the first season.",
       "The Create season button on a league card (admins) adds the next season — optionally copying teams from a previous one.",
       "Past seasons sit under Archived seasons at the bottom of a league card — tap to expand and view their stats.",
       "The star sets your default season; if a league you expect is missing, ask your league admin to add you.",
