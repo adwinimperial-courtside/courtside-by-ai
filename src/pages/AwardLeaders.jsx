@@ -45,7 +45,7 @@ export default function AwardLeadersPage() {
     ? leagues
     : hasAssignedLeagues
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
-      : leagues;
+      : (currentUser?.user_type === 'league_admin' ? [] : leagues);
 
   // AWARDS_PAGE_HOOK_V1 — single shared fetch (paged, truncation-proof)
   const { teams, players, games, stats: allStats } = useLeagueStatsData(selectedLeague);

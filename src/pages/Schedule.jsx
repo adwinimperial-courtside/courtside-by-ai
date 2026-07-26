@@ -62,7 +62,7 @@ export default function SchedulePage() {
     ? leagues
     : hasAssignedLeagues
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
-      : leagues;
+      : (currentUser?.user_type === 'league_admin' ? [] : leagues);
 
   const { data: teams = [], isLoading: teamsLoading } = useQuery({
     queryKey: ['schedule_teams', selectedLeague],

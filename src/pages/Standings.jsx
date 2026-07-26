@@ -44,7 +44,7 @@ export default function StandingsPage() {
     ? leagues
     : hasAssignedLeagues
       ? leagues.filter(league => assignedLeagueIds.includes(league.id))
-      : leagues;
+      : (currentUser?.user_type === 'league_admin' ? [] : leagues);
 
   const { data: teams = [] } = useQuery({
     queryKey: ['standings_teams', selectedLeague],
