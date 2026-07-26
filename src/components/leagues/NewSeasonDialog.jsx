@@ -90,7 +90,15 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         owner_user_id: sourceLeague.owner_user_id,
         owner_email: sourceLeague.owner_email,
         owner_name: sourceLeague.owner_name,
-      } : {};
+      } : (group && group.owner_user_id ? {
+        owner_user_id: group.owner_user_id,
+        owner_email: group.owner_email,
+        owner_name: group.owner_name,
+      } : (currentUser ? {
+        owner_user_id: currentUser.id,
+        owner_email: currentUser.email,
+        owner_name: currentUser.full_name,
+      } : {}));
       Object.keys(ownerInfo).forEach(k => { if (ownerInfo[k] === undefined) delete ownerInfo[k]; });
 
       const newLeague = await base44.entities.League.create({

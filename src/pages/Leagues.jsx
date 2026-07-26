@@ -48,7 +48,7 @@ export default function LeaguesPage() {
   });
 
   const createLeagueMutation = useMutation({
-    mutationFn: async ({ leagueName, description, seasonName, seasonYear }) => {
+    mutationFn: async ({ leagueName, description }) => {
       const ownerInfo = currentUser ? {
         owner_user_id: currentUser.id,
         owner_email: currentUser.email,
@@ -61,27 +61,11 @@ export default function LeaguesPage() {
         ...ownerInfo,
       });
 
-      const newLeague = await base44.entities.League.create({
-        name: seasonName,
-        season: seasonYear,
-        ...(description ? { description } : {}),
-        group_id: newGroup.id,
-        ...ownerInfo,
-      });
-
-      if (currentUser?.user_type === 'league_admin') {
-        const currentAssignedLeagues = currentUser.assigned_league_ids || [];
-        await base44.auth.updateMe({
-          assigned_league_ids: [...currentAssignedLeagues, newLeague.id]
-        });
-      }
-
-      return newLeague;
+      return newGroup;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leagues'] });
       queryClient.invalidateQueries({ queryKey: ['leagueGroups'] });
-      queryClient.invalidateQueries({ queryKey: ['user'] });
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
       setShowCreateDialog(false);
     },
   });
@@ -90,7 +74,6 @@ export default function LeaguesPage() {
     mutationFn: async ({ id, data }) => {
       const original = editingLeague;
       await base44.entities.League.update(id, data);
-      // Build changes list
       const fields = ["name", "season", "description"];
       const changes = fields
         .filter(f => (original[f] || "") !== (data[f] || ""))
@@ -139,7 +122,6 @@ export default function LeaguesPage() {
   const isLeagueAdmin = currentUser?.user_type === 'league_admin';
   const isAppAdmin = currentUser?.user_type === 'app_admin';
 
-  // app_admin sees all leagues; everyone else only sees their assigned leagues
   const assignedLeagues = isAppAdmin
     ? leagues
     : leagues.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id));
@@ -156,7 +138,6 @@ export default function LeaguesPage() {
       )
     : assignedLeagues;
 
-  // GROUPED_LEAGUES_V1 — partition visible leagues into group cards vs standalone cards
   const groupsById = {};
   leagueGroups.forEach(g => { groupsById[g.id] = g; });
   const seasonsByGroup = {};
@@ -169,11 +150,23 @@ export default function LeaguesPage() {
       standaloneLeagues.push(l);
     }
   });
-  const visibleGroups = Object.keys(seasonsByGroup)
-    .map(id => groupsById[id])
-    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const ownedEmptyGroups = leagueGroups.filter(g => {
+    if (seasonsByGroup[g.id]) return false;
+    const isMine = isAppAdmin || (isLeagueAdmin && (
+      g.owner_user_id === currentUser?.id ||
+      (g.owner_email && currentUser?.email && g.owner_email === currentUser.email)
+    ));
+    if (!isMine) return false;
+    if (searchTerm && !(g.name || "").toLowerCase().includes(searchTerm)) return false;
+    return true;
+  });
+  const visibleGroups = [
+    ...Object.keys(seasonsByGroup).map(id => groupsById[id]),
+    ...ownedEmptyGroups,
+  ].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   const canManageSeason = (league) => isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
   const showSetDefault = isLeagueAdmin || visibleLeagues.length > 1;
+  const hasNothingToShow = visibleLeagues.length === 0 && visibleGroups.length === 0;
 
   React.useEffect(() => {
     if (currentUser && assignedLeagues.length === 1 && !currentUser.default_league_id) {
@@ -182,7 +175,7 @@ export default function LeaguesPage() {
   }, [assignedLeagues, currentUser, setDefaultLeagueMutation]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+    <div data-marker="LEAGUE_NO_AUTOSEASON_V1" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-10">
           <div>
@@ -221,7 +214,7 @@ export default function LeaguesPage() {
               <div key={i} className="h-64 bg-white rounded-2xl animate-pulse" />
             ))}
           </div>
-        ) : visibleLeagues.length === 0 ? (
+        ) : hasNothingToShow ? (
            <div className="flex flex-col items-center justify-center py-20 px-4">
              <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                <Trophy className="w-12 h-12 text-slate-400" />
@@ -237,7 +230,7 @@ export default function LeaguesPage() {
                 <GroupCard
                   key={group.id}
                   group={group}
-                  seasons={seasonsByGroup[group.id]}
+                  seasons={seasonsByGroup[group.id] || []}
                   userType={currentUser?.user_type}
                   defaultLeagueId={currentUser?.default_league_id}
                   onSetDefault={showSetDefault ? setDefaultLeagueMutation.mutate : null}
