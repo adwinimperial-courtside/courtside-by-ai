@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ChevronDown, ChevronRight, ChevronUp, Pencil, Plus, Star, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, ChevronRight, ChevronUp, Loader2, Pencil, Plus, Star, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -64,10 +64,24 @@ function SeasonRow({ league, isViewer, isDefault, onSetDefault, canManage, onEdi
   );
 }
 
-export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason, onDeleteGroup }) {
+export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason, onDeleteGroup, onUploadLogo }) {
   const [showArchived, setShowArchived] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const isViewer = userType === "viewer";
+
+  const handleLogoFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !onUploadLogo) return;
+    setUploadingLogo(true);
+    try {
+      await onUploadLogo(group, file);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   const bySeasonDesc = (a, b) =>
     (b.season || "").localeCompare(a.season || "") || (a.name || "").localeCompare(b.name || "");
@@ -90,16 +104,42 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
       <Card data-marker="GROUPED_LEAGUES_V1" className="border-0 overflow-hidden shadow-md hover:shadow-xl transition-shadow bg-white">
         <div className="h-3" style={{ backgroundColor: "#0B1F3A" }} />
         <div className="flex items-center gap-3 px-4 pt-4 pb-2">
-          {group.logo_url ? (
-            <img src={group.logo_url} alt={group.name} className="w-11 h-11 rounded-xl object-cover shrink-0" />
-          ) : (
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[15px] shrink-0"
-              style={{ backgroundColor: "#0B1F3A", color: "#F26B1F" }}
-            >
-              {initialsOf(group.name)}
-            </div>
-          )}
+          <div
+            data-marker="LEAGUE_LOGO_UPLOAD_V1"
+            className={`relative shrink-0 ${onUploadLogo ? "cursor-pointer" : ""}`}
+            onClick={() => { if (onUploadLogo && !uploadingLogo) fileInputRef.current?.click(); }}
+            title={onUploadLogo ? (group.logo_url ? "Replace league logo" : "Upload league logo") : undefined}
+          >
+            {group.logo_url ? (
+              <img src={group.logo_url} alt={group.name} className="w-11 h-11 rounded-xl object-cover" />
+            ) : (
+              <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-[15px]"
+                style={{ backgroundColor: "#0B1F3A", color: "#F26B1F" }}
+              >
+                {initialsOf(group.name)}
+              </div>
+            )}
+            {uploadingLogo && (
+              <div className="absolute inset-0 rounded-xl bg-black/40 flex items-center justify-center">
+                <Loader2 className="w-5 h-5 text-white animate-spin" />
+              </div>
+            )}
+            {onUploadLogo && !uploadingLogo && (
+              <div className="absolute -right-1.5 -bottom-1.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white" style={{ backgroundColor: "#F26B1F" }}>
+                <Camera className="w-3 h-3 text-white" />
+              </div>
+            )}
+            {onUploadLogo && (
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoFile}
+              />
+            )}
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-lg font-bold text-slate-900 truncate">{group.name}</p>
             <p className="text-xs text-slate-500">

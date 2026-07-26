@@ -23,6 +23,7 @@ export default function LeaguesPage() {
   const [deletingLeague, setDeletingLeague] = useState(null);
   const [newSeasonGroup, setNewSeasonGroup] = useState(null);
   const [groupDeleteError, setGroupDeleteError] = useState("");
+  const [logoUploadError, setLogoUploadError] = useState("");
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -193,15 +194,25 @@ export default function LeaguesPage() {
   ].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   const canManageSeason = (league) => isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
   const groupHasSeasons = (groupId) => leagues.some(l => l.group_id === groupId);
-  const canDeleteGroup = (group) =>
-    !groupHasSeasons(group.id) &&
-    (isAppAdmin || (isLeagueAdmin && (
+  const isGroupOwner = (group) =>
+    isAppAdmin || (isLeagueAdmin && (
       group.owner_user_id === currentUser?.id ||
       (group.owner_email && currentUser?.email && group.owner_email === currentUser.email)
-    )));
+    ));
+  const canDeleteGroup = (group) => !groupHasSeasons(group.id) && isGroupOwner(group);
   const handleDeleteGroup = (group) => {
     if (!window.confirm(`Delete league "${group.name}"? This cannot be undone.`)) return;
     deleteGroupMutation.mutate(group);
+  };
+  const handleUploadLogo = async (group, file) => {
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      await base44.entities.LeagueGroup.update(group.id, { logo_url: file_url });
+      setLogoUploadError("");
+      queryClient.invalidateQueries({ queryKey: ['leagueGroups'] });
+    } catch (err) {
+      setLogoUploadError(err?.message ? `Logo upload failed: ${err.message}` : "Logo upload failed. Please try again.");
+    }
   };
   const showSetDefault = isLeagueAdmin || visibleLeagues.length > 1;
   const hasNothingToShow = visibleLeagues.length === 0 && visibleGroups.length === 0;
@@ -240,6 +251,13 @@ export default function LeaguesPage() {
           <div data-marker="DELETE_LEAGUE_GROUP_V1" className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <span>{groupDeleteError}</span>
             <button onClick={() => setGroupDeleteError("")} className="font-semibold text-red-700 hover:text-red-900 shrink-0">Dismiss</button>
+          </div>
+        )}
+
+        {logoUploadError && (
+          <div data-marker="LEAGUE_LOGO_UPLOAD_V1" className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{logoUploadError}</span>
+            <button onClick={() => setLogoUploadError("")} className="font-semibold text-red-700 hover:text-red-900 shrink-0">Dismiss</button>
           </div>
         )}
 
@@ -284,6 +302,7 @@ export default function LeaguesPage() {
                   onDelete={setDeletingLeague}
                   onNewSeason={isAppAdmin || isLeagueAdmin ? setNewSeasonGroup : null}
                   onDeleteGroup={canDeleteGroup(group) ? handleDeleteGroup : null}
+                  onUploadLogo={isGroupOwner(group) ? handleUploadLogo : null}
                 />
               ))}
               {standaloneLeagues.map((league) => {
