@@ -259,6 +259,7 @@ export const HELP_TOPICS = [
       "A live scoreboard overlay you can add on top of your game video stream.",
     tips: [
       "The overlay follows the live game as the scorer records plays.",
+      "Overlay logos and ticker are saved per league — pick the league first, then upload and save.",
     ],
   },
   {

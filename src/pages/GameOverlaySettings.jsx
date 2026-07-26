@@ -74,6 +74,7 @@ function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpl
 export default function GameOverlaySettingsPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [leagues, setLeagues] = useState([]);
+  const [allSettings, setAllSettings] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [logoUrl, setLogoUrl] = useState(null);
   const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
@@ -105,21 +106,36 @@ export default function GameOverlaySettingsPage() {
       }
       setLeagues(visibleLeagues);
 
-      // Load this user's own overlay settings
-      const allSettings = await base44.entities.OverlaySettings.list("-created_date", 50);
-      const mySettings = allSettings.find(s => s.user_id === user.id || s.created_by_id === user.id);
-      if (mySettings) {
-        setLogoUrl(mySettings.logo_url || null);
-        setLeagueLogoUrl(mySettings.league_logo_url || null);
-        setTickerText(mySettings.ticker_text || "");
-        setTickerEnabled(mySettings.ticker_enabled !== false);
-        setSettingsId(mySettings.id);
-        setSelectedLeagueId(mySettings.league_id || "");
-      }
+      const settingsList = await base44.entities.OverlaySettings.list("-created_date", 200);
+      setAllSettings(settingsList);
       setLoading(false);
     };
     load();
   }, []);
+
+  const applyLeagueConfig = (lid, settingsList, user) => {
+    const rec = settingsList.find(
+      (s) => s.league_id === lid && (s.user_id === user.id || s.created_by_id === user.id)
+    );
+    if (rec) {
+      setLogoUrl(rec.logo_url || null);
+      setLeagueLogoUrl(rec.league_logo_url || null);
+      setTickerText(rec.ticker_text || "");
+      setTickerEnabled(rec.ticker_enabled !== false);
+      setSettingsId(rec.id);
+    } else {
+      setLogoUrl(null);
+      setLeagueLogoUrl(null);
+      setTickerText("");
+      setTickerEnabled(true);
+      setSettingsId(null);
+    }
+  };
+
+  const handleLeagueChange = (lid) => {
+    setSelectedLeagueId(lid);
+    applyLeagueConfig(lid, allSettings, currentUser);
+  };
 
   const handleFileUpload = async (e, field) => {
     const file = e.target.files?.[0];
@@ -132,21 +148,28 @@ export default function GameOverlaySettingsPage() {
   };
 
   const handleSave = async () => {
+    if (!selectedLeagueId) return;
     setSaving(true);
     const data = {
       user_id: currentUser.id,
-      league_id: selectedLeagueId || null,
+      league_id: selectedLeagueId,
       logo_url: logoUrl,
       league_logo_url: leagueLogoUrl,
       ticker_text: tickerText,
       ticker_enabled: tickerEnabled,
     };
+    let recId = settingsId;
     if (settingsId) {
       await base44.entities.OverlaySettings.update(settingsId, data);
     } else {
       const created = await base44.entities.OverlaySettings.create(data);
+      recId = created.id;
       setSettingsId(created.id);
     }
+    setAllSettings((prev) => {
+      const others = prev.filter((s) => s.id !== recId);
+      return [{ ...data, id: recId }, ...others];
+    });
     setSaving(false);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -169,7 +192,7 @@ export default function GameOverlaySettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
+    <div data-marker="OVERLAY_PER_LEAGUE_V1" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -185,23 +208,27 @@ export default function GameOverlaySettingsPage() {
         <Card className="border-slate-200 mb-6">
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-slate-800">League</h2>
-            <p className="text-sm text-slate-500">Select the league this overlay configuration is for.</p>
+            <p className="text-sm text-slate-500">Each league has its own overlay configuration. Pick a league to view or edit its logos and ticker.</p>
           </CardHeader>
           <CardContent>
-            <Select value={selectedLeagueId || "none"} onValueChange={(v) => setSelectedLeagueId(v === "none" ? "" : v)}>
+            <Select value={selectedLeagueId || undefined} onValueChange={handleLeagueChange}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a league..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— No league selected —</SelectItem>
                 {leagues.map(l => (
                   <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {!selectedLeagueId && (
+              <p className="text-sm text-slate-500 mt-3">Select a league above to configure its overlay.</p>
+            )}
           </CardContent>
         </Card>
 
+        {selectedLeagueId && (
+        <>
         <Card className="border-slate-200 mb-6">
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-slate-800">Overlay Logos</h2>
@@ -273,6 +300,8 @@ export default function GameOverlaySettingsPage() {
             </Button>
           </CardContent>
         </Card>
+        </>
+        )}
 
         <Card className="border-slate-200">
           <CardHeader className="pb-2">
