@@ -80,7 +80,7 @@ export default function Layout({ children }) {
         }
 
         // Check if user has no assigned leagues and redirect to LeagueSelection (only for approved non-new users)
-        if (user && user.user_type !== "user" && user.application_status === "Approved" && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
+        if (user && user.user_type !== "user" && user.user_type !== "league_admin" && user.user_type !== "app_admin" && user.application_status === "Approved" && (!user.assigned_league_ids || user.assigned_league_ids.length === 0)) {
           const leagueSelectionPath = createPageUrl('LeagueSelection');
           if (!location.pathname.includes('LeagueSelection')) {
             navigate(leagueSelectionPath, { replace: true });
