@@ -22,6 +22,7 @@ export default function LeaguesPage() {
   const [editingLeague, setEditingLeague] = useState(null);
   const [deletingLeague, setDeletingLeague] = useState(null);
   const [newSeasonGroup, setNewSeasonGroup] = useState(null);
+  const [groupDeleteError, setGroupDeleteError] = useState("");
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -112,6 +113,32 @@ export default function LeaguesPage() {
     },
   });
 
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (group) => {
+      const existingSeasons = await base44.entities.League.filter({ group_id: group.id });
+      if (existingSeasons && existingSeasons.length > 0) {
+        throw new Error("This league still has seasons (including archived ones) and cannot be deleted.");
+      }
+      await base44.entities.LeagueGroup.delete(group.id);
+      await base44.entities.LeagueAuditLog.create({
+        action: "delete_group",
+        league_id: group.id,
+        league_name: group.name,
+        performed_by: currentUser?.email || "",
+        performed_by_name: currentUser?.full_name || "",
+        performed_at: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      setGroupDeleteError("");
+      queryClient.invalidateQueries({ queryKey: ['leagueGroups'] });
+      queryClient.invalidateQueries({ queryKey: ['leagues'] });
+    },
+    onError: (err) => {
+      setGroupDeleteError(err?.message || "Could not delete the league. Please try again.");
+    },
+  });
+
   const setDefaultLeagueMutation = useMutation({
     mutationFn: (leagueId) => base44.auth.updateMe({ default_league_id: leagueId }),
     onSuccess: () => {
@@ -165,6 +192,17 @@ export default function LeaguesPage() {
     ...ownedEmptyGroups,
   ].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   const canManageSeason = (league) => isAppAdmin || (isLeagueAdmin && league.created_by_id === currentUser?.id);
+  const groupHasSeasons = (groupId) => leagues.some(l => l.group_id === groupId);
+  const canDeleteGroup = (group) =>
+    !groupHasSeasons(group.id) &&
+    (isAppAdmin || (isLeagueAdmin && (
+      group.owner_user_id === currentUser?.id ||
+      (group.owner_email && currentUser?.email && group.owner_email === currentUser.email)
+    )));
+  const handleDeleteGroup = (group) => {
+    if (!window.confirm(`Delete league "${group.name}"? This cannot be undone.`)) return;
+    deleteGroupMutation.mutate(group);
+  };
   const showSetDefault = isLeagueAdmin || visibleLeagues.length > 1;
   const hasNothingToShow = visibleLeagues.length === 0 && visibleGroups.length === 0;
 
@@ -197,6 +235,13 @@ export default function LeaguesPage() {
              </Button>
            )}
         </div>
+
+        {groupDeleteError && (
+          <div data-marker="DELETE_LEAGUE_GROUP_V1" className="mb-6 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <span>{groupDeleteError}</span>
+            <button onClick={() => setGroupDeleteError("")} className="font-semibold text-red-700 hover:text-red-900 shrink-0">Dismiss</button>
+          </div>
+        )}
 
         <div className="relative mb-6 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -238,6 +283,7 @@ export default function LeaguesPage() {
                   onEdit={setEditingLeague}
                   onDelete={setDeletingLeague}
                   onNewSeason={isAppAdmin || isLeagueAdmin ? setNewSeasonGroup : null}
+                  onDeleteGroup={canDeleteGroup(group) ? handleDeleteGroup : null}
                 />
               ))}
               {standaloneLeagues.map((league) => {

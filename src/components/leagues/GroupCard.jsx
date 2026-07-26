@@ -64,7 +64,7 @@ function SeasonRow({ league, isViewer, isDefault, onSetDefault, canManage, onEdi
   );
 }
 
-export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason }) {
+export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason, onDeleteGroup }) {
   const [showArchived, setShowArchived] = useState(false);
   const navigate = useNavigate();
   const isViewer = userType === "viewer";
@@ -106,7 +106,16 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
               League · {currentSeasons.length} current season{currentSeasons.length === 1 ? "" : "s"}
             </p>
           </div>
-
+          {onDeleteGroup && (
+            <button
+              data-marker="DELETE_LEAGUE_GROUP_V1"
+              onClick={() => onDeleteGroup(group)}
+              title="Delete league"
+              className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <div className="px-2 pb-3">
           {currentSeasons.map((l) => (
