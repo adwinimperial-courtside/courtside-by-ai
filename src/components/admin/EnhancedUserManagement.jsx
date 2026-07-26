@@ -757,26 +757,17 @@ export default function EnhancedUserManagement() {
                     </div>
                     <div className="text-xs text-slate-400 mt-1">Created {format(new Date(user.created_date), "MMM dd, yyyy 'at' h:mm a")}</div>
 
-                    {(user.user_type === "app_admin" || user.user_type === "league_admin") && (
+                    {user.user_type === "app_admin" && (
                       <div className="flex flex-wrap gap-1.5 mt-2">
                         <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(user.user_type)}`}>
                           {userTypeIcon(user.user_type)}
                           {user.user_type}
                         </span>
-                        {user.user_type === "league_admin" && (user.assigned_league_ids || []).map(lid => {
-                          const league = leagues.find(l => l.id === lid);
-                          if (!league) return null;
-                          return (
-                            <span key={lid} className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
-                              {league.name}{league.season ? ` (${league.season})` : ""}
-                            </span>
-                          );
-                        })}
                       </div>
                     )}
 
-                    {user.user_type !== "app_admin" && user.user_type !== "league_admin" && (
-                      <div className="flex flex-col gap-1 mt-2">
+                    {user.user_type !== "app_admin" && (
+                      <div className="flex flex-col gap-1 mt-2" data-marker="ADMIN_ROLE_ROWS_V1">
                         {leagueRoleEntries.length > 0 ? leagueRoleEntries.map((entry, i) => (
                           <div key={i} className="flex items-center gap-1.5 flex-wrap">
                             <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${userTypeBadgeColor(entry.role)}`}>
