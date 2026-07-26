@@ -30,6 +30,12 @@ export default function LeagueSelection() {
     queryFn: () => base44.auth.me(),
   });
 
+  React.useEffect(() => {
+    if (currentUser && (currentUser.user_type === 'league_admin' || currentUser.user_type === 'app_admin')) {
+      navigate(createPageUrl('Leagues'), { replace: true });
+    }
+  }, [currentUser, navigate]);
+
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
     queryFn: () => base44.entities.League.list(),
