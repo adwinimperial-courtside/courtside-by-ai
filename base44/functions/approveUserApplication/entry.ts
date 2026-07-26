@@ -236,31 +236,22 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
     return Response.json({ success: true, action: 'rejected' });
   }
   let assignedLeagueIds = [];
-  let createdLeagueId = null;
+  let createdGroupId = null;
   if (override_league_id) {
     assignedLeagueIds = [override_league_id];
   } else if (application.league_id && !application.league_name) {
     assignedLeagueIds = [application.league_id];
   } else {
-    const teams = Number.parseInt(application.number_of_teams, 10);
-    const players = Number.parseInt(application.avg_players_per_team, 10);
-    if (
-      !application.league_name || !String(application.league_name).trim() ||
-      !application.season_start_date ||
-      !Number.isInteger(teams) || teams < 2 ||
-      !Number.isInteger(players) || players < 5
-    ) {
-      return Response.json({ error: 'Cannot approve: application is missing required new-league details (league name, season start date, number of teams, players per team).' }, { status: 400 });
+    if (!application.league_name || !String(application.league_name).trim()) {
+      return Response.json({ error: 'Cannot approve: application is missing the league name.' }, { status: 400 });
     }
-    const newLeague = await base44.asServiceRole.entities.League.create({
-      name: application.league_name,
-      season: application.season_start_date || 'TBD',
+    const newGroup = await base44.asServiceRole.entities.LeagueGroup.create({
+      name: String(application.league_name).trim(),
       owner_user_id: application.user_id,
       owner_email: application.user_email,
       owner_name: application.user_name,
     });
-    assignedLeagueIds = [newLeague.id];
-    createdLeagueId = newLeague.id;
+    createdGroupId = newGroup.id;
   }
   let existing = null;
   try { existing = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) {}
@@ -272,6 +263,24 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
   await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Approved', approval_email_sent: true });
   for (const lid of assignedLeagueIds) {
     await writeLog(base44, application, lid, 'approved', decider);
+  }
+  if (createdGroupId && assignedLeagueIds.length === 0) {
+    try {
+      await base44.asServiceRole.entities.ApprovalLog.create({
+        application_id: application.id,
+        applicant_name: application.user_name || '',
+        applicant_email: application.user_email || '',
+        requested_role: application.requested_role,
+        league_id: '',
+        league_name: application.league_name || '',
+        event_type: 'application_approved',
+        decision: 'approved',
+        approved_by_email: decider.email,
+        approved_by_name: decider.name,
+        approver_type: decider.type,
+        decided_at: decider.at,
+      });
+    } catch (_e) {}
   }
   await sendWelcomeOnce(base44, application);
   return Response.json({ success: true, action: 'approved' });
