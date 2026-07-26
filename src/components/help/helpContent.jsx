@@ -24,6 +24,8 @@ export const HELP_TOPICS = [
       "The Create season button on a league card (admins) adds the next season — optionally copying teams from a previous one.",
       "Past seasons sit under Archived seasons at the bottom of a league card — tap to expand and view their stats.",
       "The star sets your default season; if a league you expect is missing, ask your league admin to add you.",
+      "Admins: tap the logo square on a league card to upload or replace its logo (the small camera badge marks it).",
+      "Admins: a league with no seasons shows a trash icon to delete it — once it has any season (even archived), it can no longer be deleted.",
     ],
   },
   {
