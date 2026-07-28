@@ -718,6 +718,18 @@ export default function EnhancedUserManagement() {
                 };
               }).filter(e => e.league);
 
+              const myApps = userApplications.filter(
+                (a) => a.user_id === user.id || (a.user_email || "").toLowerCase() === (user.email || "").toLowerCase()
+              );
+              const latestApp = myApps.slice().sort((a, b) => new Date(b.created_date) - new Date(a.created_date))[0] || null;
+              const signupStatus = !latestApp
+                ? { label: "Signed up · never applied", cls: "bg-amber-100 text-amber-800" }
+                : latestApp.status === "Pending"
+                ? { label: "Application pending", cls: "bg-blue-100 text-blue-800" }
+                : latestApp.status === "Rejected"
+                ? { label: "Application rejected", cls: "bg-red-100 text-red-800" }
+                : { label: "Approved · no league", cls: "bg-slate-100 text-slate-700" };
+
               return (<div
                   key={user.id}
                   className="flex items-start justify-between p-4 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors gap-3"
@@ -789,9 +801,14 @@ export default function EnhancedUserManagement() {
                             )}
                           </div>
                         )) : (
-                          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
-                            {user.user_type || "No role"} · no league assigned
-                          </span>
+                          <div className="flex items-center gap-1.5 flex-wrap" data-marker="SIGNUP_STATUS_BADGE_V1">
+                            <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium w-fit ${userTypeBadgeColor(user.user_type)}`}>
+                              {user.user_type || "No role"} · no league assigned
+                            </span>
+                            <span className={`inline-flex items-center text-xs px-2 py-0.5 rounded-full font-medium w-fit ${signupStatus.cls}`}>
+                              {signupStatus.label}
+                            </span>
+                          </div>
                         )}
                       </div>
                     )}
