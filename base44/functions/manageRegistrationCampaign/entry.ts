@@ -127,8 +127,16 @@ Deno.serve(async (req) => {
       const match = (all || []).find((c) => String(c.slug || '').toLowerCase() === slug);
       if (!match) return Response.json({ error: 'Not found' }, { status: 404 });
       const league = (await svc.League.filter({ id: match.league_id }))?.[0] || null;
+      const shaped = publicShape(match);
+      // CREST_GROUP_FALLBACK_V1 — no uploaded logo? fall back to the league group's logo
+      if (!shaped.crest_url && league?.group_id) {
+        try {
+          const group = (await svc.LeagueGroup.filter({ id: league.group_id }))?.[0] || null;
+          if (group?.logo_url) shaped.crest_url = group.logo_url;
+        } catch (e) { /* leave crest empty; page falls back to the Courtside mark */ }
+      }
       return Response.json({
-        campaign: publicShape(match),
+        campaign: shaped,
         league_name: league ? league.name : ''
       });
     }

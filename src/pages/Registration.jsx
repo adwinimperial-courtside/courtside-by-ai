@@ -59,7 +59,7 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       setCrestUrl(file_url);
     } catch (err) {
-      setFormError("Crest upload failed. Please try again.");
+      setFormError("Logo upload failed. Please try again.");
     }
     setUploading(false);
   };
@@ -114,11 +114,11 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm text-slate-600 mb-1">Crest image (optional)</label>
+          <label className="block text-sm text-slate-600 mb-1">League logo (optional)</label>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
               {crestUrl ? (
-                <img src={crestUrl} alt="Crest" className="w-full h-full object-cover" />
+                <img src={crestUrl} alt="League logo" className="w-full h-full object-cover" />
               ) : (
                 <Upload className="w-4 h-4 text-slate-400" />
               )}
@@ -136,6 +136,9 @@ function CampaignForm({ league, initial, busy, onSubmit, onCancel, submitLabel }
               </button>
             )}
           </div>
+          <p className="text-xs text-slate-400 mt-1.5" data-marker="LEAGUE_LOGO_LABEL_V1">
+            Leave empty to use your league's logo.
+          </p>
         </div>
         <div>
           <label className="block text-sm text-slate-600 mb-1">Colors</label>
