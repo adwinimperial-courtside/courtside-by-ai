@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, Users, Eye, User, Clock, XCircle, ChevronLeft } from "lucide-react";
 import PrivacyConsentStep from "./PrivacyConsentStep";
 
@@ -48,6 +48,56 @@ const AppLogo = () => (
   </div>
 );
 
+const initialsOf = (name) => (name || "")
+  .split(/\s+/)
+  .filter(Boolean)
+  .slice(0, 3)
+  .map(w => w[0])
+  .join("")
+  .toUpperCase();
+
+function GroupedLeaguePicker({ sections, selectedLeagues, onToggle }) {
+  return (
+    <div data-marker="GROUPED_REG_PICKER_V1" className="space-y-1 max-h-64 overflow-y-auto border border-slate-200 rounded-lg p-3">
+      {sections.length === 0 && (
+        <p className="text-sm text-slate-400">No open leagues to join right now.</p>
+      )}
+      {sections.map((sec, i) => (
+        <div key={sec.group ? sec.group.id : "other"} className={i > 0 ? "border-t border-slate-100 pt-2 mt-2" : ""}>
+          <div className="flex items-center gap-2 px-1 py-1">
+            {sec.group && (
+              sec.group.logo_url ? (
+                <img src={sec.group.logo_url} alt="" className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-[#0B1F3A] text-white text-[10px] font-semibold flex items-center justify-center flex-shrink-0">
+                  {initialsOf(sec.group.name)}
+                </div>
+              )
+            )}
+            <span className="text-sm font-semibold text-slate-800">{sec.group ? sec.group.name : "Other leagues"}</span>
+            {sec.group && sec.group.country && (
+              <span className="text-xs text-slate-400">{sec.group.country}</span>
+            )}
+          </div>
+          <div className="ml-3 border-l border-slate-200 pl-3">
+            {sec.seasons.map(l => (
+              <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
+                <input
+                  type="checkbox"
+                  checked={selectedLeagues.includes(l.id)}
+                  onChange={(e) => onToggle(l.id, e.target.checked)}
+                  className="w-4 h-4 accent-orange-500"
+                />
+                <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function RegistrationGate({ user }) {
   const getInitialStep = () => {
     if (user.application_status === "Pending") return "pending";
@@ -82,6 +132,11 @@ export default function RegistrationGate({ user }) {
     enabled: selectedRole === "player" || selectedRole === "coach",
   });
 
+  const { data: leagueGroups = [] } = useQuery({
+    queryKey: ['leagueGroups'],
+    queryFn: () => base44.entities.LeagueGroup.list(),
+  });
+
   // Has this user ever actually submitted an application? A genuine applicant
   // and a brand-new account can both show application_status "Pending", so we
   // check for a real application on file instead of trusting the status flag.
@@ -106,6 +161,48 @@ export default function RegistrationGate({ user }) {
   }, [appsLoading, hasApplied, step, justSubmitted]);
 
   const selectedLeague = selectedLeagues[0] || ""; // kept for backwards compat reference
+
+  const groupedLeagues = useMemo(() => {
+    const byGroup = new Map();
+    const ungrouped = [];
+    for (const l of leagues) {
+      if (l.group_id) {
+        if (!byGroup.has(l.group_id)) byGroup.set(l.group_id, []);
+        byGroup.get(l.group_id).push(l);
+      } else {
+        ungrouped.push(l);
+      }
+    }
+    const sortByName = (a, b) => (a.name || "").localeCompare(b.name || "");
+    const sections = [];
+    for (const g of [...leagueGroups].sort(sortByName)) {
+      const seasons = byGroup.get(g.id);
+      if (seasons && seasons.length > 0) {
+        sections.push({ group: g, seasons: [...seasons].sort(sortByName) });
+        byGroup.delete(g.id);
+      }
+    }
+    for (const orphanSeasons of byGroup.values()) ungrouped.push(...orphanSeasons);
+    if (ungrouped.length > 0) {
+      sections.push({ group: null, seasons: [...ungrouped].sort(sortByName) });
+    }
+    return sections;
+  }, [leagues, leagueGroups]);
+
+  const groupNameFor = (league) => {
+    if (!league || !league.group_id) return null;
+    const g = leagueGroups.find(gr => gr.id === league.group_id);
+    return g ? g.name : null;
+  };
+
+  const toggleLeague = (lid, checked) => {
+    if (checked) {
+      setSelectedLeagues(prev => [...prev, lid]);
+    } else {
+      setSelectedLeagues(prev => prev.filter(id => id !== lid));
+      setLeagueTeamMap(prev => { const next = { ...prev }; delete next[lid]; return next; });
+    }
+  };
 
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
@@ -452,8 +549,13 @@ export default function RegistrationGate({ user }) {
                       <Select value={selectedAdminLeagueId} onValueChange={v => setSelectedAdminLeagueId(v)}>
                         <SelectTrigger><SelectValue placeholder="Choose a league…" /></SelectTrigger>
                         <SelectContent>
-                          {leagues.map(l => (
-                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          {groupedLeagues.map(sec => (
+                            <SelectGroup key={sec.group ? sec.group.id : "other"}>
+                              <SelectLabel>{sec.group ? sec.group.name : "Other leagues"}</SelectLabel>
+                              {sec.seasons.map(l => (
+                                <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
+                              ))}
+                            </SelectGroup>
                           ))}
                         </SelectContent>
                       </Select>
@@ -484,26 +586,7 @@ export default function RegistrationGate({ user }) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
-                    {leagues.map(l => (
-                      <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
-                        <input
-                          type="checkbox"
-                          checked={selectedLeagues.includes(l.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedLeagues([...selectedLeagues, l.id]);
-                            } else {
-                              setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
-                              setLeagueTeamMap(prev => { const next = { ...prev }; delete next[l.id]; return next; });
-                            }
-                          }}
-                          className="w-4 h-4 accent-orange-500"
-                        />
-                        <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
-                      </label>
-                    ))}
-                  </div>
+                  <GroupedLeaguePicker sections={groupedLeagues} selectedLeagues={selectedLeagues} onToggle={toggleLeague} />
                   {selectedLeagues.length > 0 && (
                     <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
                   )}
@@ -517,7 +600,7 @@ export default function RegistrationGate({ user }) {
                       const noTeams = leagueTeams.length === 0;
                       return (
                         <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                          <p className="text-xs font-semibold text-slate-600 mb-2">{league?.name} <span className="text-slate-400">({league?.season})</span></p>
+                          <p className="text-xs font-semibold text-slate-600 mb-2">{groupNameFor(league) ? `${groupNameFor(league)} \u2014 ` : ""}{league?.name} <span className="text-slate-400">({league?.season})</span></p>
                           {/* COACH_TEAMLESS_V1 */}
                           {noTeams ? (
                             <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
@@ -567,26 +650,7 @@ export default function RegistrationGate({ user }) {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-slate-700 mb-2 block">Select League(s) *</label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-3">
-                      {leagues.map(l => (
-                        <label key={l.id} className="flex items-center gap-3 cursor-pointer hover:bg-slate-50 rounded p-1">
-                          <input
-                            type="checkbox"
-                            checked={selectedLeagues.includes(l.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedLeagues([...selectedLeagues, l.id]);
-                              } else {
-                                setSelectedLeagues(selectedLeagues.filter(id => id !== l.id));
-                                setLeagueTeamMap(prev => { const next = { ...prev }; delete next[l.id]; return next; });
-                              }
-                            }}
-                            className="w-4 h-4 accent-orange-500"
-                          />
-                          <span className="text-sm text-slate-800">{l.name} <span className="text-slate-400">({l.season})</span></span>
-                        </label>
-                      ))}
-                    </div>
+                    <GroupedLeaguePicker sections={groupedLeagues} selectedLeagues={selectedLeagues} onToggle={toggleLeague} />
                     {selectedLeagues.length > 0 && (
                       <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
                     )}
@@ -600,7 +664,7 @@ export default function RegistrationGate({ user }) {
                         const noTeams = leagueTeams.length === 0;
                         return (
                           <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                            <p className="text-xs font-semibold text-slate-600 mb-2">{league?.name} <span className="text-slate-400">({league?.season})</span></p>
+                            <p className="text-xs font-semibold text-slate-600 mb-2">{groupNameFor(league) ? `${groupNameFor(league)} \u2014 ` : ""}{league?.name} <span className="text-slate-400">({league?.season})</span></p>
                             {/* TEAMLESS_LEAGUE_V1 */}
                             {noTeams ? (
                               <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
