@@ -150,14 +150,32 @@ export default function GameOverlayPage() {
   const shortName = (name) => (name || "???").substring(0, 4).toUpperCase();
   const leagueShort = (league?.name || "LEAGUE").substring(0, 20).toUpperCase();
 
-  const TeamColorBox = ({ color }) => (
-    <div style={{
-      width: 16,
-      height: 16,
-      borderRadius: 4,
-      backgroundColor: color || "#888",
-      flexShrink: 0,
-    }} />
+  const TeamBadge = ({ team }) => (
+    team?.logo_url ? (
+      <div data-marker="OVERLAY_TEAM_LOGO_V1" style={{
+        width: 24,
+        height: 24,
+        borderRadius: "50%",
+        backgroundColor: team?.color || "#888",
+        overflow: "hidden",
+        flexShrink: 0,
+      }}>
+        <img
+          src={team.logo_url}
+          alt=""
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        />
+      </div>
+    ) : (
+      <div data-marker="OVERLAY_TEAM_LOGO_V1" style={{
+        width: 24,
+        height: 24,
+        borderRadius: 4,
+        backgroundColor: team?.color || "#888",
+        flexShrink: 0,
+      }} />
+    )
   );
 
   const TimeoutDots = ({ left, total }) => (
@@ -343,11 +361,11 @@ export default function GameOverlayPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "5px 10px",
+            padding: "4px 10px",
             borderBottom: "1px solid rgba(255,255,255,0.05)",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <TeamColorBox color={homeTeam.color} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <TeamBadge team={homeTeam} />
               <span style={{
                 color: "#f0f4ff",
                 fontSize: 14,
@@ -372,10 +390,10 @@ export default function GameOverlayPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "5px 10px",
+            padding: "4px 10px",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-              <TeamColorBox color={awayTeam.color} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <TeamBadge team={awayTeam} />
               <span style={{
                 color: "#f0f4ff",
                 fontSize: 14,
