@@ -8,12 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import HelpButton from "../components/help/HelpButton";
 
-function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload }) {
+function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload, disabled }) {
   return (
-    <div className="space-y-3">
+    <div className={disabled ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
       <div>
         <p className="text-sm font-medium text-slate-700">{label}</p>
-        <p className="text-xs text-slate-400">{hint}</p>
+        <p className="text-xs text-slate-400">{disabled ? "Hidden on the overlay — your upload is kept" : hint}</p>
       </div>
       {value ? (
         <div className="flex items-center gap-4">
@@ -44,7 +44,7 @@ function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpl
                 accept="image/*"
                 className="hidden"
                 onChange={(e) => onUpload(e, field)}
-                disabled={!!uploading}
+                disabled={!!uploading || disabled}
               />
             </label>
           </div>
@@ -63,7 +63,7 @@ function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpl
             accept="image/*"
             className="hidden"
             onChange={(e) => onUpload(e, field)}
-            disabled={!!uploading}
+            disabled={!!uploading || disabled}
           />
         </label>
       )}
@@ -78,6 +78,8 @@ export default function GameOverlaySettingsPage() {
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
   const [logoUrl, setLogoUrl] = useState(null);
   const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
+  const [logoEnabled, setLogoEnabled] = useState(true);
+  const [leagueLogoEnabled, setLeagueLogoEnabled] = useState(true);
   const [tickerText, setTickerText] = useState("");
   const [tickerEnabled, setTickerEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
@@ -120,12 +122,16 @@ export default function GameOverlaySettingsPage() {
     if (rec) {
       setLogoUrl(rec.logo_url || null);
       setLeagueLogoUrl(rec.league_logo_url || null);
+      setLogoEnabled(rec.logo_enabled !== false);
+      setLeagueLogoEnabled(rec.league_logo_enabled !== false);
       setTickerText(rec.ticker_text || "");
       setTickerEnabled(rec.ticker_enabled !== false);
       setSettingsId(rec.id);
     } else {
       setLogoUrl(null);
       setLeagueLogoUrl(null);
+      setLogoEnabled(true);
+      setLeagueLogoEnabled(true);
       setTickerText("");
       setTickerEnabled(true);
       setSettingsId(null);
@@ -155,6 +161,8 @@ export default function GameOverlaySettingsPage() {
       league_id: selectedLeagueId,
       logo_url: logoUrl,
       league_logo_url: leagueLogoUrl,
+      logo_enabled: logoEnabled,
+      league_logo_enabled: leagueLogoEnabled,
       ticker_text: tickerText,
       ticker_enabled: tickerEnabled,
     };
@@ -192,7 +200,7 @@ export default function GameOverlaySettingsPage() {
   }
 
   return (
-    <div data-marker="OVERLAY_PER_LEAGUE_V1" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
+    <div data-marker="OVERLAY_LOGO_TOGGLE_V1" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
       <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -232,15 +240,35 @@ export default function GameOverlaySettingsPage() {
         <Card className="border-slate-200 mb-6">
           <CardHeader className="pb-2">
             <h2 className="font-semibold text-slate-800">Overlay Logos</h2>
-            <p className="text-sm text-slate-500">These logos will appear on your personal overlay.</p>
+            <p className="text-sm text-slate-500">These logos will appear on your personal overlay. Switch either one off for a clean, logo-free overlay.</p>
           </CardHeader>
           <CardContent className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Show sponsor logo</p>
+                  <p className="text-xs text-slate-400">Top right of the overlay</p>
+                </div>
+                <Switch checked={logoEnabled} onCheckedChange={setLogoEnabled} />
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Show league logo</p>
+                  <p className="text-xs text-slate-400">Top left of the overlay</p>
+                </div>
+                <Switch checked={leagueLogoEnabled} onCheckedChange={setLeagueLogoEnabled} />
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100" />
+
             <LogoUploadBlock
               label="App / Sponsor Logo"
               hint="E.g. Courtside by AI or a sponsor logo"
               value={logoUrl}
               field="logo"
               uploading={uploading}
+              disabled={!logoEnabled}
               onRemove={() => setLogoUrl(null)}
               onUpload={handleFileUpload}
             />
@@ -253,6 +281,7 @@ export default function GameOverlaySettingsPage() {
               value={leagueLogoUrl}
               field="league_logo"
               uploading={uploading}
+              disabled={!leagueLogoEnabled}
               onRemove={() => setLeagueLogoUrl(null)}
               onUpload={handleFileUpload}
             />

@@ -40,8 +40,10 @@ export default function GameOverlayPage() {
         settings = leagueSettings[0];
       }
 
-      if (settings?.logo_url) setOverlayLogo(settings.logo_url);
-      if (settings?.league_logo_url) setLeagueLogo(settings.league_logo_url);
+      const showSponsorLogo = settings?.logo_enabled !== false;
+      const showLeagueLogo = settings?.league_logo_enabled !== false;
+      if (showSponsorLogo && settings?.logo_url) setOverlayLogo(settings.logo_url);
+      if (showLeagueLogo && settings?.league_logo_url) setLeagueLogo(settings.league_logo_url);
       if (settings?.ticker_text) setTickerText(settings.ticker_text);
       setTickerEnabled(settings?.ticker_enabled !== false && !!settings?.ticker_text);
 
@@ -53,7 +55,7 @@ export default function GameOverlayPage() {
       setHomeTeam(ht);
       setAwayTeam(at);
       setLeague(lg);
-      if (!settings?.league_logo_url && lg?.group_id) {
+      if (showLeagueLogo && !settings?.league_logo_url && lg?.group_id) {
         try {
           const grp = await base44.entities.LeagueGroup.get(lg.group_id);
           if (grp?.logo_url) setLeagueLogo(grp.logo_url);

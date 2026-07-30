@@ -260,6 +260,7 @@ export const HELP_TOPICS = [
     tips: [
       "The overlay follows the live game as the scorer records plays.",
       "Overlay logos and ticker are saved per league — pick the league first, then upload and save.",
+      "Switch off Show sponsor logo or Show league logo for a clean, logo-free overlay. Your uploaded images are kept and come back when you switch them on again.",
     ],
   },
   {

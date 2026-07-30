@@ -18,6 +18,16 @@
       "type": "string",
       "description": "URL to the league logo image"
     },
+    "logo_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the sponsor/app logo is shown on the overlay"
+    },
+    "league_logo_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the league logo is shown on the overlay"
+    },
     "ticker_text": {
       "type": "string",
       "description": "Scrolling ticker text for advertisements and announcements"
