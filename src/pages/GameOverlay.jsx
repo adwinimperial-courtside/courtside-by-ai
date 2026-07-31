@@ -23,6 +23,7 @@ export default function GameOverlayPage() {
   const [logs, setLogs] = useState([]);
   const [timeoutPanel, setTimeoutPanel] = useState(null);
   const [leaderPage, setLeaderPage] = useState(0);
+  const [tipped, setTipped] = useState(false);
   const prevTimeoutsRef = useRef(null);
   const debounceRef = useRef(null);
   const rosterSigRef = useRef("");
@@ -199,6 +200,10 @@ export default function GameOverlayPage() {
   });
   const lastBasket = lastBasketFrom(logs, players);
 
+  useEffect(() => {
+    if (game?.clock_running) setTipped(true);
+  }, [game?.clock_running]);
+
   if (!gameId || !game || !homeTeam || !awayTeam) {
     return <div style={{ background: "transparent", width: "100vw", height: "100vh" }} />;
   }
@@ -303,6 +308,27 @@ export default function GameOverlayPage() {
   const gameOver = game.status === "completed";
   const showTimeout = !!timeoutPanel && !gameOver;
   const showBreak = !showTimeout && !gameOver && game.period_status === "completed";
+
+  const startersFor = (teamId) =>
+    stats
+      .filter((s) => s.team_id === teamId && s.is_starter === true)
+      .map((s) => players.find((p) => p.id === s.player_id))
+      .filter(Boolean)
+      .sort((a, b) => (Number(a.jersey_number) || 0) - (Number(b.jersey_number) || 0));
+
+  const homeStarters = startersFor(homeTeam.id);
+  const awayStarters = startersFor(awayTeam.id);
+
+  const showStarters =
+    !showTimeout &&
+    !showBreak &&
+    !gameOver &&
+    !tipped &&
+    !game.clock_running &&
+    (game.clock_period || 1) === 1 &&
+    (Number(game.home_score) || 0) === 0 &&
+    (Number(game.away_score) || 0) === 0 &&
+    (homeStarters.length > 0 || awayStarters.length > 0);
   const timeoutTeamName = timeoutPanel?.side === "home" ? teamLabel(homeTeam) : teamLabel(awayTeam);
 
   const TeamBadge = ({ team }) => (
@@ -406,6 +432,71 @@ export default function GameOverlayPage() {
       <span style={panelFooterText}>
         TEAM FOULS &nbsp; {homeFouls} &middot; {awayFouls}
       </span>
+    </div>
+  );
+
+  const StarterColumn = ({ team, list }) => (
+    <div style={{ padding: "16px 22px" }}>
+      <div style={{
+        color: "#F26B1F",
+        fontSize: 13,
+        fontWeight: 800,
+        letterSpacing: 1.6,
+        marginBottom: 12,
+        textAlign: "center",
+      }}>
+        {teamLabel(team)}
+      </div>
+      {list.slice(0, 5).map((p) => (
+        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "7px 0" }}>
+          <div style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "#152b4d",
+            border: "1.5px solid #F26B1F",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#ffffff",
+            fontSize: 13,
+            fontWeight: 900,
+            flexShrink: 0,
+          }}>
+            {p.jersey_number != null ? p.jersey_number : "\u2013"}
+          </div>
+          <span style={{
+            color: "#ffffff",
+            fontSize: 17,
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}>
+            {p.name}
+          </span>
+        </div>
+      ))}
+      {list.length === 0 && (
+        <div style={{ color: "#7f8ba4", fontSize: 15, textAlign: "center", padding: "18px 0" }}>
+          Not set
+        </div>
+      )}
+    </div>
+  );
+
+  const StartersPanel = () => (
+    <div data-marker="OVERLAY_STARTERS_V1" style={panelShell}>
+      <div style={panelHeader}>
+        <span style={panelHeaderText}>STARTING FIVE</span>
+        <span style={{ ...panelHeaderText, letterSpacing: 1.4 }}>TIP-OFF</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr" }}>
+        <StarterColumn team={homeTeam} list={homeStarters} />
+        <div style={{ background: "rgba(255,255,255,0.09)" }} />
+        <StarterColumn team={awayTeam} list={awayStarters} />
+      </div>
+      <PanelFooter />
     </div>
   );
 
@@ -604,6 +695,7 @@ export default function GameOverlayPage() {
 
       {showTimeout && <TimeoutPanel />}
       {showBreak && <LeaderPanel />}
+      {showStarters && <StartersPanel />}
 
       <PlayerCardStrip card={playerCard} lifted={!!(tickerEnabled && tickerText)} />
 
