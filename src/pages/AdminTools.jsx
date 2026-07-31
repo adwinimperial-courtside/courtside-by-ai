@@ -11,6 +11,7 @@ import EditGameEntry from "../components/admin/EditGameEntry";
 import DeleteGameEntry from "../components/admin/DeleteGameEntry";
 import { findPlayerOfGame } from "../components/utils/pogCalculator";
 import HelpButton from "../components/help/HelpButton";
+import IdentityHealthCheck from "../components/admin/IdentityHealthCheck";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -619,6 +620,13 @@ export default function AdminTools() {
               </Card>
             </div>
           </div>
+          )}
+
+          {isAppAdmin && (
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-4">Data Health</h2>
+              <IdentityHealthCheck />
+            </div>
           )}
         </div>
       </div>
