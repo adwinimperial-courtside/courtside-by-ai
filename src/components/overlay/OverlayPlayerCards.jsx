@@ -11,8 +11,12 @@ const MUTED = "#7f8ba4";
 
 const CARD_MS_NORMAL = 6000;
 const CARD_MS_GOLD = 8000;
-const COOLDOWN_MS = 30000;
-const MAX_QUEUE_AGE_MS = 45000;
+const COOLDOWN_MS = 10000;
+const MAX_AGE_THREE_MS = 90000;
+const MAX_AGE_MILESTONE_MS = 180000;
+const MAX_QUEUE = 12;
+
+export const CARD_QUEUE_VERSION = "OVERLAY_CARD_QUEUE_V2";
 const PHOTO_COVERAGE_MIN = 0.8;
 
 const POINTS_STEP = 10;
@@ -197,7 +201,14 @@ export function usePlayerCardQueue({ stats, players, game, homeTeam, awayTeam, t
     });
 
     prevRef.current = snapshot;
-    if (fresh.length > 0) queueRef.current = queueRef.current.concat(fresh);
+    if (fresh.length > 0) {
+      fresh.forEach((c) => {
+        queueRef.current = queueRef.current.filter(
+          (q) => !(q.playerId === c.playerId && q.type === c.type)
+        );
+        queueRef.current.push(c);
+      });
+    }
   }, [stats, foulLimit]);
 
   const latestRef = useRef({});
@@ -210,10 +221,14 @@ export function usePlayerCardQueue({ stats, players, game, homeTeam, awayTeam, t
       const now = Date.now();
       if (now - lastEndRef.current < COOLDOWN_MS) return;
 
-      queueRef.current = queueRef.current.filter((c) => now - c.at < MAX_QUEUE_AGE_MS);
+      queueRef.current = queueRef.current.filter((c) => {
+        const maxAge = c.type === "three" ? MAX_AGE_THREE_MS : MAX_AGE_MILESTONE_MS;
+        return now - c.at < maxAge;
+      });
       if (queueRef.current.length === 0) return;
 
       queueRef.current.sort((a, b) => (PRIORITY[a.type] || 9) - (PRIORITY[b.type] || 9) || a.at - b.at);
+      if (queueRef.current.length > MAX_QUEUE) queueRef.current.length = MAX_QUEUE;
       const next = queueRef.current.shift();
 
       const player = L.playerById[next.playerId];
