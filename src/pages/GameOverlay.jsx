@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { usePlayerCardQueue, lastBasketFrom, PlayerCardStrip } from "@/components/overlay/OverlayPlayerCards";
 
 export default function GameOverlayPage() {
   const params = new URLSearchParams(window.location.search);
@@ -24,6 +25,8 @@ export default function GameOverlayPage() {
   const [leaderPage, setLeaderPage] = useState(0);
   const prevTimeoutsRef = useRef(null);
   const debounceRef = useRef(null);
+  const rosterSigRef = useRef("");
+  const lastFetchRef = useRef(0);
   const timeoutHideRef = useRef(null);
 
   useEffect(() => {
@@ -99,8 +102,11 @@ export default function GameOverlayPage() {
         ]);
         setStats(st || []);
         setLogs(lgs || []);
+        lastFetchRef.current = Date.now();
         const ids = (st || []).map(s => s.player_id).filter(Boolean);
-        if (ids.length > 0) {
+        const rosterSig = ids.slice().sort().join(",");
+        if (ids.length > 0 && rosterSig !== rosterSigRef.current) {
+          rosterSigRef.current = rosterSig;
           const pl = await base44.entities.Player.filter({ id: { $in: ids } });
           setPlayers(pl || []);
         }
@@ -112,6 +118,10 @@ export default function GameOverlayPage() {
 
     const queue = () => {
       clearTimeout(debounceRef.current);
+      if (Date.now() - lastFetchRef.current >= 5000) {
+        loadLive();
+        return;
+      }
       debounceRef.current = setTimeout(loadLive, 2000);
     };
 
@@ -177,6 +187,17 @@ export default function GameOverlayPage() {
     const rotate = setInterval(() => setLeaderPage(p => (p + 1) % 3), 8000);
     return () => clearInterval(rotate);
   }, []);
+
+  const playerCard = usePlayerCardQueue({
+    stats,
+    players,
+    game,
+    homeTeam,
+    awayTeam,
+    timeoutPanel,
+    photosEnabled: false,
+  });
+  const lastBasket = lastBasketFrom(logs, players);
 
   if (!gameId || !game || !homeTeam || !awayTeam) {
     return <div style={{ background: "transparent", width: "100vw", height: "100vh" }} />;
@@ -584,6 +605,8 @@ export default function GameOverlayPage() {
       {showTimeout && <TimeoutPanel />}
       {showBreak && <LeaderPanel />}
 
+      <PlayerCardStrip card={playerCard} lifted={!!(tickerEnabled && tickerText)} />
+
       {/* Ticker — bottom full width */}
       {tickerEnabled && tickerText && (
         <div style={{
@@ -768,6 +791,13 @@ export default function GameOverlayPage() {
             <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>FOULS</span>
             <FoulDots fouls={awayFouls} />
           </div>
+          {lastBasket && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 1 }}>
+              <span style={{ color: "#F26B1F", fontSize: 9, fontWeight: 800, letterSpacing: 0.8 }}>
+                {"\u25B2 " + lastBasket}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>
