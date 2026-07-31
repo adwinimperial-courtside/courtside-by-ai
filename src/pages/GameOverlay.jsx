@@ -27,7 +27,8 @@ export default function GameOverlayPage() {
   const prevTimeoutsRef = useRef(null);
   const debounceRef = useRef(null);
   const rosterSigRef = useRef("");
-  const lastFetchRef = useRef(0);
+  const hadStatsRef = useRef(false);
+  const hadLogsRef = useRef(false);
   const timeoutHideRef = useRef(null);
 
   useEffect(() => {
@@ -101,9 +102,24 @@ export default function GameOverlayPage() {
           base44.entities.PlayerStats.filter({ game_id: gameId }),
           base44.entities.GameLog.filter({ game_id: gameId }, "-created_date", 60),
         ]);
-        setStats(st || []);
-        setLogs(lgs || []);
-        lastFetchRef.current = Date.now();
+        const gotStats = Array.isArray(st) ? st : [];
+        const gotLogs = Array.isArray(lgs) ? lgs : [];
+
+        if (gotStats.length > 0) {
+          hadStatsRef.current = true;
+          setStats(gotStats);
+        } else if (!hadStatsRef.current) {
+          setStats([]);
+        } else {
+          console.warn("OVERLAY_EMPTY_GUARD_V1 ignored empty stats reply");
+        }
+
+        if (gotLogs.length > 0) {
+          hadLogsRef.current = true;
+          setLogs(gotLogs);
+        } else if (!hadLogsRef.current) {
+          setLogs([]);
+        }
         const ids = (st || []).map(s => s.player_id).filter(Boolean);
         const rosterSig = ids.slice().sort().join(",");
         if (ids.length > 0 && rosterSig !== rosterSigRef.current) {
@@ -119,10 +135,6 @@ export default function GameOverlayPage() {
 
     const queue = () => {
       clearTimeout(debounceRef.current);
-      if (Date.now() - lastFetchRef.current >= 5000) {
-        loadLive();
-        return;
-      }
       debounceRef.current = setTimeout(loadLive, 2000);
     };
 
