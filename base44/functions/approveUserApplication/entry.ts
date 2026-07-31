@@ -81,6 +81,19 @@ async function grantLeague(base44, application, applicantUser, leagueId, role) {
     }
     userUpdate.league_team_pairs = mergedPairs;
   }
+  // APPROVAL_DISPLAYNAME_COPY_V1 - carry the name and handle the applicant typed at signup
+  // onto their account. Nothing did this before, so every approved player kept a blank
+  // display_name. Only fills blanks; never overwrites a value the user already has.
+  if (role === 'player') {
+    const appDisplayName = (application.display_name || '').trim();
+    const appHandle = (application.handle || '').trim();
+    if (!existing.display_name && appDisplayName) {
+      userUpdate.display_name = appDisplayName;
+    }
+    if (!existing.handle && appHandle) {
+      userUpdate.handle = appHandle;
+    }
+  }
   try {
     await base44.asServiceRole.entities.User.update(application.user_id, userUpdate);
   } catch (_e) { /* user may not exist yet */ }

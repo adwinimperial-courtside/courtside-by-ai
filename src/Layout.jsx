@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import SidebarMenuContent from "@/components/layout/SidebarMenuContent";
 import ApplyPendingAssignments from "@/components/admin/ApplyPendingAssignments";
 import RegistrationGate from "@/components/registration/RegistrationGate";
-import PlayerIdentityModal from "@/components/registration/PlayerIdentityModal";
 import ConsentReminderModal from "@/components/registration/ConsentReminderModal";
 import { createPageUrl } from "./utils";
 
@@ -24,7 +23,6 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [showPlayerIdentity, setShowPlayerIdentity] = useState(false);
   const [showConsentReminder, setShowConsentReminder] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState("bug");
@@ -87,10 +85,11 @@ export default function Layout({ children }) {
           }
         }
 
-        // Check if player needs to complete identity
-        if (user && user.user_type === "player" && user.application_status === "Approved" && !user.display_name) {
-          setShowPlayerIdentity(true);
-        }
+        // PLAYER_IDENTITY_MODAL_RETIRE_V1 - the post-approval identity pop-up is gone.
+        // It re-asked approved players for name / handle / team / roster number that they
+        // already gave at signup, and its save wrote a malformed duplicate
+        // UserLeagueIdentity row (no role, no matched_player_id). Name and handle are now
+        // carried onto the account by approveUserApplication at approval time instead.
 
         // Show consent reminder for existing users who haven't accepted yet
         const CONSENT_VERSION = "2026-04-privacy-consent-v1";
@@ -320,12 +319,6 @@ export default function Layout({ children }) {
           )}
         </DialogContent>
       </Dialog>
-      {showPlayerIdentity && (
-        <PlayerIdentityModal
-          user={currentUser}
-          onComplete={() => setShowPlayerIdentity(false)}
-        />
-      )}
       {showConsentReminder && (
         <ConsentReminderModal
           user={currentUser}
