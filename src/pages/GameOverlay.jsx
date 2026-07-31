@@ -29,13 +29,23 @@ export default function GameOverlayPage() {
   useEffect(() => {
     if (!gameId) return;
     const loadData = async () => {
-      const [g, allSettings] = await Promise.all([
-        base44.entities.Game.get(gameId),
-        base44.entities.OverlaySettings.list("-created_date", 50),
-      ]);
+      const g = await base44.entities.Game.get(gameId);
       setGame(g);
 
-      const leagueSettings = allSettings.filter(s => s.league_id === g.league_id);
+      let leagueSettings = null;
+      try {
+        leagueSettings = await base44.entities.OverlaySettings.filter(
+          { league_id: g.league_id },
+          "-created_date",
+          100
+        );
+      } catch (err) {
+        console.warn("OVERLAY_SETTINGS_SCOPE_V1 scoped fetch failed, falling back to list", err);
+      }
+      if (!Array.isArray(leagueSettings)) {
+        const allSettings = await base44.entities.OverlaySettings.list("-created_date", 200);
+        leagueSettings = allSettings.filter(s => s.league_id === g.league_id);
+      }
       let settings = null;
       if (userId) {
         settings = leagueSettings.find(s => s.user_id === userId || s.created_by_id === userId);
