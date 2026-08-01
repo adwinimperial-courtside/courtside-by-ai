@@ -385,8 +385,8 @@ export default function GameOverlayPage() {
   const TeamBadge = ({ team }) => (
     team?.logo_url ? (
       <div data-marker="OVERLAY_TEAM_LOGO_V1" style={{
-        width: 24,
-        height: 24,
+        width: 34,
+        height: 34,
         borderRadius: "50%",
         backgroundColor: team?.color || "#888",
         overflow: "hidden",
@@ -401,9 +401,9 @@ export default function GameOverlayPage() {
       </div>
     ) : (
       <div data-marker="OVERLAY_TEAM_LOGO_V1" style={{
-        width: 24,
-        height: 24,
-        borderRadius: 4,
+        width: 34,
+        height: 34,
+        borderRadius: 6,
         backgroundColor: team?.color || "#888",
         flexShrink: 0,
       }} />
@@ -411,14 +411,14 @@ export default function GameOverlayPage() {
   );
 
   const TimeoutDots = ({ left, total }) => (
-    <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+    <div data-marker="OVERLAY_BUG_SIZE_V1" style={{ display: "flex", gap: 5, alignItems: "center" }}>
       {Array.from({ length: Math.max(total, 1) }).map((_, i) => (
         <div key={i} style={{
-          width: 7,
-          height: 7,
+          width: 11,
+          height: 11,
           borderRadius: "50%",
           backgroundColor: i < left ? "#f97316" : "rgba(255,255,255,0.15)",
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid rgba(255,255,255,0.25)",
         }} />
       ))}
     </div>
@@ -426,11 +426,11 @@ export default function GameOverlayPage() {
 
   const MAX_FOUL_DOTS = 5;
   const FoulDots = ({ fouls }) => (
-    <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+    <div data-marker="OVERLAY_BUG_SIZE_V1" style={{ display: "flex", gap: 5, alignItems: "center" }}>
       {Array.from({ length: MAX_FOUL_DOTS }).map((_, i) => (
         <div key={i} style={{
-          width: 7,
-          height: 7,
+          width: 11,
+          height: 11,
           borderRadius: "50%",
           backgroundColor: i < fouls ? "#facc15" : "rgba(255,255,255,0.1)",
           border: `1px solid ${i < fouls ? "#facc15" : "rgba(255,255,255,0.15)"}`,
@@ -803,15 +803,15 @@ export default function GameOverlayPage() {
       )}
 
       {/* Scorebug — bottom right, broadcast-style compact */}
-      <div style={{
+      <div data-marker="OVERLAY_BUG_SIZE_V1" style={{
         position: "absolute",
-        bottom: tickerEnabled && tickerText ? 46 : 20,
-        right: 20,
-        width: 280,
-        borderRadius: 8,
+        bottom: tickerEnabled && tickerText ? 52 : 24,
+        right: 24,
+        width: 440,
+        borderRadius: 10,
         overflow: "hidden",
-        boxShadow: "0 4px 24px rgba(0,0,0,0.7), 0 2px 6px rgba(0,0,0,0.5)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 6px 30px rgba(0,0,0,0.75), 0 2px 8px rgba(0,0,0,0.6)",
+        border: "2px solid rgba(255,255,255,0.14)",
       }}>
 
         {/* Header bar: LIVE + Period + Clock */}
@@ -819,34 +819,34 @@ export default function GameOverlayPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "4px 10px",
+          padding: "7px 14px",
           background: "rgba(12, 14, 24, 0.98)",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          borderBottom: "1px solid rgba(255,255,255,0.10)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               background: "#e53e3e",
               color: "#fff",
-              fontSize: 8,
+              fontSize: 12,
               fontWeight: 800,
-              padding: "1px 5px",
-              borderRadius: 3,
+              padding: "2px 8px",
+              borderRadius: 4,
               letterSpacing: 1.2,
             }}>LIVE</div>
-            <span style={{ color: "#9ba3c2", fontSize: 9, fontWeight: 600, letterSpacing: 0.6, whiteSpace: "nowrap" }}>
-              COURTSIDE-BY-AI
+            <span style={{ color: "#9ba3c2", fontSize: 12, fontWeight: 600, letterSpacing: 0.6, whiteSpace: "nowrap" }}>
+              COURTSIDE
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{
               color: "#f97316",
-              fontSize: 11,
+              fontSize: 17,
               fontWeight: 800,
               letterSpacing: 0.4,
             }}>{periodLabel()}</span>
             <span style={{
               color: "#ffffff",
-              fontSize: 15,
+              fontSize: 30,
               fontWeight: 900,
               letterSpacing: 0.5,
               fontVariantNumeric: "tabular-nums",
@@ -861,26 +861,27 @@ export default function GameOverlayPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "4px 10px",
-            borderBottom: "1px solid rgba(255,255,255,0.05)",
+            padding: "7px 14px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <TeamBadge team={homeTeam} />
               <span style={{
                 color: "#f0f4ff",
-                fontSize: 14,
+                fontSize: 22,
                 fontWeight: 800,
-                letterSpacing: 0.8,
+                letterSpacing: 1,
                 textTransform: "uppercase",
               }}>{shortName(homeTeam.name)}</span>
             </div>
             <span style={{
               color: "#ffffff",
-              fontSize: 22,
+              fontSize: 46,
               fontWeight: 900,
-              letterSpacing: -0.5,
+              lineHeight: 1,
+              letterSpacing: -1,
               fontVariantNumeric: "tabular-nums",
-              minWidth: 36,
+              minWidth: 68,
               textAlign: "right",
             }}>{game.home_score || 0}</span>
           </div>
@@ -890,25 +891,26 @@ export default function GameOverlayPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "4px 10px",
+            padding: "7px 14px",
           }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <TeamBadge team={awayTeam} />
               <span style={{
                 color: "#f0f4ff",
-                fontSize: 14,
+                fontSize: 22,
                 fontWeight: 800,
-                letterSpacing: 0.8,
+                letterSpacing: 1,
                 textTransform: "uppercase",
               }}>{shortName(awayTeam.name)}</span>
             </div>
             <span style={{
               color: "#ffffff",
-              fontSize: 22,
+              fontSize: 46,
               fontWeight: 900,
-              letterSpacing: -0.5,
+              lineHeight: 1,
+              letterSpacing: -1,
               fontVariantNumeric: "tabular-nums",
-              minWidth: 36,
+              minWidth: 68,
               textAlign: "right",
             }}>{game.away_score || 0}</span>
           </div>
@@ -916,28 +918,28 @@ export default function GameOverlayPage() {
 
         {/* Footer: Timeouts + Fouls rows */}
         <div style={{
-          padding: "5px 10px",
+          padding: "8px 14px",
           background: "rgba(12, 14, 24, 0.98)",
-          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderTop: "1px solid rgba(255,255,255,0.08)",
           display: "flex",
           flexDirection: "column",
-          gap: 4,
+          gap: 7,
         }}>
           {/* Timeouts row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <TimeoutDots left={homeTimeoutsLeft} total={segmentAllowance} />
-            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>TIMEOUTS</span>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>TIMEOUTS</span>
             <TimeoutDots left={awayTimeoutsLeft} total={segmentAllowance} />
           </div>
           {/* Fouls row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <FoulDots fouls={homeFouls} />
-            <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 8, fontWeight: 700, letterSpacing: 1 }}>FOULS</span>
+            <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 12, fontWeight: 700, letterSpacing: 1 }}>FOULS</span>
             <FoulDots fouls={awayFouls} />
           </div>
           {lastBasket && (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 1 }}>
-              <span style={{ color: "#F26B1F", fontSize: 9, fontWeight: 800, letterSpacing: 0.8 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", paddingTop: 2 }}>
+              <span style={{ color: "#F26B1F", fontSize: 13, fontWeight: 800, letterSpacing: 0.8 }}>
                 {"\u25B2 " + lastBasket}
               </span>
             </div>

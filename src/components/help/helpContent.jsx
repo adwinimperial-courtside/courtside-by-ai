@@ -263,6 +263,7 @@ export const HELP_TOPICS = [
       "Switch off Show sponsor logo or Show league logo for a clean, logo-free overlay. Your uploaded images are kept and come back when you switch them on again.",
       "When a team calls a timeout, the overlay automatically shows a team stats panel comparing both teams. It disappears when the clock restarts.",
       "At the end of each quarter or half, the overlay automatically shows a player leaders board that rotates through scoring, rebounds and assists.",
+      "Set your OBS browser source to exactly 1920 x 1080. The scoreboard is drawn at that size, so a smaller browser source makes it look shrunken and hard to read on stream.",
     ],
   },
   {
