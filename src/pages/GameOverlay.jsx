@@ -32,6 +32,8 @@ export default function GameOverlayPage() {
   const timeoutHideRef = useRef(null);
   const loadLiveRef = useRef(null);
   const lastTriggerRef = useRef("");
+  const lastFetchRef = useRef(0);
+  const wasBreakRef = useRef(false);
 
   useEffect(() => {
     if (!gameId) return;
@@ -99,6 +101,7 @@ export default function GameOverlayPage() {
     if (!gameId) return;
 
     const loadLive = async () => {
+      lastFetchRef.current = Date.now();
       try {
         const [st, lgs] = await Promise.all([
           base44.entities.PlayerStats.filter({ game_id: gameId }),
@@ -184,6 +187,8 @@ export default function GameOverlayPage() {
   useEffect(() => {
     const onBreak = game?.period_status === "completed";
     const onTimeout = !!timeoutPanel;
+    if (onBreak && !wasBreakRef.current) setLeaderPage(0);
+    wasBreakRef.current = onBreak;
     if (!onBreak && !onTimeout) {
       lastTriggerRef.current = "";
       return;
@@ -216,6 +221,18 @@ export default function GameOverlayPage() {
   useEffect(() => {
     const rotate = setInterval(() => setLeaderPage(p => (p + 1) % 3), 8000);
     return () => clearInterval(rotate);
+  }, []);
+
+  useEffect(() => {
+    const POLL_MS = 8000;
+    const poll = setInterval(() => {
+      if (Date.now() - lastFetchRef.current < POLL_MS) return;
+      if (loadLiveRef.current) {
+        console.warn("OVERLAY_LIVE_POLL_V1 no recent fetch, polling stats");
+        loadLiveRef.current();
+      }
+    }, 2000);
+    return () => clearInterval(poll);
   }, []);
 
   const playerCard = usePlayerCardQueue({
@@ -329,8 +346,13 @@ export default function GameOverlayPage() {
     { title: "ASSIST LEADERS", key: (s) => Number(s.assists) || 0, cols: [["AST", (s) => Number(s.assists) || 0], ["PTS", ptsOf], ["STL", (s) => Number(s.steals) || 0]] },
   ];
   const activePage = leaderPages[leaderPage];
+  const hasAnyStat = (s) =>
+    ptsOf(s) > 0 || rebOf(s) > 0 ||
+    (Number(s.assists) || 0) > 0 || (Number(s.steals) || 0) > 0 ||
+    (Number(s.blocks) || 0) > 0 || (Number(s.fouls) || 0) > 0 ||
+    (Number(s.turnovers) || 0) > 0 || (Number(s.minutes_played) || 0) > 0;
   const leaders = [...stats]
-    .filter(s => s.did_play !== false)
+    .filter(hasAnyStat)
     .sort((x, y) => activePage.key(y) - activePage.key(x))
     .slice(0, 5);
 
