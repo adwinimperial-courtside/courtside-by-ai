@@ -30,6 +30,8 @@ export default function GameOverlayPage() {
   const hadStatsRef = useRef(false);
   const hadLogsRef = useRef(false);
   const timeoutHideRef = useRef(null);
+  const loadLiveRef = useRef(null);
+  const lastTriggerRef = useRef("");
 
   useEffect(() => {
     if (!gameId) return;
@@ -131,6 +133,7 @@ export default function GameOverlayPage() {
         console.warn("OVERLAY_PANELS_V1 live fetch failed", err);
       }
     };
+    loadLiveRef.current = loadLive;
     loadLive();
 
     const queue = () => {
@@ -139,10 +142,10 @@ export default function GameOverlayPage() {
     };
 
     const unsubStats = base44.entities.PlayerStats.subscribe((event) => {
-      if (event.data?.game_id === gameId) queue();
+      if (!event?.data || event.data.game_id === gameId) queue();
     });
     const unsubLogs = base44.entities.GameLog.subscribe((event) => {
-      if (event.data?.game_id === gameId) queue();
+      if (!event?.data || event.data.game_id === gameId) queue();
     });
 
     return () => {
@@ -177,6 +180,20 @@ export default function GameOverlayPage() {
       setTimeoutPanel(null);
     }
   }, [game?.clock_running, timeoutPanel]);
+
+  useEffect(() => {
+    const onBreak = game?.period_status === "completed";
+    const onTimeout = !!timeoutPanel;
+    if (!onBreak && !onTimeout) {
+      lastTriggerRef.current = "";
+      return;
+    }
+    const sig = `${onBreak ? "brk" : ""}:${game?.clock_period || 0}:${onTimeout ? "to" : ""}`;
+    if (sig === lastTriggerRef.current) return;
+    lastTriggerRef.current = sig;
+    console.warn("OVERLAY_TRIGGER_FETCH_V1 panel opened, refreshing stats");
+    if (loadLiveRef.current) loadLiveRef.current();
+  }, [game?.period_status, game?.clock_period, timeoutPanel]);
 
   useEffect(() => {
     if (!game) return;
@@ -405,7 +422,8 @@ export default function GameOverlayPage() {
     left: "50%",
     top: "50%",
     transform: "translate(-50%, -50%)",
-    width: 760,
+    width: "min(760px, 92vw)",
+    maxWidth: 760,
     borderRadius: 10,
     overflow: "hidden",
     background: "rgba(11, 31, 58, 0.97)",
