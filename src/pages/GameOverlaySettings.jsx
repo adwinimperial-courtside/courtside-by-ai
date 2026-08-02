@@ -82,6 +82,11 @@ export default function GameOverlaySettingsPage() {
   const [leagueLogoEnabled, setLeagueLogoEnabled] = useState(true);
   const [tickerText, setTickerText] = useState("");
   const [tickerEnabled, setTickerEnabled] = useState(true);
+  const [clockEnabled, setClockEnabled] = useState(true);
+  const [timeoutPanelEnabled, setTimeoutPanelEnabled] = useState(true);
+  const [breakPanelEnabled, setBreakPanelEnabled] = useState(true);
+  const [startersPanelEnabled, setStartersPanelEnabled] = useState(true);
+  const [playerCardsEnabled, setPlayerCardsEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
   const [uploading, setUploading] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -126,6 +131,11 @@ export default function GameOverlaySettingsPage() {
       setLeagueLogoEnabled(rec.league_logo_enabled !== false);
       setTickerText(rec.ticker_text || "");
       setTickerEnabled(rec.ticker_enabled !== false);
+      setClockEnabled(rec.clock_enabled !== false);
+      setTimeoutPanelEnabled(rec.timeout_panel_enabled !== false);
+      setBreakPanelEnabled(rec.break_panel_enabled !== false);
+      setStartersPanelEnabled(rec.starters_panel_enabled !== false);
+      setPlayerCardsEnabled(rec.player_cards_enabled !== false);
       setSettingsId(rec.id);
     } else {
       setLogoUrl(null);
@@ -134,6 +144,11 @@ export default function GameOverlaySettingsPage() {
       setLeagueLogoEnabled(true);
       setTickerText("");
       setTickerEnabled(true);
+      setClockEnabled(true);
+      setTimeoutPanelEnabled(true);
+      setBreakPanelEnabled(true);
+      setStartersPanelEnabled(true);
+      setPlayerCardsEnabled(true);
       setSettingsId(null);
     }
   };
@@ -165,6 +180,11 @@ export default function GameOverlaySettingsPage() {
       league_logo_enabled: leagueLogoEnabled,
       ticker_text: tickerText,
       ticker_enabled: tickerEnabled,
+      clock_enabled: clockEnabled,
+      timeout_panel_enabled: timeoutPanelEnabled,
+      break_panel_enabled: breakPanelEnabled,
+      starters_panel_enabled: startersPanelEnabled,
+      player_cards_enabled: playerCardsEnabled,
     };
     let recId = settingsId;
     if (settingsId) {
@@ -286,6 +306,57 @@ export default function GameOverlaySettingsPage() {
               onUpload={handleFileUpload}
             />
 
+            <Button
+              onClick={handleSave}
+              disabled={saving || !!uploading}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card data-marker="OVERLAY_TOGGLES_V1" className="border-slate-200 mb-6">
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold text-slate-800">Scoreboard &amp; Panels</h2>
+            <p className="text-sm text-slate-500">Choose what appears on the overlay for this league. Everything is on by default.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="pr-6">
+                <p className="text-sm font-medium text-slate-700">Show game clock</p>
+                <p className="text-xs text-slate-400">Switch off if your scorer does not keep the in-app clock in sync with the clock on the court. The quarter is always shown.</p>
+              </div>
+              <Switch checked={clockEnabled} onCheckedChange={setClockEnabled} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-6">
+                <p className="text-sm font-medium text-slate-700">Timeout stats panel</p>
+                <p className="text-xs text-slate-400">The team comparison panel that appears automatically when a team calls a timeout.</p>
+              </div>
+              <Switch checked={timeoutPanelEnabled} onCheckedChange={setTimeoutPanelEnabled} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-6">
+                <p className="text-sm font-medium text-slate-700">End of period leaders</p>
+                <p className="text-xs text-slate-400">The player leaders board that appears at the end of each quarter or half.</p>
+              </div>
+              <Switch checked={breakPanelEnabled} onCheckedChange={setBreakPanelEnabled} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-6">
+                <p className="text-sm font-medium text-slate-700">Starting five panel</p>
+                <p className="text-xs text-slate-400">The starting line-ups shown before tip-off.</p>
+              </div>
+              <Switch checked={startersPanelEnabled} onCheckedChange={setStartersPanelEnabled} />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="pr-6">
+                <p className="text-sm font-medium text-slate-700">Player highlight cards</p>
+                <p className="text-xs text-slate-400">The card that pops up bottom-left when a player hits a milestone during play.</p>
+              </div>
+              <Switch checked={playerCardsEnabled} onCheckedChange={setPlayerCardsEnabled} />
+            </div>
             <Button
               onClick={handleSave}
               disabled={saving || !!uploading}

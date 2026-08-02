@@ -264,6 +264,8 @@ export const HELP_TOPICS = [
       "When a team calls a timeout, the overlay automatically shows a team stats panel comparing both teams. It disappears when the clock restarts.",
       "At the end of each quarter or half, the overlay automatically shows a player leaders board that rotates through scoring, rebounds and assists.",
       "Set your OBS browser source to exactly 1920 x 1080. The scoreboard is drawn at that size, so a smaller browser source makes it look shrunken and hard to read on stream.",
+      "Scoreboard and Panels in overlay settings lets you switch off the game clock, the timeout stats panel, the end of period leaders board, the starting five panel and the player highlight cards - per league. Everything is on by default.",
+      "Switch off Show game clock if your scorer does not keep the in-app clock in sync with the clock on the court. The quarter is still shown.",
     ],
   },
   {

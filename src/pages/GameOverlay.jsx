@@ -15,6 +15,11 @@ export default function GameOverlayPage() {
   const [leagueLogo, setLeagueLogo] = useState(null);
   const [tickerText, setTickerText] = useState("");
   const [tickerEnabled, setTickerEnabled] = useState(false);
+  const [clockEnabled, setClockEnabled] = useState(true);
+  const [timeoutPanelEnabled, setTimeoutPanelEnabled] = useState(true);
+  const [breakPanelEnabled, setBreakPanelEnabled] = useState(true);
+  const [startersPanelEnabled, setStartersPanelEnabled] = useState(true);
+  const [playerCardsEnabled, setPlayerCardsEnabled] = useState(true);
   const [clockDisplay, setClockDisplay] = useState("0:00");
   const clockRef = useRef(null);
 
@@ -69,6 +74,11 @@ export default function GameOverlayPage() {
       if (showLeagueLogo && settings?.league_logo_url) setLeagueLogo(settings.league_logo_url);
       if (settings?.ticker_text) setTickerText(settings.ticker_text);
       setTickerEnabled(settings?.ticker_enabled !== false && !!settings?.ticker_text);
+      setClockEnabled(settings?.clock_enabled !== false);
+      setTimeoutPanelEnabled(settings?.timeout_panel_enabled !== false);
+      setBreakPanelEnabled(settings?.break_panel_enabled !== false);
+      setStartersPanelEnabled(settings?.starters_panel_enabled !== false);
+      setPlayerCardsEnabled(settings?.player_cards_enabled !== false);
 
       const [ht, at, lg] = await Promise.all([
         base44.entities.Team.get(g.home_team_id),
@@ -745,11 +755,11 @@ export default function GameOverlayPage() {
         </div>
       )}
 
-      {showTimeout && <TimeoutPanel />}
-      {showBreak && <LeaderPanel />}
-      {showStarters && <StartersPanel />}
+      {showTimeout && timeoutPanelEnabled && <TimeoutPanel />}
+      {showBreak && breakPanelEnabled && <LeaderPanel />}
+      {showStarters && startersPanelEnabled && <StartersPanel />}
 
-      <PlayerCardStrip card={playerCard} lifted={!!(tickerEnabled && tickerText)} />
+      <PlayerCardStrip card={playerCardsEnabled ? playerCard : null} lifted={!!(tickerEnabled && tickerText)} />
 
       {/* Ticker — bottom full width */}
       {tickerEnabled && tickerText && (
@@ -837,20 +847,22 @@ export default function GameOverlayPage() {
               COURTSIDE
             </span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div data-marker="OVERLAY_TOGGLES_V1" style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{
               color: "#f97316",
-              fontSize: 17,
+              fontSize: clockEnabled ? 17 : 26,
               fontWeight: 800,
               letterSpacing: 0.4,
             }}>{periodLabel()}</span>
-            <span style={{
-              color: "#ffffff",
-              fontSize: 30,
-              fontWeight: 900,
-              letterSpacing: 0.5,
-              fontVariantNumeric: "tabular-nums",
-            }}>{clockDisplay}</span>
+            {clockEnabled && (
+              <span style={{
+                color: "#ffffff",
+                fontSize: 30,
+                fontWeight: 900,
+                letterSpacing: 0.5,
+                fontVariantNumeric: "tabular-nums",
+              }}>{clockDisplay}</span>
+            )}
           </div>
         </div>
 

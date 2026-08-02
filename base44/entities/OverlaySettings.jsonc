@@ -36,6 +36,31 @@
       "type": "boolean",
       "default": true,
       "description": "Whether the ticker is shown on the overlay"
+    },
+    "clock_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the game clock is shown on the overlay scoreboard"
+    },
+    "timeout_panel_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the timeout team-stats panel is shown on the overlay"
+    },
+    "break_panel_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the end-of-period player leaders panel is shown on the overlay"
+    },
+    "starters_panel_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the pre-tipoff starting five panel is shown on the overlay"
+    },
+    "player_cards_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether player highlight cards are shown on the overlay"
     }
   },
   "required": []
