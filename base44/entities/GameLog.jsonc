@@ -43,6 +43,10 @@
       "type": "number",
       "description": "Value after the action"
     },
+    "period": {
+      "type": "number",
+      "description": "Game period this play was recorded in (1-4 for quarters, 1-2 for halves, higher numbers for overtime)"
+    },
     "old_home_score": {
       "type": "number",
       "default": 0
