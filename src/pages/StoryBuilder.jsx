@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper } from "lucide-react";
+import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper, BarChart3 } from "lucide-react";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 import { calcPoints, groupStatsByGameAndPlayer } from "@/components/stats/statEngine";
 import HelpButton from "../components/help/HelpButton";
@@ -139,6 +139,59 @@ export default function StoryBuilder() {
     if (isNaN(d.getTime())) return "Unknown date";
     return format(d, fmt);
   };
+
+  // PERIOD_SCORES_V1 — rebuilds each team's scoring per period from the
+  // verified play-by-play. Play-by-play only carries `period` from 11 June
+  // 2026 onward, so older games return null. Also returns null when the
+  // rebuilt totals disagree with the official final score — never show
+  // numbers that contradict the box score.
+  const periodScores = React.useMemo(() => {
+    if (!selectedGame || gameLogs.length === 0) return null;
+    const SCORING = ["points_2", "points_3", "free_throws"];
+    const homeId = selectedGame.home_team_id;
+    const awayId = selectedGame.away_team_id;
+
+    const scoringLogs = gameLogs.filter(l =>
+      SCORING.includes(l.stat_type) && l.new_value !== l.old_value
+    );
+    if (scoringLogs.length === 0) return null;
+    if (!scoringLogs.every(l => typeof l.period === "number" && l.period >= 1)) return null;
+
+    const maxPeriod = Math.max(...scoringLogs.map(l => l.period));
+    if (!Number.isFinite(maxPeriod) || maxPeriod < 1 || maxPeriod > 12) return null;
+
+    const home = new Array(maxPeriod).fill(0);
+    const away = new Array(maxPeriod).fill(0);
+
+    scoringLogs.forEach(l => {
+      const unit = l.stat_type === "points_3" ? 3 : l.stat_type === "points_2" ? 2 : 1;
+      const pts = (l.new_value - l.old_value) * unit;
+      const idx = l.period - 1;
+      if (l.team_id === homeId) home[idx] += pts;
+      else if (l.team_id === awayId) away[idx] += pts;
+    });
+
+    const homeTotal = home.reduce((a, b) => a + b, 0);
+    const awayTotal = away.reduce((a, b) => a + b, 0);
+    if (homeTotal !== (selectedGame.home_score || 0)) return null;
+    if (awayTotal !== (selectedGame.away_score || 0)) return null;
+    if (home.some(v => v < 0) || away.some(v => v < 0)) return null;
+
+    const periodType = selectedGame.period_type === "halves" ? "halves" : "quarters";
+    const regulation = selectedGame.period_count || (periodType === "halves" ? 2 : 4);
+
+    const otCount = Math.max(0, maxPeriod - regulation);
+    const labels = [];
+    for (let i = 1; i <= maxPeriod; i++) {
+      if (i <= regulation) {
+        labels.push(periodType === "halves" ? `H${i}` : `Q${i}`);
+      } else {
+        labels.push(otCount === 1 ? "OT" : `OT${i - regulation}`);
+      }
+    }
+
+    return { labels, home, away, homeTotal, awayTotal, hasOvertime: otCount > 0 };
+  }, [selectedGame, gameLogs]);
 
   const handleGenerate = async () => {
     setError("");
@@ -446,6 +499,17 @@ CLUTCH MOMENTS: none detected — the game was not decided by a single late play
         ? `${pogPlayer.name} (#${pogPlayer.jersey_number}, ${pogTeam?.name})${pogStat ? ` — ${pogStat.pts} pts${pogStat.reb >= 1 ? ` · ${pogStat.reb} reb` : ""}${pogStat.ast >= 1 ? ` · ${pogStat.ast} ast` : ""}${pogStat.stl >= 1 ? ` · ${pogStat.stl} stl` : ""}${pogStat.blk >= 1 ? ` · ${pogStat.blk} blk` : ""}` : ""}`
         : "Not designated";
 
+      // PERIOD_SCORES_V1 — hand the verified period split to the AI so it can
+      // narrate runs and quarter swings. When it can't be verified the block
+      // is replaced by an explicit ban on mentioning periods at all.
+      const periodSection = periodScores ? `
+SCORING BY PERIOD (verified from the play-by-play — these numbers are safe to narrate):
+${homeTeam?.name || "Home"}: ${periodScores.labels.map((l, i) => `${l} ${periodScores.home[i]}`).join(" · ")} = ${periodScores.homeTotal}
+${awayTeam?.name || "Away"}: ${periodScores.labels.map((l, i) => `${l} ${periodScores.away[i]}`).join(" · ")} = ${periodScores.awayTotal}
+` : `
+SCORING BY PERIOD: not available for this game. Do NOT mention quarters, halves, periods, or any period-by-period scoring anywhere in the story.
+`;
+
       const prompt = `You are a lively grassroots basketball reporter writing a Facebook post-game story for a local league page. You write with energy, drama, and narrative flair — like a sportswriter who watched every possession and wants the reader to feel like they were courtside.
 
 GAME DATA:
@@ -462,7 +526,7 @@ ACTIVITY LOG INSIGHTS (use for game flow, momentum, deciding moments, and tone �
 - Technical fouls: ${logInsights.totalTechsLogged}
 - Unsportsmanlike fouls: ${logInsights.totalUnspLogged}
 - Game feel: ${logInsights.wasLopsided ? "Winner dominated from start to finish — not a close game" : logInsights.wasClose ? "Back-and-forth contest, decided in the closing stretch" : "Winner pulled away in the second half"}
-${clutchSection}
+${periodSection}${clutchSection}
 OFFICIAL VERIFIED PLAYER STATS — SOURCE OF TRUTH FOR ALL NUMBERS:
 ${winnerTeam?.name} TOP PERFORMERS (sorted by impact):
 ${winnerTopPlayers}
@@ -485,6 +549,7 @@ Write a Facebook post-game story following this structure:
    - Open with a compelling hook that drops the reader into the game's narrative — set the scene, the tension, or the turning point. Never open with a generic summary.
    - Tell the game as a STORY with momentum shifts. Use the activity log insights (lead changes, game feel) to build drama. Describe runs, swings, and sequences — not just final stat lines.
    - CLUTCH RULE: If clutch moments are listed above, they are the heart of the story. The game-deciding play gets its own dramatic build-up — set the score, the pressure, then the play itself. Commend the hero by name. Late tying shots and clutch defensive plays (blocks, steals) must be mentioned and credited by name — a block or steal that protects a 2-point lead deserves as much glory as the basket that created it. If overtime is listed, the story must convey the extra-period drama. If a comeback is listed, trace the arc from the deficit to the triumph.
+   - PERIOD RULE: If a SCORING BY PERIOD block is provided above, use it to describe the shape of the game — big quarters, cold stretches, a defensive clampdown, an overtime surge. Refer to periods naturally in prose ("a 22-point second quarter", "held them to 12 in the fourth"). NEVER print a table, list, or line-score of the period scores in the post. If no SCORING BY PERIOD block is provided, never mention quarters, halves, or periods at all.
    - Name the winning team's top performers (at least 2) with their real stats woven naturally into the narrative. Don't just list stats — describe HOW they scored, WHEN their plays mattered, and what role they played in the story.
    - Name the losing team's best performer(s) (at least 1) with real stats. Give them credit — describe what they did to keep their team in it and make the game competitive.
    - Identify the deciding moment or stretch — the run, the stop, the individual play that tilted the outcome. Make the reader feel the pressure.
@@ -637,6 +702,64 @@ MANDATORY RULES:
           </p>
         </CardContent>
       </Card>
+
+      {/* PERIOD_SCORES_V1 — scoring by period panel */}
+      {selectedGameId && periodScores && (
+        <Card className="border-slate-200 mb-6" data-marker="PERIOD_SCORES_V1">
+          <CardContent className="pt-5">
+            <div className="flex items-center gap-2 mb-3">
+              <BarChart3 className="w-4 h-4 text-orange-500" />
+              <span className="text-sm font-semibold text-slate-700">Scoring by Period</span>
+              {periodScores.hasOvertime && (
+                <Badge className="bg-amber-100 text-amber-700 border border-amber-200 text-[10px] font-semibold">Overtime</Badge>
+              )}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm table-fixed">
+                <thead>
+                  <tr className="text-[11px] text-slate-400">
+                    <th className="text-left font-normal pb-1.5 w-2/5"></th>
+                    {periodScores.labels.map(l => (
+                      <th key={l} className="text-center font-normal pb-1.5">{l}</th>
+                    ))}
+                    <th className="text-center font-normal pb-1.5">Final</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-slate-100">
+                    <td className="py-2 text-slate-700 truncate pr-2">{homeTeam?.name || "Home"}</td>
+                    {periodScores.home.map((pts, i) => (
+                      <td key={i} className="py-2 text-center text-slate-500">{pts}</td>
+                    ))}
+                    <td className="py-2 text-center font-bold text-slate-900">{periodScores.homeTotal}</td>
+                  </tr>
+                  <tr className="border-t border-slate-100">
+                    <td className="py-2 text-slate-700 truncate pr-2">{awayTeam?.name || "Away"}</td>
+                    {periodScores.away.map((pts, i) => (
+                      <td key={i} className="py-2 text-center text-slate-500">{pts}</td>
+                    ))}
+                    <td className="py-2 text-center font-bold text-slate-900">{periodScores.awayTotal}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedGameId && !periodScores && gameLogs.length > 0 && (
+        <Card className="border-slate-200 bg-slate-50 mb-6">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-slate-700">Scoring by period isn't available for this game</p>
+                <p className="text-xs text-slate-500 mt-0.5">The play-by-play didn't record verified period numbers for this game, so the period split can't be shown. The story will still be generated normally.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Generate button */}
       <div className="flex gap-3 mb-6">
