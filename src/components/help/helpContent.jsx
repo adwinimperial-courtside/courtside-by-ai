@@ -169,6 +169,9 @@ export const HELP_TOPICS = [
     tips: [
       "Each league you manage gets its own approve/reject decision per request.",
       "Approved users receive a welcome email automatically.",
+      "Rejecting asks you to pick a reason. The applicant gets an email written for that reason, telling them what to do next — so most people fix the problem and sign up again instead of giving up.",
+      "You can add a short note that appears in the email in your own words, and you can switch the email off entirely for spam or duplicate requests.",
+      "A team can have two coaches, a head coach and one assistant. Approving a third asks you to confirm and names who already holds the spots.",
     ],
   },
   {
