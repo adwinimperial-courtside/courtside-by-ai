@@ -243,13 +243,29 @@ function PointList({ lines }) {
   );
 }
 
+// BRIEF_VISUAL_V3 - "X on Y — reason" only counts as a matchup when both
+// sides actually look like player names. Splitting on any "on" turned the
+// sentence "No single defender on our roster has the clear profile..." into a
+// fake pairing, with half a sentence in each column.
+const NAME_LIKE = /^(?:[A-Z][\w.'\u2019-]*|#\d+|\(#\d+\)|[A-Z]\.)(?:\s+(?:[A-Z][\w.'\u2019-]*|#\d+|\(#\d+\)|[A-Z]\.))*$/;
+
+function looksLikeName(value) {
+  const v = String(value || "").trim().replace(/[,;:]+$/, "");
+  if (!v || v.length > 40) return false;
+  if (v.split(/\s+/).length > 5) return false;
+  return NAME_LIKE.test(v);
+}
+
 function MatchupList({ lines }) {
   return (
     <div className="divide-y divide-slate-100">
       {lines.map((raw, i) => {
         const line = stripBullet(raw);
         const plain = line.replace(/\*\*/g, "");
-        const m = plain.match(/^(.+?)\s+on\s+(.+?)\s*[\u2014\u2013-]\s*(.*)$/);
+        const candidate = plain.match(/^(.+?)\s+on\s+(.+?)\s*[\u2014\u2013-]\s*(.*)$/);
+        const m = (candidate && looksLikeName(candidate[1]) && looksLikeName(candidate[2]))
+          ? candidate
+          : null;
 
         if (m) {
           return (
