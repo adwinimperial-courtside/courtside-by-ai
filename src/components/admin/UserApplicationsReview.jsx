@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PlayerMatchModal from "./PlayerMatchModal";
+import DeclineReasonDialog from "./DeclineReasonDialog";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,9 @@ export default function UserApplicationsReview() {
   const [matchingApp, setMatchingApp] = useState(null);
   const [adminLeagueOverrides, setAdminLeagueOverrides] = useState({});
   const [actionError, setActionError] = useState(null);
+  // DECLINE_REASON_DIALOG_V1 — the pending rejection while the admin picks a reason.
+  // { app, leagueIds, contextLabel, mode: 'per_league' | 'whole' }
+  const [declineTarget, setDeclineTarget] = useState(null);
 
   const { data: reviewData, isLoading } = useQuery({
     queryKey: ['review_requests'],
@@ -50,12 +54,28 @@ export default function UserApplicationsReview() {
   // ROLE_CONFLICT_GUARD_V1 — friendly labels for the override confirm box.
   const roleLabel = (r) => ({ app_admin: 'App Admin', league_admin: 'League Admin', coach: 'Coach', player: 'Player', viewer: 'Fan' }[r] || r);
 
-  const decide = async (app, action, leagueIds) => {
-    if (action === 'reject' && !window.confirm(`Reject ${app.user_name || app.user_email}'s request for this league?`)) return;
+  const decide = async (app, action, leagueIds, declineInfo) => {
+    // DECLINE_REASON_DIALOG_V1 — every rejection goes through the reason dialog first.
+    // The dialog calls back into this same function with declineInfo filled in.
+    if (action === 'reject' && !declineInfo) {
+      const picked = (app.leagues || []).filter(l => !leagueIds || leagueIds.includes(l.league_id));
+      const label = picked.length === 1 ? picked[0].league_name : (picked.length > 1 ? `${picked.length} leagues` : '');
+      setDeclineTarget({ app, leagueIds, contextLabel: label, mode: 'per_league' });
+      return;
+    }
     setActionError(null);
     setProcessingAppId(app.id);
     try {
-      const res = await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action, league_ids: leagueIds });
+      const res = await base44.functions.invoke('approveUserApplication', {
+        applicationId: app.id,
+        action,
+        league_ids: leagueIds,
+        ...(declineInfo ? {
+          decline_reason_code: declineInfo.code,
+          decline_reason_note: declineInfo.note,
+          suppress_decline_email: declineInfo.sendEmail === false,
+        } : {}),
+      });
       // ROLE_CONFLICT_GUARD_V1 — a league is paused (not overwritten) when the applicant already
       // holds a different role there. Confirm the override, then re-send forced for those leagues.
       const conflicts = (res && res.data && Array.isArray(res.data.conflicts)) ? res.data.conflicts : [];
@@ -75,6 +95,26 @@ export default function UserApplicationsReview() {
           });
         }
       }
+      // COACH_CAP_V1 — a team may hold two coaches. Approving a third pauses and names
+      // who already has the spots. Either admin type may confirm the override.
+      const capConflicts = conflicts.filter(c => c && c.reason === 'coach_cap');
+      if (action === 'approve' && capConflicts.length > 0) {
+        const who = app.user_name || app.user_email || 'This person';
+        const body = capConflicts.map(c => {
+          const held = Array.isArray(c.existing_coaches) ? c.existing_coaches : [];
+          const cap = c.cap || 2;
+          return `${c.team_name || 'That team'} in ${c.league_name || 'this league'} already has ${held.length === 1 ? 'a coach' : `${held.length} coaches`}: ${held.join(', ')}.\nCourtside allows ${cap} per team. Approving ${who} makes ${held.length + 1}.`;
+        }).join('\n\n');
+        const ok = window.confirm(`${body}\n\nApprove anyway?`);
+        if (ok) {
+          await base44.functions.invoke('approveUserApplication', {
+            applicationId: app.id,
+            action: 'approve',
+            league_ids: capConflicts.map(c => c.league_id),
+            force_conflicts: capConflicts.map(c => c.league_id),
+          });
+        }
+      }
       refresh();
     } catch (e) {
       setActionError((e && e.message) || 'Action failed');
@@ -83,12 +123,22 @@ export default function UserApplicationsReview() {
     }
   };
 
-  const handleRejectWhole = async (app) => {
-    if (!window.confirm(`Reject ${app.user_name || app.user_email}'s application?`)) return;
+  const handleRejectWhole = async (app, declineInfo) => {
+    // DECLINE_REASON_DIALOG_V1 — whole-application rejection, same dialog.
+    if (!declineInfo) {
+      setDeclineTarget({ app, leagueIds: null, contextLabel: '', mode: 'whole' });
+      return;
+    }
     setActionError(null);
     setProcessingAppId(app.id);
     try {
-      await base44.functions.invoke('approveUserApplication', { applicationId: app.id, action: 'reject' });
+      await base44.functions.invoke('approveUserApplication', {
+        applicationId: app.id,
+        action: 'reject',
+        decline_reason_code: declineInfo.code,
+        decline_reason_note: declineInfo.note,
+        suppress_decline_email: declineInfo.sendEmail === false,
+      });
       refresh();
     } catch (e) {
       setActionError((e && e.message) || 'Failed');
@@ -253,6 +303,23 @@ export default function UserApplicationsReview() {
           teams={teams}
           onClose={() => setMatchingApp(null)}
           onApproved={() => { setMatchingApp(null); refresh(); }}
+        />
+      )}
+      {declineTarget && (
+        <DeclineReasonDialog
+          open={!!declineTarget}
+          busy={processingAppId === declineTarget.app.id}
+          role={declineTarget.app.requested_role}
+          applicantName={declineTarget.app.user_name || declineTarget.app.user_email}
+          contextLabel={declineTarget.contextLabel}
+          isAppAdmin={isAppAdmin}
+          onClose={() => setDeclineTarget(null)}
+          onConfirm={(info) => {
+            const t = declineTarget;
+            setDeclineTarget(null);
+            if (t.mode === 'whole') handleRejectWhole(t.app, info);
+            else decide(t.app, 'reject', t.leagueIds, info);
+          }}
         />
       )}
       <Card className="border-slate-200 shadow-lg">
