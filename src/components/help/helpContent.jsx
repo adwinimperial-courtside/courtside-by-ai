@@ -147,6 +147,8 @@ export const HELP_TOPICS = [
       "Opponent Snapshot previews your next opponent's averages, three-point volume and top players.",
       "AI Tactical Briefing builds a game plan from both rosters, recent form and any previous meetings — including suggested matchups and an opening five-minute plan.",
       "The briefing states how much data it is built on, so you know when to trust it.",
+      "The briefing is laid out as cards with charts drawn from your own season data — use Copy text to paste it into a team chat.",
+      "Turnovers are hidden automatically in leagues that do not record them.",
       "AI Tactical Briefing is limited to 10 briefings per month.",
     ],
   },

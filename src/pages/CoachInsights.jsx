@@ -148,8 +148,19 @@ export default function CoachInsights() {
     }
   }, [currentUser, selectedLeague]);
 
+  // COACH_BRIEF_V3 - turnovers are only shown when the league actually records
+  // them. The hardcoded list above stays as a manual override. On top of it, a
+  // league whose completed games contain stat rows but not one single turnover
+  // is treated as not tracking turnovers at all: a real game always produces at
+  // least one turnover when somebody is recording them, so a league-wide total
+  // of zero means the column is unused, not that nobody lost the ball.
+  const turnoversTracked = useMemo(() => {
+    if (!selectedLeague || playerStats.length === 0) return true;
+    return playerStats.reduce((sum, s) => sum + (s.turnovers || 0), 0) > 0;
+  }, [selectedLeague, playerStats]);
+
   // Whether turnovers should be excluded for the selected league
-  const excludeTurnovers = LEAGUES_NO_TURNOVERS.includes(selectedLeague);
+  const excludeTurnovers = LEAGUES_NO_TURNOVERS.includes(selectedLeague) || !turnoversTracked;
 
   const leagueTeams = useMemo(() =>
     teams.filter(t => t.league_id === selectedLeague),

@@ -5,7 +5,8 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Sparkles, RefreshCw, Calendar, Shield, Target, AlertCircle, X } from "lucide-react";
+import { Sparkles, RefreshCw, Calendar, Shield, Target, AlertCircle, X, Copy, Check } from "lucide-react";
+import BriefingRenderer from "@/components/insights/BriefingRenderer";
 import { format } from "date-fns";
 
 // COACH_BRIEF_V2 — rewritten briefing prompt, explicit model, on-page error
@@ -35,6 +36,7 @@ export default function AITacticalBriefing({
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [errorMsg, setErrorMsg] = useState("");
+  const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
   const userEmail = currentUser?.email;
 
@@ -237,8 +239,9 @@ HARD RULES — breaking any of these makes the briefing worthless
 6. Every tactical instruction must be tied to a specific number from above. "Control the glass" is banned. "Control the glass — we are plus 6.4 on the boards in wins and minus 2.3 in losses" is what we want.
 7. No motivational language. No "leave it all on the floor", no "execute with discipline", no closing pep talk of any kind.
 8. Instructions must be things an amateur team can actually do: who guards who, who gets the ball, what to crash, when to foul, when to slow the game down. No professional scheme jargon.
-9. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.${excludeTurnovers ? `
-10. This league does NOT track turnovers. Never mention turnovers, ball security, or taking care of the ball.` : ''}
+9. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.
+10. A whole-team average of exactly 0.0 for any statistic means that statistic is not being recorded in this league. It does NOT mean the team is perfect at it. Never present a 0.0 team average as a strength, a weakness, a concern or a talking point — leave it out of the briefing entirely.${excludeTurnovers ? `
+11. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
 
 ===============================================================
 OUTPUT — use this exact structure and these exact headings
@@ -262,7 +265,8 @@ Choose our defenders using steals, blocks and foul averages. Flag any of our pla
 Three specific things to do from the opening tip. Concrete actions, not goals.
 
 ⚠️ WHAT COULD LOSE THIS
-Two bullets. Each gives the warning sign to watch for during the game, then what to change if it appears.
+Two bullets. Write each one on a single line in exactly this shape, including the two capitalised labels:
+IF: [the warning sign to watch for during the game] THEN: [what to change the moment it appears]
 
 📋 CONFIDENCE
 One or two sentences stating plainly how much data this briefing rests on and which part of it is least reliable. A coach who knows a read is weak is better off than one who trusts it blindly.
@@ -334,6 +338,20 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
 
   const handleConfirmGenerate = () => {
     generateBriefingMutation.mutate();
+  };
+
+  // BRIEF_VISUAL_V1 — copy the plain text so a coach can paste it into a team
+  // chat. Clipboard is used elsewhere in the app and works inside base44.
+  const handleCopy = () => {
+    const content = latestBriefing?.briefing_content || "";
+    if (!content) return;
+    navigator.clipboard.writeText(content).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => setErrorMsg("Could not copy to the clipboard. Please select the text manually.")
+    );
   };
 
   const loadingMessages = [
@@ -409,17 +427,31 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
               </div>
             </div>
 
-            {/* Briefing Content */}
-            <div className="bg-white rounded-lg p-6 border-2 border-purple-200">
-              <div className="prose prose-sm max-w-none">
-                <div className="whitespace-pre-wrap text-slate-800 leading-relaxed">
-                  {latestBriefing.briefing_content}
-                </div>
-              </div>
-            </div>
+            {/* BRIEF_VISUAL_V1 — cards and charts instead of raw text. Every
+                chart is drawn from data already on this page, so the display
+                change costs nothing extra in AI usage. */}
+            <BriefingRenderer
+              text={latestBriefing.briefing_content}
+              generatedDate={format(new Date(latestBriefing.generated_date), 'd MMM yyyy, HH:mm')}
+              selectedTeamName={selectedTeamName}
+              selectedOpponentName={selectedOpponentName}
+              winLossComparison={winLossComparison}
+              opponentSnapshot={opponentSnapshot}
+              teamSeasonAverages={teamSeasonAverages}
+              playerRankings={playerRankings}
+              excludeTurnovers={excludeTurnovers}
+            />
 
-            {/* Regenerate Button */}
-            <div className="flex justify-center">
+            {/* Actions */}
+            <div className="flex justify-center gap-3">
+              <Button
+                onClick={handleCopy}
+                variant="outline"
+                className="border-purple-300 text-purple-700 hover:bg-purple-50"
+              >
+                {copied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                {copied ? 'Copied' : 'Copy text'}
+              </Button>
               <Button
                 onClick={handleGenerate}
                 disabled={hasReachedLimit}
