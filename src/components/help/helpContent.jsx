@@ -143,8 +143,10 @@ export const HELP_TOPICS = [
     summary:
       "What drives your wins: win vs loss comparisons, opponent scouting and player impact rankings.",
     tips: [
-      "The Key Insight card shows the stat most strongly tied to your wins.",
-      "Opponent Snapshot previews your next opponent's averages and top players.",
+      "The Key Insight card shows the stat most strongly tied to your wins, scaled so it is not simply whichever number is biggest.",
+      "Opponent Snapshot previews your next opponent's averages, three-point volume and top players.",
+      "AI Tactical Briefing builds a game plan from both rosters, recent form and any previous meetings — including suggested matchups and an opening five-minute plan.",
+      "The briefing states how much data it is built on, so you know when to trust it.",
       "AI Tactical Briefing is limited to 10 briefings per month.",
     ],
   },

@@ -5,12 +5,16 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Sparkles, RefreshCw, Calendar, Shield, Target, AlertCircle } from "lucide-react";
+import { Sparkles, RefreshCw, Calendar, Shield, Target, AlertCircle, X } from "lucide-react";
 import { format } from "date-fns";
 
-export default function AITacticalBriefing({ 
-  selectedLeague, 
-  selectedTeam, 
+// COACH_BRIEF_V2 — rewritten briefing prompt, explicit model, on-page error
+// banner (window.alert is blocked inside the base44 iframe), and a much wider
+// data set: both rosters, points allowed, three-point volume, head-to-head,
+// recent form and venue.
+export default function AITacticalBriefing({
+  selectedLeague,
+  selectedTeam,
   selectedOpponent,
   selectedTeamName,
   selectedOpponentName,
@@ -18,11 +22,19 @@ export default function AITacticalBriefing({
   opponentSnapshot,
   last3GamesTrend,
   currentUser,
-  excludeTurnovers = false
+  excludeTurnovers = false,
+  teamSeasonAverages = null,
+  playerRankings = [],
+  keyInsight = null,
+  headToHead = [],
+  recentResults = [],
+  nextMeeting = null,
+  leagueName = "",
 }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
+  const [errorMsg, setErrorMsg] = useState("");
   const queryClient = useQueryClient();
   const userEmail = currentUser?.email;
 
@@ -53,7 +65,7 @@ export default function AITacticalBriefing({
   const briefingsRemaining = monthlyLimit - briefingsUsed;
   const hasReachedLimit = briefingsUsed >= monthlyLimit;
 
-  const latestBriefing = existingBriefings.sort((a, b) => 
+  const latestBriefing = existingBriefings.sort((a, b) =>
     new Date(b.generated_date) - new Date(a.generated_date)
   )[0];
 
@@ -61,6 +73,7 @@ export default function AITacticalBriefing({
   const generateBriefingMutation = useMutation({
     mutationFn: async () => {
       setIsGenerating(true);
+      setErrorMsg("");
       setLoadingStep(0);
 
       // Staged loading messages
@@ -75,11 +88,32 @@ export default function AITacticalBriefing({
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
-      // Prepare data for LLM
+      // ------------------------------------------------------------------
+      // COACH_BRIEF_V2 — data assembly
+      // ------------------------------------------------------------------
+      const n1 = (v) => (v === null || v === undefined || Number.isNaN(Number(v)))
+        ? "n/a"
+        : Number(v).toFixed(1);
+
+      const fmtRoster = (list, limit = 12) => {
+        const rows = (list || []).slice(0, limit);
+        if (rows.length === 0) return "No player data available for this team.";
+        return rows.map(p =>
+          `${p.name}${p.jerseyNumber ? ` #${p.jerseyNumber}` : ""} | ${p.ppg} pts | ${p.rpg} reb | ${p.apg} ast | ${p.spg} stl | ${p.bpg} blk | ${p.tpg} threes | ${p.fpg} fouls | ${p.gamesPlayed} games`
+        ).join("\n");
+      };
+
+      const ourRoster = [...(playerRankings || [])]
+        .sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+
+      const winsCount = winLossComparison?.wins.count || 0;
+      const lossesCount = winLossComparison?.losses.count || 0;
+      const totalGames = winsCount + lossesCount;
+
       const teamData = {
         teamName: selectedTeamName,
-        winsCount: winLossComparison?.wins.count || 0,
-        lossesCount: winLossComparison?.losses.count || 0,
+        winsCount,
+        lossesCount,
         avgPointsWins: winLossComparison?.wins.stats.points || 0,
         avgPointsLosses: winLossComparison?.losses.stats.points || 0,
         avgAssistsWins: winLossComparison?.wins.stats.assists || 0,
@@ -99,57 +133,145 @@ export default function AITacticalBriefing({
       const opponentData = {
         opponentName: selectedOpponentName,
         avgPoints: opponentSnapshot?.avgPoints || 0,
+        avgPointsAllowed: opponentSnapshot?.avgPointsAllowed || 0,
         avgRebounds: opponentSnapshot?.avgRebounds || 0,
+        avgThrees: opponentSnapshot?.avgThrees || 0,
         ...(excludeTurnovers ? {} : { avgTurnovers: opponentSnapshot?.avgTurnovers || 0 }),
         topScorerName: opponentSnapshot?.topScorer?.name || 'N/A',
         topScorerPPG: opponentSnapshot?.topScorer?.ppg || 0,
         topDefenderName: opponentSnapshot?.topDefender?.name || 'N/A',
         topDefenderDefense: opponentSnapshot?.topDefender?.defensiveScore || 0,
+        record: opponentSnapshot?.record || 'unknown',
+        gamesPlayed: opponentSnapshot?.gamesPlayed || 0,
       };
 
-      // Call LLM
-      const prompt = `You are a professional basketball tactical analyst. Generate a concise tactical briefing for an upcoming game.
+      const venueLine = nextMeeting?.venue
+        ? `We are ${nextMeeting.venue === 'Home' ? 'at home' : 'away'} for this one.`
+        : "Venue not scheduled yet — do not refer to home or away advantage.";
 
-TEAM DATA (${teamData.teamName}):
-- Record: ${teamData.winsCount}W - ${teamData.lossesCount}L
-- In Wins: ${teamData.avgPointsWins} PPG, ${teamData.avgAssistsWins} APG, ${teamData.reboundMarginWins} REB Margin${excludeTurnovers ? '' : `, ${teamData.avgTurnoversWins} TO`}
-- In Losses: ${teamData.avgPointsLosses} PPG, ${teamData.avgAssistsLosses} APG, ${teamData.reboundMarginLosses} REB Margin${excludeTurnovers ? '' : `, ${teamData.avgTurnoversLosses} TO`}
-- Last 3 Games: ${teamData.last3Points} PPG, ${teamData.last3Assists} APG, ${teamData.last3ReboundMargin} REB Margin${excludeTurnovers ? '' : `, ${teamData.last3Turnovers} TO`}
+      const h2hBlock = (headToHead && headToHead.length > 0)
+        ? headToHead.join("\n")
+        : "No previous meetings on record.";
 
-OPPONENT DATA (${opponentData.opponentName}):
-- Avg Points: ${opponentData.avgPoints}
-- Avg Rebounds: ${opponentData.avgRebounds}${excludeTurnovers ? '' : `\n- Avg Turnovers: ${opponentData.avgTurnovers}`}
-- Top Scorer: ${opponentData.topScorerName} (${opponentData.topScorerPPG} PPG)
-- Top Defender: ${opponentData.topDefenderName} (${opponentData.topDefenderDefense} STL+BLK)
+      const formBlock = (recentResults && recentResults.length > 0)
+        ? recentResults.join(", ")
+        : "No completed games on record.";
 
-${excludeTurnovers ? 'NOTE: Turnovers are NOT tracked in this league. Do NOT reference turnovers or ball security/turnover control in your analysis.\n\n' : ''}Generate a tactical briefing in this EXACT format:
+      const oppFormBlock = (opponentSnapshot?.recentForm && opponentSnapshot.recentForm.length > 0)
+        ? opponentSnapshot.recentForm.join(", ")
+        : "No recent games on record.";
 
-🎯 Key Strategic Priorities
+      const momentum = last3GamesTrend?.momentum || {};
 
-• [Priority 1 based on largest statistical gap]
-• [Priority 2]
-• [Priority 3]
+      // ------------------------------------------------------------------
+      // COACH_BRIEF_V2 — the prompt
+      // ------------------------------------------------------------------
+      const prompt = `You are an experienced assistant coach preparing a scouting report for an amateur, community-level basketball team. Your reader is a volunteer head coach reading this on a phone in the twenty minutes before tip-off. Write like a coach talking to a coach: direct, specific, immediately usable. Not like an analyst writing a report.
 
-⚠️ Risk Indicators
+===============================================================
+GAME
+===============================================================
+US: ${teamData.teamName}
+THEM: ${opponentData.opponentName}
+Competition: ${leagueName || 'league season'}
+${venueLine}
 
-• [Statistical weakness warning]
-• [Opponent threat warning]
+===============================================================
+OUR SEASON — ${teamData.winsCount}W-${teamData.lossesCount}L across ${totalGames} games
+===============================================================
+Scored per game: ${n1(teamSeasonAverages?.points)}
+Allowed per game: ${n1(teamSeasonAverages?.pointsAllowed)}
+Assists per game: ${n1(teamSeasonAverages?.assists)}
+Rebound margin: ${n1(teamSeasonAverages?.reboundMargin)}
+Threes made per game: ${n1(teamSeasonAverages?.threes)}${excludeTurnovers ? '' : `
+Turnovers per game: ${n1(teamSeasonAverages?.turnovers)}`}
 
-🏆 Winning Identity Reminder
+WHAT CHANGES BETWEEN OUR WINS AND OUR LOSSES
+This is the most important block below. Every number here is a real pattern from our own games.
+                     IN WINS (${teamData.winsCount})   IN LOSSES (${teamData.lossesCount})
+Points scored        ${teamData.avgPointsWins}   ${teamData.avgPointsLosses}
+Assists              ${teamData.avgAssistsWins}   ${teamData.avgAssistsLosses}
+Rebound margin       ${teamData.reboundMarginWins}   ${teamData.reboundMarginLosses}${excludeTurnovers ? '' : `
+Turnovers            ${teamData.avgTurnoversWins}   ${teamData.avgTurnoversLosses}`}
+Statistically the widest gap, adjusted for how much each stat naturally varies game to game: ${keyInsight?.metric || 'not enough data to tell'}
 
-When you win, you average:
-• ${teamData.avgPointsWins} points
-• ${teamData.reboundMarginWins} rebound margin
-• ${teamData.avgAssistsWins} assists${excludeTurnovers ? '' : `\n• ${teamData.avgTurnoversWins} turnovers`}
+OUR RECENT FORM
+Last ${last3GamesTrend?.gamesCount || 0} games: ${teamData.last3Points} points (trend ${momentum.points || 'unknown'}), ${teamData.last3Assists} assists, ${teamData.last3ReboundMargin} rebound margin (trend ${momentum.rebounds || 'unknown'})${excludeTurnovers ? '' : `, ${teamData.last3Turnovers} turnovers (trend ${momentum.turnovers || 'unknown'})`}
+Recent results, newest first: ${formBlock}
 
-Keep output:
-- Tactical and professional
-- Concise bullet points
-- No fluff or generic motivational language
-- Maximum 8 total bullet points`;
+===============================================================
+OUR ROSTER — season averages
+===============================================================
+Name | points | rebounds | assists | steals | blocks | threes made | fouls | games played
+${fmtRoster(ourRoster)}
+
+===============================================================
+THEM — ${opponentData.opponentName}, ${opponentData.record} across ${opponentData.gamesPlayed} games
+===============================================================
+Scored per game: ${opponentData.avgPoints}
+Allowed per game: ${opponentData.avgPointsAllowed}
+Rebounds per game: ${opponentData.avgRebounds}
+Threes made per game: ${opponentData.avgThrees}${excludeTurnovers ? '' : `
+Turnovers per game: ${opponentData.avgTurnovers}`}
+Their leading scorer: ${opponentData.topScorerName} (${opponentData.topScorerPPG} per game)
+Their most disruptive defender: ${opponentData.topDefenderName} (${opponentData.topDefenderDefense} steals plus blocks per game)
+Their recent results, newest first: ${oppFormBlock}
+
+THEIR ROSTER — season averages
+Name | points | rebounds | assists | steals | blocks | threes made | fouls | games played
+${fmtRoster(opponentSnapshot?.roster)}
+
+===============================================================
+HEAD-TO-HEAD
+===============================================================
+${h2hBlock}
+
+===============================================================
+HARD RULES — breaking any of these makes the briefing worthless
+===============================================================
+1. Use ONLY the numbers and names listed above. If a player is not on a roster list above, that player does not exist. Never invent a name, a result or a number.
+2. This league does not record shot attempts. NEVER mention field goal percentage, three-point percentage, free throw percentage, shooting efficiency or any percentage statistic. Talk in makes and volume instead.
+3. Never state a game clock time, a quarter, or a score situation you were not given. You did not watch these games.
+4. Never describe a playing style you cannot see in the numbers. You may say a team shoots a lot of threes if the threes number supports it. You may NOT say they run a zone, press, or push in transition — none of that is in the data.
+5. Sample size honesty. If we have played fewer than four games, or have fewer than two wins, or fewer than two losses, treat the win/loss split as a weak signal and say so plainly. If the opponent has played fewer than three games, say their profile is thin. Never present a small-sample pattern as a certainty.
+6. Every tactical instruction must be tied to a specific number from above. "Control the glass" is banned. "Control the glass — we are plus 6.4 on the boards in wins and minus 2.3 in losses" is what we want.
+7. No motivational language. No "leave it all on the floor", no "execute with discipline", no closing pep talk of any kind.
+8. Instructions must be things an amateur team can actually do: who guards who, who gets the ball, what to crash, when to foul, when to slow the game down. No professional scheme jargon.
+9. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.${excludeTurnovers ? `
+10. This league does NOT track turnovers. Never mention turnovers, ball security, or taking care of the ball.` : ''}
+
+===============================================================
+OUTPUT — use this exact structure and these exact headings
+===============================================================
+
+🎯 THE GAME IN ONE LINE
+One sentence describing how we win this specific game. It must contain a number.
+
+🔑 HOW WE WIN THIS ONE
+Three bullets. Each one gives the instruction first, then the number that justifies it. Order them by how strongly the numbers support them.
+
+🕵️ WHO THEY ARE
+Three bullets describing this opponent as a team: how they score, where they are strong, where they are soft. Numbers only, no invented style.
+
+🥊 MATCHUPS
+Two or three lines, each in this shape:
+[Our player name] on [Their player name] — [one line reason built on their numbers]
+Choose our defenders using steals, blocks and foul averages. Flag any of our players averaging 3.5 or more fouls per game as a foul-trouble risk and name the backup. If we have no suitable defender for their leading scorer, say so honestly and suggest a team solution instead.
+
+⏱️ FIRST FIVE MINUTES
+Three specific things to do from the opening tip. Concrete actions, not goals.
+
+⚠️ WHAT COULD LOSE THIS
+Two bullets. Each gives the warning sign to watch for during the game, then what to change if it appears.
+
+📋 CONFIDENCE
+One or two sentences stating plainly how much data this briefing rests on and which part of it is least reliable. A coach who knows a read is weak is better off than one who trusts it blindly.
+
+Total length under 500 words. No preamble, no sign-off. Start directly with 🎯.`;
 
       const llmResponse = await base44.integrations.Core.InvokeLLM({
         prompt: prompt,
+        model: "claude_sonnet_4_6",
       });
 
       // Save briefing to database
@@ -157,7 +279,7 @@ Keep output:
         league_id: selectedLeague,
         team_id: selectedTeam,
         opponent_id: selectedOpponent,
-        briefing_content: llmResponse,
+        briefing_content: typeof llmResponse === "string" ? llmResponse : JSON.stringify(llmResponse),
         generated_date: new Date().toISOString(),
         team_data: teamData,
         opponent_data: opponentData,
@@ -193,7 +315,9 @@ Keep output:
     },
     onError: (error) => {
       console.error('Error generating briefing:', error);
-      alert('Failed to generate briefing: ' + (error?.message || 'Unknown error') + '. Please try again.');
+      // COACH_BRIEF_V2 — window.alert is blocked in the base44 iframe, so the
+      // old alert() calls silently showed the user nothing at all.
+      setErrorMsg('Could not generate the briefing: ' + (error?.message || 'unknown error') + '. Please try again.');
       setIsGenerating(false);
       setShowConfirmDialog(false);
     }
@@ -201,9 +325,10 @@ Keep output:
 
   const handleGenerate = () => {
     if (hasReachedLimit) {
-      alert(`Monthly limit of ${monthlyLimit} AI briefings reached. Limit resets next month.`);
+      setErrorMsg(`Monthly limit of ${monthlyLimit} AI briefings reached. The limit resets next month.`);
       return;
     }
+    setErrorMsg("");
     setShowConfirmDialog(true);
   };
 
@@ -244,6 +369,22 @@ Keep output:
         </div>
       </CardHeader>
       <CardContent className="pt-6">
+        {/* COACH_BRIEF_V2 — on-page error banner replaces the blocked alert() */}
+        {errorMsg && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border-2 border-red-300 bg-red-50 p-4">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-red-800 flex-1">{errorMsg}</p>
+            <button
+              type="button"
+              onClick={() => setErrorMsg("")}
+              className="text-red-600 hover:text-red-800"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {isGenerating ? (
           <div className="py-12 text-center">
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
@@ -327,7 +468,7 @@ Keep output:
               Generate AI Tactical Briefing?
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 pt-4">
-              <p>This will analyze win/loss patterns, opponent trends, and recent performance to generate a tactical briefing for your matchup against <span className="font-semibold">{selectedOpponentName}</span>.</p>
+              <p>This will analyze win/loss patterns, both rosters, opponent trends and recent form to generate a tactical briefing for your matchup against <span className="font-semibold">{selectedOpponentName}</span>.</p>
               <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                 <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
                   <AlertCircle className="w-4 h-4" />

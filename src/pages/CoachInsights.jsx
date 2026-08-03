@@ -9,7 +9,7 @@ import AITacticalBriefing from "../components/insights/AITacticalBriefing";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 // B4_FORMAT_V1 — points math via the stat engine (per-game format detection),
 // data via the shared cap-agnostic league stats hook.
-import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
+import { calcPoints, buildGameFormatMap, groupStatsByGameAndPlayer } from "@/components/stats/statEngine";
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
 import HelpButton from "../components/help/HelpButton";
 
@@ -72,6 +72,68 @@ export default function CoachInsights() {
     () => new Map(games.map(g => [g.id, g])),
     [games]
   );
+
+  // COACH_BRIEF_V2 - duplicate-row safety. Substitutions can leave a player
+  // with more than one PlayerStats row in a single game. Counting rows as
+  // games played over-counted the denominator and deflated every per-game
+  // average on this page. Merge rows into one line per player per game first.
+  const linesByPlayer = useMemo(() => {
+    const byGame = groupStatsByGameAndPlayer(playerStats);
+    const map = new Map();
+    byGame.forEach((playerMap) => {
+      playerMap.forEach((line, playerId) => {
+        if (!map.has(playerId)) map.set(playerId, []);
+        map.get(playerId).push(line);
+      });
+    });
+    return map;
+  }, [playerStats]);
+
+  // COACH_BRIEF_V2 - shared per-player season averages builder, used for both
+  // our roster and the opponent roster so the two can never disagree.
+  const buildRosterLines = React.useCallback((teamId) => {
+    return players
+      .filter(p => p.team_id === teamId)
+      .map(player => {
+        const lines = linesByPlayer.get(player.id) || [];
+        const gamesPlayed = lines.length;
+        if (gamesPlayed === 0) return null;
+
+        const totalPts = lines.reduce((sum, s) => sum + calcPoints(s, gamesById.get(s.game_id), formatMap.get(s.game_id)), 0);
+        const totalReb = lines.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+        const totalAst = lines.reduce((sum, s) => sum + (s.assists || 0), 0);
+        const totalStl = lines.reduce((sum, s) => sum + (s.steals || 0), 0);
+        const totalBlk = lines.reduce((sum, s) => sum + (s.blocks || 0), 0);
+        const totalTpm = lines.reduce((sum, s) => sum + (s.points_3 || 0), 0);
+        const totalFouls = lines.reduce((sum, s) => sum + (s.fouls || 0), 0);
+
+        const ppg = totalPts / gamesPlayed;
+        const rpg = totalReb / gamesPlayed;
+        const apg = totalAst / gamesPlayed;
+        const spg = totalStl / gamesPlayed;
+        const bpg = totalBlk / gamesPlayed;
+        const tpg = totalTpm / gamesPlayed;
+        const fpg = totalFouls / gamesPlayed;
+
+        return {
+          id: player.id,
+          name: player.name,
+          jerseyNumber: player.jersey_number,
+          gamesPlayed,
+          impact: (ppg + (rpg * 1.2) + (apg * 1.5) + spg + bpg).toFixed(1),
+          defensiveImpact: ((totalStl + totalBlk - totalFouls) / gamesPlayed).toFixed(1),
+          ppg: ppg.toFixed(1),
+          rpg: rpg.toFixed(1),
+          apg: apg.toFixed(1),
+          spg: spg.toFixed(1),
+          bpg: bpg.toFixed(1),
+          tpg: tpg.toFixed(1),
+          fpg: fpg.toFixed(1),
+          defensiveScore: ((totalStl + totalBlk) / gamesPlayed).toFixed(1),
+        };
+      })
+      .filter(Boolean);
+  }, [players, linesByPlayer, gamesById, formatMap]);
 
   const { isAppAdmin: coachIsAppAdmin, isViewer: coachIsViewer } = useEffectiveRole(currentUser, selectedLeague || null);
 
@@ -182,94 +244,67 @@ export default function CoachInsights() {
 
     if (oppGames.length === 0) return null;
 
-    let totalPoints = 0, totalRebounds = 0, totalTurnovers = 0;
+    // COACH_BRIEF_V2 - points allowed and three-point volume added; both were
+    // missing and both are core scouting facts.
+    let totalPoints = 0, totalPointsAllowed = 0, totalRebounds = 0, totalTurnovers = 0, totalThrees = 0;
+    let oppWins = 0, oppLosses = 0;
 
     oppGames.forEach(game => {
       const isHome = game.home_team_id === selectedOpponent;
-      totalPoints += isHome ? game.home_score : game.away_score;
+      const own = isHome ? game.home_score : game.away_score;
+      const against = isHome ? game.away_score : game.home_score;
+      totalPoints += own;
+      totalPointsAllowed += against;
+      if (own > against) oppWins += 1;
+      else if (own < against) oppLosses += 1;
 
       const gameStats = playerStats.filter(s => s.game_id === game.id && s.team_id === selectedOpponent);
       totalRebounds += gameStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+      totalThrees += gameStats.reduce((sum, s) => sum + (s.points_3 || 0), 0);
       if (!excludeTurnovers) {
         totalTurnovers += gameStats.reduce((sum, s) => sum + (s.turnovers || 0), 0);
       }
     });
 
-    const oppPlayers = players.filter(p => p.team_id === selectedOpponent);
-    const playerAverages = oppPlayers.map(player => {
-      const pStats = playerStats.filter(s => s.player_id === player.id);
-      const gamesPlayed = pStats.length;
+    // COACH_BRIEF_V2 - roster built from merged lines (correct games played).
+    const playerAverages = buildRosterLines(selectedOpponent);
 
-      if (gamesPlayed === 0) return null;
+    const byPoints = [...playerAverages].sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+    const byDefense = [...playerAverages].sort((a, b) => parseFloat(b.defensiveScore) - parseFloat(a.defensiveScore));
+    const topScorer = byPoints[0];
+    const topDefender = byDefense[0];
 
-      // B4_FORMAT_V1 — engine points with per-game detected format
-      const totalPts = pStats.reduce((sum, s) => sum + calcPoints(s, gamesById.get(s.game_id), formatMap.get(s.game_id)), 0);
-      const defensiveScore = pStats.reduce((sum, s) => sum + (s.steals || 0) + (s.blocks || 0), 0);
-
-      return {
-        id: player.id,
-        name: player.name,
-        ppg: (totalPts / gamesPlayed).toFixed(1),
-        defensiveScore: (defensiveScore / gamesPlayed).toFixed(1),
-      };
-    }).filter(Boolean);
-
-    const topScorer = playerAverages.sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg))[0];
-    const topDefender = playerAverages.sort((a, b) => parseFloat(b.defensiveScore) - parseFloat(a.defensiveScore))[0];
+    const recentForm = [...oppGames]
+      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date))
+      .slice(0, 3)
+      .map(g => {
+        const isHome = g.home_team_id === selectedOpponent;
+        const own = isHome ? g.home_score : g.away_score;
+        const against = isHome ? g.away_score : g.home_score;
+        return `${own > against ? 'W' : own < against ? 'L' : 'D'} ${own}-${against}`;
+      });
 
     return {
       avgPoints: (totalPoints / oppGames.length).toFixed(1),
+      avgPointsAllowed: (totalPointsAllowed / oppGames.length).toFixed(1),
       avgRebounds: (totalRebounds / oppGames.length).toFixed(1),
+      avgThrees: (totalThrees / oppGames.length).toFixed(1),
       avgTurnovers: excludeTurnovers ? null : (totalTurnovers / oppGames.length).toFixed(1),
       topScorer: topScorer || null,
       topDefender: topDefender || null,
+      gamesPlayed: oppGames.length,
+      record: `${oppWins}W-${oppLosses}L`,
+      recentForm,
+      roster: byPoints,
     };
-  }, [selectedOpponent, games, playerStats, players, excludeTurnovers, gamesById, formatMap]);
+  }, [selectedOpponent, games, playerStats, excludeTurnovers, buildRosterLines]);
 
-  // Player Impact Rankings
+  // COACH_BRIEF_V2 - now built from merged stat lines, so a substituted player
+  // is no longer charged two games played for one appearance.
   const playerRankings = useMemo(() => {
     if (!selectedTeam) return [];
-
-    const teamPlayers = players.filter(p => p.team_id === selectedTeam);
-
-    return teamPlayers.map(player => {
-      const pStats = playerStats.filter(s => s.player_id === player.id);
-      const gamesPlayed = pStats.length;
-
-      if (gamesPlayed === 0) return null;
-
-      // B4_FORMAT_V1 — engine points with per-game detected format
-      const totalPts = pStats.reduce((sum, s) => sum + calcPoints(s, gamesById.get(s.game_id), formatMap.get(s.game_id)), 0);
-      const totalReb = pStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
-      const totalAst = pStats.reduce((sum, s) => sum + (s.assists || 0), 0);
-      const totalStl = pStats.reduce((sum, s) => sum + (s.steals || 0), 0);
-      const totalBlk = pStats.reduce((sum, s) => sum + (s.blocks || 0), 0);
-      const totalFouls = pStats.reduce((sum, s) => sum + (s.fouls || 0), 0);
-
-      const ppg = totalPts / gamesPlayed;
-      const rpg = totalReb / gamesPlayed;
-      const apg = totalAst / gamesPlayed;
-      const spg = totalStl / gamesPlayed;
-      const bpg = totalBlk / gamesPlayed;
-      const fpg = totalFouls / gamesPlayed;
-      const impact = ppg + (rpg * 1.2) + (apg * 1.5) + spg + bpg;
-      const defensiveImpact = (totalStl + totalBlk - totalFouls) / gamesPlayed;
-
-      return {
-        id: player.id,
-        name: player.name,
-        jerseyNumber: player.jersey_number,
-        impact: impact.toFixed(1),
-        defensiveImpact: defensiveImpact.toFixed(1),
-        ppg: ppg.toFixed(1),
-        rpg: rpg.toFixed(1),
-        apg: apg.toFixed(1),
-        spg: spg.toFixed(1),
-        bpg: bpg.toFixed(1),
-        fpg: fpg.toFixed(1),
-      };
-    }).filter(Boolean);
-  }, [selectedTeam, players, playerStats, gamesById, formatMap]);
+    return buildRosterLines(selectedTeam);
+  }, [selectedTeam, buildRosterLines]);
 
   const sortedPlayers = useMemo(() => {
     const sorted = [...playerRankings];
@@ -286,16 +321,19 @@ export default function CoachInsights() {
   const teamSeasonAverages = useMemo(() => {
     if (!selectedTeam || teamGames.length === 0) return null;
 
-    let totalPoints = 0, totalAssists = 0, totalReboundMargin = 0, totalTurnovers = 0, totalRebounds = 0;
+    // COACH_BRIEF_V2 - points allowed and three-point volume added.
+    let totalPoints = 0, totalPointsAllowed = 0, totalAssists = 0, totalReboundMargin = 0, totalTurnovers = 0, totalRebounds = 0, totalThrees = 0;
 
     teamGames.forEach(game => {
       const isHome = game.home_team_id === selectedTeam;
       totalPoints += isHome ? game.home_score : game.away_score;
+      totalPointsAllowed += isHome ? game.away_score : game.home_score;
 
       const teamStats = playerStats.filter(s => s.game_id === game.id && s.team_id === selectedTeam);
       const oppStats = playerStats.filter(s => s.game_id === game.id && s.team_id !== selectedTeam);
 
       totalAssists += teamStats.reduce((sum, s) => sum + (s.assists || 0), 0);
+      totalThrees += teamStats.reduce((sum, s) => sum + (s.points_3 || 0), 0);
 
       const teamReb = teamStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
       const oppReb = oppStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
@@ -309,10 +347,13 @@ export default function CoachInsights() {
 
     return {
       points: totalPoints / teamGames.length,
+      pointsAllowed: totalPointsAllowed / teamGames.length,
       assists: totalAssists / teamGames.length,
       rebounds: totalRebounds / teamGames.length,
       reboundMargin: totalReboundMargin / teamGames.length,
+      threes: totalThrees / teamGames.length,
       turnovers: excludeTurnovers ? null : totalTurnovers / teamGames.length,
+      gamesPlayed: teamGames.length,
     };
   }, [selectedTeam, teamGames, playerStats, excludeTurnovers]);
 
@@ -367,7 +408,48 @@ export default function CoachInsights() {
     };
   }, [selectedTeam, teamGames, playerStats, teamSeasonAverages, excludeTurnovers]);
 
-  // Key Insight - Identify strongest correlation with winning
+  // COACH_BRIEF_V2 - per-game series for the selected team, used to scale the
+  // win/loss gaps below. Comparing raw gaps across points, assists, rebound
+  // margin and turnovers always picked points (a winning team scored more by
+  // definition), so the Key Insight was a tautology. Each gap is now divided by
+  // that stat's own game-to-game spread before the comparison.
+  const teamGameSeries = useMemo(() => {
+    if (!selectedTeam || teamGames.length === 0) return null;
+
+    const series = { points: [], assists: [], reboundMargin: [], turnovers: [] };
+
+    teamGames.forEach(game => {
+      const isHome = game.home_team_id === selectedTeam;
+      const teamStats = playerStats.filter(s => s.game_id === game.id && s.team_id === selectedTeam);
+      const oppStats = playerStats.filter(s => s.game_id === game.id && s.team_id !== selectedTeam);
+
+      series.points.push(isHome ? game.home_score : game.away_score);
+      series.assists.push(teamStats.reduce((sum, s) => sum + (s.assists || 0), 0));
+
+      const teamReb = teamStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+      const oppReb = oppStats.reduce((sum, s) => sum + (s.offensive_rebounds || 0) + (s.defensive_rebounds || 0), 0);
+      series.reboundMargin.push(teamReb - oppReb);
+
+      if (!excludeTurnovers) {
+        series.turnovers.push(teamStats.reduce((sum, s) => sum + (s.turnovers || 0), 0));
+      }
+    });
+
+    const spread = (values) => {
+      if (!values || values.length < 2) return 0;
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
+      return Math.sqrt(variance);
+    };
+
+    return {
+      points: spread(series.points),
+      assists: spread(series.assists),
+      reboundMargin: spread(series.reboundMargin),
+      turnovers: excludeTurnovers ? 0 : spread(series.turnovers),
+    };
+  }, [selectedTeam, teamGames, playerStats, excludeTurnovers]);
+
   const keyInsight = useMemo(() => {
     if (!winLossComparison || winLossComparison.wins.count === 0 || winLossComparison.losses.count === 0) return null;
 
@@ -381,50 +463,39 @@ export default function CoachInsights() {
       ...(excludeTurnovers ? {} : { turnovers: Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers)) }),
     };
 
-    const maxDiff = Math.max(...Object.values(differences));
-    let message = "";
-    let metric = "";
+    // COACH_BRIEF_V2 - scale each gap by its own spread (a floor of 1.0 keeps a
+    // near-constant stat from producing a huge score off a tiny gap).
+    const scaleFor = (key) => Math.max(teamGameSeries?.[key] || 0, 1);
+    const scored = Object.keys(differences).map(key => ({
+      key,
+      diff: differences[key],
+      score: differences[key] / scaleFor(key),
+    }));
 
-    if (differences.reboundMargin === maxDiff) {
-      message = "Rebounding margin shows the strongest correlation with winning.";
-      metric = "Rebound Margin";
-    } else if (!excludeTurnovers && differences.turnovers === maxDiff) {
-      message = "Turnover control is the biggest factor separating wins and losses.";
-      metric = "Turnovers";
-    } else if (differences.points === maxDiff) {
-      message = "Scoring production significantly impacts game outcomes.";
-      metric = "Points";
-    } else if (differences.assists === maxDiff) {
-      message = "Ball movement strongly influences winning results.";
-      metric = "Assists";
-    }
+    scored.sort((a, b) => b.score - a.score);
+    const winner = scored[0];
+    if (!winner) return null;
 
-    return { message, metric, maxDiff: maxDiff.toFixed(1) };
-  }, [winLossComparison, excludeTurnovers]);
-
-  // Identify largest gap stat in Win vs Loss
-  const largestGapStat = useMemo(() => {
-    if (!winLossComparison) return null;
-
-    const wins = winLossComparison.wins.stats;
-    const losses = winLossComparison.losses.stats;
-
-    const differences = {
-      points: Math.abs(parseFloat(wins.points) - parseFloat(losses.points)),
-      assists: Math.abs(parseFloat(wins.assists) - parseFloat(losses.assists)),
-      reboundMargin: Math.abs(parseFloat(wins.reboundMargin) - parseFloat(losses.reboundMargin)),
-      ...(excludeTurnovers ? {} : { turnovers: Math.abs(parseFloat(wins.turnovers) - parseFloat(losses.turnovers)) }),
+    const COPY = {
+      reboundMargin: { message: "Rebounding margin shows the strongest correlation with winning.", metric: "Rebound Margin" },
+      turnovers: { message: "Turnover control is the biggest factor separating wins and losses.", metric: "Turnovers" },
+      points: { message: "Scoring production is what separates these results most.", metric: "Points" },
+      assists: { message: "Ball movement strongly influences winning results.", metric: "Assists" },
     };
 
-    const maxDiff = Math.max(...Object.values(differences));
+    const copy = COPY[winner.key] || COPY.points;
 
-    if (differences.points === maxDiff) return 'points';
-    if (differences.assists === maxDiff) return 'assists';
-    if (differences.reboundMargin === maxDiff) return 'reboundMargin';
-    if (!excludeTurnovers && differences.turnovers === maxDiff) return 'turnovers';
+    return {
+      message: copy.message,
+      metric: copy.metric,
+      key: winner.key,
+      maxDiff: winner.diff.toFixed(1),
+    };
+  }, [winLossComparison, excludeTurnovers, teamGameSeries]);
 
-    return null;
-  }, [winLossComparison, excludeTurnovers]);
+  // COACH_BRIEF_V2 - single source of truth: the highlighted row in the
+  // Win vs Loss table is now always the same stat the Key Insight names.
+  const largestGapStat = useMemo(() => keyInsight?.key || null, [keyInsight]);
 
   // Suggested Game Focus
   const suggestedFocus = useMemo(() => {
@@ -459,6 +530,58 @@ export default function CoachInsights() {
 
     return suggestions;
   }, [selectedOpponent, opponentSnapshot, teamSeasonAverages, winLossComparison, excludeTurnovers]);
+
+  // COACH_BRIEF_V2 - context the briefing had no access to before:
+  // our recent results, previous meetings with this opponent, and whether the
+  // next scheduled meeting is at home or away.
+  const recentResults = useMemo(() => {
+    if (!selectedTeam || teamGames.length === 0) return [];
+    return [...teamGames]
+      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date))
+      .slice(0, 5)
+      .map(g => {
+        const isHome = g.home_team_id === selectedTeam;
+        const own = isHome ? g.home_score : g.away_score;
+        const against = isHome ? g.away_score : g.home_score;
+        return `${own > against ? 'W' : own < against ? 'L' : 'D'} ${own}-${against}`;
+      });
+  }, [selectedTeam, teamGames]);
+
+  const headToHead = useMemo(() => {
+    if (!selectedTeam || !selectedOpponent) return [];
+    return games
+      .filter(g =>
+        (g.home_team_id === selectedTeam && g.away_team_id === selectedOpponent) ||
+        (g.away_team_id === selectedTeam && g.home_team_id === selectedOpponent)
+      )
+      .sort((a, b) => new Date(b.game_date) - new Date(a.game_date))
+      .slice(0, 4)
+      .map(g => {
+        const isHome = g.home_team_id === selectedTeam;
+        const own = isHome ? g.home_score : g.away_score;
+        const against = isHome ? g.away_score : g.home_score;
+        const result = own > against ? 'We won' : own < against ? 'We lost' : 'Drew';
+        return `${result} ${own}-${against} (${isHome ? 'home' : 'away'})`;
+      });
+  }, [games, selectedTeam, selectedOpponent]);
+
+  const nextMeeting = useMemo(() => {
+    if (!selectedTeam || !selectedOpponent) return null;
+    const upcoming = allLeagueGames
+      .filter(g =>
+        g.status !== 'completed' &&
+        ((g.home_team_id === selectedTeam && g.away_team_id === selectedOpponent) ||
+         (g.away_team_id === selectedTeam && g.home_team_id === selectedOpponent))
+      )
+      .sort((a, b) => new Date(a.game_date) - new Date(b.game_date))[0];
+    if (!upcoming) return null;
+    return { venue: upcoming.home_team_id === selectedTeam ? 'Home' : 'Away' };
+  }, [allLeagueGames, selectedTeam, selectedOpponent]);
+
+  const selectedLeagueName = useMemo(
+    () => leagues.find(l => l.id === selectedLeague)?.name || '',
+    [leagues, selectedLeague]
+  );
 
   const selectedTeamName = teams.find(t => t.id === selectedTeam)?.name || "";
   const selectedOpponentName = teams.find(t => t.id === selectedOpponent)?.name || "";
@@ -808,6 +931,13 @@ export default function CoachInsights() {
               last3GamesTrend={last3GamesTrend}
               currentUser={currentUser}
               excludeTurnovers={excludeTurnovers}
+              teamSeasonAverages={teamSeasonAverages}
+              playerRankings={playerRankings}
+              keyInsight={keyInsight}
+              headToHead={headToHead}
+              recentResults={recentResults}
+              nextMeeting={nextMeeting}
+              leagueName={selectedLeagueName}
             />
 
             {/* 4. Player Impact Rankings */}
