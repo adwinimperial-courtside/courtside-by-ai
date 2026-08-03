@@ -330,7 +330,7 @@ async function sendDeclineOnce(base44, application, reasonCode, reasonNote, leag
   } catch (emailErr) { console.error('Decline email failed:', emailErr.message); }
 }
 
-async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote) {
+async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote, suppressDeclineEmail) {
   if (action === 'reject') {
     try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
     await base44.asServiceRole.entities.UserApplication.update(application.id, {
@@ -341,7 +341,8 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
       decline_reason_note: declineReasonNote || '',
     });
     await writeLog(base44, application, override_league_id || application.league_id || null, 'rejected', decider, declineLogNote(declineReasonCode, declineReasonNote));
-    await sendDeclineOnce(base44, application, declineReasonCode, declineReasonNote, []);
+    // SILENT_DECLINE_V1
+    if (!suppressDeclineEmail) await sendDeclineOnce(base44, application, declineReasonCode, declineReasonNote, []);
     return Response.json({ success: true, action: 'rejected' });
   }
   let assignedLeagueIds = [];
@@ -419,6 +420,9 @@ Deno.serve(async (req) => {
     // Both are optional: an older caller that sends neither still behaves exactly as before.
     const declineReasonCode = typeof body.decline_reason_code === 'string' ? body.decline_reason_code.trim() : '';
     const declineReasonNote = typeof body.decline_reason_note === 'string' ? body.decline_reason_note.trim().slice(0, 300) : '';
+    // SILENT_DECLINE_V1 — the reject dialog lets an admin turn the applicant email off.
+    // The reason is still stored and still written to the audit log; only the email is skipped.
+    const suppressDeclineEmail = body.suppress_decline_email === true;
     // RELEASE_CLAIM_V1 — app_admin frees a roster slot held by a stale UserLeagueIdentity
     if (action === 'release_claim') {
       if (!isAppAdmin) return Response.json({ error: 'Forbidden: only app admins can release a roster link' }, { status: 403 });
@@ -486,7 +490,7 @@ Deno.serve(async (req) => {
       if (!isAppAdmin && !opsMayDecide) {
         return Response.json({ error: 'Forbidden: you are not allowed to decide this league admin request' }, { status: 403 });
       }
-      return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote);
+      return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote, suppressDeclineEmail);
     }
 
     // Operations Admins are limited to the new-league applications handled above; they may
@@ -663,7 +667,8 @@ Deno.serve(async (req) => {
       }
       const primaryCode = declineReasonCode || (leagueRejections.find(r => r.reason_code) || {}).reason_code || '';
       const primaryNote = declineReasonNote || '';
-      await sendDeclineOnce(base44, application, primaryCode, primaryNote, leagueRejections);
+      // SILENT_DECLINE_V1
+      if (!suppressDeclineEmail) await sendDeclineOnce(base44, application, primaryCode, primaryNote, leagueRejections);
     }
 
     return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length, conflicts });
