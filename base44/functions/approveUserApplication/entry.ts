@@ -183,7 +183,34 @@ async function claimRosterPlayer(base44, application, leagueId, match) {
   return { ok: true };
 }
 
-async function writeLog(base44, application, leagueId, decision, decider) {
+// DECLINE_REASONS_V1 — plain-English labels for the audit log. Keep in sync with the
+// reason codes used by the reject dialog and by sendDeclinedEmail.
+const REASON_LABELS = {
+  player_not_on_roster: "Not on that team's roster",
+  player_details_mismatch: 'Name or jersey number did not match',
+  invalid_name: 'Not a real name',
+  player_slot_claimed: 'Roster spot already claimed',
+  coach_not_listed: 'Not listed as a coach for that team',
+  coach_staff_full: 'Coaching staff already full',
+  wrong_league_team: 'Wrong league or team selected',
+  not_recognised: 'Not recognised by the league',
+  league_private: 'League is invite only',
+  league_already_exists: 'League already on Courtside',
+  not_organiser: 'Could not confirm they run this league',
+  insufficient_info: 'Not enough information',
+  duplicate_request: 'Duplicate request',
+  other: 'Other',
+};
+
+// DECLINE_REASONS_V1 — one readable line for the ApprovalLog notes column.
+function declineLogNote(code, note) {
+  if (!code) return '';
+  const label = REASON_LABELS[code] || code;
+  const clean = (note || '').trim();
+  return 'DECLINE_REASONS_V1 reason: ' + label + ' [' + code + ']' + (clean ? ' \u2014 note: ' + clean : '');
+}
+
+async function writeLog(base44, application, leagueId, decision, decider, notes) {
   const leagueName = leagueId ? await getLeagueName(base44, leagueId) : '';
   try {
     await base44.asServiceRole.entities.ApprovalLog.create({
@@ -199,7 +226,7 @@ async function writeLog(base44, application, leagueId, decision, decider) {
       approved_by_name: decider.name,
       approver_type: decider.type,
       decided_at: decider.at,
-      notes: '',
+      notes: notes || '',
     });
   } catch (logErr) { console.error('ApprovalLog write failed:', logErr.message); }
 }
@@ -225,7 +252,7 @@ async function sendWelcomeOnce(base44, application) {
 }
 
 // DECLINE_EMAIL_V1 — notify the applicant once when their request is fully declined
-async function sendDeclineOnce(base44, application) {
+async function sendDeclineOnce(base44, application, reasonCode, reasonNote, leagueRejections) {
   if (application.decline_email_sent) return;
   try {
     await base44.asServiceRole.functions.invoke('sendDeclinedEmail', {
@@ -235,17 +262,27 @@ async function sendDeclineOnce(base44, application) {
         user_name: application.user_name,
         status: 'Rejected',
         decline_email_sent: false,
+        // DECLINE_REASONS_V1 — the picked reason drives which email copy is sent.
+        decline_reason_code: reasonCode || '',
+        decline_reason_note: reasonNote || '',
+        league_rejections: Array.isArray(leagueRejections) ? leagueRejections : [],
       }
     });
   } catch (emailErr) { console.error('Decline email failed:', emailErr.message); }
 }
 
-async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider) {
+async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote) {
   if (action === 'reject') {
     try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
-    await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Rejected', decline_email_sent: true });
-    await writeLog(base44, application, override_league_id || application.league_id || null, 'rejected', decider);
-    await sendDeclineOnce(base44, application);
+    await base44.asServiceRole.entities.UserApplication.update(application.id, {
+      status: 'Rejected',
+      decline_email_sent: true,
+      // DECLINE_REASONS_V1
+      decline_reason_code: declineReasonCode || '',
+      decline_reason_note: declineReasonNote || '',
+    });
+    await writeLog(base44, application, override_league_id || application.league_id || null, 'rejected', decider, declineLogNote(declineReasonCode, declineReasonNote));
+    await sendDeclineOnce(base44, application, declineReasonCode, declineReasonNote, []);
     return Response.json({ success: true, action: 'rejected' });
   }
   let assignedLeagueIds = [];
@@ -319,6 +356,10 @@ Deno.serve(async (req) => {
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
     const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
     const forceConflicts = Array.isArray(body.force_conflicts) ? body.force_conflicts : [];
+    // DECLINE_REASONS_V1 — why this request is being rejected, picked by the admin in the UI.
+    // Both are optional: an older caller that sends neither still behaves exactly as before.
+    const declineReasonCode = typeof body.decline_reason_code === 'string' ? body.decline_reason_code.trim() : '';
+    const declineReasonNote = typeof body.decline_reason_note === 'string' ? body.decline_reason_note.trim().slice(0, 300) : '';
     // RELEASE_CLAIM_V1 — app_admin frees a roster slot held by a stale UserLeagueIdentity
     if (action === 'release_claim') {
       if (!isAppAdmin) return Response.json({ error: 'Forbidden: only app admins can release a roster link' }, { status: 403 });
@@ -386,7 +427,7 @@ Deno.serve(async (req) => {
       if (!isAppAdmin && !opsMayDecide) {
         return Response.json({ error: 'Forbidden: you are not allowed to decide this league admin request' }, { status: 403 });
       }
-      return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider);
+      return await handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote);
     }
 
     // Operations Admins are limited to the new-league applications handled above; they may
@@ -458,12 +499,18 @@ Deno.serve(async (req) => {
       entry.decided_by_name = decider.name;
       entry.decided_by_type = decider.type;
       entry.decided_at = decider.at;
+      // DECLINE_REASONS_V1 — record why THIS league was rejected, so a multi-league
+      // application can carry a different reason per league.
+      if (entry.decision === 'rejected') {
+        entry.decline_reason_code = declineReasonCode;
+        entry.decline_reason_note = declineReasonNote;
+      }
       if (action === 'approve') {
         anyNewApproval = true;
         await grantLeague(base44, application, applicantUser, lid, role);
         try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) {}
       }
-      await writeLog(base44, application, lid, entry.decision, decider);
+      await writeLog(base44, application, lid, entry.decision, decider, entry.decision === 'rejected' ? declineLogNote(declineReasonCode, declineReasonNote) : '');
     }
 
     // NAME_FALLBACK_V1 — if the account name is an email/relay prefix, adopt the real name we now know
@@ -494,6 +541,11 @@ Deno.serve(async (req) => {
     const appUpdate = { league_decisions: decisions, status: newStatus };
     if (anyNewApproval && !application.approval_email_sent) appUpdate.approval_email_sent = true;
     if (newStatus === 'Rejected' && !application.decline_email_sent) appUpdate.decline_email_sent = true;
+    // DECLINE_REASONS_V1 — top-level copy of the reason for the People page and reporting.
+    if (newStatus === 'Rejected' && declineReasonCode) {
+      appUpdate.decline_reason_code = declineReasonCode;
+      appUpdate.decline_reason_note = declineReasonNote;
+    }
     await base44.asServiceRole.entities.UserApplication.update(application.id, appUpdate);
 
     if (applicantUser) {
@@ -504,7 +556,21 @@ Deno.serve(async (req) => {
     }
 
     if (anyNewApproval && !application.approval_email_sent) await sendWelcomeOnce(base44, application);
-    if (newStatus === 'Rejected' && !application.decline_email_sent) await sendDeclineOnce(base44, application);
+    // DECLINE_REASONS_V1 — when several leagues were rejected, hand the email one entry per
+    // league so it can list each league with the reason that league's admin gave.
+    if (newStatus === 'Rejected' && !application.decline_email_sent) {
+      const leagueRejections = [];
+      for (const d of decisions) {
+        if (!d || d.decision !== 'rejected') continue;
+        leagueRejections.push({
+          league_name: await getLeagueName(base44, d.league_id),
+          reason_code: d.decline_reason_code || '',
+        });
+      }
+      const primaryCode = declineReasonCode || (leagueRejections.find(r => r.reason_code) || {}).reason_code || '';
+      const primaryNote = declineReasonNote || '';
+      await sendDeclineOnce(base44, application, primaryCode, primaryNote, leagueRejections);
+    }
 
     return Response.json({ success: true, status: newStatus, decided: decideLeagueIds.length, conflicts });
   } catch (error) {
