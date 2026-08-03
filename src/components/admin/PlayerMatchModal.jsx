@@ -17,7 +17,7 @@ const CONFIDENCE_META = {
   none: { cls: "bg-slate-100 text-slate-600", label: "No suggestion — pick manually" },
 };
 
-export default function PlayerMatchModal({ application, leagues, teams, onClose, onApproved }) {
+export default function PlayerMatchModal({ application, leagues, teams, onClose, onApproved, onDecline }) {
   const queryClient = useQueryClient();
   const [selections, setSelections] = useState({}); // team_id -> player_id
   const [banner, setBanner] = useState(null); // { type, text }
@@ -161,19 +161,15 @@ export default function PlayerMatchModal({ application, leagues, teams, onClose,
     }
   };
 
-  const handleDecline = async () => {
-    if (!window.confirm("Decline this player application? The applicant will not be granted access.")) return;
-    setIsProcessing(true);
-    setBanner(null);
-    try {
-      await base44.functions.invoke('approveUserApplication', { applicationId: application.id, action: 'reject' });
-      queryClient.invalidateQueries({ queryKey: ['user_applications_pending'] });
-      queryClient.invalidateQueries({ queryKey: ['review_requests'] });
-      onApproved();
-    } catch (error) {
-      setBanner({ type: 'error', text: "Failed to decline: " + (error?.message || "unknown error") });
-      setIsProcessing(false);
+  // DECLINE_REASON_DIALOG_V1 — declining now hands off to the review screen, which owns the
+  // reason dialog. This modal is itself a dialog, so opening a second one inside it would
+  // fight over the focus trap. Closing this one first avoids that entirely.
+  const handleDecline = () => {
+    if (typeof onDecline === 'function') {
+      onDecline(application);
+      return;
     }
+    setBanner({ type: 'error', text: "Decline is unavailable from this screen." });
   };
 
   return (

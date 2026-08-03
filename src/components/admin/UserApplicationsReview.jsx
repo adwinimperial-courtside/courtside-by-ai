@@ -303,6 +303,12 @@ export default function UserApplicationsReview() {
           teams={teams}
           onClose={() => setMatchingApp(null)}
           onApproved={() => { setMatchingApp(null); refresh(); }}
+          onDecline={(app) => {
+            // DECLINE_REASON_DIALOG_V1 — close the match modal, then open the reason dialog
+            // for the whole application, which is what declining a player has always done.
+            setMatchingApp(null);
+            setDeclineTarget({ app, leagueIds: null, contextLabel: '', mode: 'whole' });
+          }}
         />
       )}
       {declineTarget && (
