@@ -113,6 +113,14 @@
       "default": false,
       "description": "True if the decline email has been sent to the user"
     },
+    "decline_reason_code": {
+      "type": "string",
+      "description": "Reason code selected by the admin when this application was rejected. Free string, not an enum, so new reasons can be added without a schema change. Blank on approved or pending applications."
+    },
+    "decline_reason_note": {
+      "type": "string",
+      "description": "Optional free-text note written by the admin when rejecting. Shown to the applicant in the decline email as a quoted note. Max 300 characters, enforced in the UI."
+    },
     "phone": {
       "type": "string"
     },
@@ -184,6 +192,14 @@
           "decided_at": {
             "type": "string",
             "format": "date-time"
+          },
+          "decline_reason_code": {
+            "type": "string",
+            "description": "Reason code for this specific league's rejection. Blank unless decision is rejected."
+          },
+          "decline_reason_note": {
+            "type": "string",
+            "description": "Optional free-text note for this specific league's rejection."
           }
         }
       }
