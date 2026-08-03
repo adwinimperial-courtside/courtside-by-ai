@@ -33,6 +33,58 @@ async function getLeagueName(base44, leagueId) {
   } catch (_e) { return leagueId; }
 }
 
+// COACH_CAP_V1 — how many coaches one team may have. A head coach plus one assistant.
+const COACH_CAP = 2;
+
+// COACH_CAP_V1 — which team this application is asking about, for one league.
+// Same resolution order the coach grant path already uses.
+function teamIdForLeague(application, leagueId) {
+  if (Array.isArray(application.league_team_pairs)) {
+    const p = application.league_team_pairs.find(pp => pp && pp.league_id === leagueId);
+    if (p && p.team_id) return p.team_id;
+  }
+  if (application.league_id === leagueId && application.team_id) return application.team_id;
+  return null;
+}
+
+// COACH_CAP_V1 — everyone already coaching this team, excluding the applicant themselves.
+// Coach identity rows only started carrying team_id from COACH_CAP_V1 onward, so for older
+// rows we fall back to the coach's league_team_pairs, which is where their team has always
+// been stored. Returns display names so the admin sees WHO holds the spots.
+async function existingTeamCoaches(base44, leagueId, teamId, excludeUserId) {
+  if (!teamId) return [];
+  let rows = [];
+  try {
+    rows = await base44.asServiceRole.entities.UserLeagueIdentity.filter({ league_id: leagueId, role: 'coach' });
+  } catch (_e) { return []; }
+  const names = [];
+  for (const row of (rows || [])) {
+    if (!row || !row.user_id) continue;
+    if (excludeUserId && row.user_id === excludeUserId) continue;
+    let rowTeamId = row.team_id || null;
+    let coachUser = null;
+    if (!rowTeamId) {
+      try { coachUser = await base44.asServiceRole.entities.User.get(row.user_id); } catch (_e) { coachUser = null; }
+      const pairs = (coachUser && Array.isArray(coachUser.league_team_pairs)) ? coachUser.league_team_pairs : [];
+      const p = pairs.find(pp => pp && pp.league_id === leagueId);
+      rowTeamId = (p && p.team_id) || null;
+    }
+    if (rowTeamId !== teamId) continue;
+    if (!coachUser) {
+      try { coachUser = await base44.asServiceRole.entities.User.get(row.user_id); } catch (_e) { coachUser = null; }
+    }
+    names.push((coachUser && (coachUser.full_name || coachUser.display_name || coachUser.email)) || row.user_id);
+  }
+  return names;
+}
+
+async function getTeamName(base44, teamId) {
+  try {
+    const t = await base44.asServiceRole.entities.Team.get(teamId);
+    return (t && t.name) ? t.name : teamId;
+  } catch (_e) { return teamId; }
+}
+
 // ROLE_CONFLICT_GUARD_V1 — the applicant's current effective role in one league, so an
 // approval never silently overwrites a role they already hold there. Mirrors useEffectiveRole:
 // an explicit UserLeagueIdentity role wins; otherwise app_admin/league_admin membership counts.
@@ -111,6 +163,13 @@ async function grantLeague(base44, application, applicantUser, leagueId, role) {
         matched_by: 'approval',
         matched_at: new Date().toISOString(),
       };
+      // COACH_CAP_V1 — store the coach's team on the identity row. The field already exists
+      // on the entity but was never written for coaches, which is why counting coaches per
+      // team used to return nothing. Players and viewers are unaffected.
+      if (role === 'coach') {
+        const coachTeamId = teamIdForLeague(application, leagueId);
+        if (coachTeamId) identityData.team_id = coachTeamId;
+      }
       if (found && found.length > 0) {
         await base44.asServiceRole.entities.UserLeagueIdentity.update(found[0].id, identityData);
       } else {
@@ -482,6 +541,27 @@ Deno.serve(async (req) => {
         }
       }
 
+      // COACH_CAP_V1 — a team may have at most two coaches. Pause the approval and report
+      // who already holds the spots. Either admin type may override by confirming, which
+      // re-sends this league in force_conflicts.
+      if (action === 'approve' && role === 'coach' && !forceConflicts.includes(lid)) {
+        const capTeamId = teamIdForLeague(application, lid);
+        if (capTeamId) {
+          const current = await existingTeamCoaches(base44, lid, capTeamId, application.user_id);
+          if (current.length >= COACH_CAP) {
+            conflicts.push({
+              league_id: lid,
+              reason: 'coach_cap',
+              league_name: await getLeagueName(base44, lid),
+              team_name: await getTeamName(base44, capTeamId),
+              existing_coaches: current,
+              cap: COACH_CAP,
+            });
+            continue; // leave this league pending; approver must confirm the override
+          }
+        }
+      }
+
       // PLAYER_CLAIM_GUARD — confirmed roster match must be claimed before this league is approved
       if (action === 'approve' && role === 'player' && playerMatches) {
         const matchForLeague = playerMatches.find(m => m && m.league_id === lid && m.matched_player_id) || null;
@@ -505,12 +585,26 @@ Deno.serve(async (req) => {
         entry.decline_reason_code = declineReasonCode;
         entry.decline_reason_note = declineReasonNote;
       }
+      // COACH_CAP_V1 — record when an admin waved the cap through, so a team quietly running
+      // more than two coaches can be traced back to a decision. Written onto the same audit
+      // row as the approval itself, not a second row.
+      let logNote = entry.decision === 'rejected' ? declineLogNote(declineReasonCode, declineReasonNote) : '';
+      if (action === 'approve' && role === 'coach' && forceConflicts.includes(lid)) {
+        const overTeamId = teamIdForLeague(application, lid);
+        if (overTeamId) {
+          const held = await existingTeamCoaches(base44, lid, overTeamId, application.user_id);
+          if (held.length >= COACH_CAP) {
+            logNote = 'COACH_CAP_V1 cap override: ' + (await getTeamName(base44, overTeamId))
+              + ' already had ' + held.length + ' coach(es) (' + held.join(', ') + ')';
+          }
+        }
+      }
       if (action === 'approve') {
         anyNewApproval = true;
         await grantLeague(base44, application, applicantUser, lid, role);
         try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) {}
       }
-      await writeLog(base44, application, lid, entry.decision, decider, entry.decision === 'rejected' ? declineLogNote(declineReasonCode, declineReasonNote) : '');
+      await writeLog(base44, application, lid, entry.decision, decider, logNote);
     }
 
     // NAME_FALLBACK_V1 — if the account name is an email/relay prefix, adopt the real name we now know
