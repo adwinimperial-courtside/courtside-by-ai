@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Sparkles, RefreshCw, Calendar, Shield, Target, AlertCircle, X, Copy, Check } from "lucide-react";
+import { Sparkles, RefreshCw, Target, AlertCircle, X, Copy, Check } from "lucide-react";
 import BriefingRenderer from "@/components/insights/BriefingRenderer";
 import { format } from "date-fns";
 
@@ -240,18 +240,22 @@ HARD RULES — breaking any of these makes the briefing worthless
 7. No motivational language. No "leave it all on the floor", no "execute with discipline", no closing pep talk of any kind.
 8. Instructions must be things an amateur team can actually do: who guards who, who gets the ball, what to crash, when to foul, when to slow the game down. No professional scheme jargon.
 9. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.
-10. A whole-team average of exactly 0.0 for any statistic means that statistic is not being recorded in this league. It does NOT mean the team is perfect at it. Never present a 0.0 team average as a strength, a weakness, a concern or a talking point — leave it out of the briefing entirely.${excludeTurnovers ? `
-11. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
+10. A whole-team average of exactly 0.0 for any statistic means that statistic is not being recorded in this league. It does NOT mean the team is perfect at it. Never present a 0.0 team average as a strength, a weakness, a concern or a talking point — leave it out of the briefing entirely.
+11. NEVER instruct our team to reproduce an individual statistical line. "Get [player] his 36 points", "we need 10 rebounds from [player]", "[player] has to score 20" are all banned. No player controls how many points they score, and one big game is not something a coach can call for. Individual numbers may be used to describe what has already happened or to identify a threat. They must never be set as a target to hit.
+12. Every instruction must be an action the team can choose to take before or during the game. Legitimate instructions are things like: where the first pass goes, who initiates the offense, who guards whom, when to double and off what, which shots to take and which to concede, whether to crash the offensive glass or get back, what tempo to play, and how to manage foul trouble and substitutions. Points scored, rebounds grabbed, assists recorded and the final margin are RESULTS. They justify an instruction; they are never the instruction itself.
+13. Build the plan around the team, not around one player carrying it. A game plan that depends on a single player repeating a career game is not a plan. If one of our players is clearly our best option, say how the team should create good looks for him — not how many points he should score.
+14. When a team or a player has played fewer than three games, describe their numbers as what happened, not as an average. Write "scored 36 in their one game so far", never "averages 36 a game". Calling a one-game figure an average makes an outlier sound like a certainty.${excludeTurnovers ? `
+15. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
 
 ===============================================================
 OUTPUT — use this exact structure and these exact headings
 ===============================================================
 
 🎯 THE GAME IN ONE LINE
-One sentence describing how we win this specific game. It must contain a number.
+One sentence describing how we win this specific game. It must name something THE TEAM will do — a defensive assignment, a way of attacking, a rebounding or tempo decision — and it must contain a number that supports it. It must NOT be a scoring target and must NOT ask any individual to repeat a past performance.
 
 🔑 HOW WE WIN THIS ONE
-Three bullets. Each one gives the instruction first, then the number that justifies it. Order them by how strongly the numbers support them.
+Three bullets. Each one gives a team instruction first, then the number that justifies it. Order them by how strongly the numbers support them. At least two of the three must be things the whole team does together rather than something one named player is asked to produce.
 
 🕵️ WHO THEY ARE
 Three bullets describing this opponent as a team: how they score, where they are strong, where they are soft. Numbers only, no invented style.
@@ -386,7 +390,7 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
+      <CardContent className="pt-6 px-3 sm:px-6">
         {/* COACH_BRIEF_V2 — on-page error banner replaces the blocked alert() */}
         {errorMsg && (
           <div className="mb-6 flex items-start gap-3 rounded-lg border-2 border-red-300 bg-red-50 p-4">
@@ -413,20 +417,6 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
           </div>
         ) : latestBriefing ? (
           <div className="space-y-6">
-            {/* Briefing Header */}
-            <div className="bg-white rounded-lg p-4 border-2 border-purple-200">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-purple-600" />
-                  <span className="font-bold text-lg text-slate-900">vs {selectedOpponentName}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Calendar className="w-4 h-4" />
-                  Generated: {format(new Date(latestBriefing.generated_date), 'MMM d, yyyy h:mm a')}
-                </div>
-              </div>
-            </div>
-
             {/* BRIEF_VISUAL_V1 — cards and charts instead of raw text. Every
                 chart is drawn from data already on this page, so the display
                 change costs nothing extra in AI usage. */}
@@ -443,7 +433,7 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
             />
 
             {/* Actions */}
-            <div className="flex justify-center gap-3">
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
               <Button
                 onClick={handleCopy}
                 variant="outline"
