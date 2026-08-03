@@ -220,6 +220,26 @@ export default function AITacticalBriefing({
         );
       }
 
+      // BRIEF_TRUST_V2 - scoring concentration beyond the leading scorer. A
+      // coach genuinely wants to know how few players carry the offence, and
+      // without this line the model works it out for itself - which is how it
+      // arrived at "more than half the team's 93 points". Correct that time,
+      // but arrived at the same way as the margin it once inverted.
+      const oppTopTwo = (opponentSnapshot?.roster || [])
+        .map(p => ({ name: p.name, ppg: num(p.ppg) }))
+        .filter(p => p.ppg !== null)
+        .sort((a, b) => b.ppg - a.ppg)
+        .slice(0, 2);
+
+      if (oppPts && oppPts > 0 && oppTopTwo.length === 2) {
+        const combined = oppTopTwo[0].ppg + oppTopTwo[1].ppg;
+        const pct = Math.round((combined / oppPts) * 100);
+        const share = pct >= 50 ? 'MORE than half' : pct >= 33 ? 'MORE than a third' : 'LESS than a third';
+        derivedFacts.push(
+          `${oppTopTwo[0].name} and ${oppTopTwo[1].name} together account for ${pct}% of ${selectedOpponentName}'s scoring (${oppTopTwo[0].ppg.toFixed(1)} plus ${oppTopTwo[1].ppg.toFixed(1)} of their ${oppPts.toFixed(1)} points per game). That is ${share} of everything they score.`
+        );
+      }
+
       // Three-point volume, stated as a direction rather than two numbers.
       const ourThrees = num(teamSeasonAverages?.threes);
       const oppThrees = num(opponentSnapshot?.avgThrees);
@@ -317,7 +337,7 @@ ${derivedBlock}
 HARD RULES — breaking any of these makes the briefing worthless
 ===============================================================
 1. Use ONLY the numbers and names listed above. If a player is not on a roster list above, that player does not exist. Never invent a name, a result or a number.
-2. DO NOT DO ARITHMETIC. Do not work out differences, margins, totals, percentages, shares or gaps yourself. Everything of that kind you could need is already written out in DERIVED FACTS above, in plain words with the direction stated. Copy the direction and the figure exactly as written there. If a comparison you want is not in that list, leave it out of the briefing rather than working it out — a number in the wrong direction is worse than no number at all.
+2. DO NOT DO ARITHMETIC. Do not work out differences, margins, totals, percentages, shares or gaps yourself. Everything of that kind you could need is already written out in DERIVED FACTS above, in plain words with the direction stated. Copy the direction and the figure exactly as written there. If a comparison you want is not in that list, leave it out of the briefing rather than working it out — a number in the wrong direction is worse than no number at all. This ban covers comparisons in words as well as in figures: phrases like "more than half", "nearly double", "over a third", "the majority of" and "combined they account for" are all arithmetic. Do not use them unless the exact claim already appears in DERIVED FACTS.
 3. This league does not record shot attempts. NEVER mention field goal percentage, three-point percentage, free throw percentage, shooting efficiency or any percentage statistic. Talk in makes and volume instead.
 4. Never state a game clock time, a quarter, or a score situation you were not given. You did not watch these games.
 5. Never describe a playing style you cannot see in the numbers. You may say a team shoots a lot of threes if the threes number supports it. You may NOT say they run a zone, press, or push in transition — none of that is in the data.
@@ -331,7 +351,7 @@ HARD RULES — breaking any of these makes the briefing worthless
 13. Every instruction must be an action the team can choose to take before or during the game. Legitimate instructions are things like: where the first pass goes, who initiates the offense, who guards whom, when to double and off what, which shots to take and which to concede, whether to crash the offensive glass or get back, what tempo to play, and how to manage foul trouble and substitutions. Points scored, rebounds grabbed, assists recorded and the final margin are RESULTS. They justify an instruction; they are never the instruction itself.
 14. Build the plan around the team, not around one player carrying it. A game plan that depends on a single player repeating a career game is not a plan. If one of our players is clearly our best option, say how the team should create good looks for him — not how many points he should score.
 15. When a team or a player has played fewer than three games, describe their numbers as what happened, not as an average. Write "scored 36 in their one game so far", never "averages 36 a game". Calling a one-game figure an average makes an outlier sound like a certainty.${excludeTurnovers ? `
-16. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
+16. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing. This ban includes turnovers reached indirectly. Steals and blocks ARE recorded and you may describe them as what a defender did — "Lopez recorded 4 steals" is fine. You may NOT convert them into anything about our team losing the ball. Banned regardless of phrasing: "create off turnovers", "protect the ball", "value the possession", "getting stripped", "live off our mistakes", "take care of it", "limit the giveaways", and any instruction whose point is that we must avoid losing possession. If a defender is disruptive, say what we should do about the defender — where to move him, how to get the ball past him — not what our team must avoid doing.` : ''}
 
 ===============================================================
 OUTPUT — use this exact structure and these exact headings
