@@ -166,6 +166,93 @@ export default function AITacticalBriefing({
       const momentum = last3GamesTrend?.momentum || {};
 
       // ------------------------------------------------------------------
+      // BRIEF_TRUST_V1 - every figure that requires arithmetic is worked out
+      // here and handed to the model as a finished sentence. A model that
+      // subtracts for itself can get the direction backwards (it once reported
+      // a team that won by 29 as having been outscored by 29), and a coach has
+      // no way to catch that. The model chooses what matters and how to say
+      // it; the app owns the maths.
+      // ------------------------------------------------------------------
+      const num = (v) => {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+      };
+
+      const marginLine = (who, scored, allowed) => {
+        const a = num(scored), b = num(allowed);
+        if (a === null || b === null) return `${who} scoring margin: not enough data.`;
+        const diff = a - b;
+        if (Math.abs(diff) < 0.05) return `${who} score almost exactly as many as they allow (${a.toFixed(1)} scored, ${b.toFixed(1)} allowed).`;
+        return diff > 0
+          ? `${who} OUTSCORE their opponents by ${diff.toFixed(1)} points per game (${a.toFixed(1)} scored, ${b.toFixed(1)} allowed).`
+          : `${who} ARE OUTSCORED by ${Math.abs(diff).toFixed(1)} points per game (${a.toFixed(1)} scored, ${b.toFixed(1)} allowed).`;
+      };
+
+      const gapLine = (label, winVal, lossVal, higherIsBetter = true) => {
+        const a = num(winVal), b = num(lossVal);
+        if (a === null || b === null) return null;
+        const diff = a - b;
+        if (Math.abs(diff) < 0.05) return `${label}: essentially identical in wins and losses (${a.toFixed(1)} either way).`;
+        const better = higherIsBetter ? diff > 0 : diff < 0;
+        return `${label}: ${better ? 'better' : 'worse'} in our wins by ${Math.abs(diff).toFixed(1)} (${a.toFixed(1)} in wins, ${b.toFixed(1)} in losses).`;
+      };
+
+      const derivedFacts = [
+        marginLine(`We (${selectedTeamName})`, teamSeasonAverages?.points, teamSeasonAverages?.pointsAllowed),
+        marginLine(`They (${selectedOpponentName})`, opponentSnapshot?.avgPoints, opponentSnapshot?.avgPointsAllowed),
+        // BRIEF_TRUST_V1 - with no wins or no losses yet there is nothing to
+        // compare, and the empty side reads as a real zero. Skip the gaps.
+        ...(winsCount > 0 && lossesCount > 0 ? [
+          gapLine('Points scored', teamData.avgPointsWins, teamData.avgPointsLosses, true),
+          gapLine('Assists', teamData.avgAssistsWins, teamData.avgAssistsLosses, true),
+          gapLine('Rebound margin', teamData.reboundMarginWins, teamData.reboundMarginLosses, true),
+          ...(excludeTurnovers ? [] : [gapLine('Turnovers', teamData.avgTurnoversWins, teamData.avgTurnoversLosses, false)]),
+        ] : []),
+      ].filter(Boolean);
+
+      // Share of the opponent's scoring carried by their leading scorer.
+      const oppPts = num(opponentSnapshot?.avgPoints);
+      const oppTop = num(opponentSnapshot?.topScorer?.ppg);
+      if (oppPts && oppTop && oppPts > 0) {
+        const pct = Math.round((oppTop / oppPts) * 100);
+        derivedFacts.push(
+          `${opponentSnapshot.topScorer.name} accounts for ${pct}% of ${selectedOpponentName}'s scoring (${oppTop.toFixed(1)} of their ${oppPts.toFixed(1)} points per game). The other ${100 - pct}% comes from the rest of the roster.`
+        );
+      }
+
+      // Three-point volume, stated as a direction rather than two numbers.
+      const ourThrees = num(teamSeasonAverages?.threes);
+      const oppThrees = num(opponentSnapshot?.avgThrees);
+      if (ourThrees !== null && oppThrees !== null) {
+        const d = oppThrees - ourThrees;
+        derivedFacts.push(
+          Math.abs(d) < 0.05
+            ? `Both teams make about the same number of threes per game (${ourThrees.toFixed(1)} each).`
+            : d > 0
+              ? `${selectedOpponentName} make ${d.toFixed(1)} MORE threes per game than we do (${oppThrees.toFixed(1)} against our ${ourThrees.toFixed(1)}).`
+              : `${selectedOpponentName} make ${Math.abs(d).toFixed(1)} FEWER threes per game than we do (${oppThrees.toFixed(1)} against our ${ourThrees.toFixed(1)}).`
+        );
+      }
+
+      // BRIEF_TRUST_V1 - the wins-vs-losses table is only meaningful with at
+      // least one win and one loss on record.
+      const winLossBlock = (winsCount > 0 && lossesCount > 0)
+        ? `WHAT CHANGES BETWEEN OUR WINS AND OUR LOSSES
+This is the most important block below. Every number here is a real pattern from our own games.
+                     IN WINS (${winsCount})   IN LOSSES (${lossesCount})
+Points scored        ${teamData.avgPointsWins}   ${teamData.avgPointsLosses}
+Assists              ${teamData.avgAssistsWins}   ${teamData.avgAssistsLosses}
+Rebound margin       ${teamData.reboundMarginWins}   ${teamData.reboundMarginLosses}${excludeTurnovers ? '' : `
+Turnovers            ${teamData.avgTurnoversWins}   ${teamData.avgTurnoversLosses}`}
+Statistically the widest gap, adjusted for how much each stat naturally varies game to game: ${keyInsight?.metric || 'not enough data to tell'}`
+        : `WHAT CHANGES BETWEEN OUR WINS AND OUR LOSSES
+We have ${winsCount} win(s) and ${lossesCount} loss(es) on record, so there is nothing to compare yet. Do NOT talk about what changes between our wins and our losses anywhere in this briefing, and do not treat any figure as a winning or losing pattern.`;
+
+      const derivedBlock = derivedFacts.length > 0
+        ? derivedFacts.map(f => `- ${f}`).join("\n")
+        : "Not enough data to derive comparisons.";
+
+      // ------------------------------------------------------------------
       // COACH_BRIEF_V2 — the prompt
       // ------------------------------------------------------------------
       const prompt = `You are an experienced assistant coach preparing a scouting report for an amateur, community-level basketball team. Your reader is a volunteer head coach reading this on a phone in the twenty minutes before tip-off. Write like a coach talking to a coach: direct, specific, immediately usable. Not like an analyst writing a report.
@@ -188,14 +275,7 @@ Rebound margin: ${n1(teamSeasonAverages?.reboundMargin)}
 Threes made per game: ${n1(teamSeasonAverages?.threes)}${excludeTurnovers ? '' : `
 Turnovers per game: ${n1(teamSeasonAverages?.turnovers)}`}
 
-WHAT CHANGES BETWEEN OUR WINS AND OUR LOSSES
-This is the most important block below. Every number here is a real pattern from our own games.
-                     IN WINS (${teamData.winsCount})   IN LOSSES (${teamData.lossesCount})
-Points scored        ${teamData.avgPointsWins}   ${teamData.avgPointsLosses}
-Assists              ${teamData.avgAssistsWins}   ${teamData.avgAssistsLosses}
-Rebound margin       ${teamData.reboundMarginWins}   ${teamData.reboundMarginLosses}${excludeTurnovers ? '' : `
-Turnovers            ${teamData.avgTurnoversWins}   ${teamData.avgTurnoversLosses}`}
-Statistically the widest gap, adjusted for how much each stat naturally varies game to game: ${keyInsight?.metric || 'not enough data to tell'}
+${winLossBlock}
 
 OUR RECENT FORM
 Last ${last3GamesTrend?.gamesCount || 0} games: ${teamData.last3Points} points (trend ${momentum.points || 'unknown'}), ${teamData.last3Assists} assists, ${teamData.last3ReboundMargin} rebound margin (trend ${momentum.rebounds || 'unknown'})${excludeTurnovers ? '' : `, ${teamData.last3Turnovers} turnovers (trend ${momentum.turnovers || 'unknown'})`}
@@ -229,23 +309,29 @@ HEAD-TO-HEAD
 ${h2hBlock}
 
 ===============================================================
+DERIVED FACTS — already worked out for you, copy them as written
+===============================================================
+${derivedBlock}
+
+===============================================================
 HARD RULES — breaking any of these makes the briefing worthless
 ===============================================================
 1. Use ONLY the numbers and names listed above. If a player is not on a roster list above, that player does not exist. Never invent a name, a result or a number.
-2. This league does not record shot attempts. NEVER mention field goal percentage, three-point percentage, free throw percentage, shooting efficiency or any percentage statistic. Talk in makes and volume instead.
-3. Never state a game clock time, a quarter, or a score situation you were not given. You did not watch these games.
-4. Never describe a playing style you cannot see in the numbers. You may say a team shoots a lot of threes if the threes number supports it. You may NOT say they run a zone, press, or push in transition — none of that is in the data.
-5. Sample size honesty. If we have played fewer than four games, or have fewer than two wins, or fewer than two losses, treat the win/loss split as a weak signal and say so plainly. If the opponent has played fewer than three games, say their profile is thin. Never present a small-sample pattern as a certainty.
-6. Every tactical instruction must be tied to a specific number from above. "Control the glass" is banned. "Control the glass — we are plus 6.4 on the boards in wins and minus 2.3 in losses" is what we want.
-7. No motivational language. No "leave it all on the floor", no "execute with discipline", no closing pep talk of any kind.
-8. Instructions must be things an amateur team can actually do: who guards who, who gets the ball, what to crash, when to foul, when to slow the game down. No professional scheme jargon.
-9. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.
-10. A whole-team average of exactly 0.0 for any statistic means that statistic is not being recorded in this league. It does NOT mean the team is perfect at it. Never present a 0.0 team average as a strength, a weakness, a concern or a talking point — leave it out of the briefing entirely.
-11. NEVER instruct our team to reproduce an individual statistical line. "Get [player] his 36 points", "we need 10 rebounds from [player]", "[player] has to score 20" are all banned. No player controls how many points they score, and one big game is not something a coach can call for. Individual numbers may be used to describe what has already happened or to identify a threat. They must never be set as a target to hit.
-12. Every instruction must be an action the team can choose to take before or during the game. Legitimate instructions are things like: where the first pass goes, who initiates the offense, who guards whom, when to double and off what, which shots to take and which to concede, whether to crash the offensive glass or get back, what tempo to play, and how to manage foul trouble and substitutions. Points scored, rebounds grabbed, assists recorded and the final margin are RESULTS. They justify an instruction; they are never the instruction itself.
-13. Build the plan around the team, not around one player carrying it. A game plan that depends on a single player repeating a career game is not a plan. If one of our players is clearly our best option, say how the team should create good looks for him — not how many points he should score.
-14. When a team or a player has played fewer than three games, describe their numbers as what happened, not as an average. Write "scored 36 in their one game so far", never "averages 36 a game". Calling a one-game figure an average makes an outlier sound like a certainty.${excludeTurnovers ? `
-15. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
+2. DO NOT DO ARITHMETIC. Do not work out differences, margins, totals, percentages, shares or gaps yourself. Everything of that kind you could need is already written out in DERIVED FACTS above, in plain words with the direction stated. Copy the direction and the figure exactly as written there. If a comparison you want is not in that list, leave it out of the briefing rather than working it out — a number in the wrong direction is worse than no number at all.
+3. This league does not record shot attempts. NEVER mention field goal percentage, three-point percentage, free throw percentage, shooting efficiency or any percentage statistic. Talk in makes and volume instead.
+4. Never state a game clock time, a quarter, or a score situation you were not given. You did not watch these games.
+5. Never describe a playing style you cannot see in the numbers. You may say a team shoots a lot of threes if the threes number supports it. You may NOT say they run a zone, press, or push in transition — none of that is in the data.
+6. Sample size honesty. If we have played fewer than four games, or have fewer than two wins, or fewer than two losses, treat the win/loss split as a weak signal and say so plainly. If the opponent has played fewer than three games, say their profile is thin. Never present a small-sample pattern as a certainty.
+7. Every tactical instruction must be tied to a specific number from above. "Control the glass" is banned. "Control the glass — we are plus 6.4 on the boards in wins and minus 2.3 in losses" is what we want.
+8. No motivational language. No "leave it all on the floor", no "execute with discipline", no closing pep talk of any kind.
+9. Instructions must be things an amateur team can actually do: who guards who, who gets the ball, what to crash, when to foul, when to slow the game down. No professional scheme jargon.
+10. If a section genuinely has no data behind it, say so in one short line rather than filling it with guesses.
+11. A whole-team average of exactly 0.0 for any statistic means that statistic is not being recorded in this league. It does NOT mean the team is perfect at it. Never present a 0.0 team average as a strength, a weakness, a concern or a talking point — leave it out of the briefing entirely.
+12. NEVER instruct our team to reproduce an individual statistical line. "Get [player] his 36 points", "we need 10 rebounds from [player]", "[player] has to score 20" are all banned. No player controls how many points they score, and one big game is not something a coach can call for. Individual numbers may be used to describe what has already happened or to identify a threat. They must never be set as a target to hit.
+13. Every instruction must be an action the team can choose to take before or during the game. Legitimate instructions are things like: where the first pass goes, who initiates the offense, who guards whom, when to double and off what, which shots to take and which to concede, whether to crash the offensive glass or get back, what tempo to play, and how to manage foul trouble and substitutions. Points scored, rebounds grabbed, assists recorded and the final margin are RESULTS. They justify an instruction; they are never the instruction itself.
+14. Build the plan around the team, not around one player carrying it. A game plan that depends on a single player repeating a career game is not a plan. If one of our players is clearly our best option, say how the team should create good looks for him — not how many points he should score.
+15. When a team or a player has played fewer than three games, describe their numbers as what happened, not as an average. Write "scored 36 in their one game so far", never "averages 36 a game". Calling a one-game figure an average makes an outlier sound like a certainty.${excludeTurnovers ? `
+16. This league does NOT track turnovers. Never mention turnovers, ball security, giveaways, or taking care of the ball anywhere in the briefing, and never refer to a turnover number even to say it is missing.` : ''}
 
 ===============================================================
 OUTPUT — use this exact structure and these exact headings

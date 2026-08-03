@@ -33,6 +33,10 @@ export function parseBriefing(text) {
   text.split("\n").forEach((rawLine) => {
     const line = rawLine.trim();
     if (!line) return;
+    // BRIEF_TRUST_V1 - the model sometimes closes a section with a markdown
+    // rule (--- or ***). Left in, it renders as stray dashes at the end of a
+    // sentence, which reads like the text was cut off.
+    if (/^[-*_]{3,}$/.test(line)) return;
 
     const hit = SECTION_DEFS.find(def => line.startsWith(def.marker));
     if (hit) {
