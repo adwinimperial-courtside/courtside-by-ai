@@ -1,0 +1,85 @@
+{
+  "name": "AIUsageLog",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user who generated it"
+    },
+    "user_type": {
+      "type": "string",
+      "description": "Role of the user at time of generation"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "League the generation related to, blank for platform-wide"
+    },
+    "feature": {
+      "type": "string",
+      "description": "Which AI feature: tactical_briefing, story_builder, season_recap, or league_leaders"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model used, e.g. claude_sonnet_4_6"
+    },
+    "month_year": {
+      "type": "string",
+      "description": "Format: YYYY-MM"
+    },
+    "occurred_at": {
+      "type": "string",
+      "description": "ISO timestamp of the generation"
+    },
+    "success": {
+      "type": "boolean",
+      "default": true,
+      "description": "False if the generation failed"
+    },
+    "error_message": {
+      "type": "string",
+      "description": "Error text when success is false"
+    },
+    "prompt_chars": {
+      "type": "number",
+      "default": 0,
+      "description": "Character length of the prompt sent"
+    },
+    "response_chars": {
+      "type": "number",
+      "default": 0,
+      "description": "Character length of the response received"
+    },
+    "duration_ms": {
+      "type": "number",
+      "default": 0,
+      "description": "How long the generation took in milliseconds"
+    },
+    "target_id": {
+      "type": "string",
+      "description": "Game, team or matchup the generation was about"
+    }
+  },
+  "required": [
+    "feature"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
