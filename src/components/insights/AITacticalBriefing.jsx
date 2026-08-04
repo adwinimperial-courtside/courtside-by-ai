@@ -52,20 +52,26 @@ export default function AITacticalBriefing({
 
   // Fetch usage counter (per user per month)
   const currentMonthYear = format(new Date(), 'yyyy-MM');
+  // AI_LIMIT_SPLIT_V1 - app_admin is exempt from AI limits entirely: no counter
+  // row is read or written for them and no allowance badge is shown. Everyone
+  // else is capped at 10 briefings a month, counted in briefings_generated.
+  // Story Builder now uses its own field (stories_generated) so the two
+  // features no longer share a single allowance.
+  const isAiExempt = currentUser?.user_type === 'app_admin';
   const { data: usageCounters = [] } = useQuery({
     queryKey: ['aiUsageCounter', userEmail, currentMonthYear],
     queryFn: () => base44.entities.AIUsageCounter.filter({
       created_by: userEmail,
       month_year: currentMonthYear
     }),
-    enabled: !!userEmail,
+    enabled: !!userEmail && !isAiExempt,
   });
 
   const usageCounter = usageCounters[0];
   const briefingsUsed = usageCounter?.briefings_generated || 0;
   const monthlyLimit = 10;
   const briefingsRemaining = monthlyLimit - briefingsUsed;
-  const hasReachedLimit = briefingsUsed >= monthlyLimit;
+  const hasReachedLimit = !isAiExempt && briefingsUsed >= monthlyLimit;
 
   const latestBriefing = existingBriefings.sort((a, b) =>
     new Date(b.generated_date) - new Date(a.generated_date)
@@ -402,21 +408,24 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
       await base44.entities.TacticalBriefing.create(briefingData);
 
       // BRIEFING_COUNTER_FIX_V1: counter failure must not fail a successful briefing
-      try {
-        if (usageCounter) {
-          await base44.entities.AIUsageCounter.update(usageCounter.id, {
-            briefings_generated: briefingsUsed + 1
-          });
-        } else {
-          await base44.entities.AIUsageCounter.create({
-            league_id: selectedLeague,
-            month_year: currentMonthYear,
-            briefings_generated: 1,
-            monthly_limit: 10
-          });
+      // AI_LIMIT_SPLIT_V1: app_admin is exempt, so no counter row is written.
+      if (!isAiExempt) {
+        try {
+          if (usageCounter) {
+            await base44.entities.AIUsageCounter.update(usageCounter.id, {
+              briefings_generated: briefingsUsed + 1
+            });
+          } else {
+            await base44.entities.AIUsageCounter.create({
+              league_id: selectedLeague,
+              month_year: currentMonthYear,
+              briefings_generated: 1,
+              monthly_limit: monthlyLimit
+            });
+          }
+        } catch (counterError) {
+          console.warn('BRIEFING_COUNTER_FIX_V1: usage counter write failed', counterError);
         }
-      } catch (counterError) {
-        console.warn('BRIEFING_COUNTER_FIX_V1: usage counter write failed', counterError);
       }
 
       return briefingData;
@@ -484,9 +493,9 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
             </CardTitle>
             <p className="text-sm text-purple-700 mt-1">Powered by advanced AI analysis</p>
           </div>
-          {!hasReachedLimit && (
+          {!hasReachedLimit && !isAiExempt && (
             <Badge className="bg-purple-100 text-purple-800">
-              {briefingsRemaining} remaining this month
+              {briefingsRemaining} briefings remaining this month
             </Badge>
           )}
           {hasReachedLimit && (
@@ -597,12 +606,14 @@ Total length under 500 words. No preamble, no sign-off. Start directly with 🎯
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3 pt-4">
               <p>This will analyze win/loss patterns, both rosters, opponent trends and recent form to generate a tactical briefing for your matchup against <span className="font-semibold">{selectedOpponentName}</span>.</p>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-                <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4" />
-                  {briefingsRemaining - 1} of {monthlyLimit} AI briefings will remain this month
-                </p>
-              </div>
+              {!isAiExempt && (
+                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <p className="text-sm text-purple-900 font-medium flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {briefingsRemaining - 1} of {monthlyLimit} AI briefings will remain this month
+                  </p>
+                </div>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

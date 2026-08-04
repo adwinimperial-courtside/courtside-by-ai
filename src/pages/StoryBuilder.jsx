@@ -25,7 +25,10 @@ export default function StoryBuilder() {
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const MONTHLY_LIMIT = 10;
+  // AI_LIMIT_SPLIT_V1 - Story Builder has its own monthly allowance of 20,
+  // counted in stories_generated. It no longer shares the 10-briefing pool
+  // with the AI Tactical Briefing.
+  const MONTHLY_LIMIT = 20;
   const currentMonthYear = format(new Date(), "yyyy-MM");
   const userEmail = currentUser?.email;
 
@@ -36,7 +39,7 @@ export default function StoryBuilder() {
   });
 
   const usageCounter = usageCounters[0];
-  const briefingsUsed = usageCounter?.briefings_generated || 0;
+  const briefingsUsed = usageCounter?.stories_generated || 0;
   const briefingsRemaining = MONTHLY_LIMIT - briefingsUsed;
   const { isAppAdmin: storyIsAppAdmin, isLeagueAdmin: storyIsLeagueAdmin } = useEffectiveRole(currentUser, selectedLeagueId || null);
   const hasReachedLimit = storyIsLeagueAdmin && !storyIsAppAdmin && briefingsUsed >= MONTHLY_LIMIT;
@@ -592,13 +595,13 @@ MANDATORY RULES:
       if (storyIsLeagueAdmin && !storyIsAppAdmin) {
         if (usageCounter) {
           await base44.entities.AIUsageCounter.update(usageCounter.id, {
-            briefings_generated: briefingsUsed + 1
+            stories_generated: briefingsUsed + 1
           });
         } else {
           await base44.entities.AIUsageCounter.create({
             league_id: selectedLeagueId,
             month_year: currentMonthYear,
-            briefings_generated: 1,
+            stories_generated: 1,
             monthly_limit: MONTHLY_LIMIT
           });
         }
@@ -652,7 +655,7 @@ MANDATORY RULES:
               <p className={`text-2xl font-bold ${
                 hasReachedLimit ? "text-red-600" : briefingsRemaining <= 5 ? "text-amber-600" : "text-green-600"
               }`}>{briefingsRemaining}</p>
-              <p className="text-xs font-semibold text-slate-500 whitespace-nowrap">of {MONTHLY_LIMIT} left this month</p>
+              <p className="text-xs font-semibold text-slate-500 whitespace-nowrap">of {MONTHLY_LIMIT} recaps left this month</p>
             </div>
           )}
         </div>
