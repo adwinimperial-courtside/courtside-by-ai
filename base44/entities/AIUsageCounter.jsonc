@@ -19,6 +19,16 @@
       "type": "number",
       "default": 10,
       "description": "Monthly limit for AI briefings"
+    },
+    "stories_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of Story Builder recaps generated this month"
+    },
+    "recaps_generated": {
+      "type": "number",
+      "default": 0,
+      "description": "Number of season recaps generated this month"
     }
   },
   "required": [
