@@ -10,6 +10,7 @@ import { DEFAULT_AWARD_SETTINGS } from "@/utils/awardDefaults";
 // data via the shared cap-agnostic league stats hook.
 import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
 import { useLeagueStatsData } from "@/components/stats/useLeagueStatsData";
+import { logAIUsage, AI_FEATURES } from "@/components/ai/aiUsage";
 
 function didPlay(stat) {
   if (stat.did_play) return true;
@@ -304,12 +305,32 @@ RULES:
 
 Start immediately with 🎙️ COURTSIDE BY AI REPORT`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        model: "claude_sonnet_4_6",
+      // AI_USAGE_LOG_V1 - this generation was previously untracked entirely.
+      const aiStartedAt = Date.now();
+      let result;
+      try {
+        result = await base44.integrations.Core.InvokeLLM({
+          prompt,
+          model: "claude_sonnet_4_6",
+        });
+      } catch (llmError) {
+        logAIUsage({
+          user: currentUser, feature: AI_FEATURES.SEASON_RECAP,
+          leagueId: selectedLeagueId, targetId: selectedLeagueId,
+          success: false, errorMessage: llmError?.message,
+          promptChars: prompt.length, durationMs: Date.now() - aiStartedAt,
+        });
+        throw llmError;
+      }
+      const recapText = typeof result === "string" ? result : JSON.stringify(result);
+      logAIUsage({
+        user: currentUser, feature: AI_FEATURES.SEASON_RECAP,
+        leagueId: selectedLeagueId, targetId: selectedLeagueId,
+        promptChars: prompt.length, responseChars: recapText.length,
+        durationMs: Date.now() - aiStartedAt,
       });
 
-      setRecap(typeof result === "string" ? result : JSON.stringify(result));
+      setRecap(recapText);
     } catch (err) {
       if (err.message === "not_enough_games") {
         setError("Not enough completed games to generate a recap.");

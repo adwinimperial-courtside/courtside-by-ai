@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Sparkles, RefreshCw, Target, AlertCircle, X, Copy, Check } from "lucide-react";
 import BriefingRenderer from "@/components/insights/BriefingRenderer";
+import { logAIUsage, AI_FEATURES } from "@/components/ai/aiUsage";
 import { format } from "date-fns";
 
 // COACH_BRIEF_V2 — rewritten briefing prompt, explicit model, on-page error
@@ -389,9 +390,29 @@ One or two sentences stating plainly how much data this briefing rests on and wh
 
 Total length under 500 words. No preamble, no sign-off. Start directly with 🎯.`;
 
-      const llmResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: prompt,
-        model: "claude_sonnet_4_6",
+      // AI_USAGE_LOG_V1 - log every briefing generation, success or failure.
+      const aiStartedAt = Date.now();
+      let llmResponse;
+      try {
+        llmResponse = await base44.integrations.Core.InvokeLLM({
+          prompt: prompt,
+          model: "claude_sonnet_4_6",
+        });
+      } catch (llmError) {
+        logAIUsage({
+          user: currentUser, feature: AI_FEATURES.TACTICAL_BRIEFING,
+          leagueId: selectedLeague, targetId: selectedOpponent,
+          success: false, errorMessage: llmError?.message,
+          promptChars: prompt.length, durationMs: Date.now() - aiStartedAt,
+        });
+        throw llmError;
+      }
+      const llmText = typeof llmResponse === "string" ? llmResponse : JSON.stringify(llmResponse);
+      logAIUsage({
+        user: currentUser, feature: AI_FEATURES.TACTICAL_BRIEFING,
+        leagueId: selectedLeague, targetId: selectedOpponent,
+        promptChars: prompt.length, responseChars: llmText.length,
+        durationMs: Date.now() - aiStartedAt,
       });
 
       // Save briefing to database

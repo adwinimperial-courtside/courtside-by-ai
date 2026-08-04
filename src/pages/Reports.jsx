@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Trophy, Medal, Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper, Filter, Key } from "lucide-react";
 import { DEFAULT_AWARD_SETTINGS } from "@/utils/awardDefaults";
 import AwardLeadersTop20 from "@/components/stats/AwardLeadersTop20";
+import { logAIUsage, AI_FEATURES } from "@/components/ai/aiUsage";
 // B4_FORMAT_V1 — points math via the stat engine (per-game format detection),
 // data via the shared cap-agnostic league stats hook.
 import { calcPoints, buildGameFormatMap } from "@/components/stats/statEngine";
@@ -348,8 +349,28 @@ RULES:
 
 Start immediately with 🎙️ COURTSIDE BY AI REPORT`;
 
-      const result = await base44.integrations.Core.InvokeLLM({ prompt, model: "claude_sonnet_4_6" });
-      setRecap(typeof result === "string" ? result : JSON.stringify(result));
+      // AI_USAGE_LOG_V1 - this generation was previously untracked entirely.
+      const aiStartedAt = Date.now();
+      let result;
+      try {
+        result = await base44.integrations.Core.InvokeLLM({ prompt, model: "claude_sonnet_4_6" });
+      } catch (llmError) {
+        logAIUsage({
+          user: currentUser, feature: AI_FEATURES.SEASON_RECAP,
+          leagueId: selectedLeagueId, targetId: selectedLeagueId,
+          success: false, errorMessage: llmError?.message,
+          promptChars: prompt.length, durationMs: Date.now() - aiStartedAt,
+        });
+        throw llmError;
+      }
+      const recapText = typeof result === "string" ? result : JSON.stringify(result);
+      logAIUsage({
+        user: currentUser, feature: AI_FEATURES.SEASON_RECAP,
+        leagueId: selectedLeagueId, targetId: selectedLeagueId,
+        promptChars: prompt.length, responseChars: recapText.length,
+        durationMs: Date.now() - aiStartedAt,
+      });
+      setRecap(recapText);
     } catch (err) {
       if (err.message === "not_enough_games") {
         setError("Not enough completed games to generate a recap.");

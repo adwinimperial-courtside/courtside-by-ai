@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Copy, RefreshCw, AlertCircle, CheckCircle, Newspaper, BarChart3 } from "lucide-react";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
+import { logAIUsage, AI_FEATURES } from "@/components/ai/aiUsage";
 import { calcPoints, groupStatsByGameAndPlayer } from "@/components/stats/statEngine";
 import HelpButton from "../components/help/HelpButton";
 
@@ -584,12 +585,32 @@ MANDATORY RULES:
 - When a player has a notable double-double or near-double-double, call it out
 - DO NOT include any meta-commentary, preamble, or explanation — start directly with 🎙️ COURTSIDE BY AI REPORT`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt,
-        model: "claude_sonnet_4_6",
+      // AI_USAGE_LOG_V1 - log every recap generation, success or failure.
+      const aiStartedAt = Date.now();
+      let result;
+      try {
+        result = await base44.integrations.Core.InvokeLLM({
+          prompt,
+          model: "claude_sonnet_4_6",
+        });
+      } catch (llmError) {
+        logAIUsage({
+          user: currentUser, feature: AI_FEATURES.STORY_BUILDER,
+          leagueId: selectedLeagueId, targetId: selectedGameId,
+          success: false, errorMessage: llmError?.message,
+          promptChars: prompt.length, durationMs: Date.now() - aiStartedAt,
+        });
+        throw llmError;
+      }
+      const storyText = typeof result === "string" ? result : JSON.stringify(result);
+      logAIUsage({
+        user: currentUser, feature: AI_FEATURES.STORY_BUILDER,
+        leagueId: selectedLeagueId, targetId: selectedGameId,
+        promptChars: prompt.length, responseChars: storyText.length,
+        durationMs: Date.now() - aiStartedAt,
       });
 
-      setStory(typeof result === "string" ? result : JSON.stringify(result));
+      setStory(storyText);
 
       // --- Track usage (league_admin only) ---
       if (storyIsLeagueAdmin && !storyIsAppAdmin) {
