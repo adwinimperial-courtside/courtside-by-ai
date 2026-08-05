@@ -190,9 +190,27 @@
   ],
   "rls": {
     "create": {
-      "user_condition": {
-        "data.user_type": "app_admin"
-      }
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
     },
     "update": {
       "$or": [
@@ -205,7 +223,7 @@
           "$and": [
             {
               "user_condition": {
-                "user_type": "league_admin"
+                "data.user_type": "league_admin"
               }
             },
             {
