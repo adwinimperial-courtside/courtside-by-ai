@@ -27,6 +27,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+// PEOPLE_PAGE_PAGINATION_V1
+// Page through every record of an entity. Advances by the number of rows base44
+// actually returned and stops only on an empty or short page, so base44's
+// per-response row cap can never silently truncate this page's data.
+const listAll = async (entityName, sort = "-created_date") => {
+  const PAGE = 1000;
+  const MAX_PAGES = 30;
+  let all = [];
+  let skip = 0;
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const page = await base44.entities[entityName].list(sort, PAGE, skip);
+    if (!page || page.length === 0) break;
+    all = all.concat(page);
+    skip += page.length;
+    if (page.length < PAGE) break;
+  }
+  return all;
+};
+
 export default function EnhancedUserManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -73,9 +92,10 @@ export default function EnhancedUserManagement() {
   });
   const queryClient = useQueryClient();
 
+  // PEOPLE_PAGE_PAGINATION_V1: every list below is paged so no fetch is silently cut short.
   const { data: users = [] } = useQuery({
     queryKey: ["users"],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => listAll("User"),
   });
 
   const { data: leagues = [] } = useQuery({
@@ -85,17 +105,17 @@ export default function EnhancedUserManagement() {
 
   const { data: userLeagueIdentities = [] } = useQuery({
     queryKey: ["userLeagueIdentities"],
-    queryFn: () => base44.entities.UserLeagueIdentity.list("-created_date", 5000),
+    queryFn: () => listAll("UserLeagueIdentity"),
   });
 
   const { data: userApplications = [] } = useQuery({
     queryKey: ["allUserApplications"],
-    queryFn: () => base44.entities.UserApplication.list(),
+    queryFn: () => listAll("UserApplication"),
   });
 
   const { data: teams = [] } = useQuery({
     queryKey: ["teams"],
-    queryFn: () => base44.entities.Team.list(),
+    queryFn: () => listAll("Team"),
   });
 
   // PLAYER_ROSTER_LINK_V1: load roster for teams selected in player rows
