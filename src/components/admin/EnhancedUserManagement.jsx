@@ -85,7 +85,7 @@ export default function EnhancedUserManagement() {
 
   const { data: userLeagueIdentities = [] } = useQuery({
     queryKey: ["userLeagueIdentities"],
-    queryFn: () => base44.entities.UserLeagueIdentity.list(),
+    queryFn: () => base44.entities.UserLeagueIdentity.list("-created_date", 5000),
   });
 
   const { data: userApplications = [] } = useQuery({
@@ -182,10 +182,13 @@ export default function EnhancedUserManagement() {
         try { await base44.entities.UserLeagueIdentity.delete(uli.id); } catch (_e) {}
       }
 
-      // PLAYER_ROSTER_LINK_V1: link player accounts to roster slots via the guarded function
+      // PLAYER_ROSTER_LINK_V2: link player accounts to roster slots via the guarded function.
+      // Uses effectiveRole() so a league inherits the account-level user_type when no explicit
+      // per-league role was picked — this matches what the edit form actually displays.
       const linkConflicts = [];
+      const linkErrors = [];
       for (const leagueId of data.assigned_league_ids) {
-        if (leagueRoleMap[leagueId] !== "player") continue;
+        if (effectiveRole(leagueId) !== "player") continue;
         const matchedPlayerId = data.league_player_map?.[leagueId] || "";
         try {
           const res = await base44.functions.invoke("linkPlayerToRoster", {
@@ -194,13 +197,24 @@ export default function EnhancedUserManagement() {
             matched_player_id: matchedPlayerId,
           });
           const out = res && res.data;
-          if (out && out.ok === false && out.reason === "already_claimed") {
-            linkConflicts.push(out.claimed_by || "another user");
+          if (out && out.ok === false) {
+            if (out.reason === "already_claimed") {
+              linkConflicts.push(out.claimed_by || "another user");
+            } else {
+              console.warn("PLAYER_ROSTER_LINK_V2 link failed", leagueId, out);
+              linkErrors.push(out.reason || "unknown");
+            }
           }
-        } catch (_e) { /* conflict / errors surfaced via banner below */ }
+        } catch (e) {
+          console.warn("PLAYER_ROSTER_LINK_V2 link threw", leagueId, e);
+          linkErrors.push((e && e.message) || "request failed");
+        }
       }
       if (linkConflicts.length > 0) {
         throw new Error("Some roster links couldn't be set — already claimed by: " + linkConflicts.join(", ") + ". Use the release option or pick a different player.");
+      }
+      if (linkErrors.length > 0) {
+        throw new Error("Roster link failed: " + linkErrors.join(", ") + ". The role and league were saved, but the player match was not.");
       }
 
       // Audit: record this direct grant/revoke in the ApprovalLog ledger.
