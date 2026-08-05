@@ -276,6 +276,21 @@ export const HELP_TOPICS = [
     ],
   },
   {
+    key: "aiusage",
+    title: "AI Usage",
+    category: "ops",
+    roles: ["app_admin"],
+    summary:
+      "Every AI generation across the platform - who ran it, on which league, and whether it worked.",
+    tips: [
+      "Pick a month at the top right. Each row is one generation, successful or failed.",
+      "Failures are recorded too, so a feature that quietly stops working still shows up here.",
+      "Estimated cost is a guide only. base44 does not report token counts, so it is worked out from character length - open Cost assumptions to change the rates.",
+      "Close to their monthly limit lists coaches and league owners nearing their allowance. App admins have no limit and never appear.",
+      "Logging started on 4 August 2026, so earlier months are empty even where AI was used.",
+    ],
+  },
+  {
     key: "feedback",
     title: "Feedback",
     category: "main",
