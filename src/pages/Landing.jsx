@@ -20,7 +20,9 @@ import {
   ClipboardList,
   Timer,
   LayoutDashboard,
-  HelpCircle
+  HelpCircle,
+  Monitor,
+  Video
 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — players land on the trophy room
@@ -197,120 +199,104 @@ export default function Landing() {
         <div className="max-w-3xl mx-auto">
           <div className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">What's New</div>
           <div className="space-y-3">
-            {/* WHATS_NEW_V3 */}
-            {[
-              {
-                icon: HelpCircle,
-                bg: "bg-orange-100",
-                color: "#F26B1F",
-                title: "In-App Help, Right Where You Need It",
-                badge: "New",
-                date: "Jul 18, 2026",
-                desc: "Tap the orange ? next to any page title for a quick explanation of that page, or open the new Help Center from the menu for a full guide tailored to your role",
-              },
-              ...(role === "league_admin" || role === "app_admin" ? [
-                {
-                  icon: Link,
-                  bg: "bg-blue-100",
-                  color: "#3B82F6",
-                  title: "Your Own League Sign-Up Link",
-                  badge: "New",
-                  date: "Jul 16, 2026",
-                  desc: "Create a registration campaign and share one link — players, coaches and viewers sign up through it and land straight in your approval queue. Coaches redeem a one-time code you hand out",
-                },
-                {
-                  icon: ClipboardList,
-                  bg: "bg-teal-100",
-                  color: "#0D9488",
-                  title: "Coaches Manage Their Own Rosters",
-                  badge: "New",
-                  date: "Jul 15, 2026",
-                  desc: "Coaches can now add, edit and remove players on their own team — no more roster emails to you. You set the deadline, lock editing anytime, and every change is logged in a full roster history",
-                },
-              ] : []),
-              {
-                icon: Timer,
-                bg: "bg-red-100",
-                color: "#DC2626",
-                title: "Fouls & Timeouts on the Live Box Score",
-                badge: "New",
-                date: "Jul 17, 2026",
-                desc: "Following a game live? The box score now shows each team's fouls and timeouts remaining, updated in real time for timed games",
-              },
-              ...(role === "league_admin" || role === "app_admin" ? [
-                {
-                  icon: LayoutDashboard,
-                  bg: "bg-purple-100",
-                  color: "#7C3AED",
-                  title: "A Sharper Coach Dashboard",
-                  badge: "New",
-                  date: "Jul 16, 2026",
-                  desc: "Coach home got a dark 'Midnight Slate' redesign — win/loss streak at a glance, plus a scouting peek at the next opponent's last three games",
-                },
-              ] : []),
-              {
-                icon: Trophy,
-                bg: "bg-orange-100",
-                color: "#F26B1F",
-                title: "Player Cards",
-                badge: "Flagship",
-                date: "Jul 14, 2026",
-                desc: "Every player now has their own trophy room — a cinematic gold profile with their stats, badges and awards. Tap any player's name in Stats Leaders, Award Leaders, Statistics or the Schedule to open it",
-              },
-              ...(role === "league_admin" || role === "app_admin" ? [
-
-                {
-                  icon: Camera,
-                  bg: "bg-blue-100",
-                  color: "#3B82F6",
-                  title: "Player Profile Photos",
-                  badge: null,
-                  date: "Jul 14, 2026",
-                  desc: "Put faces on your league — upload player photos with drag-and-zoom cropping, then edit or remove them anytime. Photos show up on player cards and rosters",
-                },
-                {
-                  icon: Pencil,
-                  bg: "bg-amber-100",
-                  color: "#D97706",
-                  title: "Edit Finished Live Games",
-                  badge: null,
-                  date: "Jun 19, 2026",
-                  desc: "Spotted a wrong stat after the final buzzer? Completed live-tracked games can now be fixed in Edit Game, with a running score check at the top while you type",
-                },
-              ] : []),
-              {
-                icon: Smartphone,
-                bg: "bg-purple-100",
-                color: "#7C3AED",
-                title: "Faster Stats on Mobile",
-                badge: null,
-                date: "Jul 14, 2026",
-                desc: "Browse stat categories with one thumb — quick-switch tabs replace the old dropdown on the Statistics page, and they stay pinned while you scroll",
-              },
-              ...(role === "league_admin" || role === "app_admin" ? [
-                {
-                  icon: RefreshCw,
-                  bg: "bg-amber-100",
-                  color: "#D97706",
-                  title: "Improved substitutions",
-                  badge: "Most requested",
-                  date: "Jun 11, 2026",
-                  desc: "Rebuilt by popular demand: tap SUB on a player, then tap a benched player to swap them in — a clean one-tap substitution, with each player's fouls shown on their chip and an instant undo if you tap the wrong name",
-                },
-              ] : []),
-            ].map((item, idx) => {
+            {/* WHATS_NEW_V4 */}
+            {(role === "league_admin" || role === "app_admin"
+              ? [
+                  {
+                    icon: Monitor,
+                    bg: "bg-red-100",
+                    color: "#DC2626",
+                    featured: true,
+                    title: "A Live Broadcast-Grade Overlay, Powered by Your Stats",
+                    badge: "Flagship",
+                    date: "Jul 31, 2026",
+                    desc: "Stream your games with an overlay that reads the live stat feed as it happens. Every timeout brings up a team comparison panel, the end of each period rotates a top-5 leaders board, and a scoring run gets called out with its own headline \u2014 all straight from the stats being tracked courtside. Team logos sit on the scorebug, and league or sponsor logos can be switched off per season.",
+                  },
+                  {
+                    icon: Link,
+                    bg: "bg-blue-100",
+                    color: "#3B82F6",
+                    title: "One Link, and Everyone Signs Themselves Up",
+                    badge: "New",
+                    date: "Aug 3, 2026",
+                    desc: "Share a single registration link and your coaches, players and fans all sign up through it, landing straight in your approval queue. Approve or decline with a reason in one tap \u2014 the right welcome email and the right access go out automatically.",
+                  },
+                  {
+                    icon: ClipboardList,
+                    bg: "bg-teal-100",
+                    color: "#0D9488",
+                    title: "Coaches Build Their Own Rosters",
+                    badge: "New",
+                    date: "Jul 15, 2026",
+                    desc: "No more collecting team lists by email or typing names in yourself. Coaches add, edit and remove their own players; you set the deadline, lock editing when you are ready, and every change is kept in a full roster history.",
+                  },
+                  {
+                    icon: Calendar,
+                    bg: "bg-amber-100",
+                    color: "#D97706",
+                    title: "One League, Many Seasons",
+                    badge: "Most requested",
+                    date: "Jul 19, 2026",
+                    desc: "Your league is now the club or competition itself, and each season lives inside it. Set the league up once, add a season each year \u2014 finished seasons fold away, with every stat kept.",
+                  },
+                  {
+                    icon: Video,
+                    bg: "bg-orange-100",
+                    color: "#F26B1F",
+                    title: "Invite Your Stream Crew",
+                    badge: "New",
+                    date: "Aug 7, 2026",
+                    desc: "Hand the stream to your video team \u2014 invite them by email from the new Stream Crew page and they get overlay access to your league the moment they accept. No approval queue, no shared logins.",
+                  },
+                ]
+              : [
+                  {
+                    icon: Trophy,
+                    bg: "bg-orange-100",
+                    color: "#F26B1F",
+                    title: "Player Cards",
+                    badge: "Flagship",
+                    date: "Jul 14, 2026",
+                    desc: "Every player now has their own trophy room \u2014 a cinematic gold profile with their stats, badges and awards. Tap any player's name in Stats Leaders, Award Leaders, Statistics or the Schedule to open it.",
+                  },
+                  {
+                    icon: HelpCircle,
+                    bg: "bg-orange-100",
+                    color: "#F26B1F",
+                    title: "In-App Help, Right Where You Need It",
+                    badge: null,
+                    date: "Jul 18, 2026",
+                    desc: "Tap the orange ? next to any page title for a quick explanation of that page, or open the Help Center from the menu for a full guide tailored to your role.",
+                  },
+                  {
+                    icon: Timer,
+                    bg: "bg-red-100",
+                    color: "#DC2626",
+                    title: "Fouls & Timeouts on the Live Box Score",
+                    badge: null,
+                    date: "Jul 17, 2026",
+                    desc: "Following a game live? The box score now shows each team's fouls and timeouts remaining, updated in real time for timed games.",
+                  },
+                ]
+            ).map((item, idx) => {
               const Icon = item.icon;
+              const boxSize = item.featured ? 44 : 36;
+              const iconSize = item.featured ? 22 : 18;
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3 min-h-[56px]"
+                  className={
+                    item.featured
+                      ? "flex items-center gap-5 bg-white rounded-xl border border-orange-400 shadow-md px-4 py-4 min-h-[56px]"
+                      : "flex items-center gap-4 bg-white rounded-xl border border-slate-200 px-4 py-3 min-h-[56px]"
+                  }
                 >
-                  <div className={`flex items-center justify-center rounded-lg flex-shrink-0 ${item.bg}`} style={{ width: 36, height: 36 }}>
-                    <Icon style={{ color: item.color, width: 18, height: 18 }} />
+                  <div className={`flex items-center justify-center rounded-lg flex-shrink-0 ${item.bg}`} style={{ width: boxSize, height: boxSize }}>
+                    <Icon style={{ color: item.color, width: iconSize, height: iconSize }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-slate-900">{item.title}</div>
-                    <div className="text-xs text-slate-500">{item.desc}</div>
+                    <div className={item.featured ? "text-[15px] font-bold text-slate-900" : "text-sm font-bold text-slate-900"}>{item.title}</div>
+                    <div className={item.featured ? "text-[13px] text-slate-600" : "text-xs text-slate-500"}>{item.desc}</div>
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     {item.badge !== null && (
