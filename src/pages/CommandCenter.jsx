@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket, Sparkles } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
@@ -60,14 +61,44 @@ export default function CommandCenter() {
     },
   });
 
-  const leagues = cc.leagues || [];
-  const teams = cc.teams || [];
-  const players = cc.players || [];
-  const games = cc.games || [];
+  const rawLeagues = cc.leagues || [];
+  const rawTeams = cc.teams || [];
+  const rawPlayers = cc.players || [];
+  const rawGames = cc.games || [];
   const applications = cc.applications || [];
   const users = cc.users || [];
   const auditLogs = cc.auditLogs || [];
   const deletions = cc.deletions || [];
+
+  // CC_HIDE_DEMO_V1 — demo and test leagues inflate every headline number on
+  // this page. A league counts as demo/test when its name contains demo, test,
+  // sample or dummy as a whole word. The switch is remembered per browser and
+  // defaults to hiding them, so the totals read as real business numbers.
+  const DEMO_RE = /\b(demo|test|sample|dummy)\b/i;
+  const demoLeagues = rawLeagues.filter((l) => DEMO_RE.test(l.name || ""));
+  const demoLeagueIds = new Set(demoLeagues.map((l) => l.id));
+  // Player has no league_id of its own, so demo players are found via their team.
+  const demoTeamIds = new Set(rawTeams.filter((t) => demoLeagueIds.has(t.league_id)).map((t) => t.id));
+
+  const [hideDemo, setHideDemo] = React.useState(() => {
+    try { return window.localStorage.getItem("cc_hide_demo") !== "0"; } catch (e) { return true; }
+  });
+  const toggleHideDemo = (next) => {
+    setHideDemo(next);
+    try { window.localStorage.setItem("cc_hide_demo", next ? "1" : "0"); } catch (e) {}
+  };
+
+  const hiddenCounts = {
+    leagues: demoLeagues.length,
+    teams: rawTeams.filter((t) => demoLeagueIds.has(t.league_id)).length,
+    players: rawPlayers.filter((p) => demoTeamIds.has(p.team_id)).length,
+    games: rawGames.filter((g) => demoLeagueIds.has(g.league_id)).length,
+  };
+
+  const leagues = hideDemo ? rawLeagues.filter((l) => !demoLeagueIds.has(l.id)) : rawLeagues;
+  const teams = hideDemo ? rawTeams.filter((t) => !demoLeagueIds.has(t.league_id)) : rawTeams;
+  const players = hideDemo ? rawPlayers.filter((p) => !demoTeamIds.has(p.team_id)) : rawPlayers;
+  const games = hideDemo ? rawGames.filter((g) => !demoLeagueIds.has(g.league_id)) : rawGames;
 
   const teamName = (id) => teams.find((t) => t.id === id)?.name || "TBD";
   const leagueName = (id) => leagues.find((l) => l.id === id)?.name || "Unknown league";
@@ -262,7 +293,7 @@ export default function CommandCenter() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <Radar className="w-8 h-8 text-orange-600" />
             <div>
@@ -270,10 +301,28 @@ export default function CommandCenter() {
               <p className="text-slate-600 text-sm">What's happening across all leagues</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch id="cc-hide-demo" checked={hideDemo} onCheckedChange={toggleHideDemo} />
+              <label htmlFor="cc-hide-demo" className="text-sm text-slate-600 cursor-pointer select-none">Hide demo and test data</label>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /> Live
+            </div>
           </div>
         </div>
+
+        {demoLeagues.length > 0 && hideDemo && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2.5 mb-5 text-xs text-amber-900">
+            <span className="font-semibold">Hiding {hiddenCounts.leagues} demo/test {hiddenCounts.leagues === 1 ? "league" : "leagues"}</span> from every number on this page: {demoLeagues.map((l) => l.name).join(", ")}. That is {hiddenCounts.games} games, {hiddenCounts.teams} teams and {hiddenCounts.players} players kept out of the totals.
+          </div>
+        )}
+        {demoLeagues.length > 0 && !hideDemo && (
+          <div className="bg-slate-100 border border-slate-200 rounded-lg px-4 py-2.5 mb-5 text-xs text-slate-600">
+            <span className="font-semibold">Showing everything, test data included.</span> {hiddenCounts.leagues} demo/test {hiddenCounts.leagues === 1 ? "league" : "leagues"} {hiddenCounts.leagues === 1 ? "is" : "are"} inflating the totals below.
+          </div>
+        )}
+        {demoLeagues.length === 0 && <div className="mb-5" />}
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 mb-6">
           {stats.map((s) => (
