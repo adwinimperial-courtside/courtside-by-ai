@@ -33,6 +33,7 @@ import JoinLeaguePage from './pages/JoinLeague';
 import CoachRosterPage from './pages/CoachRoster';
 import HelpCenterPage from './pages/HelpCenter';
 import LeagueGroupsPage from './pages/LeagueGroups';
+import AcceptInvitePage from './pages/AcceptInvite';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -74,6 +75,10 @@ const AuthenticatedApp = () => {
         if (window.location.pathname.toLowerCase().startsWith('/join/')) {
           localStorage.setItem('join_league_intent', window.location.pathname);
         }
+        // ACCEPT_INVITE_V1 - same pattern for video admin invitation links
+        if (window.location.pathname.toLowerCase().includes('acceptinvite')) {
+          localStorage.setItem('accept_invite_intent', '1');
+        }
       } catch (e) {}
       // Redirect to login automatically
       navigateToLogin();
@@ -106,6 +111,15 @@ const AuthenticatedApp = () => {
       window.location.replace(joinIntent);
       return null;
     }
+    // ACCEPT_INVITE_V1 - once authenticated, send invitation-link arrivals back to
+    // /AcceptInvite, which renders outside the Layout so the RegistrationGate never
+    // intercepts a brand-new video admin. Clear the marker so it fires once.
+    if (localStorage.getItem('accept_invite_intent') === '1' &&
+        !window.location.pathname.toLowerCase().includes('acceptinvite')) {
+      localStorage.removeItem('accept_invite_intent');
+      window.location.replace('/AcceptInvite');
+      return null;
+    }
   } catch (e) {}
 
   // Render the main app — overlay is layout-free
@@ -118,6 +132,8 @@ const AuthenticatedApp = () => {
       <Route path="/Finoy40upSeason6-Coach" element={<JoinFinNoyCoachPage />} />
       {/* JOIN_LEAGUE_GENERIC_V1 — generic campaign signup page, rendered OUTSIDE the Layout */}
       <Route path="/Join/:slug" element={<JoinLeaguePage />} />
+      {/* ACCEPT_INVITE_V1 - rendered OUTSIDE the Layout so the RegistrationGate never intercepts a brand-new video admin */}
+      <Route path="/AcceptInvite" element={<AcceptInvitePage />} />
       <Route path="*" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <Routes>
