@@ -56,6 +56,7 @@ import DataBackup from './pages/DataBackup';
 import DeleteLeague from './pages/DeleteLeague';
 import Analytics from './pages/Analytics';
 import AIUsage from './pages/AIUsage';
+import StreamCrew from './pages/StreamCrew';
 import System from './pages/System';
 import Reports from './pages/Reports';
 import People from './pages/People';
@@ -94,6 +95,7 @@ export const PAGES = {
     "DeleteLeague": DeleteLeague,
     "Analytics": Analytics,
     "AIUsage": AIUsage,
+    "StreamCrew": StreamCrew,
     "System": System,
     "Reports": Reports,
     "People": People,
