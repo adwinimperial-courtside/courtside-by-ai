@@ -1,0 +1,95 @@
+{
+  "name": "VideoAdminInvite",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Email address the invitation was sent to. Always stored lowercase and trimmed. This is what the accept screen matches the signed-in user against."
+    },
+    "league_id": {
+      "type": "string",
+      "description": "Reference to the League this invitation grants video admin access to"
+    },
+    "league_name": {
+      "type": "string",
+      "description": "League name snapshot at invite time, for admin readability in lists and in the data editor"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "pending = sent and waiting; accepted = the invited person registered and the role was granted; cancelled = withdrawn by an admin. Expiry is not a stored status - it is derived by comparing expires_at to now, so an expired invite stays pending and can be resent."
+    },
+    "invited_by_email": {
+      "type": "string",
+      "description": "Email of the admin who sent the invitation"
+    },
+    "invited_by_name": {
+      "type": "string",
+      "description": "Name of the admin who sent the invitation, shown to the recipient in the email and on the accept screen"
+    },
+    "invited_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the invitation was first created"
+    },
+    "last_sent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the invitation email was last sent. Updated on every resend."
+    },
+    "send_count": {
+      "type": "number",
+      "default": 1,
+      "description": "How many times the invitation email has been sent, including the first send"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Invitation is no longer acceptable after this time. Set to 14 days ahead on create and refreshed on every resend."
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the invited person accepted and the role was granted"
+    },
+    "accepted_user_id": {
+      "type": "string",
+      "description": "Reference to the User record that accepted this invitation"
+    },
+    "accepted_email": {
+      "type": "string",
+      "description": "The email the accepting account was actually signed in with. Normally identical to email, kept separately for audit."
+    }
+  },
+  "required": [
+    "email",
+    "league_id"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
