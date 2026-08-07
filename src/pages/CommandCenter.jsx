@@ -78,7 +78,46 @@ export default function CommandCenter() {
   const weekAhead = new Date(now.getTime() + 7 * DAY);
 
   const gamesThisWeek = games.filter((g) => g.created_date && new Date(g.created_date) >= weekAgo).length;
-  const liveGames = games.filter((g) => g.status === "in_progress");
+  const newUsersThisWeek = users.filter((u) => u.created_date && new Date(u.created_date) >= weekAgo).length;
+
+  // COMMAND_CENTER_V2 — "Live now" used to mean any game ever left in
+  // in_progress, which never expires. A game only counts as live if it tipped
+  // within the last 12 hours (today, plus enough slack that a late-evening
+  // game does not disappear at midnight while it is still being scored).
+  const HOUR = 3600000;
+  const liveWindowStart = new Date(now.getTime() - 12 * HOUR);
+  const inProgressGames = games.filter((g) => g.status === "in_progress");
+  const liveGames = inProgressGames
+    .filter((g) => g.game_date && new Date(g.game_date) >= liveWindowStart)
+    .sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
+  const stuckGames = inProgressGames
+    .filter((g) => !g.game_date || new Date(g.game_date) < liveWindowStart)
+    .sort((a, b) => new Date(b.game_date || 0) - new Date(a.game_date || 0));
+
+  // Games whose league record no longer exists — these render as
+  // "Unknown league" everywhere and are usually deleted-league leftovers.
+  const leagueIdSet = new Set(leagues.map((l) => l.id));
+  const orphanGames = games
+    .filter((g) => !g.league_id || !leagueIdSet.has(g.league_id))
+    .sort((a, b) => new Date(b.game_date || 0) - new Date(a.game_date || 0));
+
+  // Signed up but never given a role. base44 leaves user_type blank or "user".
+  const noRoleUsers = users
+    .filter((u) => !u.user_type || u.user_type === "user")
+    .sort((a, b) => new Date(b.created_date || 0) - new Date(a.created_date || 0));
+  const needsAttentionTotal = stuckGames.length + orphanGames.length + noRoleUsers.length;
+
+  // Registered users broken down by role.
+  const ROLE_LABELS = { app_admin: "App Admin", ops_admin: "Ops Admin", league_admin: "League Admin", coach: "Coach", player: "Player", viewer: "Fan", video_admin: "Video Admin" };
+  const roleCounts = {};
+  users.forEach((u) => {
+    const k = u.user_type && u.user_type !== "user" ? u.user_type : "__none";
+    roleCounts[k] = (roleCounts[k] || 0) + 1;
+  });
+  const roleRows = Object.entries(roleCounts)
+    .map(([k, v]) => ({ key: k, label: k === "__none" ? "No role yet" : (ROLE_LABELS[k] || k.replace(/_/g, " ")), count: v }))
+    .sort((a, b) => b.count - a.count);
+  const roleMax = Math.max(...roleRows.map((r) => r.count), 1);
   const upcoming = games
     .filter((g) => g.status === "scheduled" && g.game_date && new Date(g.game_date) >= now && new Date(g.game_date) <= weekAhead)
     .sort((a, b) => new Date(a.game_date) - new Date(b.game_date))
@@ -187,9 +226,11 @@ export default function CommandCenter() {
     { label: "Leagues", value: leagues.length, icon: Trophy },
     { label: "Teams", value: teams.length, icon: Users },
     { label: "Players", value: players.length, icon: UserCircle },
+    { label: "Registered users", value: users.length, delta: newUsersThisWeek > 0 ? `+${newUsersThisWeek} this week` : null, icon: UserPlus },
     { label: "Games (total)", value: games.length, delta: `+${gamesThisWeek} this week`, icon: Calendar },
-    { label: "Live now", value: liveGames.length, icon: Activity, accent: "text-red-600" },
+    { label: "Live today", value: liveGames.length, icon: Activity, accent: "text-red-600" },
     { label: "Pending approvals", value: pendingCount, icon: ClipboardList, accent: "text-orange-600" },
+    { label: "Stuck games", value: stuckGames.length, icon: AlertTriangle, accent: stuckGames.length > 0 ? "text-amber-600" : null },
   ];
 
   const fmtDate = (d) => {
@@ -234,7 +275,7 @@ export default function CommandCenter() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3 mb-6">
           {stats.map((s) => (
             <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-4">
               <s.icon className={`w-4 h-4 ${s.accent || "text-slate-400"}`} />
@@ -247,9 +288,9 @@ export default function CommandCenter() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
           <div className="bg-white rounded-xl border border-slate-200 p-5">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Live now</h2>
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">Live today</h2>
             {liveGames.length === 0 ? (
-              <p className="text-sm text-slate-400 py-4">No games in progress right now.</p>
+              <p className="text-sm text-slate-400 py-4">No games in progress today.</p>
             ) : (
               <div className="divide-y divide-slate-100">
                 {liveGames.map((g) => (
@@ -282,6 +323,98 @@ export default function CommandCenter() {
                     <div className="text-xs text-slate-500 text-right">{fmtDate(g.game_date)}</div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600" /> Needs attention
+            </h2>
+            {needsAttentionTotal === 0 ? (
+              <p className="text-sm text-slate-400 py-2">Nothing to clean up right now.</p>
+            ) : (
+              <div className="space-y-5">
+                {stuckGames.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700">Stuck games ({stuckGames.length})</p>
+                    <p className="text-xs text-slate-400 mt-0.5 mb-1.5">Still marked in progress but tipped over 12 hours ago. Finish or delete them so they stop counting as live.</p>
+                    <div className="divide-y divide-slate-100">
+                      {stuckGames.slice(0, 6).map((g) => (
+                        <Link key={g.id} to={`${createPageUrl("LiveBoxScore")}?gameId=${g.id}`} className="flex items-center justify-between py-2 text-sm hover:bg-slate-50 -mx-2 px-2 rounded">
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 truncate">{teamName(g.home_team_id)} vs {teamName(g.away_team_id)}</div>
+                            <div className="text-xs text-slate-500 mt-0.5 truncate">{leagueName(g.league_id)}</div>
+                          </div>
+                          <div className="text-xs text-slate-400 flex-shrink-0 ml-3">{g.game_date ? ago(g.game_date) : "no date"}</div>
+                        </Link>
+                      ))}
+                    </div>
+                    {stuckGames.length > 6 && <p className="text-xs text-slate-400 mt-1">and {stuckGames.length - 6} more</p>}
+                    <Link to={createPageUrl("GameLog")} className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 mt-2">Manage in Game Log <ArrowRight className="w-3 h-3" /></Link>
+                  </div>
+                )}
+                {orphanGames.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-700">Orphan games ({orphanGames.length})</p>
+                    <p className="text-xs text-slate-400 mt-0.5 mb-1.5">The league these games belong to no longer exists, so they show as "Unknown league" across the app.</p>
+                    <div className="divide-y divide-slate-100">
+                      {orphanGames.slice(0, 6).map((g) => (
+                        <div key={g.id} className="flex items-center justify-between py-2 text-sm">
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 truncate">{teamName(g.home_team_id)} vs {teamName(g.away_team_id)}</div>
+                            <div className="text-xs text-slate-500 mt-0.5">{g.status}</div>
+                          </div>
+                          <div className="text-xs text-slate-400 flex-shrink-0 ml-3">{g.game_date ? new Date(g.game_date).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "no date"}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {orphanGames.length > 6 && <p className="text-xs text-slate-400 mt-1">and {orphanGames.length - 6} more</p>}
+                  </div>
+                )}
+                {noRoleUsers.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">Users with no role ({noRoleUsers.length})</p>
+                    <p className="text-xs text-slate-400 mt-0.5 mb-1.5">Signed up but never assigned a role, so they cannot do anything in the app yet.</p>
+                    <div className="divide-y divide-slate-100">
+                      {noRoleUsers.slice(0, 6).map((u) => (
+                        <div key={u.id} className="flex items-center justify-between py-2 text-sm">
+                          <div className="min-w-0">
+                            <div className="font-medium text-slate-900 truncate">{u.full_name || u.email || "Unknown user"}</div>
+                            <div className="text-xs text-slate-500 mt-0.5 truncate">{u.email || ""}</div>
+                          </div>
+                          <div className="text-xs text-slate-400 flex-shrink-0 ml-3">{u.created_date ? ago(u.created_date) : ""}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {noRoleUsers.length > 6 && <p className="text-xs text-slate-400 mt-1">and {noRoleUsers.length - 6} more</p>}
+                    <Link to={createPageUrl("People")} className="inline-flex items-center gap-1 text-xs font-semibold text-slate-700 mt-2">Assign roles on People <ArrowRight className="w-3 h-3" /></Link>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="bg-white rounded-xl border border-slate-200 p-5">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-600" /> Registered users by role
+            </h2>
+            {roleRows.length === 0 ? (
+              <p className="text-sm text-slate-400 py-2">No users yet.</p>
+            ) : (
+              <div>
+                {roleRows.map((r) => (
+                  <div key={r.key} className="flex items-center gap-3 my-1.5 text-sm">
+                    <span className="w-28 text-slate-600 flex-shrink-0 truncate">{r.label}</span>
+                    <span className="flex-1 h-4 bg-slate-100 rounded overflow-hidden"><span className="block h-full bg-blue-500 rounded" style={{ width: `${Math.max((r.count / roleMax) * 100, 2)}%` }} /></span>
+                    <span className="w-12 text-right tabular-nums text-slate-700">{r.count}</span>
+                  </div>
+                ))}
+                <div className="border-t border-slate-100 mt-3 pt-3 flex items-center justify-between text-sm">
+                  <span className="text-slate-600">Total registered</span>
+                  <span className="font-semibold text-slate-900 tabular-nums">{users.length.toLocaleString()}</span>
+                </div>
               </div>
             )}
           </div>
