@@ -61,6 +61,24 @@ export default function CommandCenter() {
     },
   });
 
+  // CC_ACTIVE_USERS_V1 — real engagement, not just headcount. getLoginAnalytics
+  // already computes 14 days of unique logins, so this is one extra call. The
+  // function is app_admin only, so ops_admin simply never fires it and the
+  // panel below does not render for them.
+  const isAppAdmin = currentUser?.user_type === "app_admin";
+  const { data: activity, isError: activityError } = useQuery({
+    queryKey: ["cc_activity"],
+    enabled: isAppAdmin,
+    staleTime: 300000,
+    queryFn: async () => {
+      let tz;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { tz = undefined; }
+      const res = await base44.functions.invoke("getLoginAnalytics", { action: "daily_active", tz });
+      const d = res?.data || res || {};
+      return { rows: Array.isArray(d.rows) ? d.rows : [], weeklyUnique: d.weekly_unique || 0 };
+    },
+  });
+
   const rawLeagues = cc.leagues || [];
   const rawTeams = cc.teams || [];
   const rawPlayers = cc.players || [];
@@ -149,6 +167,19 @@ export default function CommandCenter() {
     .map(([k, v]) => ({ key: k, label: k === "__none" ? "No role yet" : (ROLE_LABELS[k] || k.replace(/_/g, " ")), count: v }))
     .sort((a, b) => b.count - a.count);
   const roleMax = Math.max(...roleRows.map((r) => r.count), 1);
+
+  // Login activity, oldest day first so the chart reads left to right.
+  const activityRows = [...(activity?.rows || [])].sort((a, b) => String(a.date).localeCompare(String(b.date)));
+  const activityMax = Math.max(...activityRows.map((r) => r.unique_users || 0), 1);
+  const todayActive = activityRows.length ? (activityRows[activityRows.length - 1].unique_users || 0) : 0;
+  const logins14 = activityRows.reduce((s, r) => s + (r.total_logins || 0), 0);
+  const weeklyUnique = activity?.weeklyUnique || 0;
+  const activeShare = users.length ? Math.round((weeklyUnique / users.length) * 100) : 0;
+  const shortDay = (key) => {
+    const parts = String(key).split("-");
+    if (parts.length !== 3) return String(key);
+    return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).toLocaleDateString([], { month: "short", day: "numeric" });
+  };
   const upcoming = games
     .filter((g) => g.status === "scheduled" && g.game_date && new Date(g.game_date) >= now && new Date(g.game_date) <= weekAhead)
     .sort((a, b) => new Date(a.game_date) - new Date(b.game_date))
@@ -334,6 +365,41 @@ export default function CommandCenter() {
             </div>
           ))}
         </div>
+
+        {isAppAdmin && (
+          <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-orange-600" /> Active users
+            </h2>
+            {activityError ? (
+              <p className="text-sm text-slate-400 py-2">Login analytics are not available right now.</p>
+            ) : activityRows.length === 0 ? (
+              <p className="text-sm text-slate-400 py-2">No login data yet.</p>
+            ) : (
+              <div className="flex flex-col md:flex-row md:items-end gap-6">
+                <div className="flex-shrink-0">
+                  <div className="text-3xl font-bold text-slate-900 tabular-nums">{weeklyUnique.toLocaleString()}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">unique users in the last 7 days</div>
+                  <div className="text-xs text-slate-400 mt-2">{activeShare}% of {users.length.toLocaleString()} registered users</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{todayActive.toLocaleString()} active today, {logins14.toLocaleString()} logins over 14 days</div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-end gap-1 h-24">
+                    {activityRows.map((r) => (
+                      <div key={r.date} className="flex-1 flex flex-col justify-end" title={`${shortDay(r.date)}: ${r.unique_users || 0} users, ${r.total_logins || 0} logins`}>
+                        <div className="w-full rounded-t bg-orange-500" style={{ height: `${Math.max(((r.unique_users || 0) / activityMax) * 100, 3)}%` }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-xs text-slate-400 mt-1.5">
+                    <span>{shortDay(activityRows[0].date)}</span>
+                    <span>Today</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
           <div className="bg-white rounded-xl border border-slate-200 p-5">
