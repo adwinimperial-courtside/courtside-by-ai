@@ -258,6 +258,24 @@ export const HELP_TOPICS = [
     ],
   },
   {
+    key: "streamcrew",
+    title: "Stream Crew",
+    category: "video",
+    roles: ["league_admin", "app_admin"],
+    summary:
+      "Invite the people who run your live stream, so they can set up the game overlay for your league.",
+    tips: [
+      "Type the email address of the person who runs your stream, pick the league, and press Send invitation. They get an email asking them to register.",
+      "They must sign up using the exact email address you invited. If they sign up with a different address, for example a Facebook or Apple account with another email, the invitation will not be found.",
+      "If that happens, use Resend on the pending invitation and send it to the address they actually used.",
+      "Invitations last 14 days. An expired invitation stays in the pending list and can be resent at any time.",
+      "You do not have to approve anything afterwards. Sending the invitation is the approval, so they get access as soon as they accept.",
+      "One person can hold only one role per league. If you try to invite someone who is already a coach or player in that league, the invitation is blocked and you are told which role they hold.",
+      "Someone who coaches in one league can still be a video admin in another. Their coach role is not affected.",
+      "Remove access takes effect immediately. Their account stays, only this league's access is withdrawn.",
+    ],
+  },
+  {
     key: "gameoverlay",
     title: "Game Overlay",
     category: "video",
