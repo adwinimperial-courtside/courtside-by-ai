@@ -285,12 +285,16 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     return [];
   };
 
+  // VIDEO_ADMIN_PER_LEAGUE_V1 - also show Game Overlay to anyone marked video_admin for
+  // at least one league in their per-league role map, not only to accounts whose global
+  // user_type is video_admin.
   const getVisibleVideoAdminItems = () => {
     if (!currentUser) return [];
     if (
       currentUser.user_type === "app_admin" ||
       currentUser.user_type === "league_admin" ||
-      currentUser.user_type === "video_admin"
+      currentUser.user_type === "video_admin" ||
+      Object.values(currentUser.league_role_map || {}).includes("video_admin")
     ) return [overlayItem];
     return [];
   };

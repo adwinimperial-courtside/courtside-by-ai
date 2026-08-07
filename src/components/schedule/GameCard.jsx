@@ -81,7 +81,11 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
 
   const { isLeagueAdmin, isAppAdmin } = useEffectiveRole(currentUser, game?.league_id);
   const isAdmin = isAppAdmin || isLeagueAdmin;
-  const isVideoAdmin = currentUser?.user_type === "video_admin";
+  // VIDEO_ADMIN_PER_LEAGUE_V1 - video admin can be held as a per-league role. A coach
+  // or player who runs the stream for a different league keeps their global role and is
+  // marked video_admin only in league_role_map, so both places must be checked.
+  const isVideoAdmin = currentUser?.user_type === "video_admin" ||
+    (currentUser?.league_role_map || {})[game?.league_id] === "video_admin";
   const canAccessOverlay = isAppAdmin || isLeagueAdmin || isVideoAdmin;
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;

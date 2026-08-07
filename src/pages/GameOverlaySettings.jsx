@@ -93,10 +93,14 @@ export default function GameOverlaySettingsPage() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // VIDEO_ADMIN_PER_LEAGUE_V1 - video admin can be held as a per-league role, so a user
+  // whose global type is coach or player may still be a video admin somewhere. The league
+  // list below is already filtered to assigned_league_ids, so access stays scoped.
   const canAccess = (user) =>
     user?.user_type === "app_admin" ||
     user?.user_type === "league_admin" ||
-    user?.user_type === "video_admin";
+    user?.user_type === "video_admin" ||
+    Object.values(user?.league_role_map || {}).includes("video_admin");
 
   useEffect(() => {
     const load = async () => {

@@ -1,7 +1,12 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
 // APPROVAL_V2_PER_LEAGUE marker
-const ROLE_PRIORITY = { app_admin: 5, league_admin: 4, coach: 3, player: 2, viewer: 1 };
+// VIDEO_ADMIN_PRIORITY_V1 - video_admin was missing here, so it scored 0 and highestRole
+// always discarded it. A video admin who later requested Fan access to another league was
+// silently demoted to viewer. It sits above viewer and below player because it is a crew
+// role, not a step up the ladder: a coach or player who also runs the stream keeps the
+// higher global role, and their per-league role map records the video admin assignment.
+const ROLE_PRIORITY = { app_admin: 5, league_admin: 4, coach: 3, player: 2, video_admin: 1.5, viewer: 1 };
 function highestRole(a, b) {
   const pa = ROLE_PRIORITY[a] || 0;
   const pb = ROLE_PRIORITY[b] || 0;
