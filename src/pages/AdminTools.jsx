@@ -28,6 +28,11 @@ export default function AdminTools() {
   const [pinBusy, setPinBusy] = useState(false);
   const [pinResult, setPinResult] = useState(null);
   const [pinError, setPinError] = useState('');
+
+  // DEFAULT_RESULT_SCORE_V1 — backfill 20-0 onto existing default-result games
+  const [dwsBusy, setDwsBusy] = useState(false);
+  const [dwsResult, setDwsResult] = useState(null);
+  const [dwsError, setDwsError] = useState('');
   const queryClient = useQueryClient();
 
   const { data: currentUser } = useQuery({
@@ -243,6 +248,55 @@ export default function AdminTools() {
       setPinError(e?.message || 'Failed to load award settings');
     } finally {
       setPinBusy(false);
+    }
+  };
+
+  const runDefaultWinnerScoreBackfill = async (dryRun) => {
+    setDwsBusy(true);
+    setDwsError('');
+    if (dryRun) setDwsResult(null);
+    try {
+      const activeLeagueIds = new Set((leagues || []).filter(l => !l.is_archived).map(l => l.id));
+      const PAGE = 1000;
+      let allDefaults = [], skip = 0;
+      while (true) {
+        const page = await base44.entities.Game.filter({ is_default_result: true }, '-game_date', PAGE, skip);
+        if (!page || page.length === 0) break;
+        allDefaults = allDefaults.concat(page);
+        skip += page.length;
+        if (page.length < PAGE) break;
+      }
+      const toFix = allDefaults.filter(g => {
+        if (!activeLeagueIds.has(g.league_id)) return false;
+        const isHomeWinner = g.default_winner_team_id === g.home_team_id;
+        const wantHome = isHomeWinner ? 20 : 0;
+        const wantAway = isHomeWinner ? 0 : 20;
+        return (g.home_score || 0) !== wantHome || (g.away_score || 0) !== wantAway;
+      });
+      if (dryRun) {
+        setDwsResult({ mode: 'preview', count: toFix.length, scanned: allDefaults.length });
+      } else {
+        const errors = [];
+        let done = 0;
+        for (const g of toFix) {
+          try {
+            const isHomeWinner = g.default_winner_team_id === g.home_team_id;
+            await base44.entities.Game.update(g.id, {
+              home_score: isHomeWinner ? 20 : 0,
+              away_score: isHomeWinner ? 0 : 20,
+            });
+            done++;
+          } catch (e) {
+            errors.push(`${g.id}: ${e?.message || 'failed'}`);
+          }
+        }
+        setDwsResult({ mode: 'committed', count: done, errors });
+        queryClient.invalidateQueries({ queryKey: ['games'] });
+      }
+    } catch (e) {
+      setDwsError(e?.message || 'Backfill failed');
+    } finally {
+      setDwsBusy(false);
     }
   };
 
@@ -551,6 +605,59 @@ export default function AdminTools() {
                             {backfillResult.errors.map((e, i) => (
                               <li key={i}>• {e.email}: {e.error}</li>
                             ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* DEFAULT_RESULT_SCORE_V1 — backfill 20-0 score onto existing default-result games, active leagues only */}
+              <Card className="border-slate-200 shadow-lg border-amber-200">
+                <CardHeader className="border-b border-slate-200 bg-amber-50">
+                  <CardTitle className="text-xl flex items-center gap-2 text-amber-800">
+                    <Trophy className="w-5 h-5" />
+                    Backfill Default-Win Scores
+                  </CardTitle>
+                  <p className="text-sm text-amber-700 mt-2">
+                    Sets the 20-0 nominal score on existing default/forfeit-result games so points-for/against reflect them. Active leagues only — archived leagues are skipped and left as-is. Safe to run more than once. Always Preview first, then Run.
+                  </p>
+                </CardHeader>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="flex flex-wrap gap-3">
+                    <Button
+                      onClick={() => runDefaultWinnerScoreBackfill(true)}
+                      disabled={dwsBusy}
+                      className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50"
+                    >
+                      <RefreshCw className={`w-4 h-4 mr-2 ${dwsBusy ? 'animate-spin' : ''}`} />
+                      Preview
+                    </Button>
+                    <Button
+                      onClick={() => runDefaultWinnerScoreBackfill(false)}
+                      disabled={dwsBusy || !dwsResult || dwsResult.mode !== 'preview' || dwsResult.count === 0}
+                      variant="outline"
+                      className="border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      Run backfill
+                    </Button>
+                  </div>
+                  {dwsError && (
+                    <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{dwsError}</div>
+                  )}
+                  {dwsResult && (
+                    <div className="text-sm">
+                      <div className={`rounded-lg px-3 py-2 mb-3 font-medium ${dwsResult.mode === 'committed' ? 'bg-amber-50 text-amber-800 border border-amber-200' : 'bg-slate-50 text-slate-700 border border-slate-200'}`}>
+                        {dwsResult.mode === 'committed'
+                          ? `Done. Updated ${dwsResult.count} game${dwsResult.count === 1 ? '' : 's'}.`
+                          : `Preview — would update ${dwsResult.count} game${dwsResult.count === 1 ? '' : 's'} (scanned ${dwsResult.scanned} default-result game${dwsResult.scanned === 1 ? '' : 's'} across all leagues).`}
+                      </div>
+                      {(dwsResult.errors || []).length > 0 && (
+                        <div className="text-red-600 mt-2">
+                          <div className="font-semibold mb-1">{dwsResult.errors.length} error(s):</div>
+                          <ul className="space-y-1">
+                            {dwsResult.errors.map((e, i) => (<li key={i}>• {e}</li>))}
                           </ul>
                         </div>
                       )}

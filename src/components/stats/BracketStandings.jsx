@@ -18,11 +18,13 @@ function computeStandings(teams, games) {
         else if (game.default_loser_team_id === team.id) losses++;
         return;
       }
+      // DEFAULT_RESULT_SCORE_V1 — default games now carry a real 20-0 score;
+      // points-for/against count them too.
       const isHome = game.home_team_id === team.id;
       const ts = isHome ? (game.home_score || 0) : (game.away_score || 0);
       const os = isHome ? (game.away_score || 0) : (game.home_score || 0);
       if (ts > os) wins++; else losses++;
-      if (!game.is_default_result) { pointsFor += ts; pointsAgainst += os; }
+      pointsFor += ts; pointsAgainst += os;
     });
     const total = wins + losses;
     const winPct = total > 0 ? parseFloat((wins / total * 100).toFixed(1)) : 0;
@@ -33,14 +35,17 @@ function computeStandings(teams, games) {
     let wins = 0, losses = 0, pf = 0, pa = 0;
     subGames.forEach(g => {
       if (g.home_team_id !== teamId && g.away_team_id !== teamId) return;
-      if (g.is_default_result) {
-        if (g.default_winner_team_id === teamId) wins++;
-        else if (g.default_loser_team_id === teamId) losses++;
-        return;
-      }
+      // DEFAULT_RESULT_SCORE_V1 — win/loss still decided by the explicit
+      // winner/loser id (not score comparison), but points now count too.
       const isHome = g.home_team_id === teamId;
       const ts = isHome ? (g.home_score || 0) : (g.away_score || 0);
       const os = isHome ? (g.away_score || 0) : (g.home_score || 0);
+      if (g.is_default_result) {
+        if (g.default_winner_team_id === teamId) wins++;
+        else if (g.default_loser_team_id === teamId) losses++;
+        pf += ts; pa += os;
+        return;
+      }
       if (ts > os) wins++; else losses++;
       pf += ts; pa += os;
     });

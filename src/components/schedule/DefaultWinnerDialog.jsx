@@ -26,6 +26,8 @@ export default function DefaultWinnerDialog({ open, onOpenChange, game, homeTeam
     if (!selectedWinnerTeamId) return;
     setSaving(true);
     try {
+      // DEFAULT_RESULT_SCORE_V1 — 20-0 nominal score, winner gets 20
+      const isHomeWinner = selectedWinnerTeamId === homeTeam?.id;
       await base44.entities.Game.update(game.id, {
         status: "completed",
         result_type: "default",
@@ -33,6 +35,8 @@ export default function DefaultWinnerDialog({ open, onOpenChange, game, homeTeam
         default_winner_team_id: selectedWinnerTeamId,
         default_loser_team_id: loserTeam?.id || "",
         default_reason: reason,
+        home_score: isHomeWinner ? 20 : 0,
+        away_score: isHomeWinner ? 0 : 20,
         exclude_from_awards: true,
         exclude_from_player_stats: true,
         exclude_from_pog: true,

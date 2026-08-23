@@ -30,10 +30,11 @@ export default function TeamStandings({ teams, games, leagues }) {
     const totalGames = wins + losses;
     const winPct = totalGames > 0 ? (wins / totalGames * 100).toFixed(1) : '0.0';
 
-    // Points differential — only for actually played games (exclude defaults)
+    // Points differential — DEFAULT_RESULT_SCORE_V1: default games now carry
+    // a real 20-0 score and count here too.
     let pointsFor = 0;
     let pointsAgainst = 0;
-    completedGames.filter(g => !g.is_default_result).forEach(game => {
+    completedGames.forEach(game => {
       if (game.home_team_id === team.id) {
         pointsFor += game.home_score || 0;
         pointsAgainst += game.away_score || 0;
@@ -58,14 +59,17 @@ export default function TeamStandings({ teams, games, leagues }) {
     let wins = 0, losses = 0, pf = 0, pa = 0;
     subGames.forEach(g => {
       if (g.home_team_id !== teamId && g.away_team_id !== teamId) return;
-      if (g.is_default_result) {
-        if (g.default_winner_team_id === teamId) wins++;
-        else if (g.default_loser_team_id === teamId) losses++;
-        return;
-      }
+      // DEFAULT_RESULT_SCORE_V1 — win/loss still decided by the explicit
+      // winner/loser id (not score comparison), but points now count too.
       const isHome = g.home_team_id === teamId;
       const ts = isHome ? (g.home_score || 0) : (g.away_score || 0);
       const os = isHome ? (g.away_score || 0) : (g.home_score || 0);
+      if (g.is_default_result) {
+        if (g.default_winner_team_id === teamId) wins++;
+        else if (g.default_loser_team_id === teamId) losses++;
+        pf += ts; pa += os;
+        return;
+      }
       if (ts > os) wins++; else losses++;
       pf += ts; pa += os;
     });

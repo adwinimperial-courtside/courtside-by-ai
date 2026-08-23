@@ -109,6 +109,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
         default_winner_team_id: null,
         default_loser_team_id: null,
         default_reason: null,
+        home_score: 0, // DEFAULT_RESULT_SCORE_V1 — clear nominal score on reopen
+        away_score: 0,
         exclude_from_awards: false,
         exclude_from_player_stats: false,
         exclude_from_pog: false,
