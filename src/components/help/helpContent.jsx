@@ -86,6 +86,20 @@ export const HELP_TOPICS = [
     ],
   },
   {
+    key: "seasonrecords",
+    title: "Season Records",
+    category: "main",
+    roles: "all",
+    summary:
+      "The best single-game performance of the season in each stat category — points, rebounds, assists, steals, blocks, three-pointers and free throws.",
+    tips: [
+      "Each card shows one game, not a season total — the single biggest night anyone has had.",
+      "Rebounds combine offensive and defensive rebounds.",
+      "Forfeits and default results are never counted.",
+      "If two or more players are level, every record holder is shown.",
+    ],
+  },
+  {
     key: "liveboxscore",
     title: "Live Box Score",
     category: "main",

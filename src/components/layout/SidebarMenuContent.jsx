@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
-import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, UserPlus, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home, HelpCircle, Sparkles, Video } from "lucide-react";
+import { Trophy, Users, Calendar, BarChart3, Settings, Medal, Target, ClipboardList, Shield, Eye, Layout, ScrollText, UserCog, LineChart, UserCircle, Trash2, HardDrive, Wrench, Link2, SlidersHorizontal, Newspaper, UserPlus, PlusCircle, MessageSquare, Settings2, MonitorPlay, ListOrdered, Home, HelpCircle, Sparkles, Video, Crown } from "lucide-react";
 import {
   SidebarContent,
   SidebarGroup,
@@ -46,6 +46,11 @@ const navigationItems = [
     title: "Award Leaders",
     url: createPageUrl("AwardLeaders"),
     icon: Medal
+  },
+  {
+    title: "Season Records",
+    url: createPageUrl("SeasonRecords"),
+    icon: Crown
   },
   {
     title: "Coach Insights",
@@ -197,6 +202,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
     { title: "Standings", url: createPageUrl("Standings"), icon: ListOrdered },
     { title: "Statistics", url: createPageUrl("Statistics"), icon: BarChart3 },
     { title: "Award Leaders", url: createPageUrl("AwardLeaders"), icon: Medal },
+    { title: "Season Records", url: createPageUrl("SeasonRecords"), icon: Crown },
     { title: "Teams", url: createPageUrl("Teams"), icon: Users },
     { title: "Leagues", url: createPageUrl("Leagues"), icon: Trophy }
   ];
@@ -247,6 +253,7 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
           { title: "Standings", url: createPageUrl("Standings"), icon: ListOrdered },
           { title: "Statistics", url: createPageUrl("Statistics"), icon: BarChart3 },
           { title: "Award Leaders", url: createPageUrl("AwardLeaders"), icon: Medal },
+          { title: "Season Records", url: createPageUrl("SeasonRecords"), icon: Crown },
           { title: "Teams", url: createPageUrl("Teams"), icon: Users },
           { title: "Leagues", url: createPageUrl("Leagues"), icon: Trophy },
           { title: "Coach Insights", url: createPageUrl("CoachInsights"), icon: Target },
