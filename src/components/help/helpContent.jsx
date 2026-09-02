@@ -100,6 +100,20 @@ export const HELP_TOPICS = [
     ],
   },
   {
+    key: "badgehalloffame",
+    title: "Badge Hall of Fame",
+    category: "main",
+    roles: "all",
+    summary:
+      "Every badge in the league, grouped from Legendary down to Common, showing every player who has earned each one.",
+    tips: [
+      "Badges are grouped by difficulty, hardest first — Legendary badges are the rarest and hardest to earn.",
+      "The number next to a player's name is how many times they've earned that badge, not their total badge count.",
+      "The spotlight banner highlights whichever badge currently has the fewest holders league-wide.",
+      "A badge with no holders yet just means nobody has met the requirement — it will fill in as games are played.",
+    ],
+  },
+  {
     key: "liveboxscore",
     title: "Live Box Score",
     category: "main",

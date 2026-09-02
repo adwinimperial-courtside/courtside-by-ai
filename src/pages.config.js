@@ -86,6 +86,7 @@ import UserRoles from './pages/UserRoles';
 import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
 import Registration from './pages/Registration';
+import BadgeHallOfFame from './pages/BadgeHallOfFame';
 import __Layout from './Layout.jsx';
 
 
@@ -129,6 +130,7 @@ export const PAGES = {
     "LeagueAwardSettings": LeagueAwardSettings,
     "CoachRoster": CoachRoster,
     "Registration": Registration,
+    "BadgeHallOfFame": BadgeHallOfFame,
 }
 
 export const pagesConfig = {
