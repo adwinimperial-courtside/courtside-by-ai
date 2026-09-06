@@ -401,9 +401,9 @@ export function computeMvpRace({ league, teams, games, players, stats, awardSett
     })
     .filter(Boolean)
     .sort((a, b) => {
-      const scoreDiff = Math.round(b.mvpScoreNum * 10) - Math.round(a.mvpScoreNum * 10);
-      if (scoreDiff !== 0) return scoreDiff;
-      return b.avgGisNum - a.avgGisNum;
+      if (b.mvpScoreNum !== a.mvpScoreNum) return b.mvpScoreNum - a.mvpScoreNum;
+      if (b.avgGisNum !== a.avgGisNum) return b.avgGisNum - a.avgGisNum;
+      return b.gp - a.gp;
     })
     .slice(0, topN);
 }
@@ -491,9 +491,9 @@ export function computeDpoyRace({ league, teams, games, players, stats, awardSet
     })
     .filter(Boolean)
     .sort((a, b) => {
-      const scoreDiff = Math.round(b.dpoyScoreNum * 10) - Math.round(a.dpoyScoreNum * 10);
-      if (scoreDiff !== 0) return scoreDiff;
-      return b.avgDefGisNum - a.avgDefGisNum;
+      if (b.dpoyScoreNum !== a.dpoyScoreNum) return b.dpoyScoreNum - a.dpoyScoreNum;
+      if (b.avgDefGisNum !== a.avgDefGisNum) return b.avgDefGisNum - a.avgDefGisNum;
+      return b.gp - a.gp;
     })
     .slice(0, topN);
 }
