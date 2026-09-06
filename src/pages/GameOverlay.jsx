@@ -972,11 +972,11 @@ export default function GameOverlayPage() {
           background: "#0B1F3A",
           borderTop: "1px solid rgba(255,255,255,0.10)",
           textAlign: "center",
-          lineHeight: 1.35,
+          lineHeight: 1.2,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
         }}>
-          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 700, letterSpacing: 0.2 }}>
-            Powered by <span style={{ color: "#ffffff", fontWeight: 800 }}>Courtside by AI</span>
-            <span style={{ color: "rgba(255,255,255,0.28)", padding: "0 7px" }}>|</span>
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 13, fontWeight: 700, letterSpacing: 0.2 }}>
             Is your league next? <span style={{ color: "#ffffff", fontWeight: 800 }}>courtside-by-ai.info</span>
           </span>
         </div>
