@@ -850,8 +850,13 @@ export default function GameOverlayPage() {
                 <rect x="10.65" y="9.4" width="2.7" height="8.2" rx="1" fill="#0B1F3A" />
                 <rect x="14.6" y="6.4" width="2.7" height="11.2" rx="1" fill="#0B1F3A" />
               </svg>
-              <span style={{ color: "#ffffff", fontSize: 12, fontWeight: 800, letterSpacing: 0.4, whiteSpace: "nowrap" }}>
-                COURTSIDE <span style={{ color: "#F26B1F" }}>BY AI</span>
+              <span style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 8, fontWeight: 700, letterSpacing: 0.6, lineHeight: 1, whiteSpace: "nowrap" }}>
+                  POWERED BY
+                </span>
+                <span style={{ color: "#ffffff", fontSize: 12, fontWeight: 800, letterSpacing: 0.4, lineHeight: 1, whiteSpace: "nowrap" }}>
+                  COURTSIDE <span style={{ color: "#F26B1F" }}>BY AI</span>
+                </span>
               </span>
             </span>
           </div>
