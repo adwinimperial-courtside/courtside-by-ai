@@ -843,8 +843,16 @@ export default function GameOverlayPage() {
               borderRadius: 4,
               letterSpacing: 1.2,
             }}>LIVE</div>
-            <span style={{ color: "#9ba3c2", fontSize: 12, fontWeight: 600, letterSpacing: 0.6, whiteSpace: "nowrap" }}>
-              COURTSIDE
+            <span data-marker="OVERLAY_BRAND_V1" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="10.2" fill="#F26B1F" />
+                <rect x="6.7" y="12.6" width="2.7" height="5" rx="1" fill="#0B1F3A" />
+                <rect x="10.65" y="9.4" width="2.7" height="8.2" rx="1" fill="#0B1F3A" />
+                <rect x="14.6" y="6.4" width="2.7" height="11.2" rx="1" fill="#0B1F3A" />
+              </svg>
+              <span style={{ color: "#ffffff", fontSize: 12, fontWeight: 800, letterSpacing: 0.4, whiteSpace: "nowrap" }}>
+                COURTSIDE <span style={{ color: "#F26B1F" }}>BY AI</span>
+              </span>
             </span>
           </div>
           <div data-marker="OVERLAY_TOGGLES_V1" style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -956,6 +964,21 @@ export default function GameOverlayPage() {
               </span>
             </div>
           )}
+        </div>
+
+        {/* OVERLAY_BRAND_V1 attribution strip */}
+        <div style={{
+          padding: "5px 10px",
+          background: "#0B1F3A",
+          borderTop: "1px solid rgba(255,255,255,0.10)",
+          textAlign: "center",
+          lineHeight: 1.35,
+        }}>
+          <span style={{ color: "rgba(255,255,255,0.72)", fontSize: 11, fontWeight: 700, letterSpacing: 0.2 }}>
+            Powered by <span style={{ color: "#ffffff", fontWeight: 800 }}>Courtside by AI</span>
+            <span style={{ color: "rgba(255,255,255,0.28)", padding: "0 7px" }}>|</span>
+            Is your league next? <span style={{ color: "#ffffff", fontWeight: 800 }}>courtside-by-ai.info</span>
+          </span>
         </div>
       </div>
     </div>
