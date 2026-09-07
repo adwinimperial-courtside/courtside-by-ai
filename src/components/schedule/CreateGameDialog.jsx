@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+// SCHEDULE_DIALOG_TEAMS_V1
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 
 const DEFAULT_FORM = { league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5, personalFoulLimit: 5 };
 
@@ -94,8 +97,23 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
     setPerPeriodTimeouts([2, 2, 2, 2]);
   };
 
+  // SCHEDULE_DIALOG_TEAMS_V1
+  // The `teams` prop is scoped to the page-level league filter on Schedule.jsx.
+  // If the user picks a different league inside this dialog, that array can never
+  // contain a match and Home/Away Team render empty. Fetch for the dialog's own
+  // league, preferring the prop whenever it already covers the selected league so
+  // the common case still renders with no extra request and no flicker.
+  const propTeams = (teams || []).filter(t => t.league_id === formData.league_id);
+
+  const { data: dialogTeams = [] } = useQuery({
+    queryKey: ['create_game_dialog_teams', formData.league_id],
+    queryFn: () => base44.entities.Team.filter({ league_id: formData.league_id }, null, 500),
+    enabled: !!open && !!formData.league_id && propTeams.length === 0,
+    staleTime: 60000,
+  });
+
   const leagueTeams = formData.league_id 
-    ? teams.filter(t => t.league_id === formData.league_id)
+    ? (propTeams.length > 0 ? propTeams : dialogTeams)
     : [];
 
   return (
