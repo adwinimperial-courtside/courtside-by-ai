@@ -278,8 +278,8 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                     </Select>
                     <p className="text-xs text-slate-500 mt-1.5">
                       {formData.has_timekeeper
-                        ? "The timekeeper runs the game clock, shot clock and timeouts on the Scoreboard. The scorer only records stats."
-                        : "The scorer starts and stops the clock in the Live Stat Tracker, as today."}
+                        ? "2 people, each logged in to Courtside by AI: the scorer records stats, and the timekeeper runs the clocks and timeouts on the tablet or laptop that shows the TV scoreboard."
+                        : "1 person: the scorer records stats and runs the clock in the Courtside by AI Live Stat Tracker, as today."}
                     </p>
                   </div>
                 )}
