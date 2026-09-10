@@ -67,6 +67,10 @@
       "default": false,
       "description": "True if a timekeeper runs the game clock on the Scoreboard console instead of the scorer"
     },
+    "timekeeper_owner": {
+      "type": "string",
+      "description": "Which Scoreboard console currently runs the clock in timekeeper mode (takeover counter:device id). Written only by the timekeeper console."
+    },
     "game_stage": {
       "type": "string",
       "enum": [
