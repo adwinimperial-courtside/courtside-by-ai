@@ -15,9 +15,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 
-const DEFAULT_FORM = { league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5, personalFoulLimit: 5 };
+const DEFAULT_FORM = { league_id: "", home_team_id: "", away_team_id: "", game_date: "", location: "", game_mode: "timed", game_stage: "regular", exclude_from_awards: false, period_type: "quarters", period_minutes: 10, overtime_minutes: 5, timeoutsPerSegment: 2, teamFoulBonusThreshold: 5, personalFoulLimit: 5, has_timekeeper: false };
 
-export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams, defaultLeagueId }) {
+export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoading, leagues, teams, defaultLeagueId, canSetTimekeeper = false }) {
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [diffTimePeriod, setDiffTimePeriod] = useState(false);
 
@@ -84,6 +84,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
       }
       payload.game_rules = gameRules;
     } else {
+      payload.has_timekeeper = false;
       payload.period_type = null;
       payload.period_count = null;
       payload.period_minutes = null;
@@ -260,6 +261,28 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
 
             {isTimed && (
               <>
+                {canSetTimekeeper && (
+                  <div data-marker="TIMEKEEPER_SETTING_V1">
+                    <Label>Timekeeper</Label>
+                    <Select
+                      value={formData.has_timekeeper ? "yes" : "no"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, has_timekeeper: value === "yes" }))}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No, the scorer runs the clock</SelectItem>
+                        <SelectItem value="yes">Yes, a timekeeper runs the clock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 mt-1.5">
+                      {formData.has_timekeeper
+                        ? "The timekeeper runs the game clock, shot clock and timeouts on the Scoreboard. The scorer only records stats."
+                        : "The scorer starts and stops the clock in the Live Stat Tracker, as today."}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <Label>Period Format</Label>
                   <Select value={formData.period_type} onValueChange={handlePeriodTypeChange}>

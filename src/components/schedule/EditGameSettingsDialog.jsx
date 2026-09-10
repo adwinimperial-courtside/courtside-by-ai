@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/base44Client";
 
-export default function EditGameSettingsDialog({ open, onOpenChange, game, onSaved }) {
+export default function EditGameSettingsDialog({ open, onOpenChange, game, onSaved, canSetTimekeeper = false }) {
   const existingPerPeriod = Array.isArray(game.game_rules?.periodMinutes) ? game.game_rules.periodMinutes : null;
   const [formData, setFormData] = useState({
     game_date: (() => { try { const d = new Date(game.game_date); return game.game_date && !isNaN(d) ? d.toISOString().slice(0, 16) : ""; } catch { return ""; } })(),
@@ -27,6 +27,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
     timeoutsPerSegment: game.game_rules?.timeoutsPerSegment ?? 2,
     teamFoulBonusThreshold: game.game_rules?.teamFoulBonusThreshold ?? 5,
     personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
+    has_timekeeper: !!game.has_timekeeper,
   });
   const [diffTimePeriod, setDiffTimePeriod] = useState(!!existingPerPeriod);
   const defaultPerPeriod = existingPerPeriod || Array((game.period_type || "quarters") === "quarters" ? 4 : 2).fill(game.period_minutes ?? 10);
@@ -94,6 +95,7 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
       }
       payload.game_rules = gameRules;
     } else {
+      payload.has_timekeeper = false;
       payload.period_type = null;
       payload.period_count = null;
       payload.period_minutes = null;
@@ -188,6 +190,28 @@ export default function EditGameSettingsDialog({ open, onOpenChange, game, onSav
 
             {isTimed && (
               <>
+                {canSetTimekeeper && (
+                  <div data-marker="TIMEKEEPER_SETTING_V1">
+                    <Label>Timekeeper</Label>
+                    <Select
+                      value={formData.has_timekeeper ? "yes" : "no"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, has_timekeeper: value === "yes" }))}
+                    >
+                      <SelectTrigger className="mt-1.5">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">No, the scorer runs the clock</SelectItem>
+                        <SelectItem value="yes">Yes, a timekeeper runs the clock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-slate-500 mt-1.5">
+                      {formData.has_timekeeper
+                        ? "The timekeeper runs the game clock, shot clock and timeouts on the Scoreboard. The scorer only records stats."
+                        : "The scorer starts and stops the clock in the Live Stat Tracker, as today."}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <Label>Period Format</Label>
                   <Select value={formData.period_type} onValueChange={handlePeriodTypeChange}>
