@@ -382,6 +382,7 @@ export default function StoryBuilder() {
               home,
               away,
               late: late || wallLate,
+              seq: idx,
             };
             lastScoringEvent = event;
 
@@ -400,6 +401,7 @@ export default function StoryBuilder() {
                 playerName: playerName(l.player_id),
                 teamName: teamName(l.team_id),
                 type: l.stat_type === "steals" ? "steal" : "block",
+                seq: idx,
                 home,
                 away,
               });
@@ -433,9 +435,33 @@ export default function StoryBuilder() {
       const clutch = buildClutchInsights();
       const hasClutch = !!(clutch.decisive || clutch.tyingShotsLate.length > 0 || clutch.clutchDefense.length > 0 || clutch.isOvertime || clutch.winnerMaxDeficit >= 10);
 
+      // STORY_TIMELINE_V1 — clutch plays go to the AI as ONE numbered timeline
+      // in the exact order they happened (not grouped by type), and every
+      // score names the teams, leader first, so the AI knows who was ahead.
+      const TIMELINE_MARKER = "STORY_TIMELINE_V1";
+      const homeLabel = homeTeam?.name || "Home";
+      const awayLabel = awayTeam?.name || "Away";
+      const scoreAt = (h, a) => h === a
+        ? `tied ${h}–${a}`
+        : h > a ? `${homeLabel} ${h} – ${awayLabel} ${a}` : `${awayLabel} ${a} – ${homeLabel} ${h}`;
+      const clutchTimeline = [
+        ...clutch.tyingShotsLate.map(t => ({
+          seq: t.seq,
+          text: `LATE GAME-TYING SHOT: ${t.playerName}'s ${t.shotLabel} levelled the game for ${t.teamName}. Score after the shot: ${scoreAt(t.home, t.away)}.`,
+        })),
+        ...clutch.clutchDefense.map(d => ({
+          seq: d.seq,
+          text: `CLUTCH DEFENSE: ${d.playerName} (${d.teamName}) came up with a huge ${d.type}. Score at that moment: ${scoreAt(d.home, d.away)}.`,
+        })),
+        ...(clutch.decisive ? [{
+          seq: clutch.decisive.seq,
+          text: `GAME-DECIDING PLAY: ${clutch.decisive.playerName}'s ${clutch.decisive.shotLabel} put ${clutch.decisive.teamName} ahead for good. Score after the shot: ${scoreAt(clutch.decisive.home, clutch.decisive.away)}. The lead never changed hands again.${clutch.finalPossessionWinner ? " This was the FINAL scoring play of the game — a true game-winner on the last possession." : ""}`,
+        }] : []),
+      ].sort((a, b) => a.seq - b.seq);
+
       const clutchSection = hasClutch ? `
 CLUTCH MOMENTS DETECTED (reconstructed from the verified play-by-play log — these REALLY happened; build the story around them):
-${clutch.isOvertime ? `- This game went to OVERTIME.\n` : ""}${clutch.winnerMaxDeficit >= 10 ? `- COMEBACK: ${winnerTeam?.name} trailed by as many as ${clutch.winnerMaxDeficit} points and came all the way back to win.\n` : ""}${clutch.finalPeriodLeadChanges >= 2 ? `- The lead changed hands ${clutch.finalPeriodLeadChanges} times in the closing stretch alone.\n` : ""}${clutch.tyingShotsLate.map(t => `- LATE GAME-TYING SHOT: ${t.playerName}'s ${t.shotLabel} levelled the game at ${t.home}–${t.away} for ${t.teamName}.\n`).join("")}${clutch.clutchDefense.map(d => `- CLUTCH DEFENSE: ${d.playerName} (${d.teamName}) came up with a huge ${d.type} with the score at ${d.home}–${d.away}.\n`).join("")}${clutch.decisive ? `- GAME-DECIDING PLAY: ${clutch.decisive.playerName}'s ${clutch.decisive.shotLabel} put ${clutch.decisive.teamName} ahead ${clutch.decisive.home}–${clutch.decisive.away} in the closing stretch — and the lead never changed hands again.${clutch.finalPossessionWinner ? " This was the FINAL scoring play of the game — a true game-winner on the last possession." : ""}\n` : ""}` : `
+${clutch.isOvertime ? `- This game went to OVERTIME.\n` : ""}${clutch.winnerMaxDeficit >= 10 ? `- COMEBACK: ${winnerTeam?.name} trailed by as many as ${clutch.winnerMaxDeficit} points and came all the way back to win.\n` : ""}${clutch.finalPeriodLeadChanges >= 2 ? `- The lead changed hands ${clutch.finalPeriodLeadChanges} times in the closing stretch alone.\n` : ""}${clutchTimeline.length > 0 ? `LATE-GAME TIMELINE — numbered in the EXACT order these plays happened (#1 came first). Each score is the score at that instant, leading team first:\n${clutchTimeline.map((e, i) => `${i + 1}. ${e.text}\n`).join("")}` : ""}` : `
 CLUTCH MOMENTS: none detected — the game was not decided by a single late play. Build the story around momentum, runs, and the standout performances instead.
 `;
 
@@ -577,6 +603,8 @@ WRITING STYLE:
 MANDATORY RULES:
 - ONLY use numbers from the OFFICIAL VERIFIED PLAYER STATS above — never invent or estimate stats
 - ONLY describe clutch moments that are explicitly listed in the CLUTCH MOMENTS section — never invent a buzzer-beater, game-winner, or clutch play that is not listed
+- The LATE-GAME TIMELINE is in exact chronological order. When you mention more than one clutch moment, tell them in that same order. Only use words like "then", "that's when", "moments later" or "after that" to link two moments if the second one has a HIGHER number in the timeline. Never place an earlier moment after a later one
+- Each clutch moment's score is shown leading team first — always make it clear which team was ahead at that moment
 - NEVER state an exact clock time (like "with 4 seconds left") — the game clock is not tracked in the log. Say "in the closing stretch," "on the final possession," or "in the dying moments" instead
 - NEVER mention free throw percentage, free throw accuracy, or "perfect from the line" — free throw misses are not tracked in this league
 - NEVER swap winner and loser or reverse the score
