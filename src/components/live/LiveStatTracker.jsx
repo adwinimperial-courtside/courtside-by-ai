@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 
 import ScoreHeader from "./ScoreHeader";
+import TimekeeperScoreHeader from "./TimekeeperScoreHeader";
 import EndOfPeriodModal from "./EndOfPeriodModal";
 import { findPlayerOfGame } from "../utils/pogCalculator";
 import EmergencyLineupRepair from "./EmergencyLineupRepair";
@@ -219,6 +220,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const _totalPeriods = game.period_count || (game.period_type === 'halves' ? 2 : 4);
   const currentPeriod = game.clock_period ?? 1;
+  const isTimekeeperGame = game.has_timekeeper === true || liveGame?.has_timekeeper === true;
   const isInFinalReview = (
     (game.clock_time_left === 0 || game.clock_time_left == null) &&
     !game.clock_running &&
@@ -428,18 +430,20 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         playerGameClockStateRef.current[stat.player_id] = null;
       });
 
-      updateGameMutation.mutate({
-        gameId: game.id,
-        data: {
-          clock_running: false,
-          clock_time_left: 0,
-          clock_started_at: null,
-          period_status: 'completed',
-        }
-      });
+      if (!isTimekeeperGame) {
+        updateGameMutation.mutate({
+          gameId: game.id,
+          data: {
+            clock_running: false,
+            clock_time_left: 0,
+            clock_started_at: null,
+            period_status: 'completed',
+          }
+        });
+      }
     }
 
-  }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers]);
+  }, [game.clock_running, game.clock_time_left, game.game_mode, game.clock_started_at, game.clock_period, updateGameMutation, activePlayers, isTimekeeperGame]);
 
   // PERIOD_END_RESET_V1 — this reset used to live inside the effect above,
   // AFTER an early return that fires whenever the clock isn't running, so it
@@ -1861,7 +1865,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             <Trophy className="w-4 h-4 mr-1" />End Game
           </Button>
         </div>
-        <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
+        {isTimekeeperGame ? (
+          <TimekeeperScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onEndGame={handleEndGameFromModal} playerStats={existingStats} />
+        ) : (
+          <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
+        )}
         <div className="mt-3 space-y-3">
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
           <div className="bg-gradient-to-r from-indigo-100/95 to-purple-100/95 border-2 border-indigo-300/50 rounded-2xl p-3">
@@ -1933,7 +1941,11 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         </div>
 
         <div className="flex-shrink-0 mb-2">
-          <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
+          {isTimekeeperGame ? (
+            <TimekeeperScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onEndGame={handleEndGameFromModal} playerStats={existingStats} />
+          ) : (
+            <ScoreHeader game={liveGame} homeTeam={homeTeam} awayTeam={awayTeam} onGameUpdate={onGameUpdate} onEndGame={handleEndGameFromModal} lineupBlocked={!!repairMode} playerStats={existingStats} />
+          )}
         </div>
 
         <div className="flex gap-3 flex-1 min-h-0">
