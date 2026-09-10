@@ -239,7 +239,7 @@ export default function SchedulePage() {
            defaultLeagueId={selectedLeague}
            onSubmit={(data) => createGameMutation.mutate(data)}
            isLoading={createGameMutation.isPending}
-           canSetTimekeeper={isAppAdmin}
+           canSetTimekeeper={isAppAdmin || isLeagueAdmin}
            leagues={visibleLeagues}
            teams={visibleTeams}
          />

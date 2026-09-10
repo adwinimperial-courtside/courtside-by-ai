@@ -635,7 +635,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
         onOpenChange={setShowEditSettings}
         game={liveGame}
         onSaved={() => { onGameUpdated && onGameUpdated(); }}
-        canSetTimekeeper={isAppAdmin}
+        canSetTimekeeper={isAdmin}
       />
       )}
 
