@@ -42,6 +42,11 @@ const SCOREBOARD_CSS = `
 .sbx-shotwrap{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:17px;visibility:hidden}
 .sbx-shotbox{width:353px;height:238px;border-radius:27px}
 .sbx-shotlbl{font-size:42px;font-weight:900;letter-spacing:10px;color:#AFC0DC;line-height:1}
+.sbx-shotwrap.sbx-on{visibility:visible}
+.sbx-on .sbx-shotbox{display:flex;align-items:center;justify-content:center;font-family:"Archivo Black","Arial Black",sans-serif;font-size:196px;line-height:1;color:#000}
+.sbx-shot-g{background:#22C55E}.sbx-shot-y{background:#FFC928}.sbx-shot-r{background:#E0241B;color:#fff !important}.sbx-shot-dash{background:#1B2B4A;color:#AFC0DC !important}
+.sbx-shot-flash{animation:sbxflash .5s steps(1) infinite}
+.sbx-msg.sbx-break{background:#10254A;border-top:5px solid #2F6BFF}
 .sbx-strip{position:absolute;left:0;right:0;bottom:0;height:69px;background:#07101F;border-top:5px solid #F26B1F;display:flex;align-items:center;justify-content:space-between;
   padding:0 46px;font-size:33px;font-weight:800;color:#AFC0DC}
 .sbx-strip b{color:#fff;font-weight:900;letter-spacing:1px}
@@ -54,7 +59,7 @@ const SCOREBOARD_CSS = `
 .sbx-board.sbx-fallback .sbx-strip{font-size:28px}
 .sbx-board.sbx-fallback .sbx-msg{font-size:50px}
 @keyframes sbxflash{50%{opacity:.25}}
-@media (prefers-reduced-motion:reduce){.sbx-dot{animation:none}}
+@media (prefers-reduced-motion:reduce){.sbx-dot{animation:none}.sbx-shot-flash{animation:none}}
 `;
 
 function Num({ text, className }) {
@@ -196,8 +201,8 @@ export default function ScoreboardDisplay({ view, homeTeam, awayTeam, leagueLogo
             <hr />
             <div className="sbx-period">{view.periodText}</div>
           </div>
-          <div className="sbx-shotwrap" aria-hidden="true">
-            <div className="sbx-shotbox" />
+          <div className={`sbx-shotwrap ${view.shot ? "sbx-on" : ""}`} aria-hidden="true" data-marker="SCOREBOARD_SHOTCLOCK_V1">
+            <div className={`sbx-shotbox ${view.shot ? `sbx-shot-${view.shot.tone}` : ""} ${view.shot?.flash ? "sbx-shot-flash" : ""}`}>{view.shot ? view.shot.text : null}</div>
             <span className="sbx-shotlbl">SHOT CLOCK</span>
           </div>
         </div>
@@ -219,6 +224,12 @@ export default function ScoreboardDisplay({ view, homeTeam, awayTeam, leagueLogo
       {msg && msg.type === "timeout" && (
         <div className="sbx-msg sbx-timeout">
           <span>{msg.team} timeout</span>
+          <span className="sbx-t">{msg.time}</span>
+        </div>
+      )}
+      {msg && msg.type === "break" && (
+        <div className="sbx-msg sbx-break">
+          <span>{msg.label}</span>
           <span className="sbx-t">{msg.time}</span>
         </div>
       )}
