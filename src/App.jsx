@@ -35,6 +35,7 @@ import HelpCenterPage from './pages/HelpCenter';
 import LeagueGroupsPage from './pages/LeagueGroups';
 import AcceptInvitePage from './pages/AcceptInvite';
 import SeasonRecordsPage from './pages/SeasonRecords';
+import ScoreboardPage from './pages/Scoreboard';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -127,6 +128,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/GameOverlay" element={<GameOverlayPage />} />
+      <Route path="/Scoreboard" element={<ScoreboardPage />} />
       {/* JOIN_KOE_ROUTE_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new KOE signups */}
       <Route path="/JoinKOE" element={<JoinKOEPage />} />
       {/* JOIN_FINNOY_COACH_V1 — rendered OUTSIDE the Layout so the RegistrationGate never intercepts new coach signups */}
