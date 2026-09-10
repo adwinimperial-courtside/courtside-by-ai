@@ -48,6 +48,7 @@ export const HELP_TOPICS = [
     tips: [
       "Tap a completed game to open its box score with full player stats.",
       "Live games are marked while they are being tracked in real time.",
+      "Admins: the Scoreboard button on a scheduled or live game opens a TV scoreboard for that game in a new tab.",
     ],
   },
   {
@@ -301,6 +302,23 @@ export const HELP_TOPICS = [
       "One person can hold only one role per league. If you try to invite someone who is already a coach or player in that league, the invitation is blocked and you are told which role they hold.",
       "Someone who coaches in one league can still be a video admin in another. Their coach role is not affected.",
       "Remove access takes effect immediately. Their account stays, only this league's access is withdrawn.",
+    ],
+  },
+  {
+    key: "scoreboard",
+    title: "TV Scoreboard",
+    category: "admin",
+    roles: ["league_admin", "app_admin", "ops_admin"],
+    summary: "Show the live score, clock, fouls and timeouts on a TV at the gym.",
+    tips: [
+      "Open it with the Scoreboard button on a game in the Schedule. It opens in a new tab on the device connected to the TV.",
+      "Connect a laptop or tablet to the TV with an HDMI cable, or open the page in a smart TV's web browser.",
+      "Tap Start scoreboard. It goes full screen and keeps the screen on. If it leaves full screen, double-click the scoreboard to go back.",
+      "The scorer runs the game clock in the Live Stat Tracker as usual. The TV follows the score, clock, quarter, team fouls and timeouts by itself. Nobody needs to touch the TV.",
+      "When the scorer records a timeout, a 60-second countdown appears. It disappears when the clock restarts.",
+      "The TV needs internet. If the connection drops, an orange bar warns that the score may be delayed.",
+      "Only timed games have a scoreboard. Untimed games have no clock.",
+      "A league logo with a transparent background looks best on the dark scoreboard. Set it in Game Overlay settings.",
     ],
   },
   {

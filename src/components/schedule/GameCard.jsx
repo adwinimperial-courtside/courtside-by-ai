@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import DefaultWinnerDialog from "./DefaultWinnerDialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings, AlertTriangle, RotateCcw, MonitorPlay, Copy, Check } from "lucide-react";
+import { Calendar, MapPin, Play, CheckCircle, ChevronDown, ChevronUp, Trophy, BarChart3, Settings, AlertTriangle, RotateCcw, MonitorPlay, Copy, Check, Tv } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -87,6 +87,8 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const isVideoAdmin = currentUser?.user_type === "video_admin" ||
     (currentUser?.league_role_map || {})[game?.league_id] === "video_admin";
   const canAccessOverlay = isAppAdmin || isLeagueAdmin || isVideoAdmin;
+  const canOpenScoreboard = isAppAdmin || isLeagueAdmin || currentUser?.user_type === "ops_admin";
+  const isTimedGame = liveGame.game_mode === "timed" || (!liveGame.game_mode && !!liveGame.period_minutes);
   const isDefaultResult = !!liveGame.is_default_result;
   const isExcludedFromAwards = !!liveGame.exclude_from_awards && !isDefaultResult;
 
@@ -434,6 +436,23 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                     </Button>
                   )}
                 </>
+              )}
+              {canOpenScoreboard && !isDefaultResult && isTimedGame && (liveGame.status === 'scheduled' || liveGame.status === 'in_progress') && (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="w-full sm:w-auto border-2 border-[#0B1F3A] text-[#0B1F3A] font-semibold hover:bg-slate-50"
+                >
+                  <a
+                    href={`${window.location.origin}/Scoreboard?gameId=${liveGame.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-marker="SCOREBOARD_BUTTON_V1"
+                  >
+                    <Tv className="w-4 h-4 mr-2" />
+                    Scoreboard
+                  </a>
+                </Button>
               )}
               {liveGame.status === 'completed' && !isDefaultResult && (
                 <Button
