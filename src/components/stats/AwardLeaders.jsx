@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trophy, Shield } from "lucide-react";
 import MobileAwardCards from "./MobileAwardCards";
 import { computeMvpRace, computeDpoyRace } from "./statEngine";
+import { buildAwardBaseline, buildAwardMovement, formatAwardDay, RankMove, ScoreMove } from "./AwardMovement";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
 
 // AWARDS_ENGINE_V1 — all calculations come from statEngine (single source of truth)
@@ -28,6 +29,24 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
     [league, teams, games, players, stats, awardSettings]
   );
 
+  // AWARD_MOVEMENT_V1 — same formula re-run without the latest game day, then compared.
+  const awardBaseline = useMemo(
+    () => buildAwardBaseline({ league, teams, games }),
+    [league, teams, games]
+  );
+
+  const mvpMovement = useMemo(() => {
+    if (!awardBaseline) return null;
+    const prev = computeMvpRace({ league, teams, games: awardBaseline.games, players, stats, awardSettings, topN: 9999 });
+    return buildAwardMovement(mvpCandidates, prev, "mvpScoreNum");
+  }, [awardBaseline, mvpCandidates, league, teams, players, stats, awardSettings]);
+
+  const dpoyMovement = useMemo(() => {
+    if (!awardBaseline) return null;
+    const prev = computeDpoyRace({ league, teams, games: awardBaseline.games, players, stats, awardSettings, topN: 9999 });
+    return buildAwardMovement(dpoyLeaders, prev, "dpoyScoreNum");
+  }, [awardBaseline, dpoyLeaders, league, teams, players, stats, awardSettings]);
+
   return (
     <Card className="border-slate-200">
       <CardHeader>
@@ -42,6 +61,11 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
             <TabsTrigger value="mvp">MVP</TabsTrigger>
             <TabsTrigger value="dpoy">DPOY</TabsTrigger>
           </TabsList>
+          {awardBaseline && (
+            <p data-marker="AWARD_MOVEMENT_V1" className="text-xs text-slate-500 mt-3">
+              Arrows and +/− show movement since the last game day ({formatAwardDay(awardBaseline.lastDay)}).
+            </p>
+          )}
 
           <TabsContent value="mvp" className="space-y-4">
             {mvpCandidates.length === 0 ? (
@@ -50,7 +74,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
               <>
                 {/* Mobile: Stacked Cards */}
                 <div className="block md:hidden">
-                  <MobileAwardCards candidates={mvpCandidates} awardType="mvp" leagueId={league?.id} />
+                  <MobileAwardCards candidates={mvpCandidates} awardType="mvp" leagueId={league?.id} movement={mvpMovement} />
                 </div>
 
                 {/* Desktop: Table */}
@@ -70,12 +94,12 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                     <TableBody>
                       {mvpCandidates.map((candidate, index) => (
                         <TableRow key={candidate.playerId} className={index === 0 ? "bg-yellow-50" : ""}>
-                          <TableCell className="font-bold">{index + 1}</TableCell>
+                          <TableCell className="font-bold"><div className="flex items-center gap-1.5 whitespace-nowrap"><span>{index + 1}</span><RankMove move={mvpMovement?.[candidate.playerId]} /></div></TableCell>
                           <TableCell className="font-medium"><button type="button" onClick={() => openPlayerCard(candidate.playerId)} className="flex items-center gap-2 text-left cursor-pointer hover:underline decoration-purple-400 underline-offset-2">{/* PLAYER_AVATAR_V1 */}{/* PLAYER_CARD_LINK_V1 */}<PlayerAvatar player={candidate.player} size={28} teamColor={candidate.team?.color || '#f97316'} /><span>{candidate.player.name}</span></button></TableCell>
                           <TableCell>{candidate.team.name}</TableCell>
                           <TableCell className="text-center">{candidate.gp}</TableCell>
                           <TableCell className="text-center">{candidate.avgGis}</TableCell>
-                          <TableCell className="text-center font-bold text-purple-600">{candidate.mvpScore}</TableCell>
+                          <TableCell className="text-center font-bold text-purple-600"><span className="block">{candidate.mvpScore}</span><ScoreMove move={mvpMovement?.[candidate.playerId]} /></TableCell>
                           <TableCell>
                             {index === 0 && <Badge className="bg-yellow-500">MVP</Badge>}
                             {index > 0 && index < 5 && <Badge className="bg-purple-500">Mythical {index}</Badge>}
@@ -116,7 +140,7 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
               <>
                 {/* Mobile: Stacked Cards */}
                 <div className="block md:hidden">
-                  <MobileAwardCards candidates={dpoyLeaders} awardType="dpoy" leagueId={league?.id} />
+                  <MobileAwardCards candidates={dpoyLeaders} awardType="dpoy" leagueId={league?.id} movement={dpoyMovement} />
                 </div>
 
                 {/* Desktop: Table */}
@@ -136,12 +160,12 @@ export default function AwardLeaders({ league, teams, games, players, stats, awa
                     <TableBody>
                       {dpoyLeaders.map((leader, index) => (
                         <TableRow key={leader.playerId} className={index === 0 ? "bg-blue-50" : ""}>
-                          <TableCell className="font-bold">{index + 1}</TableCell>
+                          <TableCell className="font-bold"><div className="flex items-center gap-1.5 whitespace-nowrap"><span>{index + 1}</span><RankMove move={dpoyMovement?.[leader.playerId]} /></div></TableCell>
                           <TableCell className="font-medium"><button type="button" onClick={() => openPlayerCard(leader.playerId)} className="flex items-center gap-2 text-left cursor-pointer hover:underline decoration-blue-400 underline-offset-2">{/* PLAYER_CARD_LINK_V1 */}<PlayerAvatar player={leader.player} size={28} teamColor={leader.team?.color || '#f97316'} /><span>{leader.player.name}</span></button></TableCell>
                           <TableCell>{leader.team.name}</TableCell>
                           <TableCell className="text-center">{leader.gp}</TableCell>
                           <TableCell className="text-center">{leader.avgDefGis}</TableCell>
-                          <TableCell className="text-center font-bold text-blue-600">{leader.dpoyScore}</TableCell>
+                          <TableCell className="text-center font-bold text-blue-600"><span className="block">{leader.dpoyScore}</span><ScoreMove move={dpoyMovement?.[leader.playerId]} /></TableCell>
                           <TableCell className="text-center">{index === 0 ? <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">DPOY</span> : "-"}</TableCell>
                         </TableRow>
                       ))}

@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Shield, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import PlayerAvatar from "@/components/shared/PlayerAvatar";
+import { RankMove, ScoreMove } from "./AwardMovement";
 
 // PLAYER_CARD_LINK_V1 — the avatar + name block taps through to the read-only PlayerCard page.
-export default function MobileAwardCards({ candidates, awardType = "mvp", isExpanded, onToggle, leagueId = null }) {
+export default function MobileAwardCards({ candidates, awardType = "mvp", isExpanded, onToggle, leagueId = null, movement = null }) {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
   
@@ -52,6 +53,7 @@ export default function MobileAwardCards({ candidates, awardType = "mvp", isExpa
               <span className={`text-xl font-bold ${index === 0 ? "text-yellow-600" : "text-slate-400"}`}>
                 #{index + 1}
               </span>
+              <RankMove move={movement?.[candidate.playerId]} />
             </div>
             {getAwardBadge(index)}
           </div>
@@ -78,8 +80,11 @@ export default function MobileAwardCards({ candidates, awardType = "mvp", isExpa
               <span className="text-sm text-slate-600">
                 {isMvp ? "MVP Score" : "DPOY Score"}:
               </span>
-              <span className={`font-bold ${index === 0 ? "text-2xl text-yellow-600" : "text-xl text-slate-900"}`}>
-                {candidate[scoreKey]}
+              <span data-marker="AWARD_MOVEMENT_V1" className="flex items-baseline gap-2">
+                <ScoreMove move={movement?.[candidate.playerId]} inline />
+                <span className={`font-bold ${index === 0 ? "text-2xl text-yellow-600" : "text-xl text-slate-900"}`}>
+                  {candidate[scoreKey]}
+                </span>
               </span>
             </div>
             <div className="flex items-baseline justify-between">

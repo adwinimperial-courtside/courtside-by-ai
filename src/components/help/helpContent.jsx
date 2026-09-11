@@ -85,6 +85,9 @@ export const HELP_TOPICS = [
     tips: [
       "Leaders update automatically as new games are recorded.",
       "Minimum games played may apply — set by your league's award settings.",
+      "The arrow next to a rank shows how many places a player moved since the league's last game day. Green is up, red is down, a dash means no change.",
+      "The small number under the score is how much the score changed since that game day. 'New' means the player wasn't eligible for the race before.",
+      "Players who didn't play on the last game day can still move — other players may pass them, or their team's record may change.",
     ],
   },
   {
