@@ -12,6 +12,7 @@ import DeleteGameEntry from "../components/admin/DeleteGameEntry";
 import { findPlayerOfGame } from "../components/utils/pogCalculator";
 import HelpButton from "../components/help/HelpButton";
 import IdentityHealthCheck from "../components/admin/IdentityHealthCheck";
+import OrphanTeamsTool from "../components/admin/OrphanTeamsTool";
 
 export default function AdminTools() {
   const [showManualEntry, setShowManualEntry] = useState(false);
@@ -733,6 +734,9 @@ export default function AdminTools() {
             <div>
               <h2 className="text-2xl font-bold text-slate-900 mb-4">Data Health</h2>
               <IdentityHealthCheck />
+              <div className="mt-4" data-marker="ORPHAN_TEAMS_V1">
+                <OrphanTeamsTool />
+              </div>
             </div>
           )}
         </div>
