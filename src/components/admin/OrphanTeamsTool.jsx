@@ -4,9 +4,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Search, Copy, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Users, Search, Copy, AlertTriangle, CheckCircle2, X } from "lucide-react";
 
-const MARKER = "ORPHAN_TEAMS_V1";
+const MARKER = "ORPHAN_TEAMS_V2";
 
 const listAll = async (entityName, sort = "-created_date") => {
   const PAGE = 1000;
@@ -40,7 +40,8 @@ export default function OrphanTeamsTool() {
   const [groups, setGroups] = useState(null);
   const [seasons, setSeasons] = useState([]);
   const [selected, setSelected] = useState({});
-  const [targetId, setTargetId] = useState("");
+  const [targetIds, setTargetIds] = useState([]);
+  const [pickerKey, setPickerKey] = useState(0);
 
   const { data: currentUser } = useQuery({
     queryKey: ["user"],
@@ -139,7 +140,20 @@ export default function OrphanTeamsTool() {
   };
 
   const selectedRows = (groups || []).flatMap((g) => g.rows).filter((r) => selected[r.team.id]);
-  const target = seasons.find((s) => s.id === targetId);
+  const targets = targetIds.map((id) => seasons.find((s) => s.id === id)).filter(Boolean);
+  const availableSeasons = seasons.filter((s) => !targetIds.includes(s.id));
+
+  const addTarget = (id) => {
+    setSuccess("");
+    setError("");
+    if (id && !targetIds.includes(id)) setTargetIds((prev) => [...prev, id]);
+    setPickerKey((k) => k + 1);
+  };
+
+  const removeTarget = (id) => {
+    setSuccess("");
+    setTargetIds((prev) => prev.filter((x) => x !== id));
+  };
 
   const toggle = (id) => {
     setSuccess("");
@@ -153,78 +167,92 @@ export default function OrphanTeamsTool() {
       setError("Tick at least one team first.");
       return;
     }
-    if (!target) {
-      setError("Choose the season to copy into first.");
+    if (targets.length === 0) {
+      setError("Add at least one season to copy into first.");
       return;
     }
+    const teamWord = selectedRows.length + " team" + (selectedRows.length === 1 ? "" : "s");
     const ok = window.confirm(
-      "Copy " + selectedRows.length + " team" + (selectedRows.length === 1 ? "" : "s") +
-      " with their rosters into " + target.label + "?\n\nThe original orphan teams stay where they are."
+      "Copy " + teamWord + " with their rosters into " + targets.length + " season" + (targets.length === 1 ? "" : "s") + "?\n\n" +
+      targets.map((t) => "• " + t.label).join("\n") +
+      "\n\nEach season gets its own copy. The original orphan teams stay where they are."
     );
     if (!ok) return;
 
     setCopying(true);
-    let copied = 0;
-    let playersCopied = 0;
-    const skipped = [];
+    const summaries = [];
+    let current = null;
     try {
-      const existing = await base44.entities.Team.filter({ league_id: target.id });
-      const existingNames = new Set((existing || []).map((t) => (t.name || "").trim().toLowerCase()));
+      for (const target of targets) {
+        current = { label: target.label, copied: 0, players: 0, skipped: [] };
+        const existing = await base44.entities.Team.filter({ league_id: target.id });
+        const existingNames = new Set((existing || []).map((t) => (t.name || "").trim().toLowerCase()));
 
-      for (let i = 0; i < selectedRows.length; i++) {
-        const team = selectedRows[i].team;
-        setProgress("Copying " + (i + 1) + " of " + selectedRows.length + ": " + team.name);
-        const key = (team.name || "").trim().toLowerCase();
-        if (existingNames.has(key)) {
-          skipped.push(team.name);
-          continue;
-        }
-        const teamData = { league_id: target.id, name: team.name, wins: 0, losses: 0 };
-        if (team.logo_url) teamData.logo_url = team.logo_url;
-        if (team.color) teamData.color = team.color;
-        if (team.description) teamData.description = team.description;
-        if (team.head_coach) teamData.head_coach = team.head_coach;
-        if (team.manager) teamData.manager = team.manager;
-        if (team.team_captain) teamData.team_captain = team.team_captain;
-        const newTeam = await base44.entities.Team.create(teamData);
+        for (let i = 0; i < selectedRows.length; i++) {
+          const team = selectedRows[i].team;
+          setProgress(target.label + ": copying " + (i + 1) + " of " + selectedRows.length + " (" + team.name + ")");
+          const key = (team.name || "").trim().toLowerCase();
+          if (existingNames.has(key)) {
+            current.skipped.push(team.name);
+            continue;
+          }
+          const teamData = { league_id: target.id, name: team.name, wins: 0, losses: 0 };
+          if (team.logo_url) teamData.logo_url = team.logo_url;
+          if (team.color) teamData.color = team.color;
+          if (team.description) teamData.description = team.description;
+          if (team.head_coach) teamData.head_coach = team.head_coach;
+          if (team.manager) teamData.manager = team.manager;
+          if (team.team_captain) teamData.team_captain = team.team_captain;
+          const newTeam = await base44.entities.Team.create(teamData);
 
-        const roster = await base44.entities.Player.filter({ team_id: team.id });
-        for (const p of roster || []) {
-          const playerData = { team_id: newTeam.id, name: p.name };
-          if (p.jersey_number !== undefined && p.jersey_number !== null && p.jersey_number !== "") playerData.jersey_number = p.jersey_number;
-          if (p.position) playerData.position = p.position;
-          if (p.photo_url) playerData.photo_url = p.photo_url;
-          await base44.entities.Player.create(playerData);
-          playersCopied++;
+          const roster = await base44.entities.Player.filter({ team_id: team.id });
+          for (const p of roster || []) {
+            const playerData = { team_id: newTeam.id, name: p.name };
+            if (p.jersey_number !== undefined && p.jersey_number !== null && p.jersey_number !== "") playerData.jersey_number = p.jersey_number;
+            if (p.position) playerData.position = p.position;
+            if (p.photo_url) playerData.photo_url = p.photo_url;
+            await base44.entities.Player.create(playerData);
+            current.players++;
+          }
+          existingNames.add(key);
+          current.copied++;
         }
-        existingNames.add(key);
-        copied++;
+
+        try {
+          await base44.entities.LeagueAuditLog.create({
+            action: "copy_orphan_teams",
+            league_id: target.id,
+            league_name: target.label,
+            performed_by: currentUser?.email || "",
+            performed_by_name: currentUser?.full_name || "",
+            performed_at: new Date().toISOString(),
+            notes: MARKER + ": copied " + current.copied + " team(s), " + current.players + " player(s)" +
+              (current.skipped.length ? "; skipped (already in season): " + current.skipped.join(", ") : ""),
+          });
+        } catch (_e) {}
+
+        summaries.push(current);
+        current = null;
       }
-
-      try {
-        await base44.entities.LeagueAuditLog.create({
-          action: "copy_orphan_teams",
-          league_id: target.id,
-          league_name: target.label,
-          performed_by: currentUser?.email || "",
-          performed_by_name: currentUser?.full_name || "",
-          performed_at: new Date().toISOString(),
-          notes: MARKER + ": copied " + copied + " team(s), " + playersCopied + " player(s)" +
-            (skipped.length ? "; skipped (already in season): " + skipped.join(", ") : ""),
-        });
-      } catch (_e) {}
 
       queryClient.invalidateQueries({ queryKey: ["teams"] });
       queryClient.invalidateQueries({ queryKey: ["players"] });
       setSelected({});
+      setTargetIds([]);
       setSuccess(
-        "Copied " + copied + " team" + (copied === 1 ? "" : "s") + " (" + playersCopied + " players) into " + target.label + "." +
-        (skipped.length ? " Skipped, already in that season: " + skipped.join(", ") + "." : "")
+        summaries.map((r) =>
+          r.label + ": copied " + r.copied + " team" + (r.copied === 1 ? "" : "s") + " (" + r.players + " players)" +
+          (r.skipped.length ? ", skipped (already there): " + r.skipped.join(", ") : "")
+        ).join(" · ")
       );
     } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ["teams"] });
+      queryClient.invalidateQueries({ queryKey: ["players"] });
+      const done = summaries.map((r) => r.label + " (" + r.copied + " copied)").join(", ");
       setError(
-        "Copy stopped after " + copied + " team" + (copied === 1 ? "" : "s") + ". " +
-        (err?.message || "") + " Check the season before trying again."
+        "Copy stopped" + (current ? " in " + current.label + " after " + current.copied + " team" + (current.copied === 1 ? "" : "s") : "") + ". " +
+        (done ? "Finished: " + done + ". " : "") +
+        (err?.message || "") + " Check the seasons before trying again — teams already copied will be skipped."
       );
     } finally {
       setCopying(false);
@@ -242,7 +270,7 @@ export default function OrphanTeamsTool() {
           Orphan Teams
         </CardTitle>
         <p className="text-sm text-slate-600 mt-2">
-          Teams left behind when their season was deleted. Copy them, with their rosters, into an existing season.
+          Teams left behind when their season was deleted. Copy them, with their rosters, into one or more existing seasons.
           The originals stay, so the same team can be copied into more than one season. App admin only.
         </p>
       </CardHeader>
@@ -311,31 +339,53 @@ export default function OrphanTeamsTool() {
               </div>
             ))}
 
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-sm text-slate-600">Copy selected into</span>
-              <Select value={targetId} onValueChange={(v) => { setTargetId(v); setSuccess(""); }} disabled={copying}>
-                <SelectTrigger className="w-80 max-w-full">
-                  <SelectValue placeholder="Choose a season…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {seasons.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm text-slate-600">Copy selected into</span>
+                <Select key={pickerKey} onValueChange={addTarget} disabled={copying || availableSeasons.length === 0}>
+                  <SelectTrigger className="w-80 max-w-full">
+                    <SelectValue placeholder={availableSeasons.length === 0 ? "All seasons added" : "Add a season…"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSeasons.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {targets.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {targets.map((t) => (
+                    <span key={t.id} className="inline-flex items-center gap-1.5 rounded-full bg-orange-50 border border-orange-200 px-3 py-1 text-sm text-orange-800">
+                      {t.label}
+                      <button
+                        onClick={() => removeTarget(t.id)}
+                        disabled={copying}
+                        aria-label={"Remove " + t.label}
+                        className="text-orange-600 hover:text-orange-900 disabled:opacity-50"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
               <Button
                 onClick={copyTeams}
                 disabled={copying || busy}
                 className="bg-orange-600 hover:bg-orange-700 disabled:opacity-50"
               >
                 <Copy className="w-4 h-4 mr-2" />
-                {copying ? "Copying…" : "Copy " + selectedRows.length + " team" + (selectedRows.length === 1 ? "" : "s")}
+                {copying
+                  ? "Copying…"
+                  : "Copy " + selectedRows.length + " team" + (selectedRows.length === 1 ? "" : "s") +
+                    " into " + targets.length + " season" + (targets.length === 1 ? "" : "s")}
               </Button>
             </div>
             {progress && <p className="text-xs text-slate-500">{progress}</p>}
             <p className="text-xs text-slate-500">
-              Wins and losses start at 0. Rosters copy names, jersey numbers, positions and photos. Teams already in the
-              chosen season (same name) are skipped. Linked player accounts must claim their spot again in the new season.
+              Each season gets its own copy of every ticked team and roster. Wins and losses start at 0. Rosters copy names,
+              jersey numbers, positions and photos. Teams already in a season (same name) are skipped there. Linked player accounts must claim their spot again in the new season.
             </p>
           </>
         )}
