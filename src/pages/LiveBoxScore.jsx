@@ -11,6 +11,7 @@ import TeamLogo from "@/components/teams/TeamLogo";
 import ClockDisplay from "@/components/live/ClockDisplay";
 import LatestActivity from "@/components/live/LatestActivity";
 import HelpButton from "../components/help/HelpButton";
+import { getPlayerFoulTotal, isPlayerDisqualified } from "@/utils/foulRules";
 
 function mergeStatsByPlayer(statRows) {
   const groups = {};
@@ -264,7 +265,7 @@ export default function LiveBoxScorePage() {
     const teamSTL = teamPlayers.reduce((acc, s) => acc + (s.steals || 0), 0);
     const teamBLK = teamPlayers.reduce((acc, s) => acc + (s.blocks || 0), 0);
     const teamTO = teamPlayers.reduce((acc, s) => acc + (s.turnovers || 0), 0);
-    const teamF = teamPlayers.reduce((acc, s) => acc + (s.fouls || 0), 0);
+    const teamF = teamPlayers.reduce((acc, s) => acc + getPlayerFoulTotal(s, displayGame), 0);
 
     return (
       <div>
@@ -288,10 +289,11 @@ export default function LiveBoxScorePage() {
                     {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
                   </div>
                   <span className="font-semibold text-sm text-slate-900 truncate">{stat.player?.name}</span>
+                  {isPlayerDisqualified(stat, displayGame) && <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold uppercase">DQ</span>}
                   <span className="ml-auto font-bold text-slate-900">{points} PTS</span>
                 </div>
                 <div className="grid grid-cols-4 gap-1 text-xs text-center">
-                  {[['3PT', stat.points_3 || 0], ['FT', stat.free_throws || 0], ['REB', rebounds], ['AST', stat.assists || 0], ['STL', stat.steals || 0], ['BLK', stat.blocks || 0], ['TO', stat.turnovers || 0], ['F', stat.fouls || 0]].map(([label, val]) => (
+                  {[['3PT', stat.points_3 || 0], ['FT', stat.free_throws || 0], ['REB', rebounds], ['AST', stat.assists || 0], ['STL', stat.steals || 0], ['BLK', stat.blocks || 0], ['TO', stat.turnovers || 0], ['F', getPlayerFoulTotal(stat, displayGame)]].map(([label, val]) => (
                     <div key={label} className="bg-white rounded p-1">
                       <div className="text-slate-400 text-[10px]">{label}</div>
                       <div className="font-semibold text-slate-800">{val}</div>
@@ -352,6 +354,7 @@ export default function LiveBoxScorePage() {
                           {stat.is_active && <div className="absolute -left-1 top-1/2 transform -translate-y-1/2 w-2 h-2 bg-green-500 rounded-full"></div>}
                         </div>
                         <span className="text-sm">{stat.player?.name}</span>
+                        {isPlayerDisqualified(stat, displayGame) && <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold uppercase">DQ</span>}
                       </div>
                     </TableCell>
                     {displayGame.game_mode === 'timed' && <TableCell className="text-center">{stat.minutes_played?.toFixed(1) || '0.0'}</TableCell>}
@@ -365,7 +368,7 @@ export default function LiveBoxScorePage() {
                     <TableCell className="text-center">{stat.steals || 0}</TableCell>
                     <TableCell className="text-center">{stat.blocks || 0}</TableCell>
                     <TableCell className="text-center">{stat.turnovers || 0}</TableCell>
-                    <TableCell className="text-center">{stat.fouls || 0}</TableCell>
+                    <TableCell className="text-center">{getPlayerFoulTotal(stat, displayGame)}</TableCell>
                   </TableRow>
                 );
               })}

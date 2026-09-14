@@ -11,6 +11,7 @@
 // score. Zero database writes; unknown games fall back to legacy behavior.
 
 import { resolveSettings } from "@/utils/awardDefaults";
+import { getPlayerFoulTotal } from "@/utils/foulRules";
 
 // ---------------------------------------------------------------------------
 // Game eligibility — ONE rule, with explicit purposes.
@@ -206,7 +207,7 @@ export function buildPlayerAggregates({ players, teams, games, stats }) {
       t.steals += line.steals;
       t.blocks += line.blocks;
       t.turnovers += line.turnovers;
-      t.fouls += line.fouls;
+      t.fouls += getPlayerFoulTotal(line, game);
     });
 
     const avg = (x) => (gp > 0 ? x / gp : 0);
@@ -282,7 +283,7 @@ export function buildTeamAggregates({ teams, games, stats }) {
       t.steals += stat.steals || 0;
       t.blocks += stat.blocks || 0;
       t.turnovers += stat.turnovers || 0;
-      t.fouls += stat.fouls || 0;
+      t.fouls += getPlayerFoulTotal(stat, gameById.get(stat.game_id));
     });
 
     const avg = (x) => (gamesPlayed > 0 ? x / gamesPlayed : 0);
