@@ -15,10 +15,19 @@ export const RETRY_DELAYS_MS = [250, 500, 1000, 2000];
 export const PLUS_MINUS_SAVE_DELAY_MS = 1000;
 export const OWNER_REWRITE_GAP_MS = 5000;
 export const OFFLINE_RETRY_MS = 3000;
-export const BREAKS = [
-  { seconds: 120, label: "Break", hint: "Quarter break" },
-  { seconds: 600, label: "Half-time", hint: "Half-time" },
-];
+export const BREAK_DEFAULTS = { quarter: 120, half: 120 };
+
+export function breakForPeriod(game, period, ended, lengths) {
+  const cfg = lengths || BREAK_DEFAULTS;
+  const finished = ended ? period : period - 1;
+  if (finished < 1) return { seconds: cfg.quarter, label: "Break" };
+  const isHalfTime =
+    getSegment(game, finished) === "FIRST_HALF" &&
+    getSegment(game, finished + 1) === "SECOND_HALF";
+  return isHalfTime
+    ? { seconds: cfg.half, label: "Half-time" }
+    : { seconds: cfg.quarter, label: "Break" };
+}
 
 export function isTimekeeperGame(game) {
   return !!game && game.has_timekeeper === true && game.game_mode !== "untimed";

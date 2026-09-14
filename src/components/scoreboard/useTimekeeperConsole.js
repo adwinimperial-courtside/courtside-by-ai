@@ -18,6 +18,8 @@ import {
   isLastPeriodOrLater,
   isTied,
   isRetryableError,
+  breakForPeriod,
+  BREAK_DEFAULTS,
   withRateLimitRetry,
 } from "@/components/scoreboard/timekeeperLogic";
 
@@ -48,6 +50,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
   const autoHornRef = useRef(true);
   const timeoutRef = useRef(null);
   const breakRef = useRef(null);
+  const breakLengthsRef = useRef(BREAK_DEFAULTS);
   const lastTimeoutRef = useRef(null);
   const overrideRef = useRef({});
   const queueRef = useRef([]);
@@ -613,10 +616,14 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
 
   const endTimeoutEarly = () => { timeoutRef.current = null; bump(); };
 
-  const startBreak = (seconds, label) => {
-    breakRef.current = { label, endsAt: performance.now() + seconds * 1000 };
+  const startBreak = () => {
+    const c0 = clockRef.current;
+    const b = breakForPeriod(gameRef.current, c0.period, c0.ended, breakLengthsRef.current);
+    breakRef.current = { label: b.label, endsAt: performance.now() + b.seconds * 1000 };
     bump();
   };
+
+  const endBreak = () => { breakRef.current = null; bump(); };
 
   const nextPeriod = () => {
     const c = clockRef.current;
@@ -666,6 +673,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
     autoHorn: autoHornRef.current,
     timeout: timeoutRef.current,
     brk: breakRef.current,
+    nextBreak: breakForPeriod(g, c.period, c.ended, breakLengthsRef.current),
     canUndoTimeout: !!(lastTimeoutRef.current && lastTimeoutRef.current.logId),
     canGoBack: canGoBack(),
     lastPeriodDone: isLastPeriodOrLater(g, c.period),
@@ -690,6 +698,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
       undoTimeout,
       endTimeoutEarly,
       startBreak,
+      endBreak,
       setGameClock,
       setShotClock,
       toggleShot,

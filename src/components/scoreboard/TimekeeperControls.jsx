@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SHOT_FULL, SHOT_SHORT, BREAKS, wholeUp, formatClockEdit } from "@/components/scoreboard/timekeeperLogic";
+import { SHOT_FULL, SHOT_SHORT, wholeUp, formatClockEdit } from "@/components/scoreboard/timekeeperLogic";
 
 const CONTROLS_CSS = `
 .tkc-boardhold{position:absolute;left:153px;top:0;width:1920px;height:1080px;transform:scale(.84);transform-origin:0 0}
@@ -184,7 +184,7 @@ export default function TimekeeperControls({
             <Btn onClick={actions.toggleShot}><b>Shot clock</b><span>{s.shotOn ? "On" : "Off"}</span></Btn>
             <Btn disabled={!s.canUndoTimeout} onClick={() => { actions.undoTimeout(); close(); }}><b>Undo last timeout</b></Btn>
             <Btn disabled={!s.timeout} onClick={() => { actions.endTimeoutEarly(); close(); }}><b>End timeout early</b></Btn>
-            <Btn onClick={() => setPanel("break")}><b>Break timer</b></Btn>
+            <Btn onClick={() => { if (s.brk) actions.endBreak(); else actions.startBreak(); close(); }}><b>{s.brk ? "End break" : "Break timer"}</b><span>{s.brk ? "Running" : `${s.nextBreak.label} ${formatClockEdit(s.nextBreak.seconds)}`}</span></Btn>
             <Btn disabled={!s.canGoBack} onClick={() => { actions.previousPeriod(); close(); }}><b>Previous period</b></Btn>
             <Btn onClick={actions.toggleAutoHorn}><b>Auto horn</b><span>{s.autoHorn ? "On" : "Off"}</span></Btn>
             <Btn tabIndex={-1} style={{ cursor: "default" }}><b>Score feed</b><span style={{ color: feedColor }}>{feedText}</span></Btn>
@@ -214,18 +214,6 @@ export default function TimekeeperControls({
             ? <Btn onClick={() => step(60)}><b>+1 MIN</b></Btn>
             : <Btn onClick={() => setEdit((e) => ({ ...e, v: SHOT_FULL }))}><b>24</b></Btn>}
           <Btn className="tkc-yes" disabled={edit.kind === "clock" && s.running} onClick={saveEdit}><b>Save</b></Btn>
-          <Btn onClick={close}><b>Cancel</b></Btn>
-        </div>
-      )}
-
-      {!s.final && panel === "break" && (
-        <div className="tkc-panel tkc-ask">
-          <div className="tkc-q">Show a break countdown on the TV</div>
-          {BREAKS.map((b) => (
-            <Btn key={b.seconds} className="tkc-yes" onClick={() => { actions.startBreak(b.seconds, b.label); close(); }}>
-              <b>{b.seconds / 60} min</b><span>{b.hint}</span>
-            </Btn>
-          ))}
           <Btn onClick={close}><b>Cancel</b></Btn>
         </div>
       )}
