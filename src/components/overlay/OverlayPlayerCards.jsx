@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getPlayerFoulTotal } from "@/utils/foulRules";
 
 export const PLAYER_CARDS_VERSION = "OVERLAY_PLAYER_CARDS_V1";
 
@@ -126,8 +127,8 @@ export function usePlayerCardQueue({ stats, players, game, homeTeam, awayTeam, t
         const a = stepLevel(v.ast, AST_STEP);
         if (a > 0) mark(pid + ":assists:" + a);
         for (let i = 1; i <= v.threes; i++) mark(pid + ":three:" + i);
-        if (v.fouls >= foulLimit - 1) mark(pid + ":foul_trouble:1");
-        if (v.fouls >= foulLimit) mark(pid + ":fouled_out:1");
+        if (getPlayerFoulTotal(v, game) >= foulLimit - 1) mark(pid + ":foul_trouble:1");
+        if (getPlayerFoulTotal(v, game) >= foulLimit) mark(pid + ":fouled_out:1");
         if (v.dd >= 2) mark(pid + ":double_double:1");
       });
       prevRef.current = snapshot;
@@ -162,10 +163,10 @@ export function usePlayerCardQueue({ stats, players, game, homeTeam, awayTeam, t
         });
       };
 
-      if (v.fouls >= foulLimit && before.fouls < foulLimit) {
+      if (getPlayerFoulTotal(v, game) >= foulLimit && getPlayerFoulTotal(before, game) < foulLimit) {
         push("fouled_out", 1, v.fouls, "FOULS",
           "FOULED OUT \u00B7 " + v.pts + " PTS " + v.reb + " REB");
-      } else if (v.fouls >= foulLimit - 1 && before.fouls < foulLimit - 1) {
+      } else if (getPlayerFoulTotal(v, game) >= foulLimit - 1 && getPlayerFoulTotal(before, game) < foulLimit - 1) {
         push("foul_trouble", 1, v.fouls, "FOULS", "ONE AWAY FROM FOULING OUT");
       }
 

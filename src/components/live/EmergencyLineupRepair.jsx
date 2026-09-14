@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2, RotateCcw, UserMinus, UserPlus } from "lucide-react";
+import { isPlayerDisqualified, getPlayerFoulTotal } from "@/utils/foulRules";
 
 export default function EmergencyLineupRepair({ repairData, existingStats, players, game, lastValidLineups, onComplete }) {
   const [workingActive, setWorkingActive] = useState(() => {
@@ -14,20 +15,10 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const limits = {
-    personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
-    technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
-    unsportsmanlikeFoulLimit: game.game_rules?.unsportsmanlikeFoulLimit ?? 2,
-  };
-
   const isEligible = (playerId) => {
     const s = existingStats.find(st => st.player_id === playerId);
     if (!s) return true;
-    return (
-      (s.fouls || 0) < limits.personalFoulLimit &&
-      (s.technical_fouls || 0) < limits.technicalFoulLimit &&
-      (s.unsportsmanlike_fouls || 0) < limits.unsportsmanlikeFoulLimit
-    );
+    return !isPlayerDisqualified(s, game);
   };
 
   const getActiveCount = (teamId) => {
@@ -213,7 +204,13 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-sm text-slate-900">{player.name}</p>
-                            {pStats && <p className="text-xs text-slate-500">{pStats.fouls || 0}F · {pStats.technical_fouls || 0}T · {pStats.unsportsmanlike_fouls || 0}U</p>}
+                            {pStats && (
+                              <p className="text-xs text-slate-500">
+                                {getPlayerFoulTotal(pStats, game)}F
+                                {(pStats.technical_fouls || 0) > 0 && ` · ${pStats.technical_fouls}T`}
+                                {(pStats.unsportsmanlike_fouls || 0) > 0 && ` · ${pStats.unsportsmanlike_fouls}U`}
+                              </p>
+                            )}
                           </div>
                           {tooMany ? (
                             <button
@@ -250,9 +247,15 @@ export default function EmergencyLineupRepair({ repairData, existingStats, playe
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                               <p className="font-semibold text-sm text-slate-900">{player.name}</p>
-                              {pStats && <p className="text-xs text-slate-500">{pStats.fouls || 0}F · {pStats.technical_fouls || 0}T · {pStats.unsportsmanlike_fouls || 0}U</p>}
-                            </div>
-                            <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700 border border-green-200 flex-shrink-0">
+                                {pStats && (
+                                  <p className="text-xs text-slate-500">
+                                    {getPlayerFoulTotal(pStats, game)}F
+                                    {(pStats.technical_fouls || 0) > 0 && ` · ${pStats.technical_fouls}T`}
+                                    {(pStats.unsportsmanlike_fouls || 0) > 0 && ` · ${pStats.unsportsmanlike_fouls}U`}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-green-100 text-green-700 border border-green-200 flex-shrink-0">
                               <UserPlus className="w-3 h-3" />Add
                             </div>
                           </button>
