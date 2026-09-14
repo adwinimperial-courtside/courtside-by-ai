@@ -172,3 +172,10 @@ export function formatClockEdit(seconds) {
   const s = Math.max(0, Math.round(seconds));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
+
+export function formatClockTenths(tenths) {
+  const t = Math.max(0, Math.round(tenths));
+  if (t < 600) return `${Math.floor(t / 10)}.${t % 10}`;
+  const whole = Math.round(t / 10);
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+}

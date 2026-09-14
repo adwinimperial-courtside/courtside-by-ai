@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SHOT_FULL, SHOT_SHORT, wholeUp, formatClockEdit } from "@/components/scoreboard/timekeeperLogic";
+import { SHOT_FULL, SHOT_SHORT, formatClockEdit, formatClockTenths } from "@/components/scoreboard/timekeeperLogic";
 
 const CONTROLS_CSS = `
 .tkc-boardhold{position:absolute;left:153px;top:0;width:1920px;height:1080px;transform:scale(.84);transform-origin:0 0}
@@ -98,6 +98,9 @@ export default function TimekeeperControls({
   const scheduled = status !== "in_progress" && !s.final;
   const canNext = live && s.ended && (!s.lastPeriodDone || s.tied);
   const nudgeOff = !live || s.running || s.ended;
+  const fineClock = s.left < 60;
+  const nudgeStep = fineClock ? 0.1 : 1;
+  const nudgeText = fineClock ? "0.1" : "1 SEC";
 
   let runLabel = s.running ? "STOP" : "START";
   let runSub = "Game clock";
@@ -127,14 +130,15 @@ export default function TimekeeperControls({
   const menuWarn = !!s.save.error || s.save.retrying;
 
   const openEdit = (kind) => {
-    const v = kind === "clock" ? wholeUp(s.left) : Math.max(0, Math.ceil(s.shotLeft - 1e-9));
+    const v = kind === "clock" ? Math.round(s.left * 10) : Math.max(0, Math.ceil(s.shotLeft - 1e-9));
     setEdit({ kind, v });
     setPanel("edit");
   };
-  const editMax = edit?.kind === "clock" ? Math.round(s.periodSeconds) : SHOT_FULL;
+  const editMax = edit?.kind === "clock" ? Math.round(s.periodSeconds * 10) : SHOT_FULL;
   const step = (delta) => setEdit((e) => ({ ...e, v: Math.max(0, Math.min(editMax, e.v + delta)) }));
+  const editFine = edit?.kind === "clock" && edit.v < 600;
   const saveEdit = () => {
-    if (edit.kind === "clock") actions.setGameClock(edit.v);
+    if (edit.kind === "clock") actions.setGameClock(edit.v / 10);
     else actions.setShotClock(edit.v);
     setPanel(null);
   };
@@ -168,8 +172,8 @@ export default function TimekeeperControls({
       {!s.final && !panel && (
         <div className="tkc-ctl tkc-bottom">
           <Btn className="tkc-to" disabled={!live || s.ended || homeLeft <= 0} onClick={() => askTimeout("home")}><b>TIMEOUT</b><span>{homeName}</span></Btn>
-          <Btn disabled={nudgeOff || s.left <= 1} onClick={actions.minusSec}><b>−1 SEC</b></Btn>
-          <Btn disabled={nudgeOff || s.left >= s.periodSeconds} onClick={actions.plusSec}><b>+1 SEC</b></Btn>
+          <Btn disabled={nudgeOff || s.left <= nudgeStep} onClick={() => actions.nudgeBy(-nudgeStep)}><b>−{nudgeText}</b></Btn>
+          <Btn disabled={nudgeOff || s.left >= s.periodSeconds} onClick={() => actions.nudgeBy(nudgeStep)}><b>+{nudgeText}</b></Btn>
           <Btn className={canNext ? "tkc-hot" : ""} disabled={!canNext} onClick={actions.nextPeriod}><b>NEXT PERIOD</b><span>{nextSub}</span></Btn>
           <Btn className={menuWarn ? "tkc-warn" : ""} onClick={() => setPanel("menu")}><b>MENU</b>{menuWarn && <span>{feedText}</span>}</Btn>
           <Btn className="tkc-to" disabled={!live || s.ended || awayLeft <= 0} onClick={() => askTimeout("away")}><b>TIMEOUT</b><span>{awayName}</span></Btn>
@@ -205,13 +209,13 @@ export default function TimekeeperControls({
         <div className="tkc-panel tkc-edit">
           <div className="tkc-lbl">{edit.kind === "clock" ? "Set game clock" : "Set shot clock"}</div>
           {edit.kind === "clock"
-            ? <Btn onClick={() => step(-60)}><b>−1 MIN</b></Btn>
+            ? <Btn onClick={() => step(editFine ? -1 : -600)}><b>{editFine ? "−0.1" : "−1 MIN"}</b></Btn>
             : <Btn onClick={() => setEdit((e) => ({ ...e, v: SHOT_SHORT }))}><b>14</b></Btn>}
-          <Btn onClick={() => step(-1)}><b>−1 SEC</b></Btn>
-          <div className="tkc-val">{edit.kind === "clock" ? formatClockEdit(edit.v) : String(edit.v)}</div>
-          <Btn onClick={() => step(1)}><b>+1 SEC</b></Btn>
+          <Btn onClick={() => step(edit.kind === "clock" ? -10 : -1)}><b>−1 SEC</b></Btn>
+          <div className="tkc-val">{edit.kind === "clock" ? formatClockTenths(edit.v) : String(edit.v)}</div>
+          <Btn onClick={() => step(edit.kind === "clock" ? 10 : 1)}><b>+1 SEC</b></Btn>
           {edit.kind === "clock"
-            ? <Btn onClick={() => step(60)}><b>+1 MIN</b></Btn>
+            ? <Btn onClick={() => step(editFine ? 1 : 600)}><b>{editFine ? "+0.1" : "+1 MIN"}</b></Btn>
             : <Btn onClick={() => setEdit((e) => ({ ...e, v: SHOT_FULL }))}><b>24</b></Btn>}
           <Btn className="tkc-yes" disabled={edit.kind === "clock" && s.running} onClick={saveEdit}><b>Save</b></Btn>
           <Btn onClick={close}><b>Cancel</b></Btn>

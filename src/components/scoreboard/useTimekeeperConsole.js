@@ -495,7 +495,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
     const c = clockRef.current;
     if (!liveNow() || c.running || c.ended) return;
     const max = periodLength(gameRef.current, c.period);
-    const next = Math.min(max, c.left + delta);
+    const next = Math.min(max, Math.round((c.left + delta) * 10) / 10);
     if (next <= 0) return;
     c.left = next;
     clearTimeout(debounceRef.current);
@@ -507,7 +507,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
     const c = clockRef.current;
     if (!liveNow() || c.running) return;
     const max = periodLength(gameRef.current, c.period);
-    const v = Math.max(0, Math.min(max, Math.round(seconds)));
+    const v = Math.max(0, Math.min(max, Math.round(seconds * 10) / 10));
     c.left = v;
     c.ended = v <= 0;
     enqueueClock();
@@ -692,8 +692,7 @@ export default function useTimekeeperConsole({ gameId, game, active, acceptGame,
       resetShot,
       hornDown: hornStart,
       hornUp: hornStop,
-      minusSec: () => nudgeClock(-1),
-      plusSec: () => nudgeClock(1),
+      nudgeBy: (delta) => nudgeClock(delta),
       callTimeout,
       undoTimeout,
       endTimeoutEarly,
