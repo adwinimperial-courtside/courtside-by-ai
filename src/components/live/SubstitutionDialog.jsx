@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/base44Client";
+import { getPlayerFoulTotal } from "@/utils/foulRules";
 
 export default function SubstitutionDialog({
   open,
@@ -177,7 +178,7 @@ export default function SubstitutionDialog({
                             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-blue-600">{player.jersey_number}</div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                              <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
+                              <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${getPlayerFoulTotal(pStats, game)}F${(pStats.technical_fouls||0) > 0 ? ` · ${pStats.technical_fouls}T` : ''}${(pStats.unsportsmanlike_fouls||0) > 0 ? ` · ${pStats.unsportsmanlike_fouls}U` : ''}` : ''}</p>
                             </div>
                             {isSelected && <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
                           </button>
@@ -217,7 +218,7 @@ export default function SubstitutionDialog({
                             <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 bg-red-600">{player.jersey_number}</div>
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold text-slate-900 text-sm">{player.name}</p>
-                              <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${pStats.fouls||0}F · ${pStats.technical_fouls||0}T` : ''}</p>
+                              <p className="text-xs text-slate-500">{player.position}{pStats ? ` · ${getPlayerFoulTotal(pStats, game)}F${(pStats.technical_fouls||0) > 0 ? ` · ${pStats.technical_fouls}T` : ''}${(pStats.unsportsmanlike_fouls||0) > 0 ? ` · ${pStats.unsportsmanlike_fouls}U` : ''}` : ''}</p>
                             </div>
                             {isSelected && <div className="w-6 h-6 rounded-full bg-red-500 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">✓</div>}
                           </button>

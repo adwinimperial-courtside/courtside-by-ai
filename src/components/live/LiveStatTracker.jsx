@@ -14,6 +14,8 @@ import { findPlayerOfGame } from "../utils/pogCalculator";
 import EmergencyLineupRepair from "./EmergencyLineupRepair";
 import BenchDrawer from "./BenchDrawer";
 import SubstitutionDialog from "./SubstitutionDialog";
+// FOUL_TOTAL_V1_TRACKER — foul-limit/disqualification logic now lives in the shared utility
+import { getPlayerFoulTotal, isPlayerDisqualified, getDisqualificationReason } from "@/utils/foulRules";
 
 const STAT_TYPES = [
   { key: 'points_2', label: '2PT', points: 2, color: 'bg-blue-600 hover:bg-blue-700' },
@@ -489,21 +491,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     return String(period);
   };
 
-  const getFoulLimits = () => ({
-    personalFoulLimit: game.game_rules?.personalFoulLimit ?? 5,
-    technicalFoulLimit: game.game_rules?.technicalFoulLimit ?? 2,
-    unsportsmanlikeFoulLimit: game.game_rules?.unsportsmanlikeFoulLimit ?? 2,
-  });
-
   const isPlayerEligibleForCourt = (playerId, stats) => {
-    const limits = getFoulLimits();
-    const s = stats.find(st => st.player_id === playerId);
-    if (!s) return true;
-    return (
-      (s.fouls || 0) < limits.personalFoulLimit &&
-      (s.technical_fouls || 0) < limits.technicalFoulLimit &&
-      (s.unsportsmanlike_fouls || 0) < limits.unsportsmanlikeFoulLimit
-    );
+    const s = stats.find(st => st.player_id === playerId && st.is_active) || stats.find(st => st.player_id === playerId);
+    return !isPlayerDisqualified(s, game);
   };
 
   const checkAndTriggerRepair = (freshStats) => {
@@ -666,25 +656,16 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       promises.push(createLogMutation.mutateAsync(statLogPayload));
 
       let ejectionLog = null;
-      if (statType.key === 'technical_fouls' && currentValue + 1 >= 2) {
-        ejectionLog = {
-          reason: '2 Technical Fouls',
-          label: `EJECTION — ${selectedPlayer.name} received 2 technical fouls`,
-          color: 'bg-pink-700 hover:bg-pink-800'
-        };
-      } else if (statType.key === 'fouls' && currentValue + 1 >= (game.game_rules?.personalFoulLimit ?? 5)) {
-        const foulLimit = game.game_rules?.personalFoulLimit ?? 5;
-        ejectionLog = {
-          reason: `${foulLimit} Fouls`,
-          label: `FOUL OUT — ${selectedPlayer.name} reached ${foulLimit} fouls`,
-          color: 'bg-red-700 hover:bg-red-800'
-        };
-      } else if (statType.key === 'unsportsmanlike_fouls' && currentValue + 1 >= 2) {
-        ejectionLog = {
-          reason: '2 Unsportsmanlike Fouls',
-          label: `EJECTION — ${selectedPlayer.name} received 2 unsportsmanlike fouls`,
-          color: 'bg-rose-700 hover:bg-rose-800'
-        };
+      if (['fouls', 'technical_fouls', 'unsportsmanlike_fouls'].includes(statType.key)) {
+        const projected = { ...playerStat, [statType.key]: currentValue + 1 };
+        const dq = getDisqualificationReason(projected, game);
+        if (dq) {
+          ejectionLog = {
+            reason: dq.reason,
+            label: `${dq.label} — ${selectedPlayer.name}: ${dq.reason}`,
+            color: dq.kind === 'technical' ? 'bg-pink-700 hover:bg-pink-800' : dq.kind === 'unsportsmanlike' ? 'bg-rose-700 hover:bg-rose-800' : dq.kind === 'combined' ? 'bg-rose-800 hover:bg-rose-900' : 'bg-red-700 hover:bg-red-800'
+          };
+        }
       }
 
       if (ejectionLog) {
@@ -1538,12 +1519,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
 
   const isDisqualified = (playerId) => {
     const stats = existingStats.find(s => s.player_id === playerId);
-    if (!stats) return false;
-    return (
-      (stats.fouls || 0) >= (game.game_rules?.personalFoulLimit ?? 5) ||
-      (stats.technical_fouls || 0) >= 2 ||
-      (stats.unsportsmanlike_fouls || 0) >= 2
-    );
+    return isPlayerDisqualified(stats, game);
   };
 
   const isEligibleReplacement = (playerId) => !isDisqualified(playerId);
@@ -1563,6 +1539,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
       existingStats.find(s => s.player_id === player.id && s.is_active) ||
       existingStats.find(s => s.player_id === player.id);
     const totalPoints = ((playerStats?.points_2 || 0) * 2) + ((playerStats?.points_3 || 0) * 3) + (playerStats?.free_throws || 0);
+    const foulTotal = getPlayerFoulTotal(playerStats, game);
     const isSelected = selectedPlayer?.id === player.id;
     const isArmed = armedOutIds.has(player.id);
     const isPulsing = pulsePlayerId === player.id;
@@ -1630,8 +1607,9 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
                       <span className="text-[9px] text-slate-500">{playerStats.assists||0}A</span>
                     </>
                   )}
-                  <span className={`text-[9px] font-semibold ${(playerStats.fouls||0) >= 4 ? 'text-red-600' : 'text-slate-500'}`}>{playerStats.fouls||0}F</span>
-                  <span className="text-[9px] text-slate-500">{playerStats.technical_fouls||0}T</span>
+                  <span className={`text-[9px] font-semibold ${foulTotal >= (game.game_rules?.personalFoulLimit ?? 5) - 1 ? 'text-red-600' : 'text-slate-500'}`}>{foulTotal}F</span>
+                  {(playerStats.technical_fouls || 0) > 0 && <span className="text-[9px] text-slate-500">{playerStats.technical_fouls}T</span>}
+                  {(playerStats.unsportsmanlike_fouls || 0) > 0 && <span className="text-[9px] text-slate-500">{playerStats.unsportsmanlike_fouls}U</span>}
                 </div>
               </div>
             )}
