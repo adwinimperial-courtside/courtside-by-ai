@@ -236,7 +236,7 @@ export default function LiveBoxScorePage() {
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-slate-500">Fouls</span>
         {fouls >= ftBonusThreshold ? (
-          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">{fouls} · Bonus</span>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">{fouls} · Penalty</span>
         ) : (
           <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">{fouls}</span>
         )}

@@ -399,7 +399,7 @@ export default function CreateGameDialog({ open, onOpenChange, onSubmit, isLoadi
                     </div>
                   ))}
                   <div>
-                    <Label htmlFor="teamFoulBonusThreshold">Team Fouls Before Bonus</Label>
+                    <Label htmlFor="teamFoulBonusThreshold">Team Fouls Before Penalty</Label>
                     <Input
                       id="teamFoulBonusThreshold"
                       type="number"

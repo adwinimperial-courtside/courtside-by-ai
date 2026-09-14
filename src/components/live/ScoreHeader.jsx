@@ -526,7 +526,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             <div className="flex items-center gap-2 mt-1.5">
               <span className="text-white/70 text-xs font-bold uppercase tracking-wide">FOULS: <span className="text-white">{homeFoulsNow}</span></span>
               {homeInBonus && (
-                <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
+                <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">PENALTY</span>
               )}
               {!homeInBonus && homeNearBonus && (
                 <span className="px-2 py-0.5 rounded-md bg-orange-500 text-white text-[10px] font-black uppercase tracking-wide">⚠ WARNING</span>
@@ -701,7 +701,7 @@ export default function ScoreHeader({ game, homeTeam, awayTeam, onGameUpdate, on
             </div>
             <div className="flex items-center gap-2 mt-1.5">
               {awayInBonus && (
-                <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">BONUS</span>
+                <span className="px-2 py-0.5 rounded-md bg-yellow-400 text-yellow-900 text-[10px] font-black uppercase tracking-wide">PENALTY</span>
               )}
               {!awayInBonus && awayNearBonus && (
                 <span className="px-2 py-0.5 rounded-md bg-orange-500 text-white text-[10px] font-black uppercase tracking-wide">⚠ WARNING</span>
