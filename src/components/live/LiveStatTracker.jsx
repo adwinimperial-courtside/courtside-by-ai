@@ -999,6 +999,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const teamActives = teamId === game.home_team_id ? homeActivePlayers : awayActivePlayers;
     if (!teamActives.find(p => p.id === outPlayer.id)) return;
     if (teamActives.find(p => p.id === inPlayerId)) return;
+    if (!isPlayerEligibleForCourt(inPlayerId, existingStats)) { setStatError('That player is out of the game on fouls.'); return; }
 
     isSubmittingSubRef.current = true;
     const currentComputedTimeLeft = computeTimeLeft(game);
@@ -1681,6 +1682,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
               benchPlayers={teamBench}
               armedCount={teamArmedCount}
               existingStats={existingStats}
+              game={game}
+              isEligible={(pid) => isPlayerEligibleForCourt(pid, existingStats)}
               onPickBenchPlayer={(inId) => handleBenchPick(panelTeamId, inId)}
             />
           </div>

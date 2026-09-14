@@ -7,12 +7,16 @@
 
 import { motion } from "framer-motion";
 import { ChevronUp } from "lucide-react";
+// FOUL_TOTAL_V1_BENCH
+import { getPlayerFoulTotal } from "@/utils/foulRules";
 
 export default function BenchDrawer({
   benchPlayers = [],
   armedCount = 0,
   existingStats = [],
   onPickBenchPlayer,
+  game,
+  isEligible = () => true,
 }) {
   const sortedBench = [...benchPlayers].sort(
     (a, b) => (a.jersey_number || 0) - (b.jersey_number || 0),
@@ -50,7 +54,8 @@ export default function BenchDrawer({
           <div className="flex flex-wrap gap-1.5 justify-start">
             {sortedBench.map((player) => {
               const pStats = existingStats.find((s) => s.player_id === player.id);
-              const fouls = pStats?.fouls || 0;
+              const fouls = getPlayerFoulTotal(pStats, game);
+              const eligible = isEligible(player.id);
               const pts =
                 ((pStats?.points_2 || 0) * 2) +
                 ((pStats?.points_3 || 0) * 3) +
@@ -58,15 +63,17 @@ export default function BenchDrawer({
               const tooltip =
                 `#${player.jersey_number} ${player.name}` +
                 (fouls > 0 ? ` · ${fouls} foul${fouls === 1 ? "" : "s"}` : "") +
-                (pts > 0 ? ` · ${pts} PTS` : "");
+                (pts > 0 ? ` · ${pts} PTS` : "") +
+                (!eligible ? " · OUT (fouls)" : "");
               return (
                 <motion.button
                   key={player.id}
                   type="button"
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => onPickBenchPlayer?.(player.id)}
+                  disabled={!eligible}
+                  onClick={() => { if (eligible) onPickBenchPlayer?.(player.id); }}
                   title={tooltip}
-                  className="relative w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow transition-colors bg-slate-700 hover:bg-slate-800 active:bg-slate-900 flex-shrink-0"
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shadow flex-shrink-0 ${eligible ? "transition-colors bg-slate-700 hover:bg-slate-800 active:bg-slate-900" : "bg-slate-300 cursor-not-allowed"}`}
                   style={{ fontSize: 13, lineHeight: 1 }}
                 >
                   {player.jersey_number}
