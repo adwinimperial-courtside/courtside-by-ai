@@ -14,6 +14,8 @@ import { findPlayerOfGame } from "../utils/pogCalculator";
 import EmergencyLineupRepair from "./EmergencyLineupRepair";
 import BenchDrawer from "./BenchDrawer";
 import SubstitutionDialog from "./SubstitutionDialog";
+// TIMEOUT_LINEUP_WIRING_V1
+import TimeoutLineupPanel from "./TimeoutLineupPanel";
 // FOUL_TOTAL_V1_TRACKER — foul-limit/disqualification logic now lives in the shared utility
 import { getPlayerFoulTotal, isPlayerDisqualified, getDisqualificationReason } from "@/utils/foulRules";
 
@@ -107,6 +109,41 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   const playerMinutesRef = React.useRef({});
   const playerGameClockStateRef = React.useRef({});
   const isSubmittingSubRef = React.useRef(false);
+  // TIMEOUT_LINEUP_WIRING_V1 — open both lineup panels when a timeout is called.
+  // Trigger: the timeouts-used count goes up while the clock is stopped (both the
+  // scorer TIMEOUT button and the timekeeper console write this). First load only
+  // seeds the count, so a page refresh never pops the panels. Display only — no writes.
+  const [lineupPanelOpen, setLineupPanelOpen] = useState({ home: false, away: false });
+  const [timeoutActive, setTimeoutActive] = useState(false);
+  const gameIsTimed = game.game_mode === 'timed' || (!game.game_mode && !!game.period_minutes);
+  const timeoutsUsedTotal = ['home_timeouts', 'away_timeouts'].reduce(
+    (sum, key) => sum + Object.values(game[key] || {}).reduce((s, v) => s + (Number(v) || 0), 0),
+    0
+  );
+  const prevTimeoutsUsedRef = React.useRef(null);
+  useEffect(() => {
+    const prev = prevTimeoutsUsedRef.current;
+    prevTimeoutsUsedRef.current = timeoutsUsedTotal;
+    if (prev === null) return;
+    if (timeoutsUsedTotal > prev && !game.clock_running) {
+      setLineupPanelOpen({ home: true, away: true });
+      setTimeoutActive(true);
+      setSelectedPlayer(null);
+      setArmedOutIds(new Set());
+    }
+  }, [timeoutsUsedTotal, game.clock_running]);
+  useEffect(() => {
+    if (game.clock_running) {
+      setLineupPanelOpen({ home: false, away: false });
+      setTimeoutActive(false);
+    }
+  }, [game.clock_running]);
+  useEffect(() => {
+    // Untimed games have no clock to restart, so the timeout ends when both panels are closed.
+    if (!gameIsTimed && timeoutActive && !lineupPanelOpen.home && !lineupPanelOpen.away) {
+      setTimeoutActive(false);
+    }
+  }, [gameIsTimed, timeoutActive, lineupPanelOpen.home, lineupPanelOpen.away]);
   const subCompletedAtRef = React.useRef(0);
   const isProcessingStatRef = React.useRef(false);
   const lastStatClickTimeRef = React.useRef(0);
@@ -1634,6 +1671,18 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
+  // TIMEOUT_LINEUP_WIRING_V1 — dims and blocks the stat buttons during a timeout.
+  const timeoutOverlay = timeoutActive ? (
+    <div className="absolute inset-0 z-20 rounded-2xl bg-white/70 flex items-center justify-center">
+      <div className="bg-slate-900 text-white rounded-xl px-4 py-2.5 text-sm font-bold text-center leading-snug shadow-lg">
+        {gameIsTimed ? 'Timeout — clock stopped' : 'Timeout'}
+        <span className="block text-[11px] font-medium text-slate-300">
+          {gameIsTimed ? 'Check both lineups before play restarts' : 'Close both lineups to resume scoring'}
+        </span>
+      </div>
+    </div>
+  ) : null;
+
   const TeamPanel = ({ team, activePlayers: teamPlayers, borderColor, labelColor, side }) => {
     const isHome = side === 'home';
     const accentColor = isHome ? '#3b82f6' : '#ef4444';
@@ -1649,6 +1698,10 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     const panelTeamId = team?.id;
     const teamArmedCount = teamPlayers.filter(p => armedOutIds.has(p.id)).length;
     const teamBench = (panelTeamId === game.home_team_id ? homeBenchPlayers : awayBenchPlayers).filter(p => !isDisqualified(p.id));
+    // TIMEOUT_LINEUP_WIRING_V1
+    const panelSide = panelTeamId === game.home_team_id ? 'home' : 'away';
+    const showLineupPanel = !!lineupPanelOpen[panelSide];
+    const canCheckLineup = !showLineupPanel && !game.clock_running;
 
     return (
       <div className="bg-white border border-slate-200 rounded-2xl p-2 flex flex-col h-full min-h-0 overflow-hidden" style={borderStyle}>
@@ -1662,8 +1715,32 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             ) : team?.name?.[0]}
           </div>
           <h2 className={`text-sm font-bold ${labelColor} truncate`}>{team?.name}</h2>
-          <span className="ml-auto text-slate-500 text-xs whitespace-nowrap">{teamPlayers.length}/5</span>
+          {canCheckLineup && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedPlayer(null);
+                setArmedOutIds(new Set());
+                setLineupPanelOpen(prev => ({ ...prev, [panelSide]: true }));
+              }}
+              className="ml-auto text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-500 hover:bg-amber-100 rounded-md px-2 py-1 whitespace-nowrap flex-shrink-0"
+            >
+              Check lineup
+            </button>
+          )}
+          <span className={`${canCheckLineup ? '' : 'ml-auto '}text-slate-500 text-xs whitespace-nowrap`}>{teamPlayers.length}/5</span>
         </div>
+        {showLineupPanel ? (
+          <TimeoutLineupPanel
+            key={`timeout-lineup-${panelSide}`}
+            roster={players.filter(p => p.team_id === panelTeamId)}
+            onCourtIds={teamPlayers.map(p => p.id)}
+            stats={existingStats}
+            game={game}
+            saving={false}
+            onClose={() => setLineupPanelOpen(prev => ({ ...prev, [panelSide]: false }))}
+          />
+        ) : (<>
         <div className="grid grid-cols-5 gap-1 min-[900px]:grid-cols-1 min-[900px]:gap-0.5 min-[900px]:content-start flex-1 min-h-0 overflow-y-auto">
           {teamPlayers.map((player) => 
             <div key={player.id}>
@@ -1688,6 +1765,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             />
           </div>
         )}
+        </>)}
       </div>
     );
   };
@@ -1853,7 +1931,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         )}
         <div className="mt-3 space-y-3">
           {TeamPanel({ team: homeTeam, activePlayers: homeActivePlayers, borderColor: "border-l-blue-300", labelColor: "text-blue-600" })}
-          <div className="bg-gradient-to-r from-indigo-100/95 to-purple-100/95 border-2 border-indigo-300/50 rounded-2xl p-3">
+          <div className="relative bg-gradient-to-r from-indigo-100/95 to-purple-100/95 border-2 border-indigo-300/50 rounded-2xl p-3">
+            {timeoutOverlay}
             <div className="flex items-center justify-center gap-3 mb-3">
               {selectedPlayer ? (
                 <>
@@ -1935,7 +2014,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
           </div>
 
           <div className="w-[50%] flex-shrink-0 flex flex-col min-h-0">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 relative">
+              {timeoutOverlay}
               {StatPanel({ large: true, showSub: false })}
             </div>
             <div className="flex-1 min-h-0 bg-white/95 border border-slate-200 rounded-xl overflow-hidden">
