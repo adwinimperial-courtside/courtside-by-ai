@@ -69,18 +69,7 @@ export default function TimeoutLineupPanel({
     return m;
   }, [players, labels]);
 
-  const committedKey = [...onCourtIds].sort().join("|");
-  const committed = useMemo(() => new Set(onCourtIds), [committedKey]); // eslint-disable-line react-hooks/exhaustive-deps
-  const [selected, setSelected] = useState(() => new Set(onCourtIds));
-  const dirty = !sameSet(selected, committed);
 
-  // If the court changes underneath us and nothing is pending, follow it.
-  const [lastCommittedKey, setLastCommittedKey] = useState(committedKey);
-  if (lastCommittedKey !== committedKey) {
-    const selectedKey = [...selected].sort().join("|");
-    setLastCommittedKey(committedKey);
-    if (selectedKey === lastCommittedKey) setSelected(new Set(onCourtIds));
-  }
 
   // Mirror the tracker's player card: active row first, else first row.
   // Disqualified if ANY row for the player is disqualified (safe direction).
@@ -94,6 +83,24 @@ export default function TimeoutLineupPanel({
     });
     return info;
   }, [players, stats, game]);
+
+  const committedKey = [...onCourtIds].sort().join("|");
+  const committed = useMemo(() => new Set(onCourtIds), [committedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // TIMEOUT_LINEUP_PANEL_V2 — a fouled-out player still on court starts un-lit,
+  // so the scorer can pick a replacement instead of being stuck at five.
+  const baselineIds = onCourtIds.filter((id) => !foulInfo[id]?.dq);
+  const baselineKey = [...baselineIds].sort().join("|");
+  const baseline = useMemo(() => new Set(baselineIds), [baselineKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  const [selected, setSelected] = useState(() => new Set(baselineIds));
+  const dirty = !sameSet(selected, baseline);
+
+  // If the court changes underneath us and nothing is pending, follow it.
+  const [lastBaselineKey, setLastBaselineKey] = useState(baselineKey);
+  if (lastBaselineKey !== baselineKey) {
+    const selectedKey = [...selected].sort().join("|");
+    setLastBaselineKey(baselineKey);
+    if (selectedKey === lastBaselineKey) setSelected(new Set(baselineIds));
+  }
 
   const limit = getFoulLimits(game).personalFoulLimit;
 
@@ -234,7 +241,7 @@ export default function TimeoutLineupPanel({
         {dirty && !saving && (
           <button
             type="button"
-            onClick={() => setSelected(new Set(onCourtIds))}
+            onClick={() => setSelected(new Set(baselineIds))}
             className="block mx-auto mb-2 text-xs font-semibold text-slate-500 underline hover:text-slate-900"
           >
             Discard changes

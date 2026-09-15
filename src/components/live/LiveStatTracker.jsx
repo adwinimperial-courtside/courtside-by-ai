@@ -16,6 +16,8 @@ import BenchDrawer from "./BenchDrawer";
 import SubstitutionDialog from "./SubstitutionDialog";
 // TIMEOUT_LINEUP_WIRING_V1
 import TimeoutLineupPanel from "./TimeoutLineupPanel";
+// TIMEOUT_LINEUP_SAVE_V1
+import { saveTimeoutLineup } from "./timeoutLineupSave";
 // FOUL_TOTAL_V1_TRACKER — foul-limit/disqualification logic now lives in the shared utility
 import { getPlayerFoulTotal, isPlayerDisqualified, getDisqualificationReason } from "@/utils/foulRules";
 
@@ -115,6 +117,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
   // seeds the count, so a page refresh never pops the panels. Display only — no writes.
   const [lineupPanelOpen, setLineupPanelOpen] = useState({ home: false, away: false });
   const [timeoutActive, setTimeoutActive] = useState(false);
+  const [timeoutLineupSaving, setTimeoutLineupSaving] = useState({ home: false, away: false });
   const gameIsTimed = game.game_mode === 'timed' || (!game.game_mode && !!game.period_minutes);
   const timeoutsUsedTotal = ['home_timeouts', 'away_timeouts'].reduce(
     (sum, key) => sum + Object.values(game[key] || {}).reduce((s, v) => s + (Number(v) || 0), 0),
@@ -1671,6 +1674,50 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
     );
   };
 
+  // TIMEOUT_LINEUP_SAVE_V1 — one batch write per team. Shares isSubmittingSubRef with
+  // quick swap, dialog sub, undo and repair. All write logic lives in timeoutLineupSave.js.
+  const handleTimeoutLineupSave = async (side, teamId, nextIds) => {
+    const flash = (msg, ms) => { setStatError(msg); setTimeout(() => setStatError(null), ms); };
+    if (repairMode) { flash('Fix the lineup in the repair screen first.', 4000); return; }
+    if (isSubmittingSubRef.current) { flash('Another lineup change is still saving — tap Save again in a moment.', 4000); return; }
+    isSubmittingSubRef.current = true;
+    setTimeoutLineupSaving(prev => ({ ...prev, [side]: true }));
+    try {
+      const team = teamId === game.home_team_id ? homeTeam : awayTeam;
+      const result = await saveTimeoutLineup({
+        base44,
+        game,
+        teamId,
+        teamName: team?.name || (side === 'home' ? 'Home' : 'Away'),
+        nextIds,
+        players,
+        computeTimeLeft,
+        playerMinutesRef,
+        playerGameClockStateRef,
+        updateStat: (args) => updateStatMutation.mutateAsync(args),
+        createStat: (data) => createStatMutation.mutateAsync(data),
+        createLog: (data) => createLogMutation.mutateAsync(data),
+        loggedBy: currentUser?.email || '',
+        deviceName: getDeviceName(),
+      });
+      if (result.changed) {
+        queryClient.setQueryData(['playerStats', game.id], result.expectedStats);
+        subCompletedAtRef.current = Date.now();
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['playerStats', game.id] });
+        }, 4000);
+        if (selectedPlayer && result.outIds.includes(selectedPlayer.id)) setSelectedPlayer(null);
+      }
+      setLineupPanelOpen(prev => ({ ...prev, [side]: false }));
+    } catch (error) {
+      console.error('[LiveStat:timeoutLineup]', error);
+      flash(error?.userMessage || 'Lineup not saved — check the connection and tap Save again.', 5000);
+    } finally {
+      isSubmittingSubRef.current = false;
+      setTimeoutLineupSaving(prev => ({ ...prev, [side]: false }));
+    }
+  };
+
   // TIMEOUT_LINEUP_WIRING_V1 — dims and blocks the stat buttons during a timeout.
   const timeoutOverlay = timeoutActive ? (
     <div className="absolute inset-0 z-20 rounded-2xl bg-white/70 flex items-center justify-center">
@@ -1737,7 +1784,8 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
             onCourtIds={teamPlayers.map(p => p.id)}
             stats={existingStats}
             game={game}
-            saving={false}
+            saving={!!timeoutLineupSaving[panelSide]}
+            onSave={({ nextIds }) => handleTimeoutLineupSave(panelSide, panelTeamId, nextIds)}
             onClose={() => setLineupPanelOpen(prev => ({ ...prev, [panelSide]: false }))}
           />
         ) : (<>
