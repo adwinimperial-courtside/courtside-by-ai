@@ -340,6 +340,7 @@ export const HELP_TOPICS = [
       "At 0:00 the horn sounds and NEXT PERIOD lights up. Tap it to set up the next quarter or half, then tap START when play resumes. If the last period ends tied, it sets up overtime. If not, the scorer ends the game.",
       "MENU has Set game clock (stop the clock first), Set shot clock, Shot clock on or off, Undo last timeout, End timeout early, Break timer (2 or 10 minutes), Previous period, Auto horn and Score feed status.",
       "In the scorer's Live Stat Tracker the header shows Clock run by timekeeper, with the clock and timeouts read-only. The scorer still records stats and possession, and can end the game at any time.",
+      "When either team calls a timeout, the scorer's Live Stat Tracker shows each team's full roster in place of the player cards, with the five on court lit. Tap players until the right five are lit, then tap Save lineup. Nothing changes until you save. The rosters close when the clock starts again, and Check lineup reopens them while the clock is stopped.",
       "Only one device runs the clock. Starting as timekeeper on another device takes over, and the first device switches to TV view. Use this if the console device fails: the clock continues from the last saved time. On extra screens, choose TV view only.",
       "If the console loses internet, its clock keeps running and the other screens catch up when it reconnects. The shot clock and horn exist only on the console device.",
       "When the scorer ends the game, the console shows FINAL and locks.",
