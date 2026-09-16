@@ -22,6 +22,28 @@
     },
     "phone_verify_expires": {
       "type": "string"
+    },
+    "privacy_terms_accepted": {
+      "type": "boolean",
+      "description": "CONSENT_FIELDS_V1 - true once the user has accepted the Terms and Privacy Policy"
+    },
+    "privacy_terms_accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "CONSENT_FIELDS_V1 - when the user accepted the Terms and Privacy Policy"
+    },
+    "marketing_email_consent": {
+      "type": "boolean",
+      "description": "CONSENT_FIELDS_V1 - optional opt-in to marketing emails"
+    },
+    "marketing_email_consent_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "CONSENT_FIELDS_V1 - when the user opted in to marketing emails"
+    },
+    "consent_version": {
+      "type": "string",
+      "description": "CONSENT_FIELDS_V1 - version of the consent text the user accepted, for example 2026-04-privacy-consent-v1"
     }
   }
 }
