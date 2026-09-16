@@ -87,6 +87,7 @@ import Viewers from './pages/Viewers';
 import Whiteboard from './pages/Whiteboard';
 import Registration from './pages/Registration';
 import BadgeHallOfFame from './pages/BadgeHallOfFame';
+import TeamRegistrations from './pages/TeamRegistrations';
 import __Layout from './Layout.jsx';
 
 
@@ -131,6 +132,7 @@ export const PAGES = {
     "CoachRoster": CoachRoster,
     "Registration": Registration,
     "BadgeHallOfFame": BadgeHallOfFame,
+    "TeamRegistrations": TeamRegistrations,
 }
 
 export const pagesConfig = {
