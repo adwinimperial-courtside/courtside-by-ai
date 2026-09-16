@@ -92,8 +92,13 @@ export default function Layout({ children }) {
         // carried onto the account by approveUserApplication at approval time instead.
 
         // Show consent reminder for existing users who haven't accepted yet
+        // CONSENT_GATE_V1 — Pending is included as well as Approved. approveUserApplication
+        // now refuses to grant an application that has no consent on record, so a pending
+        // applicant who was never asked has to be asked here — otherwise neither they nor
+        // the organiser has any way out and the application is stuck forever.
         const CONSENT_VERSION = "2026-04-privacy-consent-v1";
-        if (user && user.user_type !== "app_admin" && user.application_status === "Approved" && user.consent_version !== CONSENT_VERSION) {
+        const consentPromptStatuses = ["Approved", "Pending"];
+        if (user && user.user_type !== "app_admin" && consentPromptStatuses.includes(user.application_status) && user.consent_version !== CONSENT_VERSION) {
           setShowConsentReminder(true);
         }
 
