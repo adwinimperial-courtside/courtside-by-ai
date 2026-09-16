@@ -35,6 +35,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
   const [rosterDeadline, setRosterDeadline] = useState("");
   const [registrationMode, setRegistrationMode] = useState("open");
   const [teamSlots, setTeamSlots] = useState("");
+  const [linkSlug, setLinkSlug] = useState("");
 
   const { data: currentUser } = useQuery({
     queryKey: ['user'],
@@ -52,6 +53,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       setRosterDeadline("");
       setRegistrationMode("open");
       setTeamSlots("");
+      setLinkSlug("");
       setCopyFromId(groupSeasons && groupSeasons.length > 0 ? groupSeasons[0].id : START_EMPTY);
       setTeamSelections({});
       setErrorMessage("");
@@ -136,6 +138,21 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         ...ownerInfo,
         ...seasonFields,
       });
+
+      if (registrationMode === "open") {
+        try {
+          await base44.functions.invoke("manageRegistrationCampaign", {
+            action: "create",
+            league_id: newLeague.id,
+            slug: linkSlug,
+            hero_title: seasonName.trim(),
+            season_text: "Season " + seasonYear.trim(),
+            roles_enabled: ["coach"],
+          });
+        } catch (campaignError) {
+          console.warn("SEASON_SETUP_V1: could not create SignupCampaign", campaignError);
+        }
+      }
 
       if (rosterDeadline) {
         try {
@@ -313,6 +330,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
           </div>
 
           {registrationMode === "open" && (
+            <>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="new-season-regdeadline">Registration deadline</Label>
@@ -339,6 +357,23 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
                 <p className="text-xs text-slate-500 mt-1">A target, not a hard limit.</p>
               </div>
             </div>
+
+            <div>
+              <Label htmlFor="new-season-slug">Registration link <span className="text-slate-400 font-normal">(optional)</span></Label>
+              <div className="flex items-center gap-0 border border-slate-200 rounded-lg overflow-hidden mt-1">
+                <span className="text-xs text-slate-400 bg-slate-50 px-3 py-2.5 border-r border-slate-200 whitespace-nowrap">courtside-by-ai.com/Join/</span>
+                <input
+                  id="new-season-slug"
+                  type="text"
+                  value={linkSlug}
+                  onChange={(e) => setLinkSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                  className="flex-1 px-3 py-2 text-sm font-mono outline-none min-w-0"
+                  placeholder="auto-generated"
+                />
+              </div>
+              <p className="text-xs text-slate-500 mt-1">Short and memorable, e.g. fnbopen. Leave empty to generate one from the season name. Cannot be changed later.</p>
+            </div>
+            </>
           )}
 
           <div>
