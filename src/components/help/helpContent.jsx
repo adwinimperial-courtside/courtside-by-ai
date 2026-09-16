@@ -266,6 +266,20 @@ export const HELP_TOPICS = [
     tips: [
       "Share the right link for the right role — coach links and codes are one-time use.",
       "Use Copy to grab a link and send it via WhatsApp, Messenger or email.",
+      "Download QR code saves a high-resolution image of the same link. Put it on a flyer, a poster or the gym noticeboard — the code is drawn inside Courtside, so it keeps working forever.",
+    ],
+  },
+  {
+    key: "teamregistrations",
+    title: "Team Registrations",
+    category: "admin",
+    roles: ["league_admin", "app_admin"],
+    summary:
+      "See which coaches have asked to enter a team in an open-registration season, and how close the season is to full.",
+    tips: [
+      "Teams in shows how many teams are already in against the team target you set when you created the season. The target is a guide, not a hard limit.",
+      "Waiting counts coach applications that still need your decision — approve or decline them on User Requests.",
+      "If the season was set to I add the teams myself, coaches cannot apply through a link. Change that when you create the season.",
     ],
   },
   {
