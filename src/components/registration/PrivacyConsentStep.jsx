@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Shield, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+// CONSENT_LOG_V1
+import { base44 } from "@/api/base44Client";
 
 const CONSENT_VERSION = "2026-04-privacy-consent-v1";
 
@@ -25,17 +27,47 @@ const Section = ({ title, children }) => {
   );
 };
 
-export default function PrivacyConsentStep({ onAccept, onBack }) {
+export default function PrivacyConsentStep({ onAccept, onBack, leagueId = null, role = "", source = "" }) {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [showValidationError, setShowValidationError] = useState(false);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!termsAccepted) {
       setShowValidationError(true);
       return;
     }
     const now = new Date().toISOString();
+
+    // CONSENT_LOG_V1 — append-only record of this acceptance, separate from the
+    // latest-state fields written onto the user. This must NEVER block or delay
+    // registration: any failure is logged and swallowed, and a hung request is
+    // abandoned after 4 seconds so the user always moves on.
+    try {
+      const me = await Promise.race([
+        base44.auth.me(),
+        new Promise((resolve) => setTimeout(() => resolve(null), 4000)),
+      ]);
+      if (me && me.id) {
+        await Promise.race([
+          base44.entities.ConsentLog.create({
+            user_id: me.id,
+            user_email: me.email || "",
+            consent_version: CONSENT_VERSION,
+            privacy_terms_accepted: true,
+            marketing_email_consent: marketingConsent,
+            accepted_at: now,
+            league_id: leagueId || "",
+            role: role || "",
+            source: source || "",
+          }),
+          new Promise((resolve) => setTimeout(resolve, 4000)),
+        ]);
+      }
+    } catch (e) {
+      console.error("CONSENT_LOG_V1 write failed (non-blocking):", e && e.message);
+    }
+
     onAccept({
       privacy_terms_accepted: true,
       privacy_terms_accepted_at: now,
