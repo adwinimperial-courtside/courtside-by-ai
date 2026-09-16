@@ -112,6 +112,18 @@ export default function CoachRoster() {
   const settings = settingsList[0] || null;
   const teamStatus = statusList[0] || null;
 
+  // ROSTER_REOPEN_V1 — mirrors the server check in manageCoachRoster. An admin
+  // reopening this team overrides both the roster deadline and the after-first-game
+  // lock. The league-wide lock still wins. If the coach marks the roster final
+  // again, done_at becomes newer than reopened_at and this switches itself off.
+  const reopenedAtC = teamStatus?.reopened_at ? new Date(teamStatus.reopened_at) : null;
+  const doneAtC = teamStatus?.done_at ? new Date(teamStatus.done_at) : null;
+  const isReopened = !!(
+    reopenedAtC &&
+    !isNaN(reopenedAtC.getTime()) &&
+    (!doneAtC || isNaN(doneAtC.getTime()) || reopenedAtC > doneAtC)
+  );
+
   // ---- Window state (display only; the backend re-checks on every write) ----
   const teamHasPlayed = useMemo(() => {
     if (!teamId) return false;
@@ -127,19 +139,32 @@ export default function CoachRoster() {
   const deadlinePassed = !!(dueDate && new Date() > dueDate);
   const manualLocked = settings?.locked === true;
   const markedDone = teamStatus?.done === true;
-  const windowOpen = !!teamId && !teamHasPlayed && !notOpened && !deadlinePassed && !manualLocked && !markedDone;
+  // ROSTER_REOPEN_V1 — a reopened team ignores teamHasPlayed and deadlinePassed.
+  // The league-wide lock, an unset deadline and "already final" still close it.
+  const windowOpen =
+    !!teamId &&
+    !notOpened &&
+    !manualLocked &&
+    !markedDone &&
+    (isReopened || (!teamHasPlayed && !deadlinePassed));
 
   const lockReason = markedDone
     ? "You marked this roster as final. Only your league admin can reopen editing."
-    : teamHasPlayed
-    ? "Roster editing is locked after your first game. Contact your league admin for corrections."
     : manualLocked
     ? "Roster editing has been closed by your league admin."
     : notOpened
     ? "Roster editing is not open yet. Your league admin needs to set a roster deadline first."
+    : isReopened
+    ? null
+    : teamHasPlayed
+    ? "Roster editing is locked after your first game. Contact your league admin for corrections."
     : deadlinePassed
     ? "The roster deadline has passed. Contact your league admin for changes."
     : null;
+
+  // ROSTER_REOPEN_V1 — reopened mid-season: this roster already has games and
+  // recorded stats attached to it, so the coach gets a warning before editing.
+  const reopenWarning = isReopened && teamHasPlayed;
 
   const daysLeft = dueDate ? Math.max(0, Math.ceil((dueDate - new Date()) / 86400000)) : null;
 
@@ -346,6 +371,26 @@ export default function CoachRoster() {
               <div>
                 <div className="text-[14px] font-bold text-slate-900">Roster editing is closed</div>
                 <p className="text-[13px] text-slate-500 mt-0.5">{lockReason}</p>
+              </div>
+            </div>
+          ) : reopenWarning ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3 flex items-start gap-3" data-marker="ROSTER_REOPEN_V1">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-[14px] font-bold text-amber-900">This team has played games</div>
+                <p className="text-[13px] text-amber-800 mt-0.5">
+                  Your league admin reopened your roster, so changes here affect a season that is already under way. Anyone with recorded stats cannot be removed, and every change is logged.
+                </p>
+              </div>
+            </div>
+          ) : isReopened ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-3 flex items-start gap-3" data-marker="ROSTER_REOPEN_V1">
+              <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-[14px] font-bold text-amber-900">Editing reopened by your league admin</div>
+                <p className="text-[13px] text-amber-800 mt-0.5">
+                  Make your changes and mark the roster final again when you are done.
+                </p>
               </div>
             </div>
           ) : null}
