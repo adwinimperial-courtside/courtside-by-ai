@@ -8,7 +8,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // Admin actions (app_admin for any league; league_admin only for leagues in
 // their assigned_league_ids):
 //   'create'      — create the campaign for a league AND auto-generate one
-//                   random invite code per team in that league.
+//                   random invite code per team in that league. NO_TEAMS_OK_V1:
+//                   a league with zero teams is allowed — open-registration
+//                   seasons start empty and use 'sync_teams' later.
 //   'get'         — campaign + full code list (code values, status, used_by)
 //                   for one league.
 //   'list_mine'   — campaigns for all leagues the caller administers.
@@ -174,9 +176,6 @@ Deno.serve(async (req) => {
       if (!league) return Response.json({ error: 'League not found' }, { status: 404 });
 
       const teams = (await svc.Team.filter({ league_id: leagueId })) || [];
-      if (!teams.length) {
-        return Response.json({ error: 'This league has no teams yet. Add teams first, then create registration.' }, { status: 400 });
-      }
 
       let slug = String(body.slug || '').toLowerCase().trim().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
       if (!slug) {
