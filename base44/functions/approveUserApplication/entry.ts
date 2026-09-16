@@ -38,6 +38,39 @@ async function getLeagueName(base44, leagueId) {
   } catch (_e) { return leagueId; }
 }
 
+// CONSENT_GATE_V1 — an application is never granted without consent on record.
+// Grandfathering: the app's first users signed up before the consent step existed, and they
+// must not be blocked. The LAST public signup path to get the consent step was AcceptInvite
+// on 2026-08-07, so an application submitted from 2026-08-08 onward was definitely asked and
+// must carry consent. Anything earlier, or with no applied_at at all, is left alone.
+const CONSENT_REQUIRED_FROM = '2026-08-08';
+
+function consentRequiredFor(application) {
+  const applied = String((application && application.applied_at) || '').slice(0, 10);
+  if (!applied) return false;
+  return applied >= CONSENT_REQUIRED_FROM;
+}
+
+// CONSENT_GATE_V1 — consent counts as on record when the account carries the accepted flag
+// (CONSENT_FIELDS_V1, written since April 2026) or when an append-only ConsentLog row exists
+// (CONSENT_LOG_V1, added September 2026). Either one proves acceptance. A missing or
+// unreadable ConsentLog is never treated as proof.
+async function hasConsentOnRecord(base44, userId, applicantUser) {
+  if (applicantUser && applicantUser.privacy_terms_accepted === true) return true;
+  try {
+    const rows = await base44.asServiceRole.entities.ConsentLog.filter({ user_id: userId });
+    if (rows && rows.length > 0) return true;
+  } catch (_e) { /* absence of a log is not proof of consent */ }
+  return false;
+}
+
+// CONSENT_GATE_V1 — the sentence both approval paths show the organiser.
+function consentMissingMessage(application) {
+  const who = (application && (application.user_name || application.display_name || application.user_email)) || 'This applicant';
+  return 'Cannot approve: ' + who + ' has not accepted the privacy terms yet. They are asked the next'
+    + ' time they open Courtside, and the approval goes through normally after that.';
+}
+
 // COACH_CAP_V1 — how many coaches one team may have. A head coach plus one assistant.
 const COACH_CAP = 2;
 
@@ -372,6 +405,16 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
     if (!suppressDeclineEmail) await sendDeclineOnce(base44, application, declineReasonCode, declineReasonNote, []);
     return Response.json({ success: true, action: 'rejected' });
   }
+  // CONSENT_GATE_V1 — same rule as the coach/player/viewer path below: no grant without
+  // consent on record, and no override. Checked before any league or group is created.
+  if (consentRequiredFor(application)) {
+    let laUser = null;
+    try { laUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { laUser = null; }
+    const laConsent = await hasConsentOnRecord(base44, application.user_id, laUser);
+    if (!laConsent) {
+      return Response.json({ error: consentMissingMessage(application), consent_missing: true }, { status: 409 });
+    }
+  }
   let assignedLeagueIds = [];
   let createdGroupId = null;
   if (override_league_id) {
@@ -563,6 +606,22 @@ Deno.serve(async (req) => {
       const entry = decisions.find(d => d.league_id === lid);
       if (!entry) continue;
       if (entry.decision === 'approved' || entry.decision === 'rejected') continue;
+      // CONSENT_GATE_V1 — never grant without consent on record. Deliberately NOT overridable:
+      // force_conflicts does not apply here, because no organiser confirmation can turn a
+      // missing acceptance into a real one. The applicant is asked on their next visit and the
+      // approval then goes through unchanged. Checked first, so it beats every other pause.
+      if (action === 'approve' && consentRequiredFor(application)) {
+        const consentOk = await hasConsentOnRecord(base44, application.user_id, applicantUser);
+        if (!consentOk) {
+          conflicts.push({
+            league_id: lid,
+            reason: 'consent_missing',
+            league_name: await getLeagueName(base44, lid),
+            message: consentMissingMessage(application),
+          });
+          continue; // leave this league pending; nothing is granted
+        }
+      }
       // ROLE_CONFLICT_GUARD_V1 — pause (do not silently overwrite) if the applicant already
       // holds a DIFFERENT role in this league, unless the approver explicitly forced it.
       if (action === 'approve' && !forceConflicts.includes(lid)) {
