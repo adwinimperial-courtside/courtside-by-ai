@@ -115,6 +115,33 @@ export default function UserApplicationsReview() {
           });
         }
       }
+      // OPEN_SEASON_TEAM_V1 — a coach who signed up through an open season asked for a team name
+      // that already exists in that season. Nothing was created and nothing was granted.
+      // Confirming puts them on the team that is already there; the coach cap still applies.
+      const dupTeamConflicts = conflicts.filter(c => c && c.reason === 'duplicate_team_name');
+      if (action === 'approve' && dupTeamConflicts.length > 0) {
+        const who = app.user_name || app.user_email || 'This person';
+        const dupBody = dupTeamConflicts.map(c =>
+          'A team called ' + (c.team_name || c.requested_team_name || 'that name') + ' already exists in '
+          + (c.league_name || 'this season') + '.\n'
+          + who + ' asked to enter ' + (c.requested_team_name || 'a team') + '. No new team has been created.'
+        ).join('\n\n');
+        const ok = window.confirm(dupBody + '\n\nPut them on the team that is already there?');
+        if (ok) {
+          await base44.functions.invoke('approveUserApplication', {
+            applicationId: app.id,
+            action: 'approve',
+            league_ids: dupTeamConflicts.map(c => c.league_id),
+            confirm_existing_team: dupTeamConflicts.map(c => c.league_id),
+          });
+        }
+      }
+      // OPEN_SEASON_TEAM_V1 — the team could not be created, so the season stayed pending.
+      const failedTeam = conflicts.find(c => c && c.reason === 'team_create_failed');
+      if (failedTeam) {
+        setActionError('Could not create the team ' + (failedTeam.requested_team_name || '')
+          + ' in ' + (failedTeam.league_name || 'that season') + '. Nothing was approved. Please try again.');
+      }
       refresh();
     } catch (e) {
       setActionError((e && e.message) || 'Action failed');
