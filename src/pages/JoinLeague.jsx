@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Loader2, AlertCircle, ChevronLeft, Users, Eye, ClipboardList } from "lucide-react";
 import PrivacyConsentStep from "@/components/registration/PrivacyConsentStep";
@@ -499,24 +500,34 @@ export default function JoinLeague() {
     return (
       <Shell campaign={campaign}>
         <div className="space-y-3">
+          <Banner message={formError} />
           <p className="text-sm font-medium text-slate-700">How are you joining{enabledRoles.length > 1 ? "" : " the league"}?</p>
           {enabledRoles.map((key) => {
             const meta = ROLE_META[key];
             if (!meta) return null;
             const Icon = meta.icon;
+            // OPEN_SEASON_COACH_V1 — team registration stops at the deadline;
+            // players and fans keep signing up after it.
+            const locked = key === "coach" && coachClosed;
+            const coachDesc = key === "coach" && openSeason
+              ? "I'm entering a team in this season"
+              : meta.description;
             return (
               <button
                 key={key}
                 type="button"
+                disabled={locked}
                 onClick={() => pickRole(key)}
-                className="w-full flex items-center gap-3 rounded-xl border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50 px-4 py-3 text-left transition-colors"
+                className={locked
+                  ? "w-full flex items-center gap-3 rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-left opacity-60 cursor-not-allowed"
+                  : "w-full flex items-center gap-3 rounded-xl border-2 border-slate-200 hover:border-orange-300 hover:bg-orange-50 px-4 py-3 text-left transition-colors"}
               >
                 <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
                   <Icon className="w-5 h-5 text-slate-600" />
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{meta.label}</p>
-                  <p className="text-xs text-slate-500">{meta.description}</p>
+                  <p className="text-xs text-slate-500">{locked ? "Team registration closed on " + deadlineLabel : coachDesc}</p>
                 </div>
               </button>
             );
@@ -545,7 +556,20 @@ export default function JoinLeague() {
         <Banner message={formError} />
 
         <div className="space-y-4">
-          {roleKey === "coach" && <LockedTeamField teamName={(codeInfo && codeInfo.team_name) || "Your team"} accent={accent} />}
+          {roleKey === "coach" && coachPath === "new_team" && (
+            <div data-marker="OPEN_SEASON_COACH_V1">
+              <label className="block text-sm font-medium text-slate-700 mb-1">Team you're entering</label>
+              <div className="rounded-xl border-2 px-4 py-3 flex items-center gap-2 bg-orange-50 border-orange-300">
+                <ClipboardList className="w-5 h-5 flex-shrink-0" style={{ color: accent }} />
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">{requestedTeamName.trim() || "Your team"}</p>
+                  <p className="text-xs text-slate-500">The league admin creates this team when they approve you</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {roleKey === "coach" && coachPath !== "new_team" && <LockedTeamField teamName={(codeInfo && codeInfo.team_name) || "Your team"} accent={accent} />}
 
           {roleKey === "player" && (
             <>
@@ -670,6 +694,77 @@ export default function JoinLeague() {
     );
   }
 
+  // OPEN_SEASON_COACH_V1 — step === "team": open season, no code. The coach names
+  // the team they want to enter and can leave the organizer a short note.
+  if (step === "team") {
+    return (
+      <Shell campaign={campaign} roleKey={roleKey} stepNumber={1}>
+        <button
+          type="button"
+          onClick={() => { setStep("role"); setFormError(""); }}
+          className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-4 transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Back
+        </button>
+        <Banner message={formError} />
+        <div className="space-y-4" data-marker="OPEN_SEASON_COACH_V1">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Team name</label>
+            <Input
+              value={requestedTeamName}
+              onChange={(e) => { setRequestedTeamName(e.target.value); setFormError(""); }}
+              placeholder="e.g., Espoo Eagles"
+              maxLength={60}
+            />
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              The name your team will play under. The league admin creates the team when they approve you.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Note to the organizer <span className="text-slate-400 font-normal">(optional)</span>
+            </label>
+            <Textarea
+              value={organizerNote}
+              onChange={(e) => { setOrganizerNote(e.target.value.slice(0, 300)); setFormError(""); }}
+              placeholder="Anything the organizer should know — home venue, age group, roughly how many players."
+              rows={3}
+              maxLength={300}
+            />
+            <p className="text-xs text-slate-400 mt-1 text-right">{organizerNote.length} / 300</p>
+          </div>
+
+          {deadlineLabel && (
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Team registration closes on <span className="font-semibold text-slate-700">{deadlineLabel}</span>.
+            </p>
+          )}
+
+          <Button
+            onClick={() => {
+              if (!requestedTeamName.trim()) { setFormError("Please enter the name of the team you want to enter."); return; }
+              setFormError("");
+              setStep("consent");
+            }}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+          >
+            Continue
+          </Button>
+
+          <button
+            type="button"
+            onClick={() => { setCoachPath("code"); setStep("code"); setFormError(""); }}
+            className="w-full text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            I already have a team code
+          </button>
+        </div>
+      </Shell>
+    );
+  }
+
   // step === "code"
   return (
     <Shell campaign={campaign} roleKey={roleKey} stepNumber={1}>
@@ -709,6 +804,16 @@ export default function JoinLeague() {
             "Continue"
           )}
         </Button>
+        {openSeason && !coachClosed && (
+          <button
+            type="button"
+            data-marker="OPEN_SEASON_COACH_V1"
+            onClick={() => { setCoachPath("new_team"); setStep("team"); setFormError(""); }}
+            className="w-full text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            I don't have a code — my team isn't set up yet
+          </button>
+        )}
       </div>
     </Shell>
   );
