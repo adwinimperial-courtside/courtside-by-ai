@@ -139,21 +139,6 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         ...seasonFields,
       });
 
-      if (registrationMode === "open") {
-        try {
-          await base44.functions.invoke("manageRegistrationCampaign", {
-            action: "create",
-            league_id: newLeague.id,
-            slug: linkSlug,
-            hero_title: seasonName.trim(),
-            season_text: "Season " + seasonYear.trim(),
-            roles_enabled: ["coach"],
-          });
-        } catch (campaignError) {
-          console.warn("SEASON_SETUP_V1: could not create SignupCampaign", campaignError);
-        }
-      }
-
       if (rosterDeadline) {
         try {
           await base44.entities.RosterSettings.create({
@@ -191,6 +176,21 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         const mine = currentUser.assigned_league_ids || [];
         if (!mine.includes(newLeague.id)) {
           await base44.auth.updateMe({ assigned_league_ids: [...mine, newLeague.id] });
+        }
+      }
+
+      if (registrationMode === "open") {
+        try {
+          await base44.functions.invoke("manageRegistrationCampaign", {
+            action: "create",
+            league_id: newLeague.id,
+            slug: linkSlug,
+            hero_title: seasonName.trim(),
+            season_text: "Season " + seasonYear.trim(),
+            roles_enabled: ["coach"],
+          });
+        } catch (campaignError) {
+          console.warn("SEASON_SETUP_V1: could not create SignupCampaign", campaignError);
         }
       }
       try {
