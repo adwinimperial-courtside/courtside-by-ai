@@ -29,6 +29,12 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
   const [copyFromId, setCopyFromId] = useState(START_EMPTY);
   const [teamSelections, setTeamSelections] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
+  const [rosterDeadline, setRosterDeadline] = useState("");
+  const [registrationMode, setRegistrationMode] = useState("open");
+  const [teamSlots, setTeamSlots] = useState("");
 
   const { data: currentUser } = useQuery({
     queryKey: ['user'],
@@ -40,6 +46,12 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
     if (open) {
       setSeasonName("");
       setSeasonYear(new Date().getFullYear().toString());
+      setStartDate("");
+      setEndDate("");
+      setRegistrationDeadline("");
+      setRosterDeadline("");
+      setRegistrationMode("open");
+      setTeamSlots("");
       setCopyFromId(groupSeasons && groupSeasons.length > 0 ? groupSeasons[0].id : START_EMPTY);
       setTeamSelections({});
       setErrorMessage("");
@@ -79,6 +91,18 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
     });
   };
 
+  const handleStartDateChange = (value) => {
+    setStartDate(value);
+    const year = (value || "").slice(0, 4);
+    if (/^\d{4}$/.test(year)) setSeasonYear(year);
+  };
+
+  const modeCardClass = (mode) =>
+    "text-left p-3 rounded-lg border transition-colors " +
+    (registrationMode === mode
+      ? "border-orange-500 bg-orange-50"
+      : "border-slate-200 hover:border-orange-300");
+
   const setTeamMode = (teamId, mode) => {
     setTeamSelections(prev => ({ ...prev, [teamId]: mode }));
   };
@@ -101,12 +125,34 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       } : {}));
       Object.keys(ownerInfo).forEach(k => { if (ownerInfo[k] === undefined) delete ownerInfo[k]; });
 
+      const seasonFields = { registration_mode: registrationMode };
+      if (startDate) seasonFields.start_date = startDate;
+      if (endDate) seasonFields.end_date = endDate;
+      if (registrationMode === "open") {
+        if (registrationDeadline) seasonFields.registration_deadline = registrationDeadline;
+        const slots = parseInt(teamSlots, 10);
+        if (!isNaN(slots) && slots > 0) seasonFields.team_slots = slots;
+      }
       const newLeague = await base44.entities.League.create({
         name: seasonName.trim(),
         season: seasonYear.trim(),
         group_id: group.id,
         ...ownerInfo,
+        ...seasonFields,
       });
+
+      if (rosterDeadline) {
+        try {
+          await base44.entities.RosterSettings.create({
+            league_id: newLeague.id,
+            due_date: new Date(rosterDeadline + "T23:59:59").toISOString(),
+            locked: false,
+            updated_by: currentUser?.email || "",
+          });
+        } catch (rosterSettingsError) {
+          console.warn("SEASON_SETUP_V1: could not create RosterSettings", rosterSettingsError);
+        }
+      }
 
       if (copyFromId !== START_EMPTY) {
         const chosen = sortedTeams.filter(t => teamSelections[t.id]);
@@ -181,6 +227,22 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       setErrorMessage('Please enter a season name');
       return;
     }
+    if (!startDate) {
+      setErrorMessage('Please choose a start date');
+      return;
+    }
+    if (endDate && endDate < startDate) {
+      setErrorMessage('End date cannot be before the start date');
+      return;
+    }
+    if (registrationMode === 'open' && !registrationDeadline) {
+      setErrorMessage('Please choose a registration deadline');
+      return;
+    }
+    if (!rosterDeadline) {
+      setErrorMessage('Please choose a roster deadline');
+      return;
+    }
     setErrorMessage("");
     createSeasonMutation.mutate();
   };
@@ -209,6 +271,29 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="new-season-start">Start date</Label>
+              <Input
+                id="new-season-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => handleStartDateChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="new-season-end">End date <span className="text-slate-400 font-normal">(optional)</span></Label>
+              <Input
+                id="new-season-end"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="mt-1"
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="new-season-year">Season year</Label>
             <Input
@@ -217,6 +302,69 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
               onChange={(e) => setSeasonYear(e.target.value)}
               className="mt-1"
             />
+          </div>
+
+          <div data-marker="SEASON_SETUP_V1">
+            <Label>How do teams join this season?</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setRegistrationMode("open")}
+                className={modeCardClass("open")}
+              >
+                <span className="block text-sm font-medium text-slate-900">Open registration</span>
+                <span className="block text-xs text-slate-500 mt-0.5">Coaches apply through a link. You approve each one.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRegistrationMode("closed")}
+                className={modeCardClass("closed")}
+              >
+                <span className="block text-sm font-medium text-slate-900">I add the teams myself</span>
+                <span className="block text-xs text-slate-500 mt-0.5">You create each team and send the coach a code.</span>
+              </button>
+            </div>
+          </div>
+
+          {registrationMode === "open" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="new-season-regdeadline">Registration deadline</Label>
+                <Input
+                  id="new-season-regdeadline"
+                  type="date"
+                  value={registrationDeadline}
+                  onChange={(e) => setRegistrationDeadline(e.target.value)}
+                  className="mt-1"
+                />
+                <p className="text-xs text-slate-500 mt-1">Last day coaches can apply.</p>
+              </div>
+              <div>
+                <Label htmlFor="new-season-slots">Team slots <span className="text-slate-400 font-normal">(optional)</span></Label>
+                <Input
+                  id="new-season-slots"
+                  type="number"
+                  min="1"
+                  value={teamSlots}
+                  onChange={(e) => setTeamSlots(e.target.value)}
+                  placeholder="e.g., 8"
+                  className="mt-1"
+                />
+                <p className="text-xs text-slate-500 mt-1">A target, not a hard limit.</p>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="new-season-rosterdeadline">Roster deadline</Label>
+            <Input
+              id="new-season-rosterdeadline"
+              type="date"
+              value={rosterDeadline}
+              onChange={(e) => setRosterDeadline(e.target.value)}
+              className="mt-1"
+            />
+            <p className="text-xs text-slate-500 mt-1">Last day coaches can edit their roster. Coach roster editing opens as soon as the season is created.</p>
           </div>
 
           <div>
