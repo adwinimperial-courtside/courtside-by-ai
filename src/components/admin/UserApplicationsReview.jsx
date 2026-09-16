@@ -76,6 +76,16 @@ export default function UserApplicationsReview() {
           suppress_decline_email: declineInfo.sendEmail === false,
         } : {}),
       });
+      // CONSENT_GATE_V1 — the applicant has not accepted the privacy terms, so nothing was
+      // granted. There is no confirm-to-override here on purpose: only the applicant can fix
+      // it, and they are asked the next time they open Courtside.
+      const consentBlocked = (((res && res.data && Array.isArray(res.data.conflicts)) ? res.data.conflicts : [])
+        .find(c => c && c.reason === 'consent_missing'));
+      if (action === 'approve' && consentBlocked) {
+        setActionError(consentBlocked.message || 'Cannot approve: this applicant has not accepted the privacy terms yet.');
+        refresh();
+        return;
+      }
       // ROLE_CONFLICT_GUARD_V1 — a league is paused (not overwritten) when the applicant already
       // holds a different role there. Confirm the override, then re-send forced for those leagues.
       const conflicts = (res && res.data && Array.isArray(res.data.conflicts)) ? res.data.conflicts : [];
