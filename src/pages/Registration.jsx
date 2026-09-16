@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { UserPlus, Link2, Copy, RefreshCw, Upload, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { UserPlus, Link2, Copy, RefreshCw, Upload, CheckCircle2, XCircle, Pencil, Download } from "lucide-react";
+import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import HelpButton from "../components/help/HelpButton";
 
 // REGISTRATION_ADMIN_V1 — self-serve registration campaigns for league admins.
@@ -285,6 +286,24 @@ export default function Registration() {
     }
   };
 
+  // SHARE_PANEL_QR_V1 - the QR is drawn locally by qrcode.react. Nothing is
+  // fetched from an image service, so a printed flyer keeps working forever.
+  const qrDownloadRef = useRef(null);
+
+  const downloadQrPng = () => {
+    const canvas = qrDownloadRef.current ? qrDownloadRef.current.querySelector("canvas") : null;
+    if (!canvas) {
+      setPageError("Could not build the QR image. Reload the page and try again.");
+      return;
+    }
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "courtside-registration-" + (campaign ? campaign.slug : "qr") + ".png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleClose = async () => {
     const closing = campaign.status === "open";
     if (closing && !window.confirm("Close registration? The public page will stop accepting signups. You can reopen it anytime.")) {
@@ -368,13 +387,33 @@ export default function Registration() {
               <StatusPill status={campaign.status} />
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-3 py-2.5">
-              <Link2 className="w-4 h-4 text-slate-400 shrink-0" />
-              <span className="font-mono text-xs md:text-sm text-slate-700 flex-1 truncate">{shareUrl}</span>
-              <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0">
-                <Copy className="w-3.5 h-3.5 mr-1.5" />
-                Copy link
-              </Button>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4" data-marker="SHARE_PANEL_QR_V1">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="bg-white rounded-lg border border-slate-200 p-2.5 self-start shrink-0">
+                  <QRCodeSVG value={shareUrl} size={132} level="M" bgColor="#ffffff" fgColor="#0B1F3A" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-2.5">
+                  <h3 className="text-sm font-medium text-slate-700">Share this link</h3>
+                  <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-lg px-3 py-2.5">
+                    <Link2 className="w-4 h-4 text-slate-400 shrink-0" />
+                    <span className="font-mono text-xs md:text-sm text-slate-700 flex-1 truncate">{shareUrl}</span>
+                    <Button size="sm" variant="outline" onClick={copyLink} className="shrink-0">
+                      <Copy className="w-3.5 h-3.5 mr-1.5" />
+                      Copy link
+                    </Button>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={downloadQrPng}>
+                    <Download className="w-3.5 h-3.5 mr-1.5" />
+                    Download QR code
+                  </Button>
+                  <p className="text-xs text-slate-500">
+                    Scanning the code opens the same signup page as the link. Print it on a flyer, a poster or the gym noticeboard.
+                  </p>
+                </div>
+              </div>
+              <div ref={qrDownloadRef} className="hidden" aria-hidden="true">
+                <QRCodeCanvas value={shareUrl} size={1024} level="M" marginSize={4} bgColor="#ffffff" fgColor="#0B1F3A" />
+              </div>
             </div>
 
             {editing ? (
