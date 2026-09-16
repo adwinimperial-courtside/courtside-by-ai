@@ -1,0 +1,65 @@
+{
+  "name": "ConsentLog",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - the user who accepted"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - email at the moment of acceptance"
+    },
+    "consent_version": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - version of the consent text accepted, for example 2026-04-privacy-consent-v1"
+    },
+    "privacy_terms_accepted": {
+      "type": "boolean",
+      "description": "CONSENT_LOG_V1 - the required terms and privacy checkbox"
+    },
+    "marketing_email_consent": {
+      "type": "boolean",
+      "description": "CONSENT_LOG_V1 - the optional marketing email checkbox"
+    },
+    "accepted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "CONSENT_LOG_V1 - when this acceptance happened"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - the league or season being registered for, when there is one"
+    },
+    "role": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - the role being applied for at that moment, for example coach, player, viewer"
+    },
+    "source": {
+      "type": "string",
+      "description": "CONSENT_LOG_V1 - which registration page recorded it, for example JoinLeague, RegistrationGate, JoinKOE, JoinFinNoyCoach, AcceptInvite, ConsentReminderModal"
+    }
+  },
+  "required": [
+    "user_id",
+    "consent_version",
+    "accepted_at"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
