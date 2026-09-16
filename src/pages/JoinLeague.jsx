@@ -133,6 +133,14 @@ export default function JoinLeague() {
   const [codeInfo, setCodeInfo] = useState(null);
   const [isChecking, setIsChecking] = useState(false);
 
+  // OPEN_SEASON_COACH_V1 — in an open-registration season the organizer has not
+  // created the teams, so a coach has no one-time code. They type the team they
+  // want to enter plus an optional note, and approveUserApplication creates the
+  // team on approval. coachPath "code" keeps the existing flow byte-for-byte.
+  const [coachPath, setCoachPath] = useState("code"); // "code" | "new_team"
+  const [requestedTeamName, setRequestedTeamName] = useState("");
+  const [organizerNote, setOrganizerNote] = useState("");
+
   const [teams, setTeams] = useState([]);
   const [selectedTeamId, setSelectedTeamId] = useState("");
 
@@ -147,6 +155,17 @@ export default function JoinLeague() {
 
   const accent = campaign?.color_accent || DEFAULT_ACCENT;
   const enabledRoles = campaign?.roles_enabled || ["coach"];
+
+  // OPEN_SEASON_COACH_V1 — both fields come from the League via get_public.
+  // A season with no registration_mode behaves exactly as before.
+  const openSeason = campaign?.registration_mode === "open";
+  const coachDeadline = String(campaign?.registration_deadline || "").slice(0, 10);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const coachClosed = Boolean(coachDeadline) && todayKey > coachDeadline;
+  const deadlineLabel = coachDeadline
+    ? new Date(coachDeadline + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+    : "";
+  const coachBackStep = coachPath === "new_team" ? "team" : "code";
 
   useEffect(() => {
     let cancelled = false;
@@ -210,7 +229,14 @@ export default function JoinLeague() {
     setRoleKey(key);
     setFormError("");
     if (key === "coach") {
-      setStep("code");
+      // OPEN_SEASON_COACH_V1 — open season, no code: ask for the team name.
+      if (coachClosed) {
+        setFormError("Team registration closed on " + deadlineLabel + ". Contact the league admin if you still want to enter a team.");
+        setRoleKey("");
+        return;
+      }
+      setCoachPath(openSeason ? "new_team" : "code");
+      setStep(openSeason ? "team" : "code");
       return;
     }
     if ((key === "player" || key === "viewer") && !teams.length && campaign) {
@@ -257,7 +283,11 @@ export default function JoinLeague() {
     setFormError("");
     const leagueId = campaign.league_id;
 
-    if (roleKey === "coach" && (!codeInfo || !codeInfo.team_id)) { setFormError(GENERIC_CODE_ERROR); return; }
+    // OPEN_SEASON_COACH_V1 — a new-team coach has no code and no team_id yet.
+    const newTeamCoach = roleKey === "coach" && coachPath === "new_team";
+    if (roleKey === "coach" && !newTeamCoach && (!codeInfo || !codeInfo.team_id)) { setFormError(GENERIC_CODE_ERROR); return; }
+    if (newTeamCoach && !requestedTeamName.trim()) { setFormError("Please enter the name of the team you want to enter."); return; }
+    if (newTeamCoach && coachClosed) { setFormError("Team registration closed on " + deadlineLabel + "."); return; }
     if (roleKey === "player") {
       if (!displayName.trim()) { setFormError("Please enter your player name."); return; }
       if (!jerseyNumber.trim()) { setFormError("Please enter your jersey number."); return; }
@@ -283,7 +313,12 @@ export default function JoinLeague() {
         league_ids: [leagueId],
       };
 
-      if (roleKey === "coach") {
+      if (newTeamCoach) {
+        // OPEN_SEASON_COACH_V1 — nothing to redeem: the team does not exist yet.
+        // approveUserApplication creates it from requested_team_name on approval.
+        applicationData.requested_team_name = requestedTeamName.trim();
+        if (organizerNote.trim()) applicationData.organizer_note = organizerNote.trim().slice(0, 300);
+      } else if (roleKey === "coach") {
         // Redeem first — burns the one-time code. Idempotent for the same email,
         // so if application creation fails below this user can safely retry.
         await base44.functions.invoke("validateCoachCode", { action: "redeem", code: codeInput });
@@ -492,7 +527,7 @@ export default function JoinLeague() {
   }
 
   if (step === "consent") {
-    return <PrivacyConsentStep onAccept={handleConsentAccept} onBack={() => setStep(roleKey === "coach" ? "code" : "role")} />;
+    return <PrivacyConsentStep onAccept={handleConsentAccept} onBack={() => setStep(roleKey === "coach" ? coachBackStep : "role")} />;
   }
 
   if (step === "details") {
@@ -500,7 +535,7 @@ export default function JoinLeague() {
       <Shell campaign={campaign} roleKey={roleKey} stepNumber={2} compact>
         <button
           type="button"
-          onClick={() => { setStep(roleKey === "coach" ? "code" : "role"); setFormError(""); }}
+          onClick={() => { setStep(roleKey === "coach" ? coachBackStep : "role"); setFormError(""); }}
           className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-4 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
