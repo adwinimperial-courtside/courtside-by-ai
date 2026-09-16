@@ -137,6 +137,11 @@ Deno.serve(async (req) => {
           if (group?.logo_url) shaped.crest_url = group.logo_url;
         } catch (e) { /* leave crest empty; page falls back to the Courtside mark */ }
       }
+      // OPEN_SEASON_COACH_V1 — the public page needs to know whether teams apply
+      // through the link and when team registration closes. Neither is a secret.
+      shaped.registration_mode = league?.registration_mode || '';
+      shaped.registration_deadline = league?.registration_deadline || '';
+      shaped.team_slots = league?.team_slots || 0;
       return Response.json({
         campaign: shaped,
         league_name: league ? league.name : ''
