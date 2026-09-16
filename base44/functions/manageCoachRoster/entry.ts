@@ -73,14 +73,30 @@ Deno.serve(async (req) => {
     if (!settings || !settings.due_date) {
       return Response.json({ error: 'Roster editing is not open yet. Ask your league admin to set a roster deadline.' }, { status: 400 });
     }
-    if (new Date() > new Date(settings.due_date)) {
-      return Response.json({ error: 'The roster deadline has passed. Contact your league admin for changes.' }, { status: 400 });
-    }
 
+    // ROSTER_REOPEN_V1 — the team status must be read BEFORE the deadline and
+    // first-game checks, because an admin reopening a single team is exactly the
+    // override for both. It used to be read afterwards, which is why reopening a
+    // team after the deadline did nothing at all.
     const statusList = await base44.asServiceRole.entities.TeamRosterStatus.filter({ team_id: teamId });
     const teamStatus = statusList[0] || null;
     if (teamStatus && teamStatus.done === true) {
       return Response.json({ error: 'Your roster is already marked as final. Contact your league admin to reopen editing.' }, { status: 400 });
+    }
+
+    // ROSTER_REOPEN_V1 — "reopened" means an admin cleared done and stamped
+    // reopened_at, and that stamp is newer than the last time this coach marked
+    // the roster final. The league-wide locked flag above still wins over this.
+    const reopenedAt = teamStatus && teamStatus.reopened_at ? new Date(teamStatus.reopened_at) : null;
+    const doneAt = teamStatus && teamStatus.done_at ? new Date(teamStatus.done_at) : null;
+    const isReopened = !!(
+      reopenedAt &&
+      !isNaN(reopenedAt.getTime()) &&
+      (!doneAt || isNaN(doneAt.getTime()) || reopenedAt > doneAt)
+    );
+
+    if (!isReopened && new Date() > new Date(settings.due_date)) {
+      return Response.json({ error: 'The roster deadline has passed. Contact your league admin for changes.' }, { status: 400 });
     }
 
     const leagueGames = await base44.asServiceRole.entities.Game.filter({ league_id: leagueId });
@@ -88,9 +104,14 @@ Deno.serve(async (req) => {
       (g.status === 'completed' || g.status === 'in_progress') &&
       (g.home_team_id === teamId || g.away_team_id === teamId)
     );
-    if (teamHasPlayed) {
+    if (teamHasPlayed && !isReopened) {
       return Response.json({ error: 'Roster editing is locked after your first game. Contact your league admin for corrections.' }, { status: 400 });
     }
+
+    // ROSTER_REOPEN_V1 — a reopened team that has already played is a mid-season
+    // change. The client uses this to warn the coach. Deleting a player who
+    // already has recorded stats stays blocked by the existing check below.
+    const reopenWarning = isReopened && teamHasPlayed;
 
     // =================================================================
     // ACTION: save — full-roster save
@@ -187,7 +208,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      return Response.json({ success: true, saved: saved, deleted: toDelete.length });
+      return Response.json({ success: true, saved: saved, deleted: toDelete.length, reopened: isReopened, played_warning: reopenWarning });
     }
 
     // =================================================================
@@ -268,7 +289,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      return Response.json({ success: true, player_count: players.length });
+      return Response.json({ success: true, player_count: players.length, reopened: isReopened, played_warning: reopenWarning });
     }
 
     return Response.json({ error: 'Unknown action: ' + String(action) }, { status: 400 });
