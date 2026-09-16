@@ -74,6 +74,7 @@ const adminItems = [
   { title: "Game Log", url: createPageUrl("GameLog"), icon: ScrollText },
   { title: "Admin Tools", url: createPageUrl("AdminTools"), icon: Settings },
   { title: "Registration", url: createPageUrl("Registration"), icon: UserPlus },
+  { title: "Team Registrations", url: createPageUrl("TeamRegistrations"), icon: ClipboardList },
   { title: "Award Settings", url: createPageUrl("LeagueAwardSettings"), icon: SlidersHorizontal },
   { title: "Story Builder", url: createPageUrl("StoryBuilder"), icon: Newspaper },
   { title: "Stream Crew", url: createPageUrl("StreamCrew"), icon: Video }
