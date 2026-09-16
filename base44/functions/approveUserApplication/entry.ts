@@ -52,6 +52,28 @@ function teamIdForLeague(application, leagueId) {
   return null;
 }
 
+// OPEN_SEASON_TEAM_V1 — point an application at a team for one league, in exactly the shape
+// teamIdForLeague and grantLeague already read. In memory only; the row is written once at the
+// end of the request. Any pair already recorded for another league is left alone.
+function attachTeamToApplication(application, leagueId, teamId) {
+  const pairs = Array.isArray(application.league_team_pairs) ? application.league_team_pairs.slice() : [];
+  const at = pairs.findIndex(p => p && p.league_id === leagueId);
+  if (at >= 0) pairs[at] = { ...pairs[at], team_id: teamId };
+  else pairs.push({ league_id: leagueId, team_id: teamId });
+  application.league_team_pairs = pairs;
+  if (application.league_id === leagueId && !application.team_id) application.team_id = teamId;
+}
+
+// OPEN_SEASON_TEAM_V1 — a team in this league whose name matches what the coach typed,
+// compared trimmed and case-insensitively. Null when the name is free.
+async function findTeamByName(base44, leagueId, wantedName) {
+  const wanted = String(wantedName || '').trim().toLowerCase();
+  if (!wanted) return null;
+  let teams = [];
+  try { teams = await base44.asServiceRole.entities.Team.filter({ league_id: leagueId }); } catch (_e) { return null; }
+  return (teams || []).find(t => t && t.name && String(t.name).trim().toLowerCase() === wanted) || null;
+}
+
 // COACH_CAP_V1 — everyone already coaching this team, excluding the applicant themselves.
 // Coach identity rows only started carrying team_id from COACH_CAP_V1 onward, so for older
 // rows we fall back to the coach's league_team_pairs, which is where their team has always
@@ -421,6 +443,10 @@ Deno.serve(async (req) => {
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
     const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
     const forceConflicts = Array.isArray(body.force_conflicts) ? body.force_conflicts : [];
+    // OPEN_SEASON_TEAM_V1 — leagues where the admin has confirmed that the coach's requested
+    // team name should reuse the team already carrying that name. Kept separate from
+    // force_conflicts on purpose: confirming the name must NOT also wave through the coach cap.
+    const confirmExistingTeam = Array.isArray(body.confirm_existing_team) ? body.confirm_existing_team : [];
     // DECLINE_REASONS_V1 — why this request is being rejected, picked by the admin in the UI.
     // Both are optional: an older caller that sends neither still behaves exactly as before.
     const declineReasonCode = typeof body.decline_reason_code === 'string' ? body.decline_reason_code.trim() : '';
@@ -529,6 +555,9 @@ Deno.serve(async (req) => {
     try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { applicantUser = null; }
 
     let anyNewApproval = false;
+    // OPEN_SEASON_TEAM_V1 — the team this approval settled on, written back onto the application
+    // at the end so Team Registrations shows a real team and a re-run never creates a second one.
+    let openSeasonTeamId = null;
     const conflicts = [];
     for (const lid of decideLeagueIds) {
       const entry = decisions.find(d => d.league_id === lid);
@@ -547,6 +576,33 @@ Deno.serve(async (req) => {
             league_name: await getLeagueName(base44, lid),
           });
           continue; // leave this league pending; approver must confirm the override
+        }
+      }
+
+      // OPEN_SEASON_TEAM_V1 — a coach who signed up through an open season carries a team NAME
+      // and no team_id. Settle that name against this league now, before the coach cap runs, so
+      // the cap is measured against the team the coach will actually land on. Nothing is created
+      // here: a brand-new name is only turned into a Team further down, once this league is
+      // genuinely being approved.
+      let createTeamName = null;
+      if (action === 'approve' && role === 'coach' && application.requested_team_name && !teamIdForLeague(application, lid)) {
+        const wantedName = String(application.requested_team_name).trim();
+        const existingTeam = wantedName ? await findTeamByName(base44, lid, wantedName) : null;
+        if (existingTeam && !confirmExistingTeam.includes(lid)) {
+          conflicts.push({
+            league_id: lid,
+            reason: 'duplicate_team_name',
+            league_name: await getLeagueName(base44, lid),
+            team_name: existingTeam.name,
+            requested_team_name: wantedName,
+          });
+          continue; // leave this league pending; no team is created and nothing is granted
+        }
+        if (existingTeam) {
+          attachTeamToApplication(application, lid, existingTeam.id);
+          openSeasonTeamId = existingTeam.id;
+        } else if (wantedName) {
+          createTeamName = wantedName;
         }
       }
 
@@ -583,6 +639,29 @@ Deno.serve(async (req) => {
         }
       }
 
+      // OPEN_SEASON_TEAM_V1 — this league is going through, so create the team the coach asked
+      // for and point the application at it. Done before the grant so the coach's identity row
+      // and league_team_pairs pick the team up exactly like a coach who redeemed a team code.
+      let createdTeamNote = '';
+      if (createTeamName) {
+        let newTeam = null;
+        try {
+          newTeam = await base44.asServiceRole.entities.Team.create({ name: createTeamName, league_id: lid });
+        } catch (_e) { newTeam = null; }
+        if (!newTeam || !newTeam.id) {
+          conflicts.push({
+            league_id: lid,
+            reason: 'team_create_failed',
+            league_name: await getLeagueName(base44, lid),
+            requested_team_name: createTeamName,
+          });
+          continue; // leave this league pending; nothing is granted
+        }
+        attachTeamToApplication(application, lid, newTeam.id);
+        openSeasonTeamId = newTeam.id;
+        createdTeamNote = 'OPEN_SEASON_TEAM_V1 created team "' + createTeamName + '" (' + newTeam.id + ')';
+      }
+
       entry.decision = action === 'approve' ? 'approved' : 'rejected';
       entry.decided_by_email = decider.email;
       entry.decided_by_name = decider.name;
@@ -608,6 +687,8 @@ Deno.serve(async (req) => {
           }
         }
       }
+      // OPEN_SEASON_TEAM_V1 — the created team belongs on the same audit row as the approval.
+      if (createdTeamNote) logNote = logNote ? (logNote + ' | ' + createdTeamNote) : createdTeamNote;
       if (action === 'approve') {
         anyNewApproval = true;
         await grantLeague(base44, application, applicantUser, lid, role);
@@ -642,6 +723,13 @@ Deno.serve(async (req) => {
     let newStatus = anyPending ? 'Pending' : (anyApprovedOverall ? 'Approved' : 'Rejected');
 
     const appUpdate = { league_decisions: decisions, status: newStatus };
+    // OPEN_SEASON_TEAM_V1 — record the team this approval settled on. Only ever written when an
+    // open-season coach application actually resolved a team, so every other application is
+    // updated with exactly the same fields as before.
+    if (openSeasonTeamId) {
+      appUpdate.team_id = openSeasonTeamId;
+      appUpdate.league_team_pairs = Array.isArray(application.league_team_pairs) ? application.league_team_pairs : [];
+    }
     if (anyNewApproval && !application.approval_email_sent) appUpdate.approval_email_sent = true;
     if (newStatus === 'Rejected' && !application.decline_email_sent) appUpdate.decline_email_sent = true;
     // DECLINE_REASONS_V1 — top-level copy of the reason for the People page and reporting.
