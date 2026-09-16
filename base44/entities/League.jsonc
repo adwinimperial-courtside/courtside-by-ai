@@ -33,6 +33,33 @@
     "owner_name": {
       "type": "string",
       "description": "Name of the league owner"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "SEASON_DATES_V1 - first day of the season. Season status is derived from the dates and never stored: before start_date is Upcoming, after it is Active, and Ended only once end_date exists and has passed."
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "SEASON_DATES_V1 - optional last day of the season. Many grassroots leagues do not know this at signup, so it may be empty."
+    },
+    "registration_deadline": {
+      "type": "string",
+      "format": "date",
+      "description": "SEASON_DATES_V1 - last day teams can apply through the public registration link. After this, coach registration closes but player and fan registration stay open."
+    },
+    "registration_mode": {
+      "type": "string",
+      "enum": [
+        "open",
+        "closed"
+      ],
+      "description": "SEASON_DATES_V1 - open means teams apply through the public link and the organizer approves each one. closed means the organizer creates the teams and sends each coach a code. Switchable at any time."
+    },
+    "team_slots": {
+      "type": "number",
+      "description": "SEASON_DATES_V1 - how many team slots the organizer is aiming for. A counter only, not a hard cap: applications keep arriving until the registration deadline and the organizer decides who is in."
     }
   },
   "required": [
