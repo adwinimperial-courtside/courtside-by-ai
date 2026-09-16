@@ -54,6 +54,14 @@
     "team_id": {
       "type": "string"
     },
+    "requested_team_name": {
+      "type": "string",
+      "description": "Team name typed by a coach applying through an open-registration link when the team does not exist yet. The team is created when the organizer approves the application. Blank when the coach redeemed a team code."
+    },
+    "organizer_note": {
+      "type": "string",
+      "description": "Optional short message from the applicant to the league organizer, written on the public signup page. Max 300 characters, enforced in the UI."
+    },
     "league_team_pairs": {
       "type": "array",
       "items": {
