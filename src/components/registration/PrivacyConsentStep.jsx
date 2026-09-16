@@ -143,10 +143,16 @@ export default function PrivacyConsentStep({ onAccept, onBack, leagueId = null, 
             <p className="mt-2 font-medium text-slate-700">Your email address is not intended to be publicly displayed.</p>
           </Section>
 
+          <Section title="Players you add to a team roster">
+            <p>If you are a coach, you enter your players' names, jersey numbers and positions so the league can record stats for them.</p>
+            <p className="mt-2">You must have each player's permission before adding them. For players under 18, a parent or guardian's permission is required.</p>
+            <p className="mt-2">Players can ask you or their league organizer to correct or remove their details at any time.</p>
+          </Section>
+
           <Section title="Profile photos">
             <p>Player photos are optional. A photo may be uploaded by you, or by your league organizer on your behalf as part of managing the league roster.</p>
             <p className="mt-2">If a photo is uploaded, it may be displayed inside Courtside by AI as part of your player profile, league profile, or game results.</p>
-            <p className="mt-2">League organizers are responsible for making sure they have the player's permission before uploading a photo of them, and before publishing player photos outside Courtside by AI, including on social media. For players under 18, a parent or guardian's permission is required before a photo is uploaded.</p>
+            <p className="mt-2">League organizers and coaches are responsible for making sure they have the player's permission before uploading a photo of them, and before publishing player photos outside Courtside by AI, including on social media. For players under 18, a parent or guardian's permission is required before a photo is uploaded.</p>
             <p className="mt-2">You can ask your league organizer, or contact us at <a href="mailto:info@courtside-by-ai.com" className="text-orange-500 hover:underline">info@courtside-by-ai.com</a>, to have your photo removed at any time.</p>
           </Section>
 
@@ -184,6 +190,7 @@ export default function PrivacyConsentStep({ onAccept, onBack, leagueId = null, 
                   <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">Terms of Use</a>
                   {" "}and confirm that I have read the{" "}
                   <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:underline">Privacy Policy</a>.
+                  {" "}If I add players to a team roster, I confirm I have their permission, and a parent or guardian's permission for any player under 18.
                   <span className="text-red-500 ml-1">*</span>
                 </p>
                 <p className="text-xs text-slate-500 mt-1 leading-relaxed">
