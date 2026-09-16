@@ -69,7 +69,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       setTeamSelections({});
     } else {
       const next = {};
-      for (const t of sourceTeams) next[t.id] = "roster";
+      for (const t of sourceTeams) next[t.id] = "empty";
       setTeamSelections(next);
     }
   }, [copyFromId, sourceTeams]);
@@ -85,7 +85,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       if (next[teamId]) {
         delete next[teamId];
       } else {
-        next[teamId] = "roster";
+        next[teamId] = "empty";
       }
       return next;
     });
@@ -102,10 +102,6 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
     (registrationMode === mode
       ? "border-orange-500 bg-orange-50"
       : "border-slate-200 hover:border-orange-300");
-
-  const setTeamMode = (teamId, mode) => {
-    setTeamSelections(prev => ({ ...prev, [teamId]: mode }));
-  };
 
   const createSeasonMutation = useMutation({
     mutationFn: async () => {
@@ -171,16 +167,6 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
           if (team.team_captain) teamData.team_captain = team.team_captain;
           const newTeam = await base44.entities.Team.create(teamData);
 
-          if (teamSelections[team.id] === "roster") {
-            const roster = await base44.entities.Player.filter({ team_id: team.id });
-            for (const p of roster) {
-              const playerData = { team_id: newTeam.id, name: p.name };
-              if (p.jersey_number !== undefined && p.jersey_number !== null && p.jersey_number !== "") playerData.jersey_number = p.jersey_number;
-              if (p.position) playerData.position = p.position;
-              if (p.photo_url) playerData.photo_url = p.photo_url;
-              await base44.entities.Player.create(playerData);
-            }
-          }
         }
       }
 
@@ -389,8 +375,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
               ) : (
                 <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-64 overflow-y-auto">
                   {sortedTeams.map(team => {
-                    const mode = teamSelections[team.id];
-                    const isChecked = !!mode;
+                    const isChecked = !!teamSelections[team.id];
                     return (
                       <div key={team.id} className="flex items-center gap-3 p-3">
                         <Checkbox
@@ -400,33 +385,14 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
                         <span className={`flex-1 text-sm font-medium ${isChecked ? 'text-slate-900' : 'text-slate-400'}`}>
                           {team.name}
                         </span>
-                        {isChecked ? (
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setTeamMode(team.id, "roster")}
-                              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${mode === "roster" ? "bg-orange-500 border-orange-500 text-white font-medium" : "border-slate-300 text-slate-500 hover:border-orange-300"}`}
-                            >
-                              With roster
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setTeamMode(team.id, "empty")}
-                              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${mode === "empty" ? "bg-orange-500 border-orange-500 text-white font-medium" : "border-slate-300 text-slate-500 hover:border-orange-300"}`}
-                            >
-                              Empty
-                            </button>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-slate-400">Not copied</span>
-                        )}
+                        <span className="text-xs text-slate-400">{isChecked ? "Empty roster" : "Not copied"}</span>
                       </div>
                     );
                   })}
                 </div>
               )}
               <p className="text-xs text-slate-500 mt-2">
-                Copied teams start 0–0. "With roster" also copies player names, jersey numbers, positions and photos.
+                Copied teams start 0–0 with an empty roster. Players join through registration, or the coach adds them.
               </p>
             </div>
           )}
