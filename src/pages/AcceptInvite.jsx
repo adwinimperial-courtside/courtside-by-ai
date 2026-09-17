@@ -14,6 +14,11 @@ import PrivacyConsentStep from "@/components/registration/PrivacyConsentStep";
 // The invitation is matched on the signed-in email address, server-side, by the
 // manageVideoAdmins function. This page never sees anyone else's invitation.
 //
+// CONSENT_GATE_V1: this page collects consent but never writes it. The accepted
+// consent is handed to manageVideoAdmins with the accept call, which records it
+// and re-reads it before granting anything. Nothing here grants, approves or
+// writes a status onto the account.
+//
 // Flow: loading -> (consent, new users only) -> confirm -> success
 // Failure states: no invitation for this email, invitation expired, already holds
 // another role in that league.
@@ -100,8 +105,8 @@ export default function AcceptInvite() {
   const handleAccept = async () => {
     setFormError("");
 
-    // New accounts record consent before the role is granted, so a failure at the
-    // grant step never leaves an unconsented account holding a role.
+    // New accounts are asked for consent before the role is granted, so a failure at
+    // the grant step never leaves an unconsented account holding a role.
     if (needsConsent && !consentData) {
       setStep("consent");
       return;
@@ -109,14 +114,13 @@ export default function AcceptInvite() {
 
     setIsSubmitting(true);
     try {
-      if (consentData) {
-        await base44.auth.updateMe({
-          application_status: "Approved",
-          ...consentData,
-        });
-      }
-
-      const res = await base44.functions.invoke("manageVideoAdmins", { action: "accept" });
+      // CONSENT_GATE_V1 — the consent travels with the accept call. The function writes
+      // it, re-reads it and only then grants; if it cannot be read back, nothing is
+      // granted and the error below is what the invitee sees.
+      const res = await base44.functions.invoke("manageVideoAdmins", {
+        action: "accept",
+        consent: consentData || null,
+      });
       const data = (res && res.data) || {};
       if (data.error) {
         setFormError(data.error);
@@ -146,7 +150,17 @@ export default function AcceptInvite() {
   }
 
   if (step === "consent") {
-    return <PrivacyConsentStep onAccept={handleConsentAccept} onBack={() => setStep("confirm")} />;
+    // CONSENT_LOG_V1 — league, role and source so the browser's ConsentLog row is not
+    // written with three blanks. The invitation is always loaded before this step.
+    return (
+      <PrivacyConsentStep
+        onAccept={handleConsentAccept}
+        onBack={() => setStep("confirm")}
+        leagueId={(invite && invite.league_id) || null}
+        role="video_admin"
+        source="AcceptInvite"
+      />
+    );
   }
 
   if (step === "nomatch") {
