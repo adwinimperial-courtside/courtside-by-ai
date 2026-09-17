@@ -409,7 +409,7 @@ const CODE_AUTO_ROLE_LABELS = {
 // block or delay registration"), which is fine while a human reviews each application and
 // fatal the moment one is approved automatically. Returns false if nothing could be written;
 // the gate, not this function, decides what that means.
-async function recordConsentFromPayload(base44, userId, userEmail, consent, leagueId) {
+async function recordConsentFromPayload(base44, userId, userEmail, consent, leagueId, role, source) {
   if (!consent || consent.privacy_terms_accepted !== true) return false;
   const acceptedAt = consent.privacy_terms_accepted_at || new Date().toISOString();
   const marketing = consent.marketing_email_consent === true;
@@ -438,8 +438,8 @@ async function recordConsentFromPayload(base44, userId, userEmail, consent, leag
         marketing_email_consent: marketing,
         accepted_at: acceptedAt,
         league_id: leagueId || '',
-        role: 'coach',
-        source: 'JoinLeague code auto-approve',
+        role: role || 'coach',
+        source: source || 'JoinLeague code auto-approve',
       });
     }
   } catch (_e) { /* the account fields written above already prove acceptance */ }
@@ -505,7 +505,7 @@ async function handleCodeAutoApprove(base44, me, body) {
   // CONSENT_GATE_V1 — record what the coach just accepted, then run the very same gate the
   // organiser's Approve button runs. Deliberately not overridable here either.
   if (consentRequiredFor(application)) {
-    await recordConsentFromPayload(base44, application.user_id, application.user_email || me.email, body.consent, leagueId);
+    await recordConsentFromPayload(base44, application.user_id, application.user_email || me.email, body.consent, leagueId, 'coach', 'JoinLeague code auto-approve');
     try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { /* keep what we have */ }
     const consentOk = await hasConsentOnRecord(base44, application.user_id, applicantUser);
     if (!consentOk) {
@@ -589,6 +589,121 @@ async function handleCodeAutoApprove(base44, me, body) {
   await sendWelcomeOnce(base44, application);
 
   return Response.json({ success: true, approved: true, league_id: leagueId, team_id: match.team_id });
+}
+
+// FAN_INSTANT_FOLLOW_V1 — following a league as a fan is the one grant with nothing to review:
+// no roster spot, no team, no private data behind it. Making someone wait for an organiser
+// would be friction for its own sake, so it happens on the spot — but until now it happened in
+// the BROWSER. JoinLeague.jsx wrote status 'Approved' onto the application itself and then
+// called updateMe with assigned_league_ids and user_type 'viewer'. That meant the consent gate
+// never saw a single fan, and a hand-made request could have granted itself any league. This is
+// the same instant grant, decided here instead.
+//
+// Like handleCodeAutoApprove this is a self-service action: the caller IS the applicant, so its
+// authority comes from the signup link rather than from a role. The campaign named by the slug
+// must be open, must have Fan ticked in "Who can sign up", and must belong to the league the
+// application targets. Consent (CONSENT_GATE_V1) and a different role already held in that
+// season (ROLE_CONFLICT_GUARD_V1) each leave the application Pending for the organiser and
+// return the reason, so the fan is told which one it was. There is no self-override.
+async function handleFanInstantFollow(base44, me, body) {
+  const applicationId = body && body.applicationId;
+  const slug = String((body && body.slug) || '').toLowerCase().trim();
+  if (!applicationId || !slug) {
+    return Response.json({ error: 'applicationId and slug are required' }, { status: 400 });
+  }
+
+  let application = null;
+  try { application = await base44.asServiceRole.entities.UserApplication.get(applicationId); } catch (_e) { application = null; }
+  if (!application) return Response.json({ error: 'Application not found' }, { status: 404 });
+  // The caller must be the applicant themselves, and this action handles fan applications only.
+  if (!me.id || application.user_id !== me.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+  if (application.requested_role !== 'viewer') return Response.json({ error: 'Forbidden' }, { status: 403 });
+  // Idempotent: a retried submit must not grant twice or fail.
+  if (application.status === 'Approved') return Response.json({ success: true, approved: true, already_approved: true });
+  if (application.status !== 'Pending') return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  // The campaign is the authority for everything below it.
+  let campaigns = [];
+  try { campaigns = await base44.asServiceRole.entities.SignupCampaign.list(); } catch (_e) { campaigns = []; }
+  const campaign = (campaigns || []).find((c) => c && String(c.slug || '').toLowerCase() === slug) || null;
+  const rolesEnabled = Array.isArray(campaign && campaign.roles_enabled) ? campaign.roles_enabled : [];
+  const leagueId = (campaign && campaign.league_id) || '';
+  if (!campaign || campaign.status !== 'open' || !rolesEnabled.includes('viewer') || !leagueId) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  // A link may only grant the league it belongs to, whatever the application asks for.
+  if (application.league_id !== leagueId) return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  const linkLabel = 'Fan signup link /' + String(campaign.slug || slug);
+  const notApproved = (reason, message, extra) =>
+    Response.json({ success: true, approved: false, reason: reason, message: message, ...(extra || {}) });
+
+  let applicantUser = null;
+  try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { applicantUser = null; }
+
+  // CONSENT_GATE_V1 — record what the fan just accepted, then run the very same gate the
+  // organiser's Approve button runs. Not overridable here either.
+  if (consentRequiredFor(application)) {
+    await recordConsentFromPayload(base44, application.user_id, application.user_email || me.email, body.consent, leagueId, 'viewer', 'JoinLeague fan instant follow');
+    try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { /* keep what we have */ }
+    const consentOk = await hasConsentOnRecord(base44, application.user_id, applicantUser);
+    if (!consentOk) {
+      return notApproved('consent_missing', consentMissingMessage(application));
+    }
+  }
+
+  // ROLE_CONFLICT_GUARD_V1 — a coach or player in this season who also asks to follow it must
+  // not be quietly rewritten to 'viewer' by a self-service call.
+  const priorRole = await existingRoleInLeague(base44, application.user_id, applicantUser, leagueId);
+  if (priorRole && priorRole !== 'viewer') {
+    return notApproved(
+      'role_conflict',
+      'You already hold the ' + (CODE_AUTO_ROLE_LABELS[priorRole] || priorRole)
+        + ' role in this season, so the league admin needs to confirm this one. Your request has gone to them.',
+      { existing_role: priorRole }
+    );
+  }
+
+  // Everything passed — run the same grant the organiser's Approve button runs.
+  const decidedAt = new Date().toISOString();
+  const decisions = Array.isArray(application.league_decisions) ? application.league_decisions.map(d => ({ ...d })) : [];
+  let entry = decisions.find(d => d && d.league_id === leagueId);
+  if (!entry) { entry = { league_id: leagueId }; decisions.push(entry); }
+  entry.decision = 'approved';
+  entry.decided_by_email = '';
+  entry.decided_by_name = linkLabel;
+  // decided_by_type stays blank: the field only allows app_admin or league_admin, and no human
+  // decided this. The ApprovalLog row below carries approver_type 'system' instead.
+  entry.decided_by_type = '';
+  entry.decided_at = decidedAt;
+
+  await grantLeague(base44, application, applicantUser, leagueId, 'viewer');
+
+  // The favourite team is a display preference rather than part of the grant, but it is written
+  // here so the whole fan signup lands in one place instead of half of it in the browser.
+  if (application.team_id) {
+    try {
+      await base44.asServiceRole.entities.User.update(application.user_id, { favorite_team_id: application.team_id });
+    } catch (_e) { /* following the whole league is a fine outcome */ }
+  }
+
+  const anyPending = decisions.some(d => d && d.decision === 'pending');
+  await base44.asServiceRole.entities.UserApplication.update(application.id, {
+    league_decisions: decisions,
+    status: anyPending ? 'Pending' : 'Approved',
+    approval_email_sent: true,
+  });
+
+  await writeLog(base44, application, leagueId, 'approved', {
+    email: 'system@courtside-by-ai.com',
+    name: linkLabel,
+    type: 'system',
+    at: decidedAt,
+  }, 'FAN_INSTANT_FOLLOW_V1 followed instantly from the open fan signup link ' + String(campaign.slug || slug));
+
+  await sendWelcomeOnce(base44, application);
+
+  return Response.json({ success: true, approved: true, league_id: leagueId });
 }
 
 async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote, suppressDeclineEmail) {
@@ -679,6 +794,11 @@ Deno.serve(async (req) => {
     const rawBody = await req.json();
     if (rawBody && rawBody.action === 'code_auto_approve') {
       return await handleCodeAutoApprove(base44, me, rawBody);
+    }
+    // FAN_INSTANT_FOLLOW_V1 — the second self-service action, and for the same reason: the
+    // caller is the fan, not an admin, so it must run before the admin check below.
+    if (rawBody && rawBody.action === 'fan_instant_follow') {
+      return await handleFanInstantFollow(base44, me, rawBody);
     }
 
     let caller;
