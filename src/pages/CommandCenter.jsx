@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import HelpButton from "../components/help/HelpButton";
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
@@ -362,7 +363,7 @@ export default function CommandCenter() {
           <div className="flex items-center gap-3">
             <Radar className="w-8 h-8 text-orange-600" />
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Command Center</h1>
+              <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Command Center</h1><HelpButton pageKey="commandcenter" /></div>
               <p className="text-slate-600 text-sm">What's happening across all leagues</p>
             </div>
           </div>

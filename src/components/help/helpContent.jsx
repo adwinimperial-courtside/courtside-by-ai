@@ -420,6 +420,25 @@ export const HELP_TOPICS = [
     ],
   },
   {
+    key: "commandcenter",
+    title: "Command Center",
+    category: "ops",
+    roles: ["app_admin", "ops_admin"],
+    summary:
+      "The whole platform on one screen: what is live right now, what needs cleaning up, and which leagues are growing or going quiet.",
+    tips: [
+      "Hide demo and test data is on by default. Any league with demo, test, sample or dummy in its name is kept out of every number on the page, and the amber bar names the leagues being hidden. Switch it off to see the raw totals — the choice is remembered in this browser only.",
+      "Live today counts games that tipped in the last 12 hours and are still in progress. Anything older drops into Stuck games instead, so an abandoned game cannot sit in the live count forever.",
+      "Needs attention is the clean-up list: stuck games to finish or delete, orphan games whose league no longer exists, and people who signed up but were never given a role. Each block links to the page that fixes it.",
+      "Team registrations waiting on an organizer is the one queue nobody else sees. Every other approval list lives on a single organizer's page — this table shows all of them at once, oldest first, with the organizer's name.",
+      "A red row in that table means a coach has been waiting a week or more. Those coaches have usually given up, so message the organizer rather than waiting.",
+      "Active users counts people who actually signed in, not accounts. The bars are the last 14 days; the big number is unique users in the last 7.",
+      "Leagues starting soon comes from new-league sign-ups that gave a season start date, so a league can appear there before it exists as a real league. New leagues beside it lists leagues actually created in the last 30 days, however they were created.",
+      "Stalled — at risk flags a league with no games, no teams, or nothing played for 14 days. It is the earliest warning that a season is dying.",
+      "The page reloads its own numbers about once a minute, so it is safe to leave open on a game night.",
+    ],
+  },
+  {
     key: "privacyconsent",
     title: "Privacy & consent",
     category: "main",
