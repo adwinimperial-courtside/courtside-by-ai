@@ -132,7 +132,7 @@ export default function RegistrationGate({ user }) {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: () => base44.entities.Team.list(),
-    enabled: selectedRole === "player" || selectedRole === "coach",
+    enabled: selectedRole === "player",
   });
 
   const { data: leagueGroups = [] } = useQuery({
@@ -217,7 +217,9 @@ export default function RegistrationGate({ user }) {
     setFormError("");
     // COACH_REDIRECT_V1 — coaches join through their own league's registration
     // link and code, so this generic picker sends them there instead of taking
-    // an application. Nothing is written on that screen.
+    // an application. Nothing is written on that screen. Because of this,
+    // selectedRole can never be "coach" once we reach privacy_consent or
+    // fill_form, so the coach branches that used to live there are gone.
     if (roleId === "coach") {
       setJoinLinkInput("");
       setJoinLinkError("");
@@ -250,7 +252,7 @@ export default function RegistrationGate({ user }) {
       if (!formData.country?.trim()) { setFormError("Please enter your country."); return; }
     } else {
       if (selectedLeagues.length === 0) { setFormError("Please select at least one league."); return; }
-      if (selectedRole === "player" || selectedRole === "coach") {
+      if (selectedRole === "player") {
         const missingTeam = selectedLeagues.some(lid => !leagueTeamMap[lid]);
         if (missingTeam) { setFormError("Please select a team for each selected league."); return; }
       }
@@ -291,18 +293,8 @@ export default function RegistrationGate({ user }) {
         applicationData.country = formData.country;
         applicationData.league_id = selectedLeagues[0];
         applicationData.league_ids = selectedLeagues;
-        if (selectedRole === "coach" || selectedRole === "viewer") {
+        if (selectedRole === "viewer") {
           if (formData.full_name) applicationData.user_name = formData.full_name;
-        }
-        if (selectedRole === "coach") {
-          // COACH_TEAMLESS_V1 — only submit leagues where a team was chosen (teamless leagues dropped, see note)
-          const coachChosen = selectedLeagues.filter(lid => leagueTeamMap[lid]);
-          applicationData.league_ids = coachChosen.length ? coachChosen : selectedLeagues;
-          applicationData.team_id = leagueTeamMap[coachChosen[0]] || "";
-          applicationData.league_team_pairs = coachChosen.map(lid => ({
-            league_id: lid,
-            team_id: leagueTeamMap[lid],
-          }));
         }
         if (selectedRole === "player") {
           // Only submit for leagues where a team was actually chosen (teamless leagues are dropped — see the signup note).
@@ -661,14 +653,12 @@ export default function RegistrationGate({ user }) {
               </div>
             )}
 
-            {(selectedRole === "coach" || selectedRole === "viewer") && (
+            {selectedRole === "viewer" && (
               <div className="space-y-4">
-                {(selectedRole === "coach" || selectedRole === "viewer") && (
-                  <div>
-                    <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
-                    <Input value={formData.full_name || ""} onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Your full name" required />
-                  </div>
-                )}
+                <div>
+                  <label className="text-sm font-medium text-slate-700 mb-1 block">Full Name *</label>
+                  <Input value={formData.full_name || ""} onChange={e => setFormData(prev => ({ ...prev, full_name: e.target.value }))} placeholder="Your full name" required />
+                </div>
                 <div>
                   <label className="text-sm font-medium text-slate-700 mb-1 block">Country *</label>
                   <Input value={formData.country || ""} onChange={e => setFormData(prev => ({ ...prev, country: e.target.value }))} placeholder="e.g., Finland" required />
@@ -680,39 +670,6 @@ export default function RegistrationGate({ user }) {
                     <p className="text-xs text-orange-600 mt-1">{selectedLeagues.length} league(s) selected</p>
                   )}
                 </div>
-                {selectedRole === "coach" && selectedLeagues.length > 0 && (
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-slate-700 block">Select Team per League *</label>
-                    {selectedLeagues.map(lid => {
-                      const league = leagues.find(l => l.id === lid);
-                      const leagueTeams = teams.filter(t => t.league_id === lid);
-                      const noTeams = leagueTeams.length === 0;
-                      return (
-                        <div key={lid} className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                          <p className="text-xs font-semibold text-slate-600 mb-2">{groupNameFor(league) ? `${groupNameFor(league)} \u2014 ` : ""}{league?.name} <span className="text-slate-400">({league?.season})</span></p>
-                          {/* COACH_TEAMLESS_V1 */}
-                          {noTeams ? (
-                            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                              This league hasn't added any teams yet, so there's no team to coach. Ask your league organizer to set up the teams, then come back to finish signing up. You can still continue with any other league that has teams.
-                            </div>
-                          ) : (
-                            <Select
-                              value={leagueTeamMap[lid] || ""}
-                              onValueChange={(val) => setLeagueTeamMap(prev => ({ ...prev, [lid]: val }))}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Choose a team" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {leagueTeams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </div>
             )}
 
@@ -794,12 +751,6 @@ export default function RegistrationGate({ user }) {
                 if (adminLeagueMode === "existing" && !selectedAdminLeagueId) canSubmit = false;
               } else {
                 if (selectedLeagues.length === 0) canSubmit = false;
-                if (selectedRole === "coach") {
-                  // COACH_TEAMLESS_V1 — teamless leagues are excluded (note shown instead)
-                  const coachLeaguesWithTeams = selectedLeagues.filter(lid => teams.some(t => t.league_id === lid));
-                  if (coachLeaguesWithTeams.some(lid => !leagueTeamMap[lid])) canSubmit = false;
-                  if (!coachLeaguesWithTeams.some(lid => leagueTeamMap[lid])) canSubmit = false;
-                }
                 if (selectedRole === "player") {
                   // Leagues that actually have teams must have a team chosen; teamless leagues are excluded (note shown instead).
                   const leaguesWithTeams = selectedLeagues.filter(lid => teams.some(t => t.league_id === lid));
