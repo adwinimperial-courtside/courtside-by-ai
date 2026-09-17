@@ -390,6 +390,203 @@ async function sendDeclineOnce(base44, application, reasonCode, reasonNote, leag
   } catch (emailErr) { console.error('Decline email failed:', emailErr.message); }
 }
 
+// CODE_AUTO_APPROVE_V1 — same normalisation validateCoachCode uses, so "fnb-7k2m",
+// "FNB 7K2M" and "fnb7k2m" all resolve to the same code record.
+function normalizeInviteCode(s) {
+  return String(s || '').toUpperCase().replace(/[\s-]/g, '');
+}
+
+// CODE_AUTO_APPROVE_V1 — plain-English names for a role the applicant already holds, for the
+// sentence the coach is shown when auto-approval cannot happen.
+const CODE_AUTO_ROLE_LABELS = {
+  app_admin: 'app admin', league_admin: 'league admin', coach: 'coach',
+  player: 'player', video_admin: 'video admin', viewer: 'fan',
+};
+
+// CODE_AUTO_APPROVE_V1 — write the consent the coach just accepted, server-side and awaited,
+// so the consent gate below reads a record that is definitely there. PrivacyConsentStep writes
+// the same thing from the browser but deliberately swallows every failure ("this must NEVER
+// block or delay registration"), which is fine while a human reviews each application and
+// fatal the moment one is approved automatically. Returns false if nothing could be written;
+// the gate, not this function, decides what that means.
+async function recordConsentFromPayload(base44, userId, userEmail, consent, leagueId) {
+  if (!consent || consent.privacy_terms_accepted !== true) return false;
+  const acceptedAt = consent.privacy_terms_accepted_at || new Date().toISOString();
+  const marketing = consent.marketing_email_consent === true;
+  const userUpdate = {
+    privacy_terms_accepted: true,
+    privacy_terms_accepted_at: acceptedAt,
+    marketing_email_consent: marketing,
+    consent_version: consent.consent_version || '',
+  };
+  if (marketing) userUpdate.marketing_email_consent_at = consent.marketing_email_consent_at || acceptedAt;
+  try {
+    await base44.asServiceRole.entities.User.update(userId, userUpdate);
+  } catch (_e) {
+    return false;
+  }
+  // The append-only log is a second record of the same acceptance. The browser may already
+  // have written one, so only add a row when this user has none at all.
+  try {
+    const rows = await base44.asServiceRole.entities.ConsentLog.filter({ user_id: userId });
+    if (!rows || rows.length === 0) {
+      await base44.asServiceRole.entities.ConsentLog.create({
+        user_id: userId,
+        user_email: userEmail || '',
+        consent_version: consent.consent_version || '',
+        privacy_terms_accepted: true,
+        marketing_email_consent: marketing,
+        accepted_at: acceptedAt,
+        league_id: leagueId || '',
+        role: 'coach',
+        source: 'JoinLeague code auto-approve',
+      });
+    }
+  } catch (_e) { /* the account fields written above already prove acceptance */ }
+  return true;
+}
+
+// CODE_AUTO_APPROVE_V1 — D2, D3, D11. A coach who redeemed a valid team invite code is granted
+// on the spot instead of waiting in the approval queue: the code is proof the organiser invited
+// that coach, so the wait is friction the code exists to remove.
+//
+// This is the only self-service action in this file. The caller IS the applicant, not an admin,
+// so its authority comes from the redeemed CoachInviteCode — the code must name the same league
+// and team the application targets, and must record this caller's email as the redeemer — and
+// never from a role. It lives here rather than in validateCoachCode because grantLeague is
+// module scope in this file and base44 functions are separate Deno entry files that cannot
+// import from one another; anywhere else would mean a second copy of the grant.
+//
+// Nothing is waved through. Consent (CONSENT_GATE_V1), the season's registration deadline, a
+// different role already held in that league (ROLE_CONFLICT_GUARD_V1) and the two-coach cap
+// (COACH_CAP_V1) each leave the application Pending for the organiser, and each returns the
+// specific reason so the coach is told which one it was rather than a generic "we'll review it".
+// There is no self-override: only an admin can force any of these.
+async function handleCodeAutoApprove(base44, me, body) {
+  const applicationId = body && body.applicationId;
+  const typed = normalizeInviteCode(body && body.code);
+  if (!applicationId || !typed) {
+    return Response.json({ error: 'applicationId and code are required' }, { status: 400 });
+  }
+
+  let application = null;
+  try { application = await base44.asServiceRole.entities.UserApplication.get(applicationId); } catch (_e) { application = null; }
+  if (!application) return Response.json({ error: 'Application not found' }, { status: 404 });
+  // The caller must be the applicant themselves, and this action handles coach applications only.
+  if (!me.id || application.user_id !== me.id) return Response.json({ error: 'Forbidden' }, { status: 403 });
+  if (application.requested_role !== 'coach') return Response.json({ error: 'Forbidden' }, { status: 403 });
+  // Idempotent: a retried submit must not grant twice or fail.
+  if (application.status === 'Approved') return Response.json({ success: true, approved: true, already_approved: true });
+  if (application.status !== 'Pending') return Response.json({ error: 'Forbidden' }, { status: 403 });
+
+  // The redeemed code is the authority for everything below it.
+  let codes = [];
+  try { codes = await base44.asServiceRole.entities.CoachInviteCode.list(); } catch (_e) { codes = []; }
+  const match = (codes || []).find((r) => r && normalizeInviteCode(r.code) === typed) || null;
+  const callerEmail = String(me.email || '').toLowerCase();
+  const redeemedByCaller = !!match && !!callerEmail
+    && String(match.used_by_email || '').toLowerCase() === callerEmail;
+  if (!match || !redeemedByCaller || !match.league_id || !match.team_id) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  const leagueId = match.league_id;
+  // A code may only grant the league and team it names, whatever the application asks for.
+  if (teamIdForLeague(application, leagueId) !== match.team_id) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const codeLabel = 'Team code ' + String(match.code || '');
+  const notApproved = (reason, message, extra) =>
+    Response.json({ success: true, approved: false, reason: reason, message: message, ...(extra || {}) });
+
+  let applicantUser = null;
+  try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { applicantUser = null; }
+
+  // CONSENT_GATE_V1 — record what the coach just accepted, then run the very same gate the
+  // organiser's Approve button runs. Deliberately not overridable here either.
+  if (consentRequiredFor(application)) {
+    await recordConsentFromPayload(base44, application.user_id, application.user_email || me.email, body.consent, leagueId);
+    try { applicantUser = await base44.asServiceRole.entities.User.get(application.user_id); } catch (_e) { /* keep what we have */ }
+    const consentOk = await hasConsentOnRecord(base44, application.user_id, applicantUser);
+    if (!consentOk) {
+      return notApproved('consent_missing', consentMissingMessage(application));
+    }
+  }
+
+  // D2 — a code auto-approves only while team registration is open. Past the deadline the
+  // application falls back to manual approval, so a code forwarded into a group chat goes stale
+  // on its own instead of staying a permanent back door. Checked here and not only on the page,
+  // because a tab left open since before the deadline must not slip through.
+  let league = null;
+  try { league = await base44.asServiceRole.entities.League.get(leagueId); } catch (_e) { league = null; }
+  const deadline = String((league && league.registration_deadline) || '').slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  if (deadline && today > deadline) {
+    return notApproved(
+      'deadline_passed',
+      'Team registration for this season closed on ' + deadline + ', so your registration has gone to the league admin for approval instead.',
+      { deadline: deadline }
+    );
+  }
+
+  // ROLE_CONFLICT_GUARD_V1 — never silently overwrite a role the applicant already holds here.
+  const priorRole = await existingRoleInLeague(base44, application.user_id, applicantUser, leagueId);
+  if (priorRole && priorRole !== 'coach') {
+    return notApproved(
+      'role_conflict',
+      'You are already registered in this season as a ' + (CODE_AUTO_ROLE_LABELS[priorRole] || priorRole)
+        + ', so the league admin needs to confirm this one. Your registration has gone to them.',
+      { existing_role: priorRole }
+    );
+  }
+
+  // COACH_CAP_V1 — D3: two coaches per team on this path exactly as everywhere else, so one code
+  // redeemed twice gives a head coach plus one assistant and no more.
+  const held = await existingTeamCoaches(base44, leagueId, match.team_id, application.user_id);
+  if (held.length >= COACH_CAP) {
+    return notApproved(
+      'coach_cap',
+      (match.team_name || 'This team') + ' already has ' + held.length + ' coaches ('
+        + held.join(', ') + '), which is the maximum. Your registration has gone to the league admin.',
+      { existing_coaches: held, cap: COACH_CAP }
+    );
+  }
+
+  // Everything passed — run the same grant the organiser's Approve button runs.
+  const decidedAt = new Date().toISOString();
+  const decisions = Array.isArray(application.league_decisions) ? application.league_decisions.map(d => ({ ...d })) : [];
+  let entry = decisions.find(d => d && d.league_id === leagueId);
+  if (!entry) { entry = { league_id: leagueId }; decisions.push(entry); }
+  entry.decision = 'approved';
+  entry.decided_by_email = '';
+  entry.decided_by_name = codeLabel;
+  // decided_by_type stays blank: the field only allows app_admin or league_admin, and no human
+  // decided this. The ApprovalLog row below carries approver_type 'system' instead.
+  entry.decided_by_type = '';
+  entry.decided_at = decidedAt;
+
+  await grantLeague(base44, application, applicantUser, leagueId, 'coach');
+
+  const anyPending = decisions.some(d => d && d.decision === 'pending');
+  await base44.asServiceRole.entities.UserApplication.update(application.id, {
+    league_decisions: decisions,
+    status: anyPending ? 'Pending' : 'Approved',
+    approval_email_sent: true,
+  });
+
+  await writeLog(base44, application, leagueId, 'approved', {
+    email: 'system@courtside-by-ai.com',
+    name: codeLabel,
+    type: 'system',
+    at: decidedAt,
+  }, 'CODE_AUTO_APPROVE_V1 auto-approved on redeemed team code ' + String(match.code || '')
+    + ' for team ' + (match.team_name || match.team_id));
+
+  await sendWelcomeOnce(base44, application);
+
+  return Response.json({ success: true, approved: true, league_id: leagueId, team_id: match.team_id });
+}
+
 async function handleLeagueAdminApplication(base44, application, action, override_league_id, decider, declineReasonCode, declineReasonNote, suppressDeclineEmail) {
   if (action === 'reject') {
     try { await base44.asServiceRole.entities.User.update(application.user_id, { application_status: 'Rejected' }); } catch (_e) {}
