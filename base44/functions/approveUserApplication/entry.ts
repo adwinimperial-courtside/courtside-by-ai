@@ -522,9 +522,13 @@ async function handleCodeAutoApprove(base44, me, body) {
   const deadline = String((league && league.registration_deadline) || '').slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
   if (deadline && today > deadline) {
+    let deadlineLabel = deadline;
+    try {
+      deadlineLabel = new Date(deadline + 'T12:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch (_e) { /* fall back to the raw date */ }
     return notApproved(
       'deadline_passed',
-      'Team registration for this season closed on ' + deadline + ', so your registration has gone to the league admin for approval instead.',
+      'Team registration for this season closed on ' + deadlineLabel + ', so your registration has gone to the league admin for approval instead.',
       { deadline: deadline }
     );
   }
@@ -534,8 +538,8 @@ async function handleCodeAutoApprove(base44, me, body) {
   if (priorRole && priorRole !== 'coach') {
     return notApproved(
       'role_conflict',
-      'You are already registered in this season as a ' + (CODE_AUTO_ROLE_LABELS[priorRole] || priorRole)
-        + ', so the league admin needs to confirm this one. Your registration has gone to them.',
+      'You already hold the ' + (CODE_AUTO_ROLE_LABELS[priorRole] || priorRole)
+        + ' role in this season, so the league admin needs to confirm this one. Your registration has gone to them.',
       { existing_role: priorRole }
     );
   }
