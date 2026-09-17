@@ -111,7 +111,6 @@ export default function RegistrationGate({ user }) {
   const [formError, setFormError] = useState("");
   const [formData, setFormData] = useState({});
   const [selectedLeagues, setSelectedLeagues] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState("");
   const [leagueTeamMap, setLeagueTeamMap] = useState({}); // { league_id: team_id }
   const [consentData, setConsentData] = useState(null);
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
@@ -211,7 +210,6 @@ export default function RegistrationGate({ user }) {
     setSelectedRole(roleId);
     setFormData({});
     setSelectedLeagues([]);
-    setSelectedTeam("");
     setLeagueTeamMap({});
     setSelectedAdminLeagueId("");
     setFormError("");
@@ -402,7 +400,7 @@ export default function RegistrationGate({ user }) {
             Your previous application was not approved. You may submit a new application with updated information.
           </p>
           <Button
-            onClick={() => { setSelectedRole(null); setFormData({}); setSelectedLeagues([]); setSelectedTeam(""); setLeagueTeamMap({}); setStep("select_role"); }}
+            onClick={() => { setSelectedRole(null); setFormData({}); setSelectedLeagues([]); setLeagueTeamMap({}); setStep("select_role"); }}
             className="w-full bg-orange-500 hover:bg-orange-600 mb-3"
           >
             Apply Again
