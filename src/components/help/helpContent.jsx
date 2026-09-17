@@ -284,7 +284,8 @@ export const HELP_TOPICS = [
       "See which coaches have asked to enter a team in an open-registration season, and how close the season is to full.",
     tips: [
       "Teams in shows how many teams are already in against the team target you set when you created the season. The target is a guide, not a hard limit.",
-      "Waiting counts coach applications that still need your decision — approve or decline them on User Requests.",
+      "Waiting counts coach applications that still need your decision. Approve or decline each one on this page — only this season's coaches are listed, and the same decision still appears on User Requests.",
+      "Declining asks you to pick a reason. The coach gets an email written for that reason, you can add a note in your own words, and you can switch the email off for spam or duplicates.",
       "If the season was set to I add the teams myself, coaches cannot apply through a link. Change that when you create the season.",
     ],
   },

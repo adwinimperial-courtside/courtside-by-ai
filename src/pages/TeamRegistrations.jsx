@@ -97,7 +97,7 @@ export default function TeamRegistrations() {
         </div>
         <div>
           <div className="flex items-center gap-2"><h1 className="text-2xl font-bold text-slate-900">Team Registrations</h1><HelpButton pageKey="teamregistrations" /></div>
-          <p className="text-sm text-slate-500">Who has asked to enter a team, and how the season is filling up</p>
+          <p className="text-sm text-slate-500">Approve the coaches waiting, and see how the season is filling up</p>
         </div>
       </div>
 
