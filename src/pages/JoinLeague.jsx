@@ -151,6 +151,11 @@ export default function JoinLeague() {
   const [jerseyNumber, setJerseyNumber] = useState("");
   const [country, setCountry] = useState("Finland");
 
+  // CODE_AUTO_APPROVE_V1 — what the server said about the coach's redeemed team code, so the
+  // success screen can either say they are in or name the one thing that stopped it.
+  const [autoApproved, setAutoApproved] = useState(false);
+  const [autoPendingReason, setAutoPendingReason] = useState("");
+
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -344,6 +349,29 @@ export default function JoinLeague() {
 
       const createdApp = await base44.entities.UserApplication.create(applicationData);
 
+      // CODE_AUTO_APPROVE_V1 — D2/D3/D11. A redeemed team code is proof the organiser invited
+      // this coach, so the approval happens now instead of sitting in the queue. Everything that
+      // stops an ordinary approval still applies, and is checked server-side: consent, the
+      // season's registration deadline, a role already held in this season, and the two-coach
+      // cap. When one of them applies the application simply stays pending and the coach is told
+      // which one it was. A failure here never blocks the registration — it is already in.
+      let autoResult = null;
+      if (roleKey === "coach" && !newTeamCoach && createdApp?.id) {
+        try {
+          const res = await base44.functions.invoke("approveUserApplication", {
+            action: "code_auto_approve",
+            applicationId: createdApp.id,
+            code: codeInput,
+            consent: consentData || null,
+          });
+          autoResult = (res && res.data) || null;
+        } catch (e) {
+          autoResult = null;
+        }
+      }
+      if (autoResult && autoResult.approved) setAutoApproved(true);
+      else if (autoResult && autoResult.message) setAutoPendingReason(autoResult.message);
+
       if (roleKey === "player" && createdApp?.id) {
         try { await base44.functions.invoke("suggestPlayerMatch", { applicationId: createdApp.id }); } catch (e) {}
       }
@@ -372,7 +400,10 @@ export default function JoinLeague() {
       }
 
       await base44.auth.updateMe({
-        application_status: "Pending",
+        // CODE_AUTO_APPROVE_V1 — an auto-approved coach is already Approved on their account;
+        // writing Pending here would put them straight back in the queue. The state set above has
+        // not landed yet in this render, so the local result is what decides.
+        ...(autoResult && autoResult.approved ? {} : { application_status: "Pending" }),
         ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
         ...(consentData || {}),
       });
@@ -458,6 +489,8 @@ export default function JoinLeague() {
   if (step === "success") {
     const favTeam = teams.find((t) => t.id === selectedTeamId);
     const isViewer = roleKey === "viewer";
+    // CODE_AUTO_APPROVE_V1
+    const coachAutoApproved = roleKey === "coach" && autoApproved;
     return (
       <Shell campaign={campaign} roleKey={roleKey} compact>
         <div className="text-center py-4" data-marker="FAN_INSTANT_FOLLOW_V1">
@@ -465,7 +498,7 @@ export default function JoinLeague() {
             <CheckCircle2 className="w-7 h-7 text-green-500" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 mb-2">
-            {isViewer ? "You're in — you're now following!" : "You're in — pending approval"}
+            {isViewer ? "You're in — you're now following!" : coachAutoApproved ? "You're in — your team is set up" : "You're in — pending approval"}
           </h2>
           {isViewer && favTeam && (
             <div className="inline-flex items-center gap-2 bg-slate-100 rounded-full px-3 py-1 mb-3">
@@ -481,11 +514,24 @@ export default function JoinLeague() {
             {isViewer ? (
               <>You're now following <span className="font-semibold text-slate-800">{campaign?.hero_title || "the league"}</span>. Live scores, standings and stats are all yours — a welcome email is on its way.</>
             ) : roleKey === "coach" ? (
-              <>The league admin will review your registration. Once approved, you'll find <span className="font-semibold text-slate-800">My Roster</span> in your menu to set up your team.</>
+              // CODE_AUTO_APPROVE_V1 — approved on the code, held for a named reason, or the
+              // ordinary wait for the organiser.
+              coachAutoApproved ? (
+                <>Your team code is confirmed, so you're approved already. Open <span className="font-semibold text-slate-800">My Roster</span> from your menu to add your players.</>
+              ) : autoPendingReason ? (
+                <>{autoPendingReason}</>
+              ) : (
+                <>The league admin will review your registration. Once approved, you'll find <span className="font-semibold text-slate-800">My Roster</span> in your menu to set up your team.</>
+              )
             ) : (
               <>The league admin will review your registration. You'll get an email as soon as you're approved.</>
             )}
           </p>
+          {coachAutoApproved && (
+            <Button onClick={() => window.location.replace("/")} className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold">
+              Open my roster
+            </Button>
+          )}
           {isViewer && (
             <Button onClick={() => window.location.replace("/")} className="w-full mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold">
               Open the league
