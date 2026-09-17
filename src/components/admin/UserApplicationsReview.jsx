@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import PlayerMatchModal from "./PlayerMatchModal";
@@ -18,7 +18,17 @@ const ROLE_BADGE_COLORS = {
   viewer: "bg-purple-100 text-purple-800 border-purple-200",
 };
 
-export default function UserApplicationsReview() {
+// EMBEDDED_REVIEW_V1 — with no props this is exactly the User Requests reviewer.
+// Team Registrations passes filterRole/filterLeagueId so the same approve and
+// decline path (consent gate, role conflicts, coach cap, decline reasons) can be
+// used from that page instead of sending the organizer to another screen.
+export default function UserApplicationsReview({
+  filterRole = null,
+  filterLeagueId = null,
+  title = "Role Applications",
+  subtitle = null,
+  emptyText = "No pending role applications",
+}) {
   const queryClient = useQueryClient();
   const [processingAppId, setProcessingAppId] = useState(null);
   const [matchingApp, setMatchingApp] = useState(null);
@@ -35,8 +45,26 @@ export default function UserApplicationsReview() {
       return res?.data || res;
     },
   });
-  const requests = reviewData?.requests || [];
+  const allRequests = reviewData?.requests || [];
   const isAppAdmin = reviewData?.role === 'app_admin';
+
+  // EMBEDDED_REVIEW_V1 — narrow to one role and one league when asked. A request
+  // that touches other leagues keeps only the filtered one, so the host page never
+  // shows a decision that belongs to a different season.
+  const requests = useMemo(() => {
+    let list = allRequests;
+    if (filterRole) list = list.filter((a) => a.requested_role === filterRole);
+    if (filterLeagueId) {
+      list = list
+        .map((a) => {
+          const lgs = (a.leagues || []).filter((l) => l.league_id === filterLeagueId);
+          if (lgs.length === 0) return null;
+          return { ...a, leagues: lgs, can_decide: (a.can_decide || []).filter((id) => id === filterLeagueId) };
+        })
+        .filter(Boolean);
+    }
+    return list;
+  }, [allRequests, filterRole, filterLeagueId]);
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
@@ -369,8 +397,8 @@ export default function UserApplicationsReview() {
         <CardHeader className="border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xl">Role Applications</CardTitle>
-              <p className="text-sm text-slate-600 mt-1">Review and approve user role requests{!isAppAdmin ? " for your leagues" : ""}</p>
+              <CardTitle className="text-xl">{title}</CardTitle>
+              <p className="text-sm text-slate-600 mt-1">{subtitle || `Review and approve user role requests${!isAppAdmin ? " for your leagues" : ""}`}</p>
             </div>
             <Badge className="bg-orange-100 text-orange-800 text-base px-3 py-1">{requests.length} pending</Badge>
           </div>
@@ -382,7 +410,7 @@ export default function UserApplicationsReview() {
           {isLoading ? (
             <p className="text-slate-500 text-center py-8">Loading applications...</p>
           ) : requests.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">No pending role applications</p>
+            <p className="text-slate-500 text-center py-8">{emptyText}</p>
           ) : (
             <div className="space-y-4">
               {requests.map((app) => {
@@ -402,6 +430,13 @@ export default function UserApplicationsReview() {
                           <div className="text-xs text-slate-400 mt-0.5">Current role: {app.current_user_type.replace('_', ' ')}</div>
                         )}
                         <div className="text-xs text-slate-400 mt-1">Applied: {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : "N/A"}</div>
+                        {/* EMBEDDED_REVIEW_V1 — what a coach asked for in their own words */}
+                        {role === 'coach' && (app.requested_team_name || app.organizer_note) && (
+                          <div className="text-xs text-slate-500 mt-1 space-y-0.5 max-w-md">
+                            {app.requested_team_name && <div>New team: <span className="font-medium text-slate-700">{app.requested_team_name}</span></div>}
+                            {app.organizer_note && <div className="italic">{app.organizer_note}</div>}
+                          </div>
+                        )}
                       </div>
                       <Badge variant="outline" className={ROLE_BADGE_COLORS[role]}>{ROLE_LABELS[role]}</Badge>
                     </div>

@@ -128,6 +128,9 @@ Deno.serve(async (req) => {
           id: app.id, user_name: app.user_name || '', user_email: app.user_email || '',
           requested_role: role, applied_at: app.applied_at || app.created_date || '', country: app.country || '',
           user_id: app.user_id || '', team_id: app.team_id || '',
+          // EMBEDDED_REVIEW_V1 — the two fields Team Registrations used to show in its
+          // own read-only table, so the reviewer can be hosted there without losing them.
+          requested_team_name: app.requested_team_name || '', organizer_note: app.organizer_note || '',
           is_additional_request: !!app.is_additional_request, current_user_type: app.current_user_type || '',
           display_name: app.display_name || '', handle: app.handle || '',
           jersey_number: app.jersey_number || '', match_suggestions: app.match_suggestions || [],
