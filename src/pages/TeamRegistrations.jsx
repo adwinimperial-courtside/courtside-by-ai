@@ -6,12 +6,13 @@ import { createPageUrl } from "@/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardList, Users, CalendarClock, Link2, ArrowRight, Inbox } from "lucide-react";
+import { ClipboardList, Users, CalendarClock, Link2, Inbox } from "lucide-react";
 import HelpButton from "../components/help/HelpButton";
+import UserApplicationsReview from "../components/admin/UserApplicationsReview";
 
-// TEAM_REGISTRATIONS_V1 - read-only organizer view of who has asked to enter a
-// team in an open-registration season. Approving still happens on User Requests;
-// this page is the organizer's picture of how the season is filling up.
+// TEAM_REGISTRATIONS_V1 - the organizer's picture of how the season is filling up.
+// EMBEDDED_REVIEW_V1 - approving and declining now happen here too, through the
+// same reviewer User Requests uses, so it is one screen for one job.
 
 function formatDate(value) {
   if (!value) return "-";
@@ -145,62 +146,24 @@ export default function TeamRegistrations() {
 
       {selectedLeague && !loading && (
         <>
-          <Card className="border-slate-200">
-            <CardContent className="p-6 space-y-4">
-              <h2 className="font-semibold text-slate-900">Waiting for your decision</h2>
-              {applications.length === 0 ? (
-                <div className="text-center py-8 space-y-3">
-                  <p className="text-sm text-slate-500">No coach has applied yet.</p>
-                  <Button asChild size="sm" variant="outline">
-                    <Link to={createPageUrl("Registration")}>
-                      <Link2 className="w-3.5 h-3.5 mr-1.5" />
-                      Get the signup link
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-slate-500 border-b border-slate-100">
-                          <th className="py-2 font-medium">Coach</th>
-                          <th className="py-2 font-medium">Team</th>
-                          <th className="py-2 font-medium hidden md:table-cell">Message</th>
-                          <th className="py-2 font-medium">Applied</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {applications.map((a) => (
-                          <tr key={a.id} className="border-b border-slate-50 align-top">
-                            <td className="py-2.5 text-slate-900">
-                              {a.user_name || "-"}
-                              <div className="text-xs text-slate-400">{a.user_email}</div>
-                            </td>
-                            <td className="py-2.5 text-slate-700">
-                              {a.requested_team_name || (a.team_id ? "Existing team" : "-")}
-                            </td>
-                            <td className="py-2.5 text-slate-500 text-xs hidden md:table-cell max-w-xs">
-                              {a.organizer_note || "-"}
-                            </td>
-                            <td className="py-2.5 text-slate-500 text-xs whitespace-nowrap">
-                              {formatDate(a.applied_at || a.created_date)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <Button asChild size="sm" className="bg-[#F26B1F] hover:bg-[#d95d16] text-white">
-                    <Link to={createPageUrl("RequestManagement")}>
-                      Review and approve
-                      <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-                    </Link>
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
+          {/* EMBEDDED_REVIEW_V1 — the real approve/decline, for coaches in this season only */}
+          <div className="space-y-3">
+            <UserApplicationsReview
+              filterRole="coach"
+              filterLeagueId={selectedLeagueId}
+              title="Waiting for your decision"
+              subtitle={"Coach applications for " + selectedLeague.name}
+              emptyText="No coach has applied yet."
+            />
+            <div className="text-center">
+              <Button asChild size="sm" variant="outline">
+                <Link to={createPageUrl("Registration")}>
+                  <Link2 className="w-3.5 h-3.5 mr-1.5" />
+                  Get the signup link
+                </Link>
+              </Button>
+            </div>
+          </div>
 
           <Card className="border-slate-200">
             <CardContent className="p-6 space-y-4">
