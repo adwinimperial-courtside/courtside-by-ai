@@ -19,6 +19,10 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 //                     caller's own signed-in email. Never accepts anything.
 //   'accept'        — any signed-in user. Grants the role for their own invite.
 //
+// CONSENT_GATE_V1: 'accept' is a self-service grant, so consent is recorded and re-read
+// HERE before anything is written. The page used to do that from the browser, which meant a
+// caller who skipped the page got the role with no consent at all.
+//
 // Role model: a granted video admin gets the league appended to
 // assigned_league_ids and league_role_map[league_id] = 'video_admin'. The global
 // user_type is set to 'video_admin' ONLY when the account has no meaningful role
@@ -82,6 +86,66 @@ function roleInLeague(user, leagueId) {
   if (map[leagueId]) return map[leagueId];
   if (!assigned.includes(leagueId)) return null;
   return user.user_type || 'viewer';
+}
+
+// CONSENT_GATE_V1 — consent counts as on record when the account carries the accepted flag
+// (CONSENT_FIELDS_V1) or when an append-only ConsentLog row exists (CONSENT_LOG_V1). Either
+// one proves acceptance. A missing or unreadable ConsentLog is never treated as proof.
+// Same two proofs, and the same order of operations, as approveUserApplication.
+//
+// No grandfathering clause is needed on this path: AcceptInvite shows the consent step to
+// anyone whose account does not already carry the accepted flag, so every caller who comes
+// through the page can pass this gate, and only a caller who skipped the page cannot.
+async function hasConsentOnRecord(base44, userId, user) {
+  if (user && user.privacy_terms_accepted === true) return true;
+  try {
+    const rows = await base44.asServiceRole.entities.ConsentLog.filter({ user_id: userId });
+    if (rows && rows.length > 0) return true;
+  } catch (_e) { /* absence of a log is not proof of consent */ }
+  return false;
+}
+
+// CONSENT_GATE_V1 — write the consent the page just collected, server-side and awaited, so
+// the gate below reads a record that is definitely there. PrivacyConsentStep writes the same
+// thing from the browser but deliberately swallows every failure ("this must NEVER block or
+// delay registration"), which is fine while a human reviews a request and fatal on a path
+// that grants a role on the spot. Returns false if nothing could be written; the gate, not
+// this function, decides what that means.
+async function recordConsentFromPayload(base44, userId, userEmail, consent, leagueId) {
+  if (!consent || consent.privacy_terms_accepted !== true) return false;
+  const acceptedAt = consent.privacy_terms_accepted_at || new Date().toISOString();
+  const marketing = consent.marketing_email_consent === true;
+  const userUpdate = {
+    privacy_terms_accepted: true,
+    privacy_terms_accepted_at: acceptedAt,
+    marketing_email_consent: marketing,
+    consent_version: consent.consent_version || '',
+  };
+  if (marketing) userUpdate.marketing_email_consent_at = consent.marketing_email_consent_at || acceptedAt;
+  try {
+    await base44.asServiceRole.entities.User.update(userId, userUpdate);
+  } catch (_e) {
+    return false;
+  }
+  // The append-only log is a second record of the same acceptance. The browser may already
+  // have written one, so only add a row when this user has none at all.
+  try {
+    const rows = await base44.asServiceRole.entities.ConsentLog.filter({ user_id: userId });
+    if (!rows || rows.length === 0) {
+      await base44.asServiceRole.entities.ConsentLog.create({
+        user_id: userId,
+        user_email: userEmail || '',
+        consent_version: consent.consent_version || '',
+        privacy_terms_accepted: true,
+        marketing_email_consent: marketing,
+        accepted_at: acceptedAt,
+        league_id: leagueId || '',
+        role: 'video_admin',
+        source: 'AcceptInvite',
+      });
+    }
+  } catch (_e) { /* the account fields written above already prove acceptance */ }
+  return true;
 }
 
 function callerLeagueIds(caller) {
@@ -444,6 +508,23 @@ Deno.serve(async (req) => {
       }
 
       // ------------------------------------------------------------ accept
+      // CONSENT_GATE_V1 — record what the page just collected, then run the same gate
+      // approveUserApplication runs before any grant. Deliberately not overridable, and
+      // nothing below this point runs without it.
+      const firstTimeConsent = caller.privacy_terms_accepted !== true;
+      await recordConsentFromPayload(base44, caller.id, caller.email, body.consent, invite.league_id);
+      let consentUser = caller;
+      if (firstTimeConsent) {
+        try {
+          consentUser = await base44.asServiceRole.entities.User.get(caller.id);
+        } catch (_e) { /* keep what we have */ }
+      }
+      if (!(await hasConsentOnRecord(base44, caller.id, consentUser))) {
+        return Response.json({
+          error: 'Please accept the privacy terms before accepting this invitation.',
+        }, { status: 400 });
+      }
+
       // Re-check the same-league conflict at accept time: the account may have
       // gained a role in the meantime.
       const held = roleInLeague(caller, invite.league_id);
@@ -466,6 +547,12 @@ Deno.serve(async (req) => {
       // Only promote the global role when there is no real role to protect.
       // A coach or player who runs the stream for another league keeps theirs.
       if (typeIsPlaceholder) userUpdate.user_type = 'video_admin';
+      // CONSENT_GATE_V1 — this line used to be an updateMe() in the browser, fired only when
+      // the page had just collected consent, i.e. only for an account that had never been
+      // through registration. Same condition, same effect, decided here now. An account that
+      // already had consent keeps whatever status it has: a pending application for some
+      // other league is not decided by this invitation.
+      if (firstTimeConsent) userUpdate.application_status = 'Approved';
 
       await base44.asServiceRole.entities.User.update(caller.id, userUpdate);
 
