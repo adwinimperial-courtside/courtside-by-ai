@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { CalendarClock, Lock, LockOpen, Loader2, ChevronDown, ChevronUp, CheckCircle2, RotateCcw, History } from "lucide-react";
+import { format, formatDistanceToNowStrict } from "date-fns";
+import { CalendarClock, Lock, LockOpen, Loader2, ChevronDown, ChevronUp, CheckCircle2, RotateCcw, History, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -34,6 +34,8 @@ const ACTION_TEXT = {
   league_locked: (e) => `${e.performed_by_name || e.performed_by} locked roster editing for the league`,
   league_unlocked: (e) => `${e.performed_by_name || e.performed_by} unlocked roster editing for the league`,
   team_reopened: (e) => `${e.performed_by_name || e.performed_by} reopened editing for ${e.team_name || "a team"}`,
+  // ROSTER_REMIND_V1
+  roster_reminded: (e) => `${e.performed_by_name || e.performed_by} sent ${e.team_name || "a team"}'s coach a roster reminder`,
 };
 
 export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser }) {
@@ -46,6 +48,7 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
   const [savingDeadline, setSavingDeadline] = useState(false);
   const [togglingLock, setTogglingLock] = useState(false);
   const [reopeningId, setReopeningId] = useState(null);
+  const [remindingId, setRemindingId] = useState(null); // ROSTER_REMIND_V1
 
   const { data: settingsList = [] } = useQuery({
     queryKey: ["rosterSettings", leagueId],
@@ -66,6 +69,15 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     queryFn: () => base44.entities.RosterAuditLog.filter({ league_id: leagueId }, "-performed_at", 50),
   });
 
+  // ROSTER_REMIND_V1 — when each team's coach was last chased. Read from the
+  // audit log rather than a new field, so nothing new has to be stored and the
+  // History section below shows the same events.
+  const { data: reminderEntries = [] } = useQuery({
+    queryKey: ["rosterReminders", leagueId],
+    enabled: !!leagueId,
+    queryFn: () => base44.entities.RosterAuditLog.filter({ league_id: leagueId, action: "roster_reminded" }, "-performed_at", 100),
+  });
+
   useEffect(() => {
     setDueInput(toLocalInputValue(settings?.due_date));
   }, [settings?.due_date, leagueId]);
@@ -75,6 +87,17 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     statusList.forEach((s) => m.set(s.team_id, s));
     return m;
   }, [statusList]);
+
+  // ROSTER_REMIND_V1 — latest reminder per team.
+  const lastRemindedByTeam = useMemo(() => {
+    const m = new Map();
+    for (const e of reminderEntries) {
+      if (!e || !e.team_id || !e.performed_at) continue;
+      const prev = m.get(e.team_id);
+      if (!prev || new Date(e.performed_at) > new Date(prev)) m.set(e.team_id, e.performed_at);
+    }
+    return m;
+  }, [reminderEntries]);
 
   const doneCount = useMemo(
     () => teams.filter((t) => statusByTeam.get(t.id)?.done === true).length,
@@ -89,6 +112,7 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
     queryClient.invalidateQueries({ queryKey: ["rosterSettings", leagueId] });
     queryClient.invalidateQueries({ queryKey: ["teamRosterStatus", leagueId] });
     queryClient.invalidateQueries({ queryKey: ["rosterAudit", leagueId] });
+    queryClient.invalidateQueries({ queryKey: ["rosterReminders", leagueId] });
   };
 
   const logAudit = async (action, details, teamRef) => {
@@ -187,6 +211,36 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
       toast({ title: "Could not reopen", description: "Please try again.", variant: "destructive" });
     } finally {
       setReopeningId(null);
+    }
+  };
+
+  // ROSTER_REMIND_V1 — email this team's coach and record it. The server does
+  // the sending, the permission check and the audit row; nothing on the roster
+  // itself changes.
+  const handleRemind = async (team) => {
+    const last = lastRemindedByTeam.get(team.id);
+    if (last && !window.confirm(`${team.name}'s coach was already reminded ${formatDistanceToNowStrict(new Date(last), { addSuffix: true })}. Send another reminder?`)) return;
+    setRemindingId(team.id);
+    try {
+      const res = await base44.functions.invoke("manageCoachRoster", {
+        action: "remind",
+        leagueId,
+        teamId: team.id,
+        deadlineText: dueDate ? format(dueDate, "d.M.yyyy HH:mm") : "",
+      });
+      const data = res?.data || {};
+      if (data.error || !data.success) throw new Error(data.error || "Reminder failed");
+      refresh();
+      toast({
+        title: "Reminder sent",
+        description: `${data.coach_name || "The coach"} has been emailed about ${team.name}'s roster.`,
+      });
+    } catch (e) {
+      console.error("Reminder failed:", e);
+      const message = e?.response?.data?.error || e?.message || "Please try again.";
+      toast({ title: "Could not send the reminder", description: message, variant: "destructive" });
+    } finally {
+      setRemindingId(null);
     }
   };
 
@@ -309,7 +363,31 @@ export default function RosterDeadlinePanel({ leagueId, teams = [], currentUser 
                     </Button>
                   </div>
                 ) : (
-                  <span className="text-xs text-slate-400 flex-shrink-0">Still editing</span>
+                  /* ROSTER_REMIND_V1 — chase the coach of a team that hasn't finished */
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs text-slate-400">Still editing</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8"
+                      onClick={() => handleRemind(team)}
+                      disabled={remindingId === team.id}
+                      title="Email this team's coach about their roster"
+                    >
+                      {remindingId === team.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <Mail className="w-3.5 h-3.5 mr-1" /> Remind
+                          {lastRemindedByTeam.get(team.id) && (
+                            <span className="ml-1 text-slate-400 font-normal">
+                              · sent {formatDistanceToNowStrict(new Date(lastRemindedByTeam.get(team.id)), { addSuffix: true })}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )}
               </div>
             );
