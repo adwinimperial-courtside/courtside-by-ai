@@ -7,6 +7,9 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 //   'save'     — full-roster save (create/update players, delete removed ones)
 //   'markDone' — coach confirms the roster is final; locks coach editing for
 //                this team and emails the league admin(s)
+//   'remind'   — ROSTER_REMIND_V1: a league admin nudges the coach of a team
+//                that has not finished its roster. Admin-only, changes nothing,
+//                and is handled before the coach checks below.
 //
 // The editing window is OPEN only when ALL of these are true:
 //   1. The league is not manually locked (RosterSettings.locked !== true)
@@ -17,6 +20,18 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 // records directly (RLS locks them to admins) — this function applies changes
 // with the service role after the checks pass.
 
+// ROSTER_REMIND_V1 — the role a user effectively holds inside one league: the
+// per-league entry wins, otherwise their global type. Same helper, same rules,
+// as manageVideoAdmins and useEffectiveRole on the frontend.
+function roleInLeague(user, leagueId) {
+  if (!user) return null;
+  const assigned = Array.isArray(user.assigned_league_ids) ? user.assigned_league_ids : [];
+  const map = (user.league_role_map && typeof user.league_role_map === 'object') ? user.league_role_map : {};
+  if (map[leagueId]) return map[leagueId];
+  if (!assigned.includes(leagueId)) return null;
+  return user.user_type || 'viewer';
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -25,9 +40,93 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Not signed in' }, { status: 401 });
     }
 
-    const { action, leagueId, teamId, roster, removedIds } = await req.json();
+    const { action, leagueId, teamId, roster, removedIds, deadlineText } = await req.json();
     if (!action || !leagueId || !teamId) {
       return Response.json({ error: 'action, leagueId, and teamId are required' }, { status: 400 });
+    }
+
+    // =================================================================
+    // ACTION: remind — ROSTER_REMIND_V1
+    // =================================================================
+    // The organiser chasing a coach who has not finished their roster. This is
+    // an ADMIN action, so it is answered here, BEFORE the coach authorisation
+    // and editing-window checks below — those exist for 'save' and 'markDone'
+    // and would reject an admin outright. It writes nothing to the roster:
+    // one email to the coach, one RosterAuditLog row so the organiser can see
+    // who has already been chased.
+    if (action === 'remind') {
+      const callerRole = roleInLeague(user, leagueId);
+      if (user.user_type !== 'app_admin' && callerRole !== 'league_admin') {
+        return Response.json({ error: 'Only a league admin can send a roster reminder.' }, { status: 403 });
+      }
+
+      let team = null;
+      try { team = await base44.asServiceRole.entities.Team.get(teamId); } catch (_e) { team = null; }
+      if (!team || team.league_id !== leagueId) {
+        return Response.json({ error: 'That team is not part of this league.' }, { status: 400 });
+      }
+
+      // The coach of this team, from their per-league identity row.
+      let coachUser = null;
+      try {
+        const coachRows = await base44.asServiceRole.entities.UserLeagueIdentity.filter({
+          league_id: leagueId,
+          team_id: teamId,
+          role: 'coach',
+        });
+        for (const row of (coachRows || [])) {
+          if (!row || !row.user_id) continue;
+          try {
+            const u = await base44.asServiceRole.entities.User.get(row.user_id);
+            if (u && u.email) { coachUser = u; break; }
+          } catch (_e) { /* try the next identity row */ }
+        }
+      } catch (_e) { /* handled by the guard below */ }
+      if (!coachUser) {
+        return Response.json({ error: 'No coach is linked to this team yet, so there is nobody to remind.' }, { status: 400 });
+      }
+
+      const teamName = team.name || 'your team';
+      const coachName = coachUser.full_name || coachUser.email;
+      // The deadline is formatted by the caller in the organiser's own time zone;
+      // tags are stripped because it lands in an HTML email body.
+      const dueText = String(deadlineText || '').replace(/[<>]/g, '').slice(0, 60);
+      const organiser = user.full_name || user.email || 'Your league organizer';
+
+      try {
+        await base44.asServiceRole.integrations.Core.SendEmail({
+          to: coachUser.email,
+          subject: 'Roster reminder: ' + teamName,
+          body: '<h2>Your roster is still open</h2>' +
+            '<p>Hi ' + coachName + ',</p>' +
+            '<p><strong>' + organiser + '</strong> is waiting on the roster for <strong>' + teamName + '</strong>.</p>' +
+            (dueText ? '<p><strong>Roster deadline: ' + dueText + '.</strong></p>' : '') +
+            '<p>Open <strong>My Roster</strong> in Courtside by AI, add your players, and mark the roster final when it is complete.</p>' +
+            '<p style="color:#888">Courtside by AI &middot; Numbers Don\'t Lie</p>',
+        });
+      } catch (e) {
+        console.error('Roster reminder email failed for', coachUser.email, e);
+        return Response.json({ error: 'The reminder email could not be sent. Please try again.' }, { status: 502 });
+      }
+
+      const remindedAt = new Date().toISOString();
+      try {
+        await base44.asServiceRole.entities.RosterAuditLog.create({
+          league_id: leagueId,
+          team_id: teamId,
+          team_name: teamName,
+          action: 'roster_reminded',
+          performed_by: user.email || '',
+          performed_by_name: user.full_name || user.email || '',
+          performed_role: user.user_type || '',
+          performed_at: remindedAt,
+          details: ['Reminder emailed to ' + coachName],
+        });
+      } catch (e) {
+        console.error('Roster reminder audit log failed:', e);
+      }
+
+      return Response.json({ success: true, sent_to: coachUser.email, coach_name: coachName, reminded_at: remindedAt });
     }
 
     // --- Who is allowed: the coach linked to this team, or the app admin ---
