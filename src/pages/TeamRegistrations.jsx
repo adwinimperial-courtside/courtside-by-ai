@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList, Users, CalendarClock, Link2, Inbox } from "lucide-react";
 import HelpButton from "../components/help/HelpButton";
-import UserApplicationsReview from "../components/admin/UserApplicationsReview";
+import UserApplicationsReview, { filterReviewRequests } from "../components/admin/UserApplicationsReview";
 
 // TEAM_REGISTRATIONS_V1 - the organizer's picture of how the season is filling up.
 // EMBEDDED_REVIEW_V1 - approving and declining now happen here too, through the
@@ -70,16 +70,19 @@ export default function TeamRegistrations() {
     enabled: !!selectedLeagueId,
   });
 
-  const { data: applications = [], isLoading: appsLoading } = useQuery({
-    queryKey: ["teamRegApps", selectedLeagueId],
-    queryFn: () =>
-      base44.entities.UserApplication.filter({
-        league_id: selectedLeagueId,
-        requested_role: "coach",
-        status: "Pending",
-      }),
+  // TEAM_REG_COUNT_V1 — the Waiting tile counts the rows the reviewer below
+  // actually shows. Same query key and same server call as the reviewer, so
+  // there is one request, one source, and the tile can never disagree with
+  // the list underneath it.
+  const { data: reviewData, isLoading: appsLoading } = useQuery({
+    queryKey: ["review_requests"],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("getReviewRequests", {});
+      return res?.data || res;
+    },
     enabled: !!selectedLeagueId,
   });
+  const applications = filterReviewRequests(reviewData?.requests || [], "coach", selectedLeagueId);
 
   const loading = teamsLoading || appsLoading;
   const slots = selectedLeague?.team_slots;

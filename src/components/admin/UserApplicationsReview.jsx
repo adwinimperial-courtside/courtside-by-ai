@@ -18,6 +18,25 @@ const ROLE_BADGE_COLORS = {
   viewer: "bg-purple-100 text-purple-800 border-purple-200",
 };
 
+// EMBEDDED_REVIEW_V1 — narrow a review list to one role and one league. A request
+// that touches other leagues keeps only the filtered one, so a host page never
+// shows a decision that belongs to a different season. Exported because Team
+// Registrations counts its Waiting tile from the same rows this reviewer renders.
+export function filterReviewRequests(allRequests, filterRole, filterLeagueId) {
+  let list = allRequests || [];
+  if (filterRole) list = list.filter((a) => a.requested_role === filterRole);
+  if (filterLeagueId) {
+    list = list
+      .map((a) => {
+        const lgs = (a.leagues || []).filter((l) => l.league_id === filterLeagueId);
+        if (lgs.length === 0) return null;
+        return { ...a, leagues: lgs, can_decide: (a.can_decide || []).filter((id) => id === filterLeagueId) };
+      })
+      .filter(Boolean);
+  }
+  return list;
+}
+
 // EMBEDDED_REVIEW_V1 — with no props this is exactly the User Requests reviewer.
 // Team Registrations passes filterRole/filterLeagueId so the same approve and
 // decline path (consent gate, role conflicts, coach cap, decline reasons) can be
@@ -48,23 +67,10 @@ export default function UserApplicationsReview({
   const allRequests = reviewData?.requests || [];
   const isAppAdmin = reviewData?.role === 'app_admin';
 
-  // EMBEDDED_REVIEW_V1 — narrow to one role and one league when asked. A request
-  // that touches other leagues keeps only the filtered one, so the host page never
-  // shows a decision that belongs to a different season.
-  const requests = useMemo(() => {
-    let list = allRequests;
-    if (filterRole) list = list.filter((a) => a.requested_role === filterRole);
-    if (filterLeagueId) {
-      list = list
-        .map((a) => {
-          const lgs = (a.leagues || []).filter((l) => l.league_id === filterLeagueId);
-          if (lgs.length === 0) return null;
-          return { ...a, leagues: lgs, can_decide: (a.can_decide || []).filter((id) => id === filterLeagueId) };
-        })
-        .filter(Boolean);
-    }
-    return list;
-  }, [allRequests, filterRole, filterLeagueId]);
+  const requests = useMemo(
+    () => filterReviewRequests(allRequests, filterRole, filterLeagueId),
+    [allRequests, filterRole, filterLeagueId]
+  );
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['leagues'],
