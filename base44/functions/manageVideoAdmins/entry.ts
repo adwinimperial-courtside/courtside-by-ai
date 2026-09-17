@@ -77,6 +77,14 @@ function roleLabel(role) {
   return map[role] || role || 'a member';
 }
 
+// ROLE_ARTICLE_V1 — "a Coach" but "an App Admin". roleLabel's own fallback
+// ('a member') already carries its article, so it is returned untouched.
+function roleWithArticle(role) {
+  const label = roleLabel(role);
+  if (label === 'a member') return label;
+  return `${/^[aeiou]/i.test(label) ? 'an' : 'a'} ${label}`;
+}
+
 // The role a user effectively holds inside one league: the per-league entry
 // wins, otherwise their global type. Mirrors useEffectiveRole on the frontend.
 function roleInLeague(user, leagueId) {
@@ -326,7 +334,7 @@ Deno.serve(async (req) => {
         }
         if (held) {
           return Response.json({
-            error: `${existingUser.full_name || email} is already a ${roleLabel(held)} in ${leagueName || 'that league'}. One person can hold only one role per league. Invite a different person, or remove their existing role on the People page first.`,
+            error: `${existingUser.full_name || email} is already ${roleWithArticle(held)} in ${leagueName || 'that league'}. One person can hold only one role per league. Invite a different person, or remove their existing role on the People page first.`,
           }, { status: 400 });
         }
       }
@@ -530,7 +538,7 @@ Deno.serve(async (req) => {
       const held = roleInLeague(caller, invite.league_id);
       if (held && held !== 'video_admin') {
         return Response.json({
-          error: `You are already a ${roleLabel(held)} in ${invite.league_name || 'this league'}, and one person can hold only one role per league. Ask your league admin for help.`,
+          error: `You are already ${roleWithArticle(held)} in ${invite.league_name || 'this league'}, and one person can hold only one role per league. Ask your league admin for help.`,
         }, { status: 400 });
       }
 
