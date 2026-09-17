@@ -605,6 +605,10 @@ export default function JoinLeague() {
   }
 
   if (step === "details") {
+    // PLAYER_SIGNUP_V1 — D6. A player picks from the teams that already exist in this
+    // season. If the organizer has not entered any yet there is nothing to pick, so say
+    // that plainly instead of showing an empty dropdown.
+    const noTeamsYet = roleKey === "player" && teams.length === 0;
     return (
       <Shell campaign={campaign} roleKey={roleKey} stepNumber={2} compact>
         <button
@@ -634,9 +638,19 @@ export default function JoinLeague() {
 
           {roleKey === "coach" && coachPath !== "new_team" && <LockedTeamField teamName={(codeInfo && codeInfo.team_name) || "Your team"} accent={accent} />}
 
-          {roleKey === "player" && (
+          {noTeamsYet && (
+            <div data-marker="PLAYER_SIGNUP_V1" className="rounded-xl border-2 border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-semibold text-slate-800">No teams yet</p>
+              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                The league admin hasn't added the teams for this season yet, so there's nothing to join
+                right now. Check back in a few days, or contact them if you already know your team.
+              </p>
+            </div>
+          )}
+
+          {roleKey === "player" && !noTeamsYet && (
             <>
-              <div>
+              <div data-marker="PLAYER_SIGNUP_V1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Your team</label>
                 <Select value={selectedTeamId} onValueChange={(v) => { setSelectedTeamId(v); setFormError(""); }}>
                   <SelectTrigger className="w-full">
@@ -718,7 +732,7 @@ export default function JoinLeague() {
             </div>
           )}
 
-          <div>
+          <div className={noTeamsYet ? "hidden" : ""}>
             <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
             <Select value={country} onValueChange={(v) => { setCountry(v); setFormError(""); }}>
               <SelectTrigger className="w-full">
@@ -735,7 +749,7 @@ export default function JoinLeague() {
           <Button
             data-marker="FAN_INSTANT_FOLLOW_V1"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || noTeamsYet}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold disabled:opacity-60"
           >
             {isSubmitting ? (
@@ -748,7 +762,9 @@ export default function JoinLeague() {
           </Button>
 
           <p className="text-xs text-slate-500 text-center leading-relaxed">
-            {roleKey === "viewer"
+            {noTeamsYet
+              ? "Nothing has been submitted — you can come back to this link any time."
+              : roleKey === "viewer"
               ? "Free — you'll start following instantly."
               : "You'll get an email once the league admin approves you."}
           </p>
