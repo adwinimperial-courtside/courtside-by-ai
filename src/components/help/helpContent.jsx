@@ -37,6 +37,7 @@ export const HELP_TOPICS = [
     tips: [
       "Tap a team to see its full roster and details.",
       "Jersey numbers and player photos are managed by the team's coach or the league admin.",
+      "Admins: the Coach roster editing panel at the top sets the roster deadline and lets you remind coaches who have not finished. See Roster deadlines & reminders in the Help Center.",
     ],
   },
   {
@@ -267,6 +268,11 @@ export const HELP_TOPICS = [
       "Share the right link for the right role — coach links and codes are one-time use.",
       "Use Copy to grab a link and send it via WhatsApp, Messenger or email.",
       "Download QR code saves a high-resolution image of the same link. Put it on a flyer, a poster or the gym noticeboard — the code is drawn inside Courtside, so it keeps working forever.",
+      "Coaches cannot sign themselves up from the Courtside front page. If a coach tries, they are told to ask their organizer for a registration link and code — so if one says they cannot register, send them your link. Players and fans can sign up from the front page as normal.",
+      "A coach who enters a valid team code is approved straight away and goes to My Roster. No decision is needed from you.",
+      "A coach without a code only sees the 'my team isn't set up yet' option when the season accepts new teams and the team registration deadline has not passed. Those coaches land on Team Registrations and wait for your decision.",
+      "Roles you have not opened for a season appear greyed out on the registration page, with the reason underneath — so nobody fills in a form that was never going to be accepted.",
+      "Fans are approved automatically. They get read-only access to scores, standings and stats, and never reach your approval queue.",
     ],
   },
   {
@@ -280,6 +286,24 @@ export const HELP_TOPICS = [
       "Teams in shows how many teams are already in against the team target you set when you created the season. The target is a guide, not a hard limit.",
       "Waiting counts coach applications that still need your decision — approve or decline them on User Requests.",
       "If the season was set to I add the teams myself, coaches cannot apply through a link. Change that when you create the season.",
+    ],
+  },
+  {
+    key: "rosterdeadlines",
+    title: "Roster deadlines & reminders",
+    category: "admin",
+    roles: ["league_admin", "app_admin"],
+    summary:
+      "The Coach roster editing panel at the top of the Teams page: it sets how long coaches have to build their rosters, and lets you chase the ones who have not finished.",
+    tips: [
+      "Set Open until and press Save deadline to open the window. Until a deadline is set the window is closed and coaches cannot edit anything.",
+      "Coaches can edit until the deadline, a lock, their team's first game, or their own Mark roster done — whichever comes first.",
+      "Lock now closes editing for every team early; Unlock editing opens it again.",
+      "Show teams lists every team with its status. A finished team shows Roster done with the date, the coach and the player count, and a Reopen button if they need to change something.",
+      "A team still working shows a Remind button. It emails that team's coach a reminder with your deadline in it. Nothing on the roster is changed and the coach keeps whatever they had.",
+      "Once a reminder has gone out the button reads 'Remind · sent 2d ago', and sending a second one asks you to confirm first. There is no automatic chasing — you decide who gets poked and when.",
+      "Remind only works for a team that has a coach linked to it. If nobody is linked yet, approve or assign the coach first.",
+      "Every reminder, lock, reopen and deadline change is listed under History, in plain English, with who did it.",
     ],
   },
   {
@@ -392,6 +416,22 @@ export const HELP_TOPICS = [
       "Estimated cost is a guide only. base44 does not report token counts, so it is worked out from character length - open Cost assumptions to change the rates.",
       "Close to their monthly limit lists coaches and league owners nearing their allowance. App admins have no limit and never appear.",
       "Logging started on 4 August 2026, so earlier months are empty even where AI was used.",
+    ],
+  },
+  {
+    key: "privacyconsent",
+    title: "Privacy & consent",
+    category: "main",
+    roles: "all",
+    summary:
+      "The Privacy & Consent screen everyone sees once when they register, and what it commits you to afterwards.",
+    tips: [
+      "You agree to it once, when you sign up. It explains what Courtside stores — your name, email, role, league access, and your stats, badges and awards — and what is shown to other people.",
+      "Your email address is never meant to be shown publicly.",
+      "Coaches: you enter your players' names, numbers and positions, so you must have each player's permission first. For anyone under 18 that means a parent or guardian's permission.",
+      "Photos are optional. Whoever uploads a photo of a player is responsible for having their permission — including before posting it on social media, and for under-18s that is again a parent or guardian.",
+      "Anyone can ask their coach or organizer to correct or remove their details, or email info@courtside-by-ai.com.",
+      "AI stories, recaps and coach briefings are drafts built from league data. Whoever posts them anywhere outside Courtside is responsible for checking them first.",
     ],
   },
   {
