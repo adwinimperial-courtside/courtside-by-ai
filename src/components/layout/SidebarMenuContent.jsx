@@ -149,16 +149,6 @@ const opsItems = [
 export default function SidebarMenuContent({ currentUser, location, isViewerWithoutAdminAccess }) {
   const { isMobile, setOpenMobile } = useSidebar();
 
-  const { data: userApplications = [] } = useQuery({
-    queryKey: ['userApplications'],
-    queryFn: () => base44.entities.UserApplication.list(),
-    enabled: currentUser?.user_type === 'app_admin',
-    refetchInterval: 30000,
-    staleTime: 0,
-  });
-
-  const pendingRequestsCount = userApplications.filter(r => r.status === 'Pending').length;
-
   const { data: onboardingBookings = [] } = useQuery({
     queryKey: ['onboardingBookings'],
     queryFn: () => base44.entities.OnboardingBooking.list(),
@@ -168,17 +158,20 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
   });
   const onboardingRequestsCount = onboardingBookings.filter(b => b.status === 'requested').length;
 
-  const { data: leagueAdminReview } = useQuery({
+  // D15 — one source for the User Requests badge, whatever the role. getReviewRequests
+  // already returns exactly the rows that role is allowed to act on, so the badge can
+  // never promise work the page does not then show. It also replaces an unpaged
+  // UserApplication.list(), which base44 silently truncates once there are enough rows.
+  const { data: reviewSummary } = useQuery({
     queryKey: ['review_requests_count'],
     queryFn: async () => {
       const res = await base44.functions.invoke('getReviewRequests', {});
       return res?.data || res;
     },
-    enabled: currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'ops_admin',
+    enabled: currentUser?.user_type === 'app_admin' || currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'ops_admin',
     refetchInterval: 30000,
   });
-  const leagueAdminPendingCount = (leagueAdminReview?.requests || []).length;
-  const requestsBadgeCount = currentUser?.user_type === 'app_admin' ? pendingRequestsCount : leagueAdminPendingCount;
+  const requestsBadgeCount = (reviewSummary?.requests || []).length;
 
   const playerNavItem = {
     title: "Player Profile",
@@ -496,8 +489,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
-                      {item.title === "User Requests" && pendingRequestsCount > 0 && (
-                        <Badge className="ml-auto bg-orange-500 text-white">{pendingRequestsCount}</Badge>
+                      {item.title === "User Requests" && requestsBadgeCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{requestsBadgeCount}</Badge>
                       )}
                       {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
@@ -529,8 +522,8 @@ export default function SidebarMenuContent({ currentUser, location, isViewerWith
                     <Link to={item.url} className="flex items-center gap-3 px-3 py-2.5" onClick={handleNavigationClick}>
                       <item.icon className="w-5 h-5" />
                       <span>{item.title}</span>
-                      {item.title === "User Requests" && leagueAdminPendingCount > 0 && (
-                        <Badge className="ml-auto bg-orange-500 text-white">{leagueAdminPendingCount}</Badge>
+                      {item.title === "User Requests" && requestsBadgeCount > 0 && (
+                        <Badge className="ml-auto bg-orange-500 text-white">{requestsBadgeCount}</Badge>
                       )}
                       {item.title === "Onboarding Bookings" && onboardingRequestsCount > 0 && (
                         <Badge className="ml-auto bg-orange-500 text-white">{onboardingRequestsCount}</Badge>
