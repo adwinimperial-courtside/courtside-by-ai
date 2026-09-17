@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ClipboardList, Users, CalendarClock, Link2, ArrowRight, Inbox } from "lucide-react";
+import HelpButton from "../components/help/HelpButton";
 
 // TEAM_REGISTRATIONS_V1 - read-only organizer view of who has asked to enter a
 // team in an open-registration season. Approving still happens on User Requests;
@@ -94,7 +95,7 @@ export default function TeamRegistrations() {
           <ClipboardList className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Team Registrations</h1>
+          <div className="flex items-center gap-2"><h1 className="text-2xl font-bold text-slate-900">Team Registrations</h1><HelpButton pageKey="teamregistrations" /></div>
           <p className="text-sm text-slate-500">Who has asked to enter a team, and how the season is filling up</p>
         </div>
       </div>
