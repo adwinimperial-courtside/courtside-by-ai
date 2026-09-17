@@ -354,8 +354,9 @@ export default function JoinLeague() {
       }
 
       if (roleKey === "viewer") {
-        applicationData.status = "Approved";
-        applicationData.approval_email_sent = true;
+        // FAN_INSTANT_FOLLOW_V1 — this used to write status "Approved" straight from the
+        // browser. It is created Pending like every other application now; the server turns it
+        // into a follow a few lines below, or leaves it here for the organiser.
         if (selectedTeamId) applicationData.team_id = selectedTeamId;
       }
 
@@ -381,6 +382,23 @@ export default function JoinLeague() {
           autoResult = null;
         }
       }
+      // FAN_INSTANT_FOLLOW_V1 — a fan follows instantly, but the grant is the server's to make.
+      // The page no longer raises its own account: it asks, and is told either that it worked or
+      // the one thing that stopped it (consent, or a role already held in this season).
+      if (roleKey === "viewer" && createdApp?.id) {
+        try {
+          const res = await base44.functions.invoke("approveUserApplication", {
+            action: "fan_instant_follow",
+            applicationId: createdApp.id,
+            slug: String(slug || "").toLowerCase(),
+            consent: consentData || null,
+          });
+          autoResult = (res && res.data) || null;
+        } catch (e) {
+          autoResult = null;
+        }
+      }
+
       if (autoResult && autoResult.approved) setAutoApproved(true);
       else if (autoResult && autoResult.message) setAutoPendingReason(autoResult.message);
 
@@ -388,33 +406,14 @@ export default function JoinLeague() {
         try { await base44.functions.invoke("suggestPlayerMatch", { applicationId: createdApp.id }); } catch (e) {}
       }
 
-      if (roleKey === "viewer") {
-        const existingIds = Array.isArray(user.assigned_league_ids) ? user.assigned_league_ids : [];
-        const mergedIds = existingIds.includes(leagueId) ? existingIds : [...existingIds, leagueId];
-        const raiseType = (!user.user_type || user.user_type === "user") ? { user_type: "viewer" } : {};
-        await base44.auth.updateMe({
-          application_status: "Approved",
-          assigned_league_ids: mergedIds,
-          ...raiseType,
-          ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
-          ...(consentData || {}),
-        });
-        if (selectedTeamId) {
-          try { await base44.auth.updateMe({ favorite_team_id: selectedTeamId }); } catch (e) {}
-        }
-        try {
-          await base44.functions.invoke("sendAccessApprovedEmail", {
-            data: { user_email: user.email, user_name: (fullName || user.full_name || "").trim(), requested_role: "viewer" },
-          });
-        } catch (e) {}
-        setStep("success");
-        return;
-      }
-
+      // FAN_INSTANT_FOLLOW_V1 — the fan's assigned_league_ids, user_type, favourite team and
+      // welcome email are all the server's job now, so the fan falls through to the same tail
+      // every other role uses. Only the account's own name and consent are written from here.
       await base44.auth.updateMe({
         // CODE_AUTO_APPROVE_V1 — an auto-approved coach is already Approved on their account;
-        // writing Pending here would put them straight back in the queue. The state set above has
-        // not landed yet in this render, so the local result is what decides.
+        // writing Pending here would put them straight back in the queue. The same is true of a
+        // fan who is now following. The state set above has not landed yet in this render, so
+        // the local result is what decides.
         ...(autoResult && autoResult.approved ? {} : { application_status: "Pending" }),
         ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
         ...(consentData || {}),
@@ -500,9 +499,11 @@ export default function JoinLeague() {
 
   if (step === "success") {
     const favTeam = teams.find((t) => t.id === selectedTeamId);
-    const isViewer = roleKey === "viewer";
     // CODE_AUTO_APPROVE_V1
     const coachAutoApproved = roleKey === "coach" && autoApproved;
+    // FAN_INSTANT_FOLLOW_V1 — a fan is only "following" once the server says so. Held for
+    // consent or a role clash, they see the same pending screen as everyone else.
+    const isViewer = roleKey === "viewer" && autoApproved;
     return (
       <Shell campaign={campaign} roleKey={roleKey} compact>
         <div className="text-center py-4" data-marker="FAN_INSTANT_FOLLOW_V1">
@@ -525,13 +526,14 @@ export default function JoinLeague() {
           <p className="text-sm text-slate-600 leading-relaxed">
             {isViewer ? (
               <>You're now following <span className="font-semibold text-slate-800">{campaign?.hero_title || "the league"}</span>. Live scores, standings and stats are all yours — a welcome email is on its way.</>
+            ) : autoPendingReason ? (
+              // FAN_INSTANT_FOLLOW_V1 / CODE_AUTO_APPROVE_V1 — the server named the one thing
+              // that held this registration, so say that instead of the generic wait.
+              <>{autoPendingReason}</>
             ) : roleKey === "coach" ? (
-              // CODE_AUTO_APPROVE_V1 — approved on the code, held for a named reason, or the
-              // ordinary wait for the organiser.
+              // CODE_AUTO_APPROVE_V1 — approved on the code, or the ordinary wait.
               coachAutoApproved ? (
                 <>Your team code is confirmed, so you're approved already. Open <span className="font-semibold text-slate-800">My Roster</span> from your menu to add your players.</>
-              ) : autoPendingReason ? (
-                <>{autoPendingReason}</>
               ) : (
                 <>The league admin will review your registration. Once approved, you'll find <span className="font-semibold text-slate-800">My Roster</span> in your menu to set up your team.</>
               )
@@ -601,7 +603,17 @@ export default function JoinLeague() {
   }
 
   if (step === "consent") {
-    return <PrivacyConsentStep onAccept={handleConsentAccept} onBack={() => setStep(roleKey === "coach" ? coachBackStep : "role")} />;
+    // CONSENT_LOG_V1 — the component has always accepted these three and nobody ever passed
+    // them, so every row it wrote recorded the league, role and page as blanks.
+    return (
+      <PrivacyConsentStep
+        onAccept={handleConsentAccept}
+        onBack={() => setStep(roleKey === "coach" ? coachBackStep : "role")}
+        leagueId={campaign?.league_id || ""}
+        role={roleKey || ""}
+        source="JoinLeague"
+      />
+    );
   }
 
   if (step === "details") {
