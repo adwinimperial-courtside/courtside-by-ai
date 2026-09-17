@@ -186,6 +186,40 @@ export default function CommandCenter() {
     .slice(0, 8);
   const pendingCount = applications.filter((a) => a.status === "Pending").length;
 
+  // CC_TEAM_REGISTRATIONS_V1 — coach applications waiting on a league organizer,
+  // grouped by league and oldest first. A team registration that sits for days
+  // is how a season quietly dies before it starts, and from here it is
+  // otherwise invisible: every one of these queues lives on someone else's page.
+  const TEAM_REG_STALE_DAYS = 7;
+  const teamRegQueue = (() => {
+    const byLeague = new Map();
+    for (const a of applications) {
+      if (a.status !== "Pending" || a.requested_role !== "coach") continue;
+      const lid = a.league_id || "";
+      if (!lid || !leagueIdSet.has(lid)) continue;
+      const appliedAt = a.applied_at || a.created_date;
+      const t = appliedAt ? new Date(appliedAt).getTime() : 0;
+      const row = byLeague.get(lid) || { leagueId: lid, count: 0, oldest: 0 };
+      row.count += 1;
+      if (t && (!row.oldest || t < row.oldest)) row.oldest = t;
+      byLeague.set(lid, row);
+    }
+    return [...byLeague.values()]
+      .map((r) => {
+        const L = leagues.find((l) => l.id === r.leagueId);
+        return {
+          ...r,
+          name: L?.name || "Unknown league",
+          season: L?.season || "",
+          organizer: L?.owner_email || "—",
+          waitingDays: r.oldest ? Math.floor((now - r.oldest) / DAY) : null,
+        };
+      })
+      .sort((a, b) => (a.oldest || Infinity) - (b.oldest || Infinity));
+  })();
+  const teamRegWaiting = teamRegQueue.reduce((s, r) => s + r.count, 0);
+  const teamRegHasStale = teamRegQueue.some((r) => r.waitingDays !== null && r.waitingDays >= TEAM_REG_STALE_DAYS);
+
   // Per-league aggregates
   const leagueAgg = leagues.map((L) => {
     const lGames = games.filter((g) => g.league_id === L.id);
@@ -533,6 +567,61 @@ export default function CommandCenter() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* CC_TEAM_REGISTRATIONS_V1 */}
+        <div className="bg-white rounded-xl border border-slate-200 p-5 mb-6">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+            <ClipboardList className="w-4 h-4 text-orange-600" /> Team registrations waiting on an organizer
+          </h2>
+          {teamRegQueue.length === 0 ? (
+            <p className="text-sm text-slate-400 py-2">No coach applications are waiting anywhere right now.</p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-400 -mt-2 mb-3">
+                {teamRegWaiting} {teamRegWaiting === 1 ? "team is" : "teams are"} waiting for a league organizer to approve them. Oldest first.
+              </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-xs uppercase tracking-wide text-slate-400">
+                      <th className="text-left font-semibold pb-2">League</th>
+                      <th className="text-right font-semibold pb-2 px-3">Waiting</th>
+                      <th className="text-left font-semibold pb-2 px-3">Oldest</th>
+                      <th className="text-left font-semibold pb-2">Organizer</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {teamRegQueue.slice(0, 10).map((r) => {
+                      const stale = r.waitingDays !== null && r.waitingDays >= TEAM_REG_STALE_DAYS;
+                      return (
+                        <tr key={r.leagueId} className={stale ? "bg-red-50" : ""}>
+                          <td className="py-2 pr-3">
+                            <div className="font-medium text-slate-900">{r.name}</div>
+                            {r.season && <div className="text-xs text-slate-400">{r.season}</div>}
+                          </td>
+                          <td className={`py-2 px-3 text-right tabular-nums font-semibold ${stale ? "text-red-700" : "text-slate-900"}`}>{r.count}</td>
+                          <td className={`py-2 px-3 text-xs whitespace-nowrap ${stale ? "text-red-700 font-semibold" : "text-slate-500"}`}>{r.oldest ? ago(r.oldest) : "—"}</td>
+                          <td className="py-2 text-xs text-slate-500 truncate">{r.organizer}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {teamRegQueue.length > 10 && (
+                <p className="text-xs text-slate-400 mt-2">and {teamRegQueue.length - 10} more leagues</p>
+              )}
+              {teamRegHasStale && (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Highlighted leagues have had a team waiting a week or more. Those coaches have probably given up — worth a message to the organizer.
+                </div>
+              )}
+              <Link to={createPageUrl("TeamRegistrations")} className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 mt-3">
+                Open Team Registrations <ArrowRight className="w-3 h-3" />
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
