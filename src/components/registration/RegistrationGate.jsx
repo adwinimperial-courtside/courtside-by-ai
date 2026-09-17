@@ -117,6 +117,9 @@ export default function RegistrationGate({ user }) {
   const [adminLeagueMode, setAdminLeagueMode] = useState("new");
   const [selectedAdminLeagueId, setSelectedAdminLeagueId] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
+  // COACH_REDIRECT_V1 — the coach signpost's "I have a link" box
+  const [joinLinkInput, setJoinLinkInput] = useState("");
+  const [joinLinkError, setJoinLinkError] = useState("");
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -212,6 +215,15 @@ export default function RegistrationGate({ user }) {
     setLeagueTeamMap({});
     setSelectedAdminLeagueId("");
     setFormError("");
+    // COACH_REDIRECT_V1 — coaches join through their own league's registration
+    // link and code, so this generic picker sends them there instead of taking
+    // an application. Nothing is written on that screen.
+    if (roleId === "coach") {
+      setJoinLinkInput("");
+      setJoinLinkError("");
+      setStep("coach_signpost");
+      return;
+    }
     setStep("privacy_consent");
   };
 
@@ -411,11 +423,88 @@ export default function RegistrationGate({ user }) {
     );
   }
 
+  // COACH_REDIRECT_V1 — a signpost, not a form. No UserApplication is created
+  // here: coaches are registered by their league, so we point them at the
+  // registration link and code their organizer sends out.
+  if (step === "coach_signpost") {
+    const goToJoinLink = () => {
+      const raw = (joinLinkInput || "").trim();
+      if (!raw) { setJoinLinkError("Paste the link your organizer sent you."); return; }
+      const match = raw.match(/\/Join\/([A-Za-z0-9_-]+)/i);
+      const slug = match ? match[1] : (/^[A-Za-z0-9_-]+$/.test(raw) ? raw : "");
+      if (!slug) { setJoinLinkError("That doesn't look like a registration link — it ends with /Join/your-league."); return; }
+      window.location.href = `/Join/${slug}`;
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div data-marker="COACH_REDIRECT_V1" className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-8">
+          <button
+            onClick={() => { setSelectedRole(null); setJoinLinkError(""); setStep("select_role"); }}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-6 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to role selection
+          </button>
+
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <Users className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold text-slate-900">Coaches join by invitation</h2>
+          </div>
+
+          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 leading-relaxed mb-5">
+            <p className="font-semibold mb-2">Ask your league organizer for your registration link and code.</p>
+            <p>
+              Coaches are registered by their league, so we know which team is yours. Your organizer
+              will send you a link that looks like <span className="font-mono text-xs">courtside-by-ai.com/Join/your-league</span>{" "}
+              and, if your team already exists, a code like <span className="font-mono text-xs">EBL-1A2B</span>.
+            </p>
+          </div>
+
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Already have the link?</label>
+          <div className="flex gap-2">
+            <Input
+              value={joinLinkInput}
+              onChange={(e) => { setJoinLinkInput(e.target.value); setJoinLinkError(""); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); goToJoinLink(); } }}
+              placeholder="Paste your registration link"
+            />
+            <Button onClick={goToJoinLink} className="bg-orange-500 hover:bg-orange-600 flex-shrink-0">
+              Go
+            </Button>
+          </div>
+          {joinLinkError && <p className="text-sm text-red-600 mt-2">{joinLinkError}</p>}
+
+          <Button
+            onClick={() => { setSelectedRole(null); setJoinLinkError(""); setStep("select_role"); }}
+            variant="outline"
+            className="w-full mt-5"
+          >
+            Choose a different role
+          </Button>
+
+          <div className="text-center mt-4">
+            <button onClick={() => base44.auth.logout('/')} className="text-slate-500 hover:text-slate-700 text-sm transition-colors">
+              Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "privacy_consent") {
+    // CONSENT_LOG_V1 — role and source are known here; leagueId deliberately is
+    // not passed, because leagues are picked on the NEXT step (fill_form), so
+    // there is no league to record at the moment consent is given.
     return (
       <PrivacyConsentStep
         onAccept={(data) => { setConsentData(data); setStep("fill_form"); }}
         onBack={() => { setSelectedRole(null); setStep("select_role"); }}
+        role={selectedRole || ""}
+        source="RegistrationGate"
       />
     );
   }
