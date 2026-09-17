@@ -669,6 +669,14 @@ Deno.serve(async (req) => {
     const me = await base44.auth.me();
     if (!me) return Response.json({ error: 'Forbidden' }, { status: 403 });
 
+    // CODE_AUTO_APPROVE_V1 — the request body is read once, here, because this one action runs
+    // BEFORE the admin check below: its caller is the applicant, not an admin. Every other action
+    // reads the same parsed object further down.
+    const rawBody = await req.json();
+    if (rawBody && rawBody.action === 'code_auto_approve') {
+      return await handleCodeAutoApprove(base44, me, rawBody);
+    }
+
     let caller;
     try { caller = await base44.asServiceRole.entities.User.get(me.id); } catch (_e) { caller = me; }
     const callerType = caller && caller.user_type;
@@ -678,7 +686,7 @@ Deno.serve(async (req) => {
     if (!isAppAdmin && !isLeagueAdmin && !isOpsAdmin) return Response.json({ error: 'Forbidden' }, { status: 403 });
     const callerLeagueIds = Array.isArray(caller && caller.assigned_league_ids) ? caller.assigned_league_ids : [];
 
-    const body = await req.json();
+    const body = rawBody;
     const { applicationId, action, override_league_id } = body;
     const requestedLeagueIds = Array.isArray(body.league_ids) ? body.league_ids : null;
     const playerMatches = Array.isArray(body.player_matches) ? body.player_matches : null;
