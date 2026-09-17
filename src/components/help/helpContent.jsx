@@ -432,6 +432,7 @@ export const HELP_TOPICS = [
       "Needs attention is the clean-up list: stuck games to finish or delete, orphan games whose league no longer exists, and people who signed up but were never given a role. Each block links to the page that fixes it.",
       "Team registrations waiting on an organizer is the one queue nobody else sees. Every other approval list lives on a single organizer's page — this table shows all of them at once, oldest first, with the organizer's name.",
       "A red row in that table means a coach has been waiting a week or more. Those coaches have usually given up, so message the organizer rather than waiting.",
+      "It counts registrations, not coaches: a coach who applied to two seasons is waiting on two organizers and is listed under each. A season the organizer has already decided drops out straight away, even while the rest of that coach's application is still open.",
       "Active users counts people who actually signed in, not accounts. The bars are the last 14 days; the big number is unique users in the last 7.",
       "Leagues starting soon comes from new-league sign-ups that gave a season start date, so a league can appear there before it exists as a real league. New leagues beside it lists leagues actually created in the last 30 days, however they were created.",
       "Stalled — at risk flags a league with no games, no teams, or nothing played for 14 days. It is the earliest warning that a season is dying.",

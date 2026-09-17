@@ -6,6 +6,7 @@ import { createPageUrl } from "@/utils";
 import { Radar, Trophy, Users, UserCircle, Calendar, ClipboardList, Activity, Key, TrendingUp, AlertTriangle, Flame, Crown, ArrowRight, UserPlus, CalendarPlus, Shield, Trash2, Pencil, Rocket, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import HelpButton from "../components/help/HelpButton";
+import { pendingLeagueIds } from "../components/admin/applicationLeagues";
 
 export default function CommandCenter() {
   const { data: currentUser } = useQuery({ queryKey: ["user"], queryFn: () => base44.auth.me(), initialData: null });
@@ -196,14 +197,18 @@ export default function CommandCenter() {
     const byLeague = new Map();
     for (const a of applications) {
       if (a.status !== "Pending" || a.requested_role !== "coach") continue;
-      const lid = a.league_id || "";
-      if (!lid || !leagueIdSet.has(lid)) continue;
       const appliedAt = a.applied_at || a.created_date;
       const t = appliedAt ? new Date(appliedAt).getTime() : 0;
-      const row = byLeague.get(lid) || { leagueId: lid, count: 0, oldest: 0 };
-      row.count += 1;
-      if (t && (!row.oldest || t < row.oldest)) row.oldest = t;
-      byLeague.set(lid, row);
+      // APPLICATION_LEAGUES_V1 — count the leagues that still owe a decision, not just
+      // league_id. A coach who applied to two seasons is waiting on both organizers,
+      // and a season already decided is no longer waiting on anyone.
+      for (const lid of pendingLeagueIds(a)) {
+        if (!leagueIdSet.has(lid)) continue;
+        const row = byLeague.get(lid) || { leagueId: lid, count: 0, oldest: 0 };
+        row.count += 1;
+        if (t && (!row.oldest || t < row.oldest)) row.oldest = t;
+        byLeague.set(lid, row);
+      }
     }
     return [...byLeague.values()]
       .map((r) => {
@@ -580,7 +585,7 @@ export default function CommandCenter() {
           ) : (
             <>
               <p className="text-xs text-slate-400 -mt-2 mb-3">
-                {teamRegWaiting} {teamRegWaiting === 1 ? "team is" : "teams are"} waiting for a league organizer to approve them. Oldest first.
+                {teamRegWaiting} {teamRegWaiting === 1 ? "team registration is" : "team registrations are"} waiting for a league organizer to approve them. Oldest first.
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
