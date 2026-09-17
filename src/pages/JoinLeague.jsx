@@ -29,6 +29,16 @@ const ROLE_META = {
   viewer: { label: "Fan", badge: "FAN REGISTRATION", icon: Eye, description: "I follow the league as a fan or family member" },
 };
 
+// PLAYER_SIGNUP_V1 — D7. The role tiles are always rendered in this order. A role the
+// organizer has not ticked in "Who can sign up" is shown greyed out with the reason in
+// plain words, not hidden, so a player who lands here early knows to come back.
+const ROLE_ORDER = ["coach", "player", "viewer"];
+const ROLE_CLOSED_REASON = {
+  coach: "Team registration isn't open for this league yet",
+  player: "Player signup isn't open yet — the league admin opens it once the teams are set",
+  viewer: "Fan signup isn't open for this league yet",
+};
+
 function darken(hex) {
   try {
     const n = hex.replace("#", "");
@@ -232,6 +242,8 @@ export default function JoinLeague() {
     GENERIC_CODE_ERROR;
 
   const pickRole = async (key) => {
+    // PLAYER_SIGNUP_V1 — D7. The tile is disabled, but never trust the tile.
+    if (!enabledRoles.includes(key)) return;
     setRoleKey(key);
     setFormError("");
     if (key === "coach") {
@@ -548,13 +560,18 @@ export default function JoinLeague() {
         <div className="space-y-3">
           <Banner message={formError} />
           <p className="text-sm font-medium text-slate-700">How are you joining{enabledRoles.length > 1 ? "" : " the league"}?</p>
-          {enabledRoles.map((key) => {
+          {ROLE_ORDER.map((key) => {
             const meta = ROLE_META[key];
             if (!meta) return null;
             const Icon = meta.icon;
+            // PLAYER_SIGNUP_V1 — D7. A role the organizer has not opened is shown, disabled.
+            const roleOpen = enabledRoles.includes(key);
             // OPEN_SEASON_COACH_V1 — team registration stops at the deadline;
             // players and fans keep signing up after it.
-            const locked = key === "coach" && coachClosed;
+            const locked = !roleOpen || (key === "coach" && coachClosed);
+            const lockedReason = roleOpen
+              ? "Team registration closed on " + deadlineLabel
+              : ROLE_CLOSED_REASON[key];
             const coachDesc = key === "coach" && openSeason
               ? "I'm entering a team in this season"
               : meta.description;
@@ -573,7 +590,7 @@ export default function JoinLeague() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-800">{meta.label}</p>
-                  <p className="text-xs text-slate-500">{locked ? "Team registration closed on " + deadlineLabel : coachDesc}</p>
+                  <p className="text-xs text-slate-500">{locked ? lockedReason : coachDesc}</p>
                 </div>
               </button>
             );
