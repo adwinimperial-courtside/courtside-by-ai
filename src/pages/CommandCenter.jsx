@@ -211,7 +211,7 @@ export default function CommandCenter() {
           ...r,
           name: L?.name || "Unknown league",
           season: L?.season || "",
-          organizer: L?.owner_email || "—",
+          organizer: L?.owner_name || L?.owner_email || L?.created_by || "—",
           waitingDays: r.oldest ? Math.floor((now - r.oldest) / DAY) : null,
         };
       })
