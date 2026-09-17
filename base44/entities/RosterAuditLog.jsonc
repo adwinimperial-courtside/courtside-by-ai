@@ -23,7 +23,8 @@
         "deadline_removed",
         "league_locked",
         "league_unlocked",
-        "team_reopened"
+        "team_reopened",
+        "roster_reminded"
       ],
       "description": "What happened"
     },
