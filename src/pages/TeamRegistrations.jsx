@@ -86,6 +86,16 @@ export default function TeamRegistrations() {
 
   const loading = teamsLoading || appsLoading;
   const slots = selectedLeague?.team_slots;
+  // SLOT_TARGET_V1 — team_slots is a target, not a cap (D4 withdrawn), so once the
+  // season is over target we show the plain count and explain it in the hint rather
+  // than printing a reading like "10 of 6", which looks like a bug.
+  const overTarget = slots ? Math.max(0, teams.length - slots) : 0;
+  const teamsInValue = slots && !overTarget ? teams.length + " of " + slots : String(teams.length);
+  const teamsInHint = !slots
+    ? "No target set"
+    : overTarget
+      ? overTarget + " over the target of " + slots
+      : "Target set on the season";
   const isOpenSeason = selectedLeague?.registration_mode === "open";
 
   if (currentUser && !isAppAdmin && !isLeagueAdmin) {
@@ -127,8 +137,8 @@ export default function TeamRegistrations() {
           <StatTile
             icon={Users}
             label="Teams in"
-            value={slots ? teams.length + " of " + slots : String(teams.length)}
-            hint={slots ? "Target set on the season" : "No target set"}
+            value={teamsInValue}
+            hint={teamsInHint}
           />
           <StatTile
             icon={Inbox}
