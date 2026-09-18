@@ -1,0 +1,30 @@
+{
+  "name": "PlatformStats",
+  "type": "object",
+  "properties": {
+    "games": {
+      "type": "number",
+      "description": "Completed games across the platform"
+    },
+    "leagues": {
+      "type": "number",
+      "description": "Leagues (league groups plus ungrouped legacy leagues)"
+    },
+    "users": {
+      "type": "number",
+      "description": "Registered users"
+    },
+    "teams": {
+      "type": "number",
+      "description": "Teams across all seasons"
+    },
+    "counted_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When these numbers were counted"
+    }
+  },
+  "required": [
+    "counted_at"
+  ]
+}
