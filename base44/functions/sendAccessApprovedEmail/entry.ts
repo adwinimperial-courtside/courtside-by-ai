@@ -530,7 +530,7 @@ function leagueAdminBody(greeting) {
                       <span style="font-size:10px;font-weight:700;color:#c2570f;letter-spacing:1px;margin-left:8px;vertical-align:middle;">SETUP</span>
                     </p>
                     <p style="margin:0 0 10px 0;font-size:17px;font-weight:700;color:${NAVY};">&#127942; &nbsp;Build your season</p>
-                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Create your league and its first season on the <strong>Leagues</strong> page, add your teams on the <strong>Teams</strong> page, and set your fixtures on the <strong>Schedule</strong> page. That's the whole skeleton of a season &mdash; three pages.</p>
+                    <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">Your league is ready. Create its first season on the <strong>Leagues</strong> page, add your teams on the <strong>Teams</strong> page, and set your fixtures on the <strong>Schedule</strong> page. That's the whole skeleton of a season &mdash; three pages.</p>
                     <p style="margin:0;font-size:14px;color:#444;line-height:1.7;">When the season ends, you don't start from scratch: add a new season under the same league and your club's history stays in one place.</p>
                   </td>
                 </tr>
