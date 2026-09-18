@@ -23,6 +23,7 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userLoadError, setUserLoadError] = useState("");
   const [showConsentReminder, setShowConsentReminder] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackType, setFeedbackType] = useState("bug");
@@ -105,6 +106,7 @@ export default function Layout({ children }) {
 
       } catch (error) {
         console.error("Failed to fetch user:", error);
+        setUserLoadError(`${error?.status || error?.response?.status || "no-status"} · ${String(error?.message || "unknown").slice(0, 80)}`);
       } finally {
         setIsLoading(false);
       }
@@ -382,6 +384,9 @@ export default function Layout({ children }) {
               <div className="mt-3 space-y-2" data-marker="AUTH_BUTTON_V2">
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                   We couldn't load your account. Check your connection and try again.
+                </p>
+                <p className="text-[10px] text-slate-400 break-all" data-marker="USER_LOAD_DIAG_V1">
+                  Details: {userLoadError || "no error returned"} · {window.location.hostname}
                 </p>
                 <Button
                   onClick={() => window.location.reload()}
