@@ -20,8 +20,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 //   'rearm_code'  — flip a used code back to active (rejected applicant).
 //   'sync_teams'  — generate codes for teams added after campaign creation.
 //
-// Public action (any signed-in user):
-//   'get_public'  — campaign display fields by slug. NEVER returns codes.
+// Public actions (any signed-in user):
+//   'get_public'    — campaign display fields by slug. NEVER returns codes.
+//   'search_public' — SEARCH_PUBLIC_V1: every open, listed campaign on a
+//                     non-archived season, for the global registration page
+//                     search. Display fields only. NEVER returns codes.
 //
 // Codes look like XXX-YYYY: prefix from the league name initials, 4 random
 // characters from an unambiguous alphabet (no 0/O/1/I). Uniqueness is checked
@@ -118,7 +121,10 @@ Deno.serve(async (req) => {
       color_primary: c.color_primary || '#0B1F3A',
       color_accent: c.color_accent || '#F26B1F',
       roles_enabled: Array.isArray(c.roles_enabled) && c.roles_enabled.length ? c.roles_enabled : ['coach'],
-      status: c.status || 'open'
+      status: c.status || 'open',
+      // LISTED_IN_SEARCH_V1 — campaigns created before this field existed have no
+      // value, and count as listed.
+      listed_in_search: c.listed_in_search !== false
     });
 
     // ---------- public action ----------
@@ -146,6 +152,47 @@ Deno.serve(async (req) => {
         campaign: shaped,
         league_name: league ? league.name : ''
       });
+    }
+
+    // SEARCH_PUBLIC_V1 — the global registration page's league search. Only
+    // open campaigns the organiser has not hidden, on seasons that are not
+    // archived. Coach is dropped from the open roles once the season's team
+    // registration deadline has passed, the same rule the Join page applies.
+    if (action === 'search_public') {
+      const all = await svc.SignupCampaign.list();
+      const open = (all || []).filter((c) =>
+        c.slug && (c.status || 'open') === 'open' && c.listed_in_search !== false
+      );
+      if (!open.length) return Response.json({ results: [] });
+      const leagues = await svc.League.list();
+      const groups = await svc.LeagueGroup.list();
+      const leagueById = new Map((leagues || []).map((l) => [l.id, l]));
+      const groupById = new Map((groups || []).map((g) => [g.id, g]));
+      const todayKey = new Date().toISOString().slice(0, 10);
+      const results = [];
+      for (const c of open) {
+        const league = leagueById.get(c.league_id);
+        if (!league || league.is_archived) continue;
+        const group = league.group_id ? groupById.get(league.group_id) || null : null;
+        let roles = Array.isArray(c.roles_enabled) && c.roles_enabled.length ? c.roles_enabled : ['coach'];
+        const deadline = String(league.registration_deadline || '').slice(0, 10);
+        if (deadline && todayKey > deadline) roles = roles.filter((r) => r !== 'coach');
+        if (!roles.length) continue;
+        results.push({
+          slug: c.slug,
+          league_id: league.id,
+          season_name: league.name || '',
+          season_text: c.season_text || '',
+          hero_title: c.hero_title || '',
+          group_id: group ? group.id : '',
+          group_name: group ? group.name || '' : '',
+          country: group ? group.country || '' : '',
+          logo_url: c.crest_url || (group ? group.logo_url || '' : ''),
+          roles_enabled: roles,
+          registration_deadline: deadline
+        });
+      }
+      return Response.json({ results });
     }
 
     // ---------- admin actions below ----------
@@ -232,6 +279,10 @@ Deno.serve(async (req) => {
       }
       if (Array.isArray(body.roles_enabled) && body.roles_enabled.length) {
         patch.roles_enabled = body.roles_enabled;
+      }
+      // LISTED_IN_SEARCH_V1
+      if (typeof body.listed_in_search === 'boolean') {
+        patch.listed_in_search = body.listed_in_search;
       }
       const updated = await svc.SignupCampaign.update(campaign.id, patch);
       return Response.json({ campaign: publicShape(updated || { ...campaign, ...patch }) });
