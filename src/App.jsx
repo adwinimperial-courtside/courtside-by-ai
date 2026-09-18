@@ -5,7 +5,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
@@ -48,6 +48,13 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, isAuthenticated, navigateToLogin } = useAuth();
+
+  // POLICY_PAGES_PUBLIC_V1 - Terms of Use and Privacy Policy are always public: rendered before
+  // any auth check, login redirect or RegistrationGate, for signed-out, no-role, pending and approved users.
+  const policyLocation = useLocation();
+  const policyPath = policyLocation.pathname.toLowerCase().replace(/\/+$/, '');
+  if (policyPath === '/privacy-policy') return <PrivacyPolicyPage />;
+  if (policyPath === '/terms-of-use') return <TermsOfUsePage />;
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
