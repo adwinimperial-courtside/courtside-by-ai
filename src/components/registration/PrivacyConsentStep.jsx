@@ -230,7 +230,7 @@ export default function PrivacyConsentStep({ onAccept, onBack, leagueId = null, 
         <Button
           type="button"
           onClick={handleContinue}
-          className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+          className={`w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-opacity ${termsAccepted ? "" : "opacity-50"}`}
         >
           Continue to Application
         </Button>
