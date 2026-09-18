@@ -1,0 +1,97 @@
+{
+  "name": "LeagueRequest",
+  "type": "object",
+  "properties": {
+    "league_name": {
+      "type": "string",
+      "description": "League name as typed by the person who asked for it"
+    },
+    "city": {
+      "type": "string",
+      "description": "City the league plays in (optional)"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country the league plays in"
+    },
+    "league_link": {
+      "type": "string",
+      "description": "Public Facebook page or website of the league (optional). Never an email or phone number."
+    },
+    "requester_user_id": {
+      "type": "string",
+      "description": "User id of the person who asked"
+    },
+    "requester_email": {
+      "type": "string",
+      "description": "Email of the person who asked"
+    },
+    "requester_name": {
+      "type": "string",
+      "description": "Name of the person who asked"
+    },
+    "requested_from_role": {
+      "type": "string",
+      "enum": [
+        "team",
+        "fan"
+      ],
+      "description": "team = came from 'I coach or play on a team'; fan = came from 'I'm a fan'"
+    },
+    "referral_sent": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the person tapped Share or Copy on the invite message"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "New",
+        "Contacted",
+        "Onboarded",
+        "Declined"
+      ],
+      "default": "New",
+      "description": "Outreach status, set by app admin"
+    },
+    "linked_league_group_id": {
+      "type": "string",
+      "description": "The LeagueGroup this request turned into, set by app admin when marked Onboarded. Drives the 'your league is on Courtside' card."
+    },
+    "notes": {
+      "type": "string",
+      "description": "App admin notes"
+    }
+  },
+  "required": [
+    "league_name",
+    "requester_user_id"
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}

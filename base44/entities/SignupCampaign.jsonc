@@ -56,6 +56,11 @@
       "default": "open",
       "description": "open = the public page accepts signups; closed = the page shows a registration-closed message."
     },
+    "listed_in_search": {
+      "type": "boolean",
+      "default": true,
+      "description": "LISTED_IN_SEARCH_V1 \u2014 show this season in the Courtside league search on the global registration page. The /Join link works either way."
+    },
     "created_by_email": {
       "type": "string",
       "description": "Email of the admin who created the campaign"
