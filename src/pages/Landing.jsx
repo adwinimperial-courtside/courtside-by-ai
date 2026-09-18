@@ -27,6 +27,7 @@ import {
 import { base44 } from "@/api/base44Client";
 import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — players land on the trophy room
 import CoachHomePanel from "@/components/home/CoachHomePanel"; // COACH_HOME_WIREUP_V1
+import { usePlatformStats } from "@/components/home/usePlatformStats"; // PLATFORM_STATS_V1
 
 export default function Landing() {
   const { data: currentUser, isLoading: userLoading, isError: userError } = useQuery({
@@ -54,6 +55,7 @@ export default function Landing() {
     enabled: isOrganiser,
     staleTime: 60000,
   });
+  const platformStats = usePlatformStats(); // PLATFORM_STATS_V1
   // ACTIVE_SEASONS_CHIP_V1
   const { data: dashSeasons = [], isSuccess: dashSeasonsLoaded } = useQuery({ queryKey: ['dash_active_seasons'], queryFn: () => base44.entities.League.list('-created_date', 500), enabled: isOrganiser, staleTime: 60000 });
   const myLeagueIds = currentUser?.assigned_league_ids || [];
@@ -191,10 +193,10 @@ export default function Landing() {
         <div className="max-w-2xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row justify-center items-center gap-6 sm:gap-0 text-center">
             {[
-              { number: "900+", label: "Completed games" },
-              { number: "30+", label: "Leagues" },
-              { number: "500+", label: "Users" },
-              { number: "260+", label: "Teams" },
+              { number: platformStats.games, label: "Completed games" },
+              { number: platformStats.leagues, label: "Leagues" },
+              { number: platformStats.users, label: "Users" },
+              { number: platformStats.teams, label: "Teams" },
             ].map((stat, idx) => (
               <div key={idx} className={`flex-1 ${idx > 0 ? "sm:border-l sm:border-slate-200" : ""}`}>
                 <div className="text-3xl font-black" style={{ color: "#F26B1F" }}>{stat.number}</div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { usePlatformStats } from "@/components/home/usePlatformStats"; // PLATFORM_STATS_V1
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -153,11 +154,12 @@ function SlateCard({ children, onClick, className = "" }) {
 }
 
 function StatsBar() {
+  const ps = usePlatformStats(); // PLATFORM_STATS_V1
   const items = [
-    { n: "900+", l: "Games" },
-    { n: "30+", l: "Leagues" },
-    { n: "250+", l: "Users" },
-    { n: "200+", l: "Teams" },
+    { n: ps.games, l: "Games" },
+    { n: ps.leagues, l: "Leagues" },
+    { n: ps.users, l: "Users" },
+    { n: ps.teams, l: "Teams" },
   ];
   return (
     <div className="mt-3 mb-4">
