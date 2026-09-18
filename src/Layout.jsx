@@ -188,7 +188,7 @@ export default function Layout({ children }) {
 
   const getUserTypeLabel = () => {
     if (!currentUser?.user_type) return "";
-    return currentUser.user_type.replace("_", " ").toUpperCase();
+    return ({ viewer: "FAN", video_admin: "STREAM CREW" })[currentUser.user_type] || currentUser.user_type.replace("_", " ").toUpperCase(); // PUBLIC_ROLE_NAMES_V1
   };
 
 

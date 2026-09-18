@@ -180,7 +180,7 @@ export default function StreamCrew() {
           <HelpButton pageKey="streamcrew" />
         </div>
         <p className="text-slate-500 text-sm mt-0.5">
-          Invite the people who run your live stream. Video admins can set up the game overlay
+          Invite the people who run your live stream. Your Stream Crew can set up the game overlay
           {" \u2014 "}logos, score bug, and ticker{" \u2014 "}for the leagues you give them.
         </p>
       </div>

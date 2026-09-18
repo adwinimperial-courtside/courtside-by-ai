@@ -618,14 +618,14 @@ function leagueAdminBody(greeting) {
 
                     <table width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #eef1f6;">
                       <tr><td style="padding:14px 0;">
-                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#128064; &nbsp;Viewer</p>
-                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">The role most leagues underuse. Viewers follow everything &mdash; schedule, standings, statistics, award leaders &mdash; and watch the live box score while games are on, from anywhere in the world. Sign up family, fans and sponsors, and your league has an audience every game day.</p>
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#128064; &nbsp;Fan</p>
+                        <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">The role most leagues underuse. Fans follow everything &mdash; schedule, standings, statistics, award leaders &mdash; and watch the live box score while games are on, from anywhere in the world. Sign up family, fans and sponsors, and your league has an audience every game day.</p>
                       </td></tr>
                     </table>
 
                     <table width="100%" cellpadding="0" cellspacing="0">
                       <tr><td style="padding:14px 0;">
-                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#127909; &nbsp;Video Admin</p>
+                        <p style="margin:0 0 4px 0;font-size:14px;font-weight:700;color:${NAVY};">&#127909; &nbsp;Stream Crew</p>
                         <p style="margin:0;font-size:13px;color:#555;line-height:1.6;">For whoever runs your livestream. Their only tool is the Game Overlay &mdash; the live scoreboard on your broadcast &mdash; so they can't touch anything else.</p>
                       </td></tr>
                     </table>

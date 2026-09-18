@@ -19,7 +19,7 @@ const ROLE_LABELS = {
   league_admin: "League Admin",
   coach: "Coach",
   player: "Player",
-  video_admin: "Video Admin",
+  video_admin: "Stream Crew",
   viewer: "Fan",
 };
 

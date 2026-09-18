@@ -69,7 +69,7 @@ export default function Landing() {
     if (role === "app_admin" || role === "league_admin") return "League organiser";
     if (role === "coach") return "Coach";
     if (role === "player") return "Player";
-    if (role === "viewer") return "Viewer";
+    if (role === "viewer") return "Fan";
     return "Member";
   };
 

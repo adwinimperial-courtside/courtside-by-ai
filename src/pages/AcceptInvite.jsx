@@ -233,7 +233,7 @@ export default function AcceptInvite() {
 
   // step === "confirm"
   return (
-    <Shell pillText="Video Admin invitation">
+    <Shell pillText="Stream Crew invitation">
       <h1 className="text-xl font-bold text-slate-900 text-center">You're invited to run the stream</h1>
       <p className="text-[13.5px] text-slate-500 text-center mt-1.5 mb-5 leading-relaxed">
         {invite && invite.invited_by_name ? `Invited by ${invite.invited_by_name}. ` : ""}

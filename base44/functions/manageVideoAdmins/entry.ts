@@ -70,7 +70,7 @@ function roleLabel(role) {
     coach: 'Coach',
     player: 'Player',
     viewer: 'Fan',
-    video_admin: 'Video Admin',
+    video_admin: 'Stream Crew',
     ops_admin: 'Operations Admin',
     app_admin: 'App Admin',
   };
@@ -170,7 +170,7 @@ function emailHtml(inviteeName, inviterName, leagueName, invitedEmail, expiresLa
   const greeting = inviteeName ? `Hi ${inviteeName},` : 'Hi,';
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>You have been invited as a Video Admin</title></head>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>You have been invited to the Stream Crew</title></head>
 <body style="margin:0;padding:0;background-color:#f4f6f9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f6f9;padding:40px 0;">
     <tr><td align="center">
@@ -184,7 +184,7 @@ function emailHtml(inviteeName, inviterName, leagueName, invitedEmail, expiresLa
         <tr><td style="padding:36px 32px 32px 32px;">
           <p style="margin:0 0 16px 0;font-size:15px;color:#333;">${greeting}</p>
           <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#333;">
-            <strong>${inviterName}</strong> has invited you to join Courtside by AI as a <strong>Video Admin</strong> for <strong>${leagueName}</strong>.
+            <strong>${inviterName}</strong> has invited you to join the <strong>Stream Crew</strong> on Courtside by AI for <strong>${leagueName}</strong>.
             You will be able to set up the live game overlay &mdash; team logos, the score bug and the on-screen ticker &mdash; for every game in the league.
           </p>
           <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px 0;">
@@ -329,7 +329,7 @@ Deno.serve(async (req) => {
         const held = roleInLeague(existingUser, leagueId);
         if (held === 'video_admin') {
           return Response.json({
-            error: `${existingUser.full_name || email} is already a Video Admin in ${leagueName || 'that league'}.`,
+            error: `${existingUser.full_name || email} is already on the Stream Crew in ${leagueName || 'that league'}.`,
           }, { status: 400 });
         }
         if (held) {
