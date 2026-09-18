@@ -237,6 +237,16 @@ export default function Layout({ children }) {
 
   }
 
+  // AUTH_LOADING_SCREEN_V1 — don't render any page until we know who the user is (prevents the Fan home flashing before the role picker)
+  if (isLoading) {
+    return (
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col items-center justify-center gap-4">
+        <img src="https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/68fa0e7f8bbf24ed563563de/ed79261c1_CourtSidebyAILOGO.png" alt="Courtside by AI" className="w-16 h-16 object-contain" />
+        <p className="text-slate-500 text-sm">Loading…</p>
+      </div>
+    );
+  }
+
   // Show registration gate for new users
   if (!isLoading && showRegistrationGate) {
     return <RegistrationGate user={currentUser} />;
