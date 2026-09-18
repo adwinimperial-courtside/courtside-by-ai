@@ -237,6 +237,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
       onOpenChange(false);
       toast({
+        duration: 10000,
         title: "Season created",
         description: registrationMode === "open" ? "Your sign-up link is ready." : "You can now add teams and games.",
         action: registrationMode === "open" ? (<ToastAction altText="Open sign-up page" onClick={() => navigate(createPageUrl("Registration"))}>Open sign-up page</ToastAction>) : undefined
