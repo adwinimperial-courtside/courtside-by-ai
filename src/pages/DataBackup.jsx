@@ -11,7 +11,7 @@ import { Download, Upload, Database, CheckCircle, AlertTriangle, Loader2, Key } 
 const ENTITIES = [
   "League", "Team", "Player", "Game", "PlayerStats", "GameLog",
   "UserApplication", "UserLeagueIdentity", "TacticalBriefing",
-  "AIUsageCounter", "AIUsageLog", "PendingUserAssignment", "LeagueSetupRequest",
+  "AIUsageCounter", "AIUsageLog", "PendingUserAssignment", "LeagueSetupRequest", "LeagueRequest",
   "LeagueAccessRequest", "DeletionLog", "LoginEvent", "User"
 ];
 

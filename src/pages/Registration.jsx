@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { UserPlus, Link2, Copy, RefreshCw, Upload, CheckCircle2, XCircle, Pencil, Download } from "lucide-react";
@@ -413,6 +414,19 @@ export default function Registration() {
               </div>
               <div ref={qrDownloadRef} className="hidden" aria-hidden="true">
                 <QRCodeCanvas value={shareUrl} size={1024} level="M" marginSize={4} bgColor="#ffffff" fgColor="#0B1F3A" />
+              </div>
+            </div>
+
+            {/* LISTED_IN_SEARCH_V1 — whether people signing up without the link can find this season */}
+            <div className="flex items-start gap-3 rounded-xl border border-slate-200 p-4" data-marker="LISTED_IN_SEARCH_V1">
+              <Switch
+                checked={campaign.listed_in_search !== false}
+                disabled={busy}
+                onCheckedChange={(v) => callAction({ action: "update", listed_in_search: v }, v ? "Shown in Courtside league search" : "Hidden from Courtside league search")}
+              />
+              <div>
+                <div className="text-sm font-medium text-slate-800">Show in Courtside league search</div>
+                <p className="text-xs text-slate-500 mt-0.5">People who sign up without your link can find this season and apply. You still approve every team. Turn off if you only want people you've invited. Your link keeps working either way.</p>
               </div>
             </div>
 

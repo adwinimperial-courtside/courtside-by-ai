@@ -105,6 +105,12 @@ const ownerItems = [
     icon: Calendar
   },
   {
+    // LEAGUE_REQUESTS_PAGE_V1
+    title: "League Requests",
+    url: createPageUrl("LeagueRequests"),
+    icon: ListOrdered
+  },
+  {
     title: "People",
     url: createPageUrl("People"),
     icon: Users

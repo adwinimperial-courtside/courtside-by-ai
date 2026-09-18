@@ -169,11 +169,15 @@ Deno.serve(async (req) => {
       const leagueById = new Map((leagues || []).map((l) => [l.id, l]));
       const groupById = new Map((groups || []).map((g) => [g.id, g]));
       const todayKey = new Date().toISOString().slice(0, 10);
+      // SEARCH_HIDE_DEMO_V1 — the same rule Command Center uses: anything named
+      // demo, test, sample or dummy is Courtside's own and never offered to the public.
+      const isDemoName = (s) => /\b(demo|test|sample|dummy)\b/i.test(String(s || ''));
       const results = [];
       for (const c of open) {
         const league = leagueById.get(c.league_id);
         if (!league || league.is_archived) continue;
         const group = league.group_id ? groupById.get(league.group_id) || null : null;
+        if (isDemoName(league.name) || isDemoName(group && group.name) || isDemoName(c.hero_title)) continue;
         let roles = Array.isArray(c.roles_enabled) && c.roles_enabled.length ? c.roles_enabled : ['coach'];
         const deadline = String(league.registration_deadline || '').slice(0, 10);
         if (deadline && todayKey > deadline) roles = roles.filter((r) => r !== 'coach');

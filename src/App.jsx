@@ -28,6 +28,7 @@ import GameOverlayPage from './pages/GameOverlay';
 import GameOverlaySettingsPage from './pages/GameOverlaySettings';
 import CommandCenterPage from './pages/CommandCenter';
 import OnboardingBookingsPage from './pages/OnboardingBookings';
+import LeagueRequestsPage from './pages/LeagueRequests';
 import JoinKOEPage from './pages/JoinKOE';
 import JoinFinNoyCoachPage from './pages/JoinFinNoyCoach';
 import JoinLeaguePage from './pages/JoinLeague';
@@ -173,6 +174,7 @@ const AuthenticatedApp = () => {
             <Route path="/GameOverlaySettings" element={<LayoutWrapper currentPageName="GameOverlaySettings"><GameOverlaySettingsPage /></LayoutWrapper>} />
             <Route path="/CommandCenter" element={<LayoutWrapper currentPageName="CommandCenter"><CommandCenterPage /></LayoutWrapper>} />
             <Route path="/OnboardingBookings" element={<LayoutWrapper currentPageName="OnboardingBookings"><OnboardingBookingsPage /></LayoutWrapper>} />
+            <Route path="/LeagueRequests" element={<LayoutWrapper currentPageName="LeagueRequests"><LeagueRequestsPage /></LayoutWrapper>} />
             <Route path="/CoachRoster" element={<LayoutWrapper currentPageName="CoachRoster"><CoachRosterPage /></LayoutWrapper>} />
             <Route path="/HelpCenter" element={<LayoutWrapper currentPageName="HelpCenter"><HelpCenterPage /></LayoutWrapper>} />
             <Route path="/LeagueGroups" element={<LayoutWrapper currentPageName="LeagueGroups"><LeagueGroupsPage /></LayoutWrapper>} />

@@ -268,7 +268,7 @@ export const HELP_TOPICS = [
       "Share the right link for the right role — coach links and codes are one-time use.",
       "Use Copy to grab a link and send it via WhatsApp, Messenger or email.",
       "Download QR code saves a high-resolution image of the same link. Put it on a flyer, a poster or the gym noticeboard — the code is drawn inside Courtside, so it keeps working forever.",
-      "Coaches cannot sign themselves up from the Courtside front page. If a coach tries, they are told to ask their organizer for a registration link and code — so if one says they cannot register, send them your link. Players and fans can sign up from the front page as normal.",
+      "People who sign up at the Courtside front page without your link can search for your season and land on this same registration page, as long as the season is open and Show in Courtside league search is on. You still approve every team. Turn it off if you only want people you've invited; your link keeps working either way.",
       "A coach who enters a valid team code is approved straight away and goes to My Roster. No decision is needed from you.",
       "A coach without a code only sees the 'my team isn't set up yet' option when the season accepts new teams and the team registration deadline has not passed. Those coaches land on Team Registrations and wait for your decision.",
       "Roles you have not opened for a season appear greyed out on the registration page, with the reason underneath — so nobody fills in a form that was never going to be accepted.",
@@ -438,6 +438,20 @@ export const HELP_TOPICS = [
       "Leagues starting soon comes from new-league sign-ups that gave a season start date, so a league can appear there before it exists as a real league. New leagues beside it lists leagues actually created in the last 30 days, however they were created.",
       "Stalled — at risk flags a league with no games, no teams, or nothing played for 14 days. It is the earliest warning that a season is dying.",
       "The page reloads its own numbers about once a minute, so it is safe to leave open on a game night.",
+    ],
+  },
+  {
+    key: "leaguerequests",
+    title: "League Requests",
+    category: "ops",
+    roles: ["app_admin"],
+    summary:
+      "Leagues people asked for when they couldn't find theirs on the Courtside front page. Your warmest outreach list.",
+    tips: [
+      "Requests for the same league name are grouped, and the most-requested leagues are at the top.",
+      "Shared the invite shows how many of those people sent the ready-made message to their organiser. Several shares means the organiser has probably heard of Courtside already.",
+      "Use the league's Facebook page or website link to reach out yourself. Nothing on this page sends an email, and people are never asked for their organiser's email address.",
+      "Mark onboarded once the league is on Courtside and pick it from the list. Everyone who asked sees a card with a Join button the next time they log in. If the league has no open season yet, the card says registration opens soon.",
     ],
   },
   {
