@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, Users, Eye, User, Clock, XCircle, ChevronLeft } from "lucide-react";
+import { Trophy, Users, Eye, User, Clock, XCircle, ChevronLeft, ChevronRight, Search, Share2, Copy, Link2 } from "lucide-react";
 import PrivacyConsentStep from "./PrivacyConsentStep";
 
 const ROLE_OPTIONS = [
@@ -47,6 +47,38 @@ const AppLogo = () => (
     />
   </div>
 );
+
+// GLOBAL_FRONT_DOOR_V1 — the message a player sends their organiser from the
+// "someone else runs it" path. Points at the marketing site on purpose: the
+// organiser has never heard of Courtside. Early-access wording only.
+const INVITE_MESSAGE = "Hi! Could we run our league on Courtside by AI? Live stats, standings and player profiles, and teams sign up with one link. It's free during early access. Take a look: https://courtside-by-ai.info";
+
+// Find a /Join/<slug> in whatever the person pasted (full link or bare slug).
+const slugFromPasted = (raw) => {
+  const text = String(raw || "").trim();
+  if (!text) return "";
+  const match = text.match(/\/Join\/([A-Za-z0-9_-]+)/i);
+  if (match) return match[1];
+  return /^[A-Za-z0-9_-]+$/.test(text) ? text : "";
+};
+
+// Share sheet on phones, clipboard everywhere else. Never throws.
+const shareOrCopy = async (text, preferShare) => {
+  try {
+    if (preferShare && typeof navigator !== "undefined" && navigator.share) {
+      await navigator.share({ text });
+      return "shared";
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return "cancelled";
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    return "copied";
+  } catch (e) {
+    return "failed";
+  }
+};
 
 const initialsOf = (name) => (name || "")
   .split(/\s+/)
@@ -119,6 +151,16 @@ export default function RegistrationGate({ user }) {
   // COACH_REDIRECT_V1 — the coach signpost's "I have a link" box
   const [joinLinkInput, setJoinLinkInput] = useState("");
   const [joinLinkError, setJoinLinkError] = useState("");
+  // GLOBAL_FRONT_DOOR_V1 — front door, league search and league request
+  const [searchMode, setSearchMode] = useState("team"); // "team" | "fan"
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openGroupKey, setOpenGroupKey] = useState("");
+  const [showNotFound, setShowNotFound] = useState(false);
+  const [showLinkBox, setShowLinkBox] = useState(false);
+  const [requestForm, setRequestForm] = useState({});
+  const [requestError, setRequestError] = useState("");
+  const [requestSaving, setRequestSaving] = useState(false);
+  const [shareNote, setShareNote] = useState("");
 
   const { data: leagues = [] } = useQuery({
     queryKey: ['publicLeagues'],
@@ -137,6 +179,30 @@ export default function RegistrationGate({ user }) {
   const { data: leagueGroups = [] } = useQuery({
     queryKey: ['leagueGroups'],
     queryFn: () => base44.entities.LeagueGroup.list(),
+  });
+
+  // LEAGUE_REQUEST_V1 — this person's own league requests (the entity lets
+  // people read only the rows they created). Newest first; drives the card at
+  // the top of the front door.
+  const { data: myRequests = [], refetch: refetchMyRequests } = useQuery({
+    queryKey: ['my_league_requests', user?.id],
+    queryFn: async () => {
+      const rows = await base44.entities.LeagueRequest.filter({ requester_user_id: user.id });
+      return [...(rows || [])].sort((a, b) => String(b.created_date || "").localeCompare(String(a.created_date || "")));
+    },
+    enabled: !!user?.id,
+  });
+  const latestRequest = myRequests[0] || null;
+
+  // SEARCH_PUBLIC_V1 — open, listed registration campaigns. Loaded for the
+  // search screen, and for the front-door card once a request is linked.
+  const { data: openCampaigns = [], isLoading: searchLoading } = useQuery({
+    queryKey: ['search_public_campaigns'],
+    queryFn: async () => {
+      const res = await base44.functions.invoke("manageRegistrationCampaign", { action: "search_public" });
+      return (res && res.data && res.data.results) || [];
+    },
+    enabled: step === "league_search" || !!(latestRequest && latestRequest.linked_league_group_id),
   });
 
   // Has this user ever actually submitted an application? A genuine applicant
@@ -225,6 +291,74 @@ export default function RegistrationGate({ user }) {
       return;
     }
     setStep("privacy_consent");
+  };
+
+  // GLOBAL_FRONT_DOOR_V1 — navigation helpers
+  const openSearch = (mode) => {
+    setSearchMode(mode);
+    setSearchQuery("");
+    setOpenGroupKey("");
+    setShowNotFound(false);
+    setStep("league_search");
+  };
+
+  const goToJoin = (slug) => {
+    if (slug) window.location.href = "/Join/" + slug;
+  };
+
+  const startLeagueAdmin = (prefillName) => {
+    handleRoleSelect("league_admin");
+    if (prefillName && prefillName.trim()) setFormData({ league_name: prefillName.trim() });
+  };
+
+  const startLeagueRequest = () => {
+    setRequestForm({ league_name: searchQuery.trim(), city: "", country: "", league_link: "" });
+    setRequestError("");
+    setShareNote("");
+    setStep("request_consent");
+  };
+
+  const saveLeagueRequest = async (how) => {
+    setRequestError("");
+    const name = (requestForm.league_name || "").trim();
+    const country = (requestForm.country || "").trim();
+    const link = (requestForm.league_link || "").trim();
+    if (!name) { setRequestError("Please enter the league name."); return; }
+    if (!country) { setRequestError("Please enter the country."); return; }
+    if (link && (link.includes("@") || /^[+\d\s()-]{6,}$/.test(link))) {
+      setRequestError("Please enter a web link, not an email address or phone number.");
+      return;
+    }
+    setRequestSaving(true);
+    try {
+      await base44.entities.LeagueRequest.create({
+        league_name: name,
+        city: (requestForm.city || "").trim(),
+        country,
+        league_link: link,
+        requester_user_id: user.id,
+        requester_email: user.email || "",
+        requester_name: user.full_name || "",
+        requested_from_role: searchMode === "fan" ? "fan" : "team",
+        referral_sent: how !== "save",
+        status: "New",
+      });
+      if (consentData) {
+        try { await base44.auth.updateMe({ ...consentData }); }
+        catch (e) { console.error("LEAGUE_REQUEST_V1 consent save failed:", e && e.message); }
+      }
+    } catch (e) {
+      setRequestError("Could not save your request: " + (e && e.message ? e.message : "please try again."));
+      setRequestSaving(false);
+      return;
+    }
+    setRequestSaving(false);
+    if (how !== "save") {
+      const result = await shareOrCopy(INVITE_MESSAGE, how === "share");
+      setShareNote(result === "copied" ? "Message copied. Paste it in your league's group chat." : "");
+    }
+    try { refetchMyRequests(); } catch (e) { /* the card refreshes on the next visit */ }
+    setStep("request_done");
   };
 
   const handleSubmit = async (e) => {
@@ -480,6 +614,275 @@ export default function RegistrationGate({ user }) {
               Sign out
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // SEARCH_PUBLIC_V1 — find a league with registration open. Coaches and
+  // players see every open season; fans see the seasons open to fans first
+  // and the rest greyed out. Picking one opens that league's own /Join page.
+  if (step === "league_search") {
+    const isFan = searchMode === "fan";
+    const q = searchQuery.trim().toLowerCase();
+    const matches = openCampaigns.filter((c) => {
+      if (!isFan && !c.roles_enabled.some((r) => r === "coach" || r === "player")) return false;
+      if (!q) return true;
+      const hay = [c.group_name, c.season_name, c.hero_title, c.season_text, c.country].join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+    const groupsMap = new Map();
+    for (const c of matches) {
+      const key = c.group_id || ("c:" + c.slug);
+      if (!groupsMap.has(key)) groupsMap.set(key, { key, name: c.group_name || c.hero_title || c.season_name, country: c.country, logo: c.logo_url, seasons: [] });
+      groupsMap.get(key).seasons.push(c);
+    }
+    const allGroups = [...groupsMap.values()].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const fanOpen = (g) => g.seasons.some((c) => c.roles_enabled.includes("viewer"));
+    const shown = isFan ? allGroups.filter(fanOpen) : allGroups;
+    const greyed = isFan ? allGroups.filter((g) => !fanOpen(g)) : [];
+    const noResults = !searchLoading && q && shown.length === 0 && greyed.length === 0;
+    const roleLabel = { coach: "Coaches", player: "Players", viewer: "Fans" };
+    const seasonLabel = (c) => c.season_text || c.season_name || "Registration open";
+
+    const pickGroup = (g) => {
+      const usable = isFan ? g.seasons.filter((c) => c.roles_enabled.includes("viewer")) : g.seasons;
+      if (usable.length === 1) { goToJoin(usable[0].slug); return; }
+      setOpenGroupKey(openGroupKey === g.key ? "" : g.key);
+    };
+
+    const groupRow = (g, disabled) => (
+      <div key={g.key} className="mb-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => pickGroup(g)}
+          className={"w-full flex items-center gap-3 rounded-xl border p-3 text-left transition-colors " + (disabled ? "border-slate-200 bg-slate-50 opacity-60 cursor-default" : "border-slate-200 bg-white hover:border-orange-400 hover:bg-orange-50")}
+        >
+          {g.logo ? (
+            <img src={g.logo} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-slate-800 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{initialsOf(g.name)}</div>
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-slate-900 truncate">{g.name}</div>
+            <div className="text-xs text-slate-500">
+              {(() => {
+                const list = isFan && !disabled ? g.seasons.filter((c) => c.roles_enabled.includes("viewer")) : g.seasons;
+                return [g.country, list.length > 1 ? list.length + " seasons open" : seasonLabel(list[0])].filter(Boolean).join(" · ");
+              })()}
+            </div>
+            {disabled ? (
+              <div className="text-xs text-slate-500 mt-1">The organiser hasn't opened fan signup yet</div>
+            ) : (
+              !isFan && g.seasons.length === 1 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {["coach", "player", "viewer"].map((r) => (
+                    <span key={r} className={"text-[10px] font-bold px-2 py-0.5 rounded-full " + (g.seasons[0].roles_enabled.includes(r) ? "bg-green-100 text-green-800" : "bg-slate-100 text-slate-400 line-through")}>{roleLabel[r]}</span>
+                  ))}
+                </div>
+              )
+            )}
+          </div>
+          {!disabled && <ChevronRight className="w-4 h-4 text-slate-400 flex-shrink-0" />}
+        </button>
+        {openGroupKey === g.key && (
+          <div className="mt-2 ml-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-600">Which season?</p>
+            {(isFan ? g.seasons.filter((c) => c.roles_enabled.includes("viewer")) : g.seasons).map((c) => (
+              <button
+                key={c.slug}
+                type="button"
+                onClick={() => goToJoin(c.slug)}
+                className="w-full flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3 text-left hover:border-orange-400"
+              >
+                <div>
+                  <div className="text-sm font-semibold text-slate-800">{seasonLabel(c)}</div>
+                  <div className="text-xs text-slate-500">{c.roles_enabled.map((r) => roleLabel[r]).join(", ")} open</div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-slate-400" />
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div data-marker="SEARCH_PUBLIC_V1" className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+          <button
+            onClick={() => setStep("select_role")}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-5 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
+          <h2 className="text-xl font-bold text-slate-900 mb-1">{isFan ? "Find a league to follow" : "Find your league"}</h2>
+          <p className="text-sm text-slate-500 mb-4">{isFan ? "Scores, standings and player stats." : "Search by league name or country."}</p>
+
+          <div className="relative mb-4">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Input
+              autoFocus
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setOpenGroupKey(""); setShowNotFound(false); }}
+              placeholder="e.g. Espoo, Manila, KOE"
+              className="pl-9"
+            />
+          </div>
+
+          {searchLoading && <p className="text-sm text-slate-500 py-4 text-center">Loading leagues…</p>}
+
+          {!searchLoading && !noResults && !showNotFound && (
+            <div className="max-h-96 overflow-y-auto">
+              {shown.length > 0 && (
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">{isFan ? "Open to fans" : "Registration open"} · {shown.length}</p>
+              )}
+              {shown.map((g) => groupRow(g, false))}
+              {greyed.length > 0 && (
+                <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400 mt-4 mb-2">Not open to fans yet · {greyed.length}</p>
+              )}
+              {greyed.map((g) => groupRow(g, true))}
+              {!q && shown.length === 0 && greyed.length === 0 && (
+                <p className="text-sm text-slate-500 py-4 text-center">No leagues are taking registrations right now.</p>
+              )}
+            </div>
+          )}
+
+          {(noResults || showNotFound) ? (
+            <div data-marker="LEAGUE_REQUEST_V1" className="mt-2">
+              <div className="text-center mb-4">
+                <p className="font-semibold text-slate-900">{q ? "“" + searchQuery.trim() + "” isn't on Courtside yet" : "Can't find your league?"}</p>
+                <p className="text-sm text-slate-500 mt-1">Or it hasn't opened registration. Who organises it?</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => startLeagueAdmin(searchQuery)}
+                className="w-full flex items-center gap-3 rounded-xl border-2 border-orange-500 bg-orange-50 p-4 text-left mb-3"
+              >
+                <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center flex-shrink-0"><Trophy className="w-5 h-5 text-white" /></div>
+                <div>
+                  <div className="font-bold text-slate-900">I organise it</div>
+                  <div className="text-xs text-slate-600">Set it up in a few minutes. Your teams can register straight away.</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={startLeagueRequest}
+                className="w-full flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left hover:border-slate-300"
+              >
+                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center flex-shrink-0"><Share2 className="w-5 h-5 text-slate-600" /></div>
+                <div>
+                  <div className="font-bold text-slate-900">Someone else organises it</div>
+                  <div className="text-xs text-slate-600">Send them a message about Courtside. We'll remember your league.</div>
+                </div>
+              </button>
+              {!isFan && (
+                <p className="text-center text-sm text-slate-500 mt-4">
+                  Just want to follow games?{" "}
+                  <button type="button" onClick={() => openSearch("fan")} className="text-orange-600 font-semibold">Continue as a fan</button>
+                </p>
+              )}
+              {showNotFound && !noResults && (
+                <p className="text-center text-sm mt-3">
+                  <button type="button" onClick={() => setShowNotFound(false)} className="text-slate-500 hover:text-slate-700">Back to the list</button>
+                </p>
+              )}
+            </div>
+          ) : (
+            !searchLoading && (
+              <Button variant="outline" onClick={() => setShowNotFound(true)} className="w-full mt-4">
+                I can't find my league
+              </Button>
+            )
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // LEAGUE_REQUEST_V1 — consent first: the request stores this person's name
+  // and email next to a league they named.
+  if (step === "request_consent") {
+    return (
+      <PrivacyConsentStep
+        onAccept={(data) => { setConsentData(data); setStep("league_request"); }}
+        onBack={() => setStep("league_search")}
+        role="requester"
+        source="LeagueRequest"
+      />
+    );
+  }
+
+  if (step === "league_request") {
+    const setField = (k, v) => setRequestForm((prev) => ({ ...prev, [k]: v }));
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div data-marker="LEAGUE_REQUEST_V1" className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-6 sm:p-8">
+          <button
+            onClick={() => setStep("league_search")}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-700 text-sm mb-5 transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
+          <h2 className="text-xl font-bold text-slate-900 mb-4">Bring your league to Courtside</h2>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">League name</label>
+              <Input value={requestForm.league_name || ""} onChange={(e) => setField("league_name", e.target.value)} placeholder="e.g. Kerava Hoops" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">City</label>
+                <Input value={requestForm.city || ""} onChange={(e) => setField("city", e.target.value)} placeholder="Optional" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Country</label>
+                <Input value={requestForm.country || ""} onChange={(e) => setField("country", e.target.value)} placeholder="e.g. Finland" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">League's Facebook page or website <span className="font-normal text-slate-400">optional</span></label>
+              <Input value={requestForm.league_link || ""} onChange={(e) => setField("league_link", e.target.value)} placeholder="facebook.com/yourleague" />
+              <p className="text-xs text-slate-500 mt-1">Helps us find the right league. Please don't enter anyone's email or phone number.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">Message for your organiser</label>
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-3 text-sm text-slate-700 leading-relaxed">{INVITE_MESSAGE}</div>
+            </div>
+          </div>
+          {requestError && <p className="text-sm text-red-600 mt-3">{requestError}</p>}
+          <div className="flex gap-2 mt-4">
+            <Button disabled={requestSaving} onClick={() => saveLeagueRequest("share")} className="flex-1 bg-orange-500 hover:bg-orange-600">
+              <Share2 className="w-4 h-4 mr-2" />Share
+            </Button>
+            <Button disabled={requestSaving} variant="outline" onClick={() => saveLeagueRequest("copy")} className="flex-1">
+              <Copy className="w-4 h-4 mr-2" />Copy
+            </Button>
+          </div>
+          <p className="text-center text-sm mt-3">
+            <button type="button" disabled={requestSaving} onClick={() => saveLeagueRequest("save")} className="text-slate-500 hover:text-slate-700">
+              Just save my request
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === "request_done") {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div data-marker="LEAGUE_REQUEST_V1" className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+          <AppLogo />
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mt-4 mb-4 text-green-600 text-3xl font-bold">✓</div>
+          <h2 className="text-xl font-bold text-slate-900 mb-2">We've added {(requestForm.league_name || "your league").trim()} to our list</h2>
+          <p className="text-sm text-slate-600 mb-4">When it joins Courtside, you'll see it here next time you log in. Until then you can follow other leagues as a fan.</p>
+          {shareNote && <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-2 mb-4">{shareNote}</p>}
+          <Button onClick={() => openSearch("fan")} className="w-full bg-slate-900 hover:bg-slate-800 mb-2">Follow a league as a fan</Button>
+          <Button variant="ghost" onClick={() => setStep("select_role")} className="w-full text-slate-500">Back to start</Button>
         </div>
       </div>
     );
@@ -770,39 +1173,129 @@ export default function RegistrationGate({ user }) {
     );
   }
 
-  // Default: select_role
+  // GLOBAL_FRONT_DOOR_V1 — the front door for anyone signed in with no role
+  // and no league link. Written as who you are, not as a list of benefits.
+  // Coaches, players and fans always finish on their league's /Join page.
+  const linkedCampaign = latestRequest && latestRequest.linked_league_group_id
+    ? openCampaigns.find((c) => c.group_id === latestRequest.linked_league_group_id) || null
+    : null;
+  const pasteGo = () => {
+    const slug = slugFromPasted(joinLinkInput);
+    if (!slug) { setJoinLinkError("That doesn't look like a registration link. It ends with /Join/your-league."); return; }
+    goToJoin(slug);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-8">
+      <div data-marker="GLOBAL_FRONT_DOOR_V1" className="max-w-lg w-full">
+        <div className="text-center mb-6">
           <AppLogo />
-          <h1 className="text-3xl font-bold text-slate-900 mt-4 mb-2">How will you use Courtside by AI?</h1>
-          <p className="text-slate-600">Choose your role below. An admin will review and approve your request.</p>
+          <h1 className="text-2xl font-bold text-slate-900 mt-4 mb-2">
+            {user?.full_name ? "Welcome, " + String(user.full_name).split(" ")[0] : "Welcome to Courtside by AI"}
+          </h1>
+          <p className="text-slate-600">Tell us how you're joining and we'll take you to the right place.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {ROLE_OPTIONS.map((role) => {
-            const Icon = role.icon;
-            return (
-              <button
-                key={role.id}
-                onClick={() => handleRoleSelect(role.id)}
-                className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md hover:border-orange-300 transition-all text-left group"
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${role.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <Icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{role.label}</h3>
-                <p className="text-sm text-slate-600">{role.description}</p>
-              </button>
-            );
-          })}
-        </div>
+        {latestRequest && (
+          latestRequest.linked_league_group_id ? (
+            <div data-marker="LEAGUE_REQUEST_V1" className="rounded-2xl border-2 border-green-500 bg-green-50 p-4 mb-4">
+              <p className="text-[11px] font-bold tracking-wide text-green-800">GOOD NEWS</p>
+              <p className="font-bold text-slate-900">{latestRequest.league_name} is on Courtside</p>
+              {linkedCampaign ? (
+                <>
+                  <p className="text-xs text-green-800">{linkedCampaign.season_text || linkedCampaign.season_name} registration is open</p>
+                  <Button onClick={() => goToJoin(linkedCampaign.slug)} className="w-full bg-orange-500 hover:bg-orange-600 mt-3">
+                    Join {latestRequest.league_name}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-xs text-green-800">Registration opens soon. Check back here.</p>
+              )}
+            </div>
+          ) : (
+            <div data-marker="LEAGUE_REQUEST_V1" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-4">
+              <p className="text-[11px] font-bold tracking-wide text-amber-800">YOUR REQUEST</p>
+              <p className="font-bold text-slate-900">{latestRequest.league_name}</p>
+              <p className="text-xs text-amber-800">Waiting to join Courtside</p>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  size="sm"
+                  onClick={async () => { const r = await shareOrCopy(INVITE_MESSAGE, true); setShareNote(r === "copied" ? "Message copied." : ""); }}
+                  className="bg-orange-500 hover:bg-orange-600"
+                >
+                  Share again
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => openSearch("fan")}>Follow another league</Button>
+              </div>
+              {shareNote && <p className="text-xs text-green-700 mt-2">{shareNote}</p>}
+            </div>
+          )
+        )}
 
-        <div className="text-center mt-6">
-          <button onClick={() => base44.auth.logout('/')} className="text-slate-500 hover:text-slate-700 text-sm transition-colors">
-            Sign out
+        <div className="space-y-3">
+          <button
+            onClick={() => startLeagueAdmin("")}
+            className="w-full flex items-center gap-4 rounded-2xl border-2 border-orange-500 bg-orange-50 p-5 text-left shadow-sm hover:shadow-md transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center flex-shrink-0"><Trophy className="w-6 h-6 text-white" /></div>
+            <div className="flex-1">
+              <div className="text-lg font-bold text-slate-900">I run a league</div>
+              <div className="text-sm text-slate-600">Set up your league, seasons, teams and live stats.</div>
+              <span className="inline-block mt-2 text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full bg-orange-500 text-white">START HERE IF YOUR LEAGUE IS NEW</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
+          <button
+            onClick={() => openSearch("team")}
+            className="w-full flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm hover:shadow-md hover:border-orange-300 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0"><Users className="w-6 h-6 text-white" /></div>
+            <div className="flex-1">
+              <div className="text-lg font-bold text-slate-900">I coach or play on a team</div>
+              <div className="text-sm text-slate-600">Find your league and register your team or yourself.</div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+          <button
+            onClick={() => openSearch("fan")}
+            className="w-full flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-sm hover:shadow-md hover:border-orange-300 transition-all"
+          >
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0"><Eye className="w-6 h-6 text-white" /></div>
+            <div className="flex-1">
+              <div className="text-lg font-bold text-slate-900">I'm a fan</div>
+              <div className="text-sm text-slate-600">Follow scores, standings and player stats.</div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+
+        <div className="text-center mt-5">
+          {showLinkBox ? (
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 text-left">
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Paste the registration link from your league</label>
+              <div className="flex gap-2">
+                <Input
+                  value={joinLinkInput}
+                  onChange={(e) => { setJoinLinkInput(e.target.value); setJoinLinkError(""); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); pasteGo(); } }}
+                  placeholder="courtside-by-ai.com/Join/your-league"
+                />
+                <Button onClick={pasteGo} className="bg-orange-500 hover:bg-orange-600 flex-shrink-0">Go</Button>
+              </div>
+              {joinLinkError && <p className="text-sm text-red-600 mt-2">{joinLinkError}</p>}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-500">
+              <Link2 className="w-4 h-4 inline mr-1 -mt-0.5" />
+              Got a registration link from your league?{" "}
+              <button onClick={() => { setShowLinkBox(true); setJoinLinkError(""); }} className="text-orange-600 font-semibold">Paste it here</button>
+            </p>
+          )}
+          <div className="mt-4">
+            <button onClick={() => base44.auth.logout('/')} className="text-slate-500 hover:text-slate-700 text-sm transition-colors">
+              Sign out
+            </button>
+          </div>
         </div>
       </div>
     </div>
