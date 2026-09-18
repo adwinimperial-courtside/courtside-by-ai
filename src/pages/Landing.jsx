@@ -54,6 +54,8 @@ export default function Landing() {
     enabled: isOrganiser,
     staleTime: 60000,
   });
+  // ACTIVE_SEASONS_CHIP_V1
+  const { data: dashSeasons = [] } = useQuery({ queryKey: ['dash_active_seasons'], queryFn: () => base44.entities.League.list('-created_date', 500), enabled: isOrganiser, staleTime: 60000 });
   const myLeagueIds = currentUser?.assigned_league_ids || [];
   const leagueUsersCount = role === "app_admin"
     ? (usersData?.users || []).length
@@ -69,8 +71,9 @@ export default function Landing() {
 
   const getStatChip = () => {
     if (role === "app_admin" || role === "league_admin") {
-      const count = currentUser?.assigned_league_ids?.length ?? 0;
-      return `${count} Active league${count !== 1 ? "s" : ""}`;
+      const pool = role === "app_admin" ? dashSeasons : dashSeasons.filter(l => (currentUser?.assigned_league_ids || []).includes(l.id));
+      const count = pool.filter(l => !l.is_archived).length;
+      return `${count} Active season${count !== 1 ? "s" : ""}`;
     }
     if (role === "coach") return "Coach insights ready";
     if (role === "player") return "Your stats are live";
