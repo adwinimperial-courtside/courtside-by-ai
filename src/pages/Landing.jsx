@@ -36,7 +36,7 @@ export default function Landing() {
   });
 
   const role = currentUser?.user_type;
-  const firstName = currentUser?.full_name?.split(" ")[0] || null;
+  const firstName = (() => { const n = (currentUser?.full_name || "").trim(); const local = (currentUser?.email || "").split("@")[0]; if (!n || n === local || n.includes("@")) return null; return n.split(" ")[0]; })(); // SAFE_FIRSTNAME_V1
 
   const isOrganiser = role === "app_admin" || role === "league_admin";
 
@@ -125,7 +125,7 @@ export default function Landing() {
                   className="flex items-center justify-center rounded-full font-black text-white text-lg sm:text-xl flex-shrink-0"
                   style={{ backgroundColor: "#F26B1F", width: 40, height: 40, minWidth: 40 }}
                 >
-                  {currentUser?.full_name?.[0]?.toUpperCase() ?? "U"}
+                  {firstName?.[0]?.toUpperCase() ?? "U"}
                 </div>
                 <div>
                   <div className="text-xs text-slate-400 font-medium">{getRoleLabel()}</div>

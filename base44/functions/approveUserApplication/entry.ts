@@ -756,6 +756,15 @@ async function handleLeagueAdminApplication(base44, application, action, overrid
   const userUpdate = { assigned_league_ids: mergedLeagueIds, application_status: 'Approved' };
   if (!existing || existing.user_type !== 'app_admin') userUpdate.user_type = 'league_admin';
   try { await base44.asServiceRole.entities.User.update(application.user_id, userUpdate); } catch (_e) {}
+  // LA_NAME_FALLBACK_V1 — League Admin approvals skip NAME_FALLBACK_V1, so adopt the application's Full Name here
+  try {
+    const curName = ((existing && existing.full_name) || '').trim();
+    const local = (((existing && existing.email) || application.user_email || '').split('@')[0] || '').trim();
+    const appName = String(application.user_name || '').trim();
+    if (appName && appName !== local && !appName.includes('@') && (!curName || curName === local)) {
+      await base44.asServiceRole.entities.User.update(application.user_id, { full_name: appName });
+    }
+  } catch (_e) { /* never block approval on a name fix */ }
   await base44.asServiceRole.entities.UserApplication.update(application.id, { status: 'Approved', approval_email_sent: true });
   for (const lid of assignedLeagueIds) {
     await writeLog(base44, application, lid, 'approved', decider);

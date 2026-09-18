@@ -374,8 +374,8 @@ export default function CoachHomePanel({ currentUser }) {
     return { hot, improved };
   }, [players, teamId, teamCompleted, stats, formatMap, ppgById]);
 
-  const firstName = currentUser?.full_name?.split(" ")[0] || null;
-  const initial = currentUser?.full_name?.[0]?.toUpperCase() || "C";
+  const firstName = (() => { const n = (currentUser?.full_name || "").trim(); const local = (currentUser?.email || "").split("@")[0]; if (!n || n === local || n.includes("@")) return null; return n.split(" ")[0]; })(); // SAFE_FIRSTNAME_V1
+  const initial = firstName?.[0]?.toUpperCase() || "C";
   const initialsOf = (name) => (name || "").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "?";
 
   const loading = leaguesLoading || !selectedLeagueId || isLoading;
