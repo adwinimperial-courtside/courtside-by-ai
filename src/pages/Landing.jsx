@@ -35,12 +35,6 @@ export default function Landing() {
     retry: 1,
   });
 
-  React.useEffect(() => {
-    if (!userLoading && (userError || !currentUser)) {
-      base44.auth.redirectToLogin(window.location.href);
-    }
-  }, [userLoading, userError, currentUser]);
-
   const role = currentUser?.user_type;
   const firstName = currentUser?.full_name?.split(" ")[0] || null;
 

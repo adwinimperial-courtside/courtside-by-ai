@@ -379,13 +379,25 @@ export default function Layout({ children }) {
                 Logout
               </Button>
             ) : (
-              <Button
-                onClick={() => base44.auth.redirectToLogin(window.location.href)}
-                className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white"
-                size="sm"
-                data-marker="AUTH_BUTTON_V1">
-                Log in / Sign up
-              </Button>
+              <div className="mt-3 space-y-2" data-marker="AUTH_BUTTON_V2">
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  We couldn't load your account. Check your connection and try again.
+                </p>
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+                  size="sm">
+                  Try again
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="w-full text-slate-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+                  size="sm">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
             ))}
           </SidebarHeader>
 
