@@ -579,7 +579,7 @@ function leagueAdminBody(greeting) {
                     <p style="margin:0 0 10px 0;font-size:14px;color:#444;line-height:1.7;">After any tracked game, open <strong>Story Builder</strong> and Courtside's AI writes a Facebook-ready post-game report from the actual game data &mdash; the run that decided it, the players who stood out, the numbers that mattered. Post it while the result is still fresh. No two stories read the same.</p>
                     <p style="margin:0 0 12px 0;font-size:14px;color:#444;line-height:1.7;">Streaming your games? <strong>Game Overlay</strong> puts a live scoreboard with your league's logos on top of your broadcast, fed by the same live tracking.</p>
                     <table width="100%" cellpadding="0" cellspacing="0"><tr><td style="background-color:#fff5ed;border-radius:6px;padding:10px 14px;">
-                      <p style="margin:0;font-size:13px;color:#8a3d0b;line-height:1.6;"><strong>You have 10 AI story generations a month</strong>, resetting at the start of each month.</p>
+                      <p style="margin:0;font-size:13px;color:#8a3d0b;line-height:1.6;"><strong>You have 20 AI stories a month</strong>, resetting at the start of each month.</p>
                     </td></tr></table>
                   </td>
                 </tr>

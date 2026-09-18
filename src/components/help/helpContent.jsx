@@ -327,6 +327,7 @@ export const HELP_TOPICS = [
       "Create shareable recap stories and posts from your league's games and stats.",
     tips: [
       "Great for posting weekly recaps to your league's social media.",
+      "League Admins can generate 20 stories per month; the allowance resets at the start of each month.",
     ],
   },
   {
