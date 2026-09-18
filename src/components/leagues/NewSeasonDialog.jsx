@@ -35,6 +35,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
   const [copyFromId, setCopyFromId] = useState(START_EMPTY);
   const [teamSelections, setTeamSelections] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
+  const [missingFields, setMissingFields] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [registrationDeadline, setRegistrationDeadline] = useState("");
@@ -63,6 +64,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
       setCopyFromId(groupSeasons && groupSeasons.length > 0 ? groupSeasons[0].id : START_EMPTY);
       setTeamSelections({});
       setErrorMessage("");
+      setMissingFields([]);
     }
   }, [open, groupSeasons]);
 
@@ -249,24 +251,19 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
   });
 
   const handleCreate = () => {
-    if (!seasonName.trim()) {
-      setErrorMessage('Please enter a season name');
-      return;
-    }
-    if (!startDate) {
-      setErrorMessage('Please choose a start date');
+    const miss = [];
+    if (!seasonName.trim()) miss.push('name');
+    if (!startDate) miss.push('start');
+    if (registrationMode === 'open' && !registrationDeadline) miss.push('regdeadline');
+    if (!rosterDeadline) miss.push('roster');
+    setMissingFields(miss);
+    if (miss.length > 0) {
+      const labels = { name: 'season name', start: 'start date', regdeadline: 'registration deadline', roster: 'roster deadline' };
+      setErrorMessage('Please fill in: ' + miss.map(m => labels[m]).join(', '));
       return;
     }
     if (endDate && endDate < startDate) {
       setErrorMessage('End date cannot be before the start date');
-      return;
-    }
-    if (registrationMode === 'open' && !registrationDeadline) {
-      setErrorMessage('Please choose a registration deadline');
-      return;
-    }
-    if (!rosterDeadline) {
-      setErrorMessage('Please choose a roster deadline');
       return;
     }
     setErrorMessage("");
@@ -293,7 +290,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
               value={seasonName}
               onChange={(e) => setSeasonName(e.target.value)}
               placeholder="e.g., Fin-Noy Ballers Open Age Season 6"
-              className="mt-1"
+              className={`mt-1 ${missingFields.includes('name') && !seasonName.trim() ? 'border-red-500 ring-1 ring-red-500' : ''}`}
             />
           </div>
 
@@ -305,7 +302,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
                 type="date"
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
-                className="mt-1"
+                className={`mt-1 ${missingFields.includes('start') && !startDate ? 'border-red-500 ring-1 ring-red-500' : ''}`}
               />
             </div>
             <div>
@@ -362,7 +359,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
                   type="date"
                   value={registrationDeadline}
                   onChange={(e) => setRegistrationDeadline(e.target.value)}
-                  className="mt-1"
+                  className={`mt-1 ${missingFields.includes('regdeadline') && !registrationDeadline ? 'border-red-500 ring-1 ring-red-500' : ''}`}
                 />
                 <p className="text-xs text-slate-500 mt-1">Last day coaches can apply.</p>
               </div>
@@ -406,7 +403,7 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
               type="date"
               value={rosterDeadline}
               onChange={(e) => setRosterDeadline(e.target.value)}
-              className="mt-1"
+              className={`mt-1 ${missingFields.includes('roster') && !rosterDeadline ? 'border-red-500 ring-1 ring-red-500' : ''}`}
             />
             <p className="text-xs text-slate-500 mt-1">Last day coaches can edit their roster. Coach roster editing opens as soon as the season is created.</p>
           </div>
