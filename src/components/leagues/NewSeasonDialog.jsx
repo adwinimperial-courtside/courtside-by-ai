@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useToast } from "@/components/ui/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import {
   Select,
   SelectContent,
@@ -24,6 +28,8 @@ const START_EMPTY = "__start_empty__";
 
 export default function NewSeasonDialog({ open, onOpenChange, group, groupSeasons }) {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [seasonName, setSeasonName] = useState("");
   const [seasonYear, setSeasonYear] = useState(new Date().getFullYear().toString());
   const [copyFromId, setCopyFromId] = useState(START_EMPTY);
@@ -215,10 +221,26 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
 
       return newLeague;
     },
-    onSuccess: () => {
+    onSuccess: (newLeague) => {
+      /* SEASON_CREATED_FEEDBACK_V1 */
+      if (newLeague?.id) {
+        queryClient.setQueryData(['leagues'], (old) => {
+          const list = Array.isArray(old) ? old : [];
+          return list.some(l => l.id === newLeague.id) ? list : [newLeague, ...list];
+        });
+        queryClient.setQueryData(['user'], (old) => {
+          if (!old || old.user_type !== 'league_admin') return old;
+          const ids = old.assigned_league_ids || [];
+          return ids.includes(newLeague.id) ? old : { ...old, assigned_league_ids: [...ids, newLeague.id] };
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['leagues'] });
-      queryClient.invalidateQueries({ queryKey: ['user'] });
       onOpenChange(false);
+      toast({
+        title: "Season created",
+        description: registrationMode === "open" ? "Your sign-up link is ready." : "You can now add teams and games.",
+        action: registrationMode === "open" ? (<ToastAction altText="Open sign-up page" onClick={() => navigate(createPageUrl("Registration"))}>Open sign-up page</ToastAction>) : undefined
+      });
     },
     onError: (error) => {
       setErrorMessage('Failed to create season: ' + error.message);
