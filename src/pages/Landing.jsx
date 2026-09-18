@@ -55,11 +55,15 @@ export default function Landing() {
     staleTime: 60000,
   });
   // ACTIVE_SEASONS_CHIP_V1
-  const { data: dashSeasons = [] } = useQuery({ queryKey: ['dash_active_seasons'], queryFn: () => base44.entities.League.list('-created_date', 500), enabled: isOrganiser, staleTime: 60000 });
+  const { data: dashSeasons = [], isSuccess: dashSeasonsLoaded } = useQuery({ queryKey: ['dash_active_seasons'], queryFn: () => base44.entities.League.list('-created_date', 500), enabled: isOrganiser, staleTime: 60000 });
   const myLeagueIds = currentUser?.assigned_league_ids || [];
   const leagueUsersCount = role === "app_admin"
     ? (usersData?.users || []).length
     : (usersData?.users || []).filter(u => Array.isArray(u.assigned_league_ids) && u.assigned_league_ids.some(id => myLeagueIds.includes(id))).length;
+
+  // FIRST_SEASON_EMPTY_STATE_V1
+  const myActiveSeasonCount = dashSeasons.filter(l => !l.is_archived && (currentUser?.assigned_league_ids || []).includes(l.id)).length;
+  const noActiveSeasons = role === "league_admin" && dashSeasonsLoaded && myActiveSeasonCount === 0;
 
   const getRoleLabel = () => {
     if (role === "app_admin" || role === "league_admin") return "League organiser";
@@ -81,7 +85,7 @@ export default function Landing() {
   };
 
   const getTagline = () => {
-    if (role === "app_admin" || role === "league_admin") return "Your leagues are live. Stats are tracking.";
+    if (role === "app_admin" || role === "league_admin") return noActiveSeasons ? "Let's set up your first season." : "Your leagues are live. Stats are tracking.";
     if (role === "coach") return "Study the numbers. Prepare your game plan.";
     if (role === "player") return "Track your progress. Earn your recognition.";
     return "Follow every game. Live stats and standings.";
@@ -147,6 +151,9 @@ export default function Landing() {
 
             {/* Tagline */}
             <p className="text-sm text-slate-400 mb-6">{getTagline()}</p>
+            {noActiveSeasons && (
+              <button onClick={() => window.location.href = "/Leagues"} className="-mt-3 mb-6 inline-flex items-center gap-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 min-h-[44px]">+ Create season</button>
+            )}
 
             {/* Quick action cards */}
             <div className={`grid grid-cols-1 ${getQuickCards().length >= 4 ? "sm:grid-cols-2" : "sm:grid-cols-3"} gap-3`}>
