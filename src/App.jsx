@@ -10,6 +10,7 @@ import { setupIframeMessaging } from './lib/iframe-messaging';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import JoinInviteWelcome from '@/components/registration/JoinInviteWelcome';
 
 import Landing from './pages/Landing';
 import AllPlayersViewPage from './pages/AllPlayersView';
@@ -53,8 +54,9 @@ const AuthenticatedApp = () => {
   // any auth check, login redirect or RegistrationGate, for signed-out, no-role, pending and approved users.
   const policyLocation = useLocation();
   const policyPath = policyLocation.pathname.toLowerCase().replace(/\/+$/, '');
-  if (policyPath === '/privacy-policy') return <PrivacyPolicyPage />;
-  if (policyPath === '/terms-of-use') return <TermsOfUsePage />;
+  // POLICY_PATH_ALIASES_V1 - common alternative addresses open the same public pages
+  if (['/privacy-policy', '/privacypolicy', '/privacy'].includes(policyPath)) return <PrivacyPolicyPage />;
+  if (['/terms-of-use', '/termsofuse', '/terms', '/termsofservice', '/terms-of-service'].includes(policyPath)) return <TermsOfUsePage />;
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -89,6 +91,12 @@ const AuthenticatedApp = () => {
           localStorage.setItem('accept_invite_intent', '1');
         }
       } catch (e) {}
+      // JOIN_INVITE_WELCOME_V1 - signed-out visitors on a join link see a short welcome
+      // screen first; its button goes to the normal login (join intent is already stored above).
+      const joinWelcomePath = window.location.pathname.toLowerCase();
+      if (joinWelcomePath.startsWith('/join/') || joinWelcomePath.includes('joinkoe') || joinWelcomePath.includes('finoy40upseason6-coach')) {
+        return <JoinInviteWelcome onContinue={navigateToLogin} />;
+      }
       // Redirect to login automatically
       navigateToLogin();
       return null;
