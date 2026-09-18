@@ -719,7 +719,7 @@ export default function RegistrationGate({ user }) {
             Back
           </button>
           <h2 className="text-xl font-bold text-slate-900 mb-1">{isFan ? "Find a league to follow" : "Find your league"}</h2>
-          <p className="text-sm text-slate-500 mb-4">{isFan ? "Scores, standings and player stats." : "Search by league name or country."}</p>
+          <p className="text-sm text-slate-500 mb-4">{isFan ? "Scores, standings and player stats." : "Search by league name."}</p>
 
           <div className="relative mb-4">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
