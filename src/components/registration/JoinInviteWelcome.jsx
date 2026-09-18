@@ -20,7 +20,9 @@ export default function JoinInviteWelcome({ onContinue }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <div className="bg-[#0B1F3A] px-4 pt-8 pb-16 text-center">
-        <img src={LOGO_URL} alt="Courtside by AI" className="h-14 mx-auto mb-5 object-contain" />
+        <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-white flex items-center justify-center shadow-md">
+          <img src={LOGO_URL} alt="Courtside by AI" className="h-14 w-14 object-contain" />
+        </div>
         <p className="text-xs font-bold tracking-widest text-[#F26B1F] uppercase mb-2">You're invited</p>
         <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Join your league on Courtside by AI</h1>
         <p className="text-sm text-slate-300 mt-3 max-w-md mx-auto">
