@@ -1179,6 +1179,8 @@ export default function RegistrationGate({ user }) {
   const linkedCampaign = latestRequest && latestRequest.linked_league_group_id
     ? openCampaigns.find((c) => c.group_id === latestRequest.linked_league_group_id) || null
     : null;
+  // The league's real name once it's on Courtside, not what the person typed.
+  const linkedName = (linkedCampaign && linkedCampaign.group_name) || (latestRequest && latestRequest.league_name) || "";
   const pasteGo = () => {
     const slug = slugFromPasted(joinLinkInput);
     if (!slug) { setJoinLinkError("That doesn't look like a registration link. It ends with /Join/your-league."); return; }
@@ -1200,12 +1202,12 @@ export default function RegistrationGate({ user }) {
           latestRequest.linked_league_group_id ? (
             <div data-marker="LEAGUE_REQUEST_V1" className="rounded-2xl border-2 border-green-500 bg-green-50 p-4 mb-4">
               <p className="text-[11px] font-bold tracking-wide text-green-800">GOOD NEWS</p>
-              <p className="font-bold text-slate-900">{latestRequest.league_name} is on Courtside</p>
+              <p className="font-bold text-slate-900">{linkedName} is on Courtside</p>
               {linkedCampaign ? (
                 <>
                   <p className="text-xs text-green-800">{linkedCampaign.season_text || linkedCampaign.season_name} registration is open</p>
                   <Button onClick={() => goToJoin(linkedCampaign.slug)} className="w-full bg-orange-500 hover:bg-orange-600 mt-3">
-                    Join {latestRequest.league_name}
+                    Join {linkedName}
                   </Button>
                 </>
               ) : (
