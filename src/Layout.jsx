@@ -358,15 +358,6 @@ export default function Layout({ children }) {
                   <span className="text-xs font-semibold text-slate-700">{getUserTypeLabel()}</span>
                 </div>
                 <Button
-                onClick={handleLogout}
-                variant="outline"
-                className="w-full text-slate-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
-                size="sm">
-
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-                <Button
                   variant="outline"
                   size="sm"
                   className="w-full text-slate-600 hover:text-orange-600 hover:border-orange-400 hover:bg-orange-50"
@@ -377,6 +368,25 @@ export default function Layout({ children }) {
                 </Button>
               </div>
             }
+            {!isLoading && (currentUser ? (
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full mt-3 text-slate-700 hover:text-red-600 hover:border-red-300 hover:bg-red-50"
+                size="sm"
+                data-marker="AUTH_BUTTON_V1">
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            ) : (
+              <Button
+                onClick={() => base44.auth.redirectToLogin(window.location.href)}
+                className="w-full mt-3 bg-orange-500 hover:bg-orange-600 text-white"
+                size="sm"
+                data-marker="AUTH_BUTTON_V1">
+                Log in / Sign up
+              </Button>
+            ))}
           </SidebarHeader>
 
           <SidebarMenuContent

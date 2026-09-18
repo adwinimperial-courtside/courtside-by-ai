@@ -29,10 +29,17 @@ import PlayerProfile from "@/pages/PlayerProfile"; // PROFILE_SHORTCUTS_V1 — p
 import CoachHomePanel from "@/components/home/CoachHomePanel"; // COACH_HOME_WIREUP_V1
 
 export default function Landing() {
-  const { data: currentUser } = useQuery({
+  const { data: currentUser, isLoading: userLoading, isError: userError } = useQuery({
     queryKey: ['currentUser'],
     queryFn: () => base44.auth.me(),
+    retry: 1,
   });
+
+  React.useEffect(() => {
+    if (!userLoading && (userError || !currentUser)) {
+      base44.auth.redirectToLogin(window.location.href);
+    }
+  }, [userLoading, userError, currentUser]);
 
   const role = currentUser?.user_type;
   const firstName = currentUser?.full_name?.split(" ")[0] || null;
