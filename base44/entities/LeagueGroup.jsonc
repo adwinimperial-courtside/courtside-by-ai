@@ -40,18 +40,9 @@
   ],
   "rls": {
     "delete": {
-      "$or": [
-        {
-          "user_condition": {
-            "data.user_type": "app_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "data.user_type": "league_admin"
-          }
-        }
-      ]
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
     },
     "update": {
       "$or": [
