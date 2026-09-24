@@ -2,71 +2,48 @@ import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MonitorPlay, Upload, CheckCircle, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { MonitorPlay, Upload, CheckCircle, Trash2, ChevronUp, ChevronDown, Plus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import HelpButton from "../components/help/HelpButton";
+import { LiveOverlayLayout } from "@/components/overlay/LiveOverlayPanels";
 
-function LogoUploadBlock({ label, hint, value, field, uploading, onRemove, onUpload, disabled }) {
+// OVERLAY_SETTINGS_V2 - settings for the one stream overlay (OBS + PRISM, LIVE_OVERLAY_V4).
+// One shared settings record per league: the same record the overlay reads (getLiveOverlay):
+// a record that has a sponsors list wins, then one with the old sponsor_logos, then the newest.
+// Sponsors never rotate: up to 4 sit in the footer, plus one "presented by" sponsor on the
+// timeout strip and one on the end-of-quarter strip. A live preview uses the real overlay pieces.
+const MAX_SPONSORS = 8;
+const MAX_FOOTER = 4;
+
+const ts = (s) => new Date(s?.updated_date || s?.created_date || 0).getTime() || 0;
+function pickRecord(list, leagueId) {
+  const mine = (list || []).filter((s) => s.league_id === leagueId).sort((a, b) => ts(b) - ts(a));
+  return mine.find((s) => Array.isArray(s.sponsors))
+    || mine.find((s) => Array.isArray(s.sponsor_logos) && s.sponsor_logos.length > 0)
+    || mine[0] || null;
+}
+
+const SAMPLE_NAMES = [["Miguel Santos", 3], ["Jose Cruz", 7], ["Rico Dela Rosa", 11], ["Adrian Reyes", 23], ["Ken Bautista", 32]];
+const SAMPLE_NAMES_B = [["Paolo Garcia", 1], ["Luis Mendoza", 5], ["Dan Ramos", 9], ["Eli Villanueva", 14], ["Carl Aquino", 21]];
+const MOMENTS = [
+  { key: "starters", label: "Tip-off" },
+  { key: "timeout", label: "Timeout" },
+  { key: "leaders", label: "End of quarter" },
+  { key: "card", label: "Player card" },
+  { key: "live", label: "Live play" },
+];
+
+function Row({ title, hint, checked, onChange }) {
   return (
-    <div className={disabled ? "space-y-3 opacity-40 pointer-events-none" : "space-y-3"}>
+    <div className="flex items-center justify-between gap-6">
       <div>
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        <p className="text-xs text-slate-400">{disabled ? "Hidden on the overlay — your upload is kept" : hint}</p>
+        <p className="text-sm font-medium text-slate-700">{title}</p>
+        <p className="text-xs text-slate-400">{hint}</p>
       </div>
-      {value ? (
-        <div className="flex items-center gap-4">
-          <img
-            src={value}
-            alt={label}
-            className="w-20 h-20 object-contain rounded-xl border border-slate-200 bg-slate-50 p-2"
-          />
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onRemove}
-              className="text-red-600 border-red-200 hover:bg-red-50"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Remove
-            </Button>
-            <label>
-              <Button variant="outline" size="sm" asChild>
-                <span className="cursor-pointer">
-                  <Upload className="w-4 h-4 mr-2" />
-                  {uploading === field ? "Uploading..." : "Replace"}
-                </span>
-              </Button>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => onUpload(e, field)}
-                disabled={!!uploading || disabled}
-              />
-            </label>
-          </div>
-        </div>
-      ) : (
-        <label className="block">
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-6 cursor-pointer hover:border-purple-400 hover:bg-purple-50/30 transition-colors">
-            <Upload className="w-7 h-7 text-slate-400 mb-2" />
-            <span className="text-sm text-slate-600 font-medium">
-              {uploading === field ? "Uploading..." : "Click to upload"}
-            </span>
-            <span className="text-xs text-slate-400 mt-1">PNG, JPG, WebP — transparent background recommended</span>
-          </div>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => onUpload(e, field)}
-            disabled={!!uploading || disabled}
-          />
-        </label>
-      )}
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }
@@ -76,22 +53,25 @@ export default function GameOverlaySettingsPage() {
   const [leagues, setLeagues] = useState([]);
   const [allSettings, setAllSettings] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState("");
-  const [logoUrl, setLogoUrl] = useState(null);
-  const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
-  const [logoEnabled, setLogoEnabled] = useState(true);
-  const [leagueLogoEnabled, setLeagueLogoEnabled] = useState(true);
-  const [tickerText, setTickerText] = useState("");
-  const [tickerEnabled, setTickerEnabled] = useState(true);
-  const [clockEnabled, setClockEnabled] = useState(true);
-  const [timeoutPanelEnabled, setTimeoutPanelEnabled] = useState(true);
-  const [breakPanelEnabled, setBreakPanelEnabled] = useState(true);
-  const [startersPanelEnabled, setStartersPanelEnabled] = useState(true);
-  const [playerCardsEnabled, setPlayerCardsEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
-  const [sponsorLogos, setSponsorLogos] = useState([]); // LIVE_OVERLAY_V2
+  const [leagueLogoUrl, setLeagueLogoUrl] = useState(null);
+  const [leagueLogoEnabled, setLeagueLogoEnabled] = useState(true);
+  const [sponsors, setSponsors] = useState([]);
+  const [timeoutSponsorUrl, setTimeoutSponsorUrl] = useState("");
+  const [breakSponsorUrl, setBreakSponsorUrl] = useState("");
+  const [clockEnabled, setClockEnabled] = useState(true);
+  const [startersOn, setStartersOn] = useState(true);
+  const [timeoutOn, setTimeoutOn] = useState(true);
+  const [leadersOn, setLeadersOn] = useState(true);
+  const [cardsOn, setCardsOn] = useState(true);
+  const [tickerMode, setTickerMode] = useState("off");
+  const [tickerText, setTickerText] = useState("");
   const [uploading, setUploading] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [message, setMessage] = useState("");
+  const [moment, setMoment] = useState("timeout");
+  const [howTo, setHowTo] = useState("obs");
   const [loading, setLoading] = useState(true);
 
   // VIDEO_ADMIN_PER_LEAGUE_V1 - video admin can be held as a per-league role, so a user
@@ -108,121 +88,146 @@ export default function GameOverlaySettingsPage() {
       const user = await base44.auth.me();
       setCurrentUser(user);
       if (!canAccess(user)) { setLoading(false); return; }
-
-      // Load all leagues, then filter by assigned leagues for non-app-admins
       const allLeagues = await base44.entities.League.list("name");
       let visibleLeagues = allLeagues;
       if (user.user_type !== "app_admin") {
         const assignedIds = user.assigned_league_ids || [];
-        visibleLeagues = allLeagues.filter(l => assignedIds.includes(l.id));
+        visibleLeagues = allLeagues.filter((l) => assignedIds.includes(l.id));
       }
       setLeagues(visibleLeagues);
-
       const settingsList = await base44.entities.OverlaySettings.list("-created_date", 200);
-      setAllSettings(settingsList);
+      setAllSettings(settingsList || []);
       setLoading(false);
     };
     load();
   }, []);
 
-  const applyLeagueConfig = (lid, settingsList, user) => {
-    const rec = settingsList.find(
-      (s) => s.league_id === lid && (s.user_id === user.id || s.created_by_id === user.id)
-    );
-    if (rec) {
-      setLogoUrl(rec.logo_url || null);
-      setLeagueLogoUrl(rec.league_logo_url || null);
-      setSponsorLogos(Array.isArray(rec.sponsor_logos) ? rec.sponsor_logos : []);
-      setLogoEnabled(rec.logo_enabled !== false);
-      setLeagueLogoEnabled(rec.league_logo_enabled !== false);
-      setTickerText(rec.ticker_text || "");
-      setTickerEnabled(rec.ticker_enabled !== false);
-      setClockEnabled(rec.clock_enabled !== false);
-      setTimeoutPanelEnabled(rec.timeout_panel_enabled !== false);
-      setBreakPanelEnabled(rec.break_panel_enabled !== false);
-      setStartersPanelEnabled(rec.starters_panel_enabled !== false);
-      setPlayerCardsEnabled(rec.player_cards_enabled !== false);
-      setSettingsId(rec.id);
+  const touch = () => { setDirty(true); setMessage(""); };
+  const set = (fn) => (v) => { fn(v); touch(); };
+
+  const applyLeagueConfig = (lid, list) => {
+    const rec = pickRecord(list, lid);
+    setSettingsId(rec?.id || null);
+    setLeagueLogoUrl(rec?.league_logo_url || null);
+    setLeagueLogoEnabled(rec ? rec.league_logo_enabled !== false : true);
+    if (rec && Array.isArray(rec.sponsors)) {
+      setSponsors(rec.sponsors.filter((s) => s && s.url).slice(0, MAX_SPONSORS).map((s) => ({ url: s.url, name: s.name || "", in_footer: !!s.in_footer })));
     } else {
-      setLogoUrl(null);
-      setLeagueLogoUrl(null);
-      setSponsorLogos([]);
-      setLogoEnabled(true);
-      setLeagueLogoEnabled(true);
-      setTickerText("");
-      setTickerEnabled(true);
-      setClockEnabled(true);
-      setTimeoutPanelEnabled(true);
-      setBreakPanelEnabled(true);
-      setStartersPanelEnabled(true);
-      setPlayerCardsEnabled(true);
-      setSettingsId(null);
+      // Older records: the single sponsor logo plus the phone sponsor list become the sponsor list.
+      const urls = [];
+      if (rec?.logo_url && rec.logo_enabled !== false) urls.push(rec.logo_url);
+      (Array.isArray(rec?.sponsor_logos) ? rec.sponsor_logos : []).forEach((u) => { if (u && !urls.includes(u)) urls.push(u); });
+      setSponsors(urls.slice(0, MAX_SPONSORS).map((url, i) => ({ url, name: `Sponsor ${i + 1}`, in_footer: i < MAX_FOOTER })));
     }
+    setTimeoutSponsorUrl(rec?.timeout_sponsor_url || "");
+    setBreakSponsorUrl(rec?.break_sponsor_url || "");
+    setClockEnabled(rec ? rec.clock_enabled !== false : true);
+    setStartersOn(rec ? rec.starters_panel_enabled !== false : true);
+    setTimeoutOn(rec ? rec.timeout_panel_enabled !== false : true);
+    setLeadersOn(rec ? rec.break_panel_enabled !== false : true);
+    setCardsOn(rec ? rec.player_cards_enabled !== false : true);
+    setTickerText(rec?.ticker_text || "");
+    const mode = ["off", "stopped", "always"].includes(rec?.ticker_mode) ? rec.ticker_mode
+      : rec && rec.ticker_enabled !== false && rec.ticker_text ? "always" : "off";
+    setTickerMode(mode);
+    setDirty(false);
+    setMessage("");
   };
 
   const handleLeagueChange = (lid) => {
     setSelectedLeagueId(lid);
-    applyLeagueConfig(lid, allSettings, currentUser);
+    applyLeagueConfig(lid, allSettings);
   };
 
-  const handleFileUpload = async (e, field) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(field);
+  const upload = async (file) => {
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    if (field === "logo") setLogoUrl(file_url);
-    else setLeagueLogoUrl(file_url);
-    setUploading(null);
+    return file_url;
   };
 
-  // LIVE_OVERLAY_V2 - add one sponsor logo for the phone stream overlay (max 8)
-  const handleSponsorUpload = async (e) => {
+  const handleLeagueLogo = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading("league");
+    try { setLeagueLogoUrl(await upload(file)); touch(); } finally { setUploading(null); }
+  };
+
+  const handleAddSponsor = async (e) => {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setUploading("sponsor");
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setSponsorLogos((prev) => (prev.length >= 8 ? prev : [...prev, file_url]));
-    } finally {
-      setUploading(null);
-    }
+      const url = await upload(file);
+      setSponsors((prev) => {
+        if (prev.length >= MAX_SPONSORS) return prev;
+        const footerCount = prev.filter((s) => s.in_footer).length;
+        return [...prev, { url, name: `Sponsor ${prev.length + 1}`, in_footer: footerCount < MAX_FOOTER }];
+      });
+      touch();
+    } finally { setUploading(null); }
+  };
+
+  const updateSponsor = (i, patch) => { setSponsors((prev) => prev.map((s, k) => (k === i ? { ...s, ...patch } : s))); touch(); };
+  const moveSponsor = (i, dir) => {
+    setSponsors((prev) => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+    touch();
+  };
+  const removeSponsor = (i) => {
+    const gone = sponsors[i]?.url;
+    setSponsors((prev) => prev.filter((_, k) => k !== i));
+    if (gone && timeoutSponsorUrl === gone) setTimeoutSponsorUrl("");
+    if (gone && breakSponsorUrl === gone) setBreakSponsorUrl("");
+    touch();
   };
 
   const handleSave = async () => {
     if (!selectedLeagueId) return;
     setSaving(true);
+    setMessage("");
     const data = {
-      user_id: currentUser.id,
       league_id: selectedLeagueId,
-      logo_url: logoUrl,
       league_logo_url: leagueLogoUrl,
-      sponsor_logos: sponsorLogos,
-      logo_enabled: logoEnabled,
       league_logo_enabled: leagueLogoEnabled,
-      ticker_text: tickerText,
-      ticker_enabled: tickerEnabled,
+      sponsors: sponsors.map((s) => ({ url: s.url, name: (s.name || "").trim(), in_footer: !!s.in_footer })),
+      timeout_sponsor_url: timeoutSponsorUrl || "",
+      break_sponsor_url: breakSponsorUrl || "",
       clock_enabled: clockEnabled,
-      timeout_panel_enabled: timeoutPanelEnabled,
-      break_panel_enabled: breakPanelEnabled,
-      starters_panel_enabled: startersPanelEnabled,
-      player_cards_enabled: playerCardsEnabled,
+      starters_panel_enabled: startersOn,
+      timeout_panel_enabled: timeoutOn,
+      break_panel_enabled: leadersOn,
+      player_cards_enabled: cardsOn,
+      ticker_text: tickerText,
+      ticker_mode: tickerMode,
+      ticker_enabled: tickerMode !== "off",
     };
-    let recId = settingsId;
-    if (settingsId) {
-      await base44.entities.OverlaySettings.update(settingsId, data);
-    } else {
-      const created = await base44.entities.OverlaySettings.create(data);
-      recId = created.id;
-      setSettingsId(created.id);
+    try {
+      let rec;
+      if (settingsId) {
+        rec = await base44.entities.OverlaySettings.update(settingsId, data);
+      } else {
+        rec = await base44.entities.OverlaySettings.create({ ...data, user_id: currentUser.id });
+        setSettingsId(rec.id);
+      }
+      const recId = rec?.id || settingsId;
+      const now = new Date().toISOString();
+      setAllSettings((prev) => {
+        const old = prev.find((s) => s.id === recId) || {};
+        return [{ ...old, ...data, id: recId, updated_date: now }, ...prev.filter((s) => s.id !== recId)];
+      });
+      setDirty(false);
+      setMessage("saved");
+    } catch (err) {
+      setMessage("error");
+    } finally {
+      setSaving(false);
     }
-    setAllSettings((prev) => {
-      const others = prev.filter((s) => s.id !== recId);
-      return [{ ...data, id: recId }, ...others];
-    });
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
   };
 
   if (loading) {
@@ -241,235 +246,272 @@ export default function GameOverlaySettingsPage() {
     );
   }
 
+  const footerCount = sponsors.filter((s) => s.in_footer).length;
+  const footerSponsors = sponsors.filter((s) => s.in_footer).slice(0, MAX_FOOTER);
+
+  // Preview data: the real overlay pieces with example teams and players.
+  const d = {
+    status: moment === "starters" ? "scheduled" : "in_progress", period: moment === "starters" ? 1 : 2, period_type: "quarters", period_count: 4,
+    clock_enabled: clockEnabled,
+    home: { name: "Home Team", color: "#8B1020", score: moment === "starters" ? 0 : 48, fouls: 3, bonus: false, timeouts_left: 1 },
+    away: { name: "Away Team", color: "#0F7F72", score: moment === "starters" ? 0 : 45, fouls: 4, bonus: true, timeouts_left: 2 },
+    league_logo: leagueLogoEnabled ? leagueLogoUrl : "",
+    footer_sponsors: footerSponsors,
+  };
+  let pop = null;
+  let card = null;
+  let offNote = "";
+  if (moment === "starters") {
+    if (startersOn) pop = { kind: "starters", homeFive: SAMPLE_NAMES.map(([name, jersey]) => ({ name, jersey })), awayFive: SAMPLE_NAMES_B.map(([name, jersey]) => ({ name, jersey })) };
+    else offNote = "Starting five is off: nothing shows before tip-off.";
+  } else if (moment === "timeout") {
+    if (timeoutOn) pop = { kind: "timeout", calledBy: "Away Team", sponsorUrl: timeoutSponsorUrl, run: { side: "home", pf: 12, pa: 4 }, rows: [
+      { label: "POINTS", home: 48, away: 45 }, { label: "3-POINTERS", home: 5, away: 3 }, { label: "REBOUNDS", home: 19, away: 16 },
+      { label: "ASSISTS", home: 9, away: 11 }, { label: "STEALS", home: 4, away: 6 }, { label: "BLOCKS", home: 2, away: 1 }] };
+    else offNote = "Timeout stats are off: nothing shows during timeouts.";
+  } else if (moment === "leaders") {
+    if (leadersOn) pop = { kind: "leaders", title: "End of Q2 · Scoring leaders", page: 0, pages: 3, sponsorUrl: breakSponsorUrl, leaders: [
+      { name: "Adrian Reyes", value: 20, label: "PTS", sub: "#23 HOM · 6 REB · 3 AST" },
+      { name: "Dan Ramos", value: 16, label: "PTS", sub: "#9 AWA · 4 REB · 5 AST" },
+      { name: "Jose Cruz", value: 11, label: "PTS", sub: "#7 HOM · 8 REB · 2 AST" }] };
+    else offNote = "End-of-quarter leaders are off: nothing shows at breaks.";
+  } else if (moment === "card") {
+    if (cardsOn) card = { type: "points", tone: "orange", value: 20, label: "POINTS", name: "ADRIAN REYES", jersey: 23 };
+    else offNote = "Player cards are off.";
+  }
+  const showTicker = tickerMode === "always" || (tickerMode === "stopped" && moment !== "card" && moment !== "live");
+  const previewClock = clockEnabled ? (moment === "starters" ? "--:--" : moment === "leaders" ? "0.0" : "7:42") : "";
+
   return (
-    <div data-marker="OVERLAY_LOGO_TOGGLE_V1" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
-      <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-8 md:py-12">
+    <div data-marker="OVERLAY_SETTINGS_V2" className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 w-full">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-8 md:py-12 pb-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
             <MonitorPlay className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2"><h1 className="text-3xl font-bold text-slate-900">Game Overlay</h1><HelpButton pageKey="gameoverlay" /></div>
-            <p className="text-slate-500 text-sm">Configure your personal OBS live game overlay</p>
+            <p className="text-slate-500 text-sm">Set up the live stream overlay for a league. One overlay works in OBS and on a phone (PRISM).</p>
           </div>
         </div>
 
-        {/* League Selector */}
-        <Card className="border-slate-200 mb-6">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">League</h2>
-            <p className="text-sm text-slate-500">Each league has its own overlay configuration. Pick a league to view or edit its logos and ticker.</p>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedLeagueId || undefined} onValueChange={handleLeagueChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a league..." />
-              </SelectTrigger>
-              <SelectContent>
-                {leagues.map(l => (
-                  <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {!selectedLeagueId && (
-              <p className="text-sm text-slate-500 mt-3">Select a league above to configure its overlay.</p>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)] items-start">
+          <div className="space-y-6 min-w-0">
+            <Card className="border-slate-200">
+              <CardHeader className="pb-2">
+                <h2 className="font-semibold text-slate-800">League</h2>
+                <p className="text-sm text-slate-500">Each league has its own overlay settings, shared by its League Admins and Stream Crew.</p>
+              </CardHeader>
+              <CardContent>
+                <Select value={selectedLeagueId || undefined} onValueChange={handleLeagueChange}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Select a league..." /></SelectTrigger>
+                  <SelectContent>
+                    {leagues.map((l) => <SelectItem key={l.id} value={l.id}>{l.name} ({l.season})</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {!selectedLeagueId && <p className="text-sm text-slate-500 mt-3">Select a league above to set up its overlay.</p>}
+              </CardContent>
+            </Card>
+
+            {selectedLeagueId && (
+              <>
+                <Card className="border-slate-200">
+                  <CardHeader className="pb-2">
+                    <h2 className="font-semibold text-slate-800">League logo</h2>
+                    <p className="text-sm text-slate-500">Shown top-left on the stream for the whole game. With no upload, the league group's logo is used.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Row title="Show league logo" hint="Top left of the overlay" checked={leagueLogoEnabled} onChange={set(setLeagueLogoEnabled)} />
+                    <div className={leagueLogoEnabled ? "flex items-center gap-4" : "flex items-center gap-4 opacity-40 pointer-events-none"}>
+                      <div className="w-16 h-16 rounded-xl border border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden">
+                        {leagueLogoUrl ? <img src={leagueLogoUrl} alt="League logo" className="w-full h-full object-contain p-1" /> : <span className="text-xs text-slate-400">None</span>}
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <label>
+                          <Button variant="outline" size="sm" asChild>
+                            <span className="cursor-pointer"><Upload className="w-4 h-4 mr-2" />{uploading === "league" ? "Uploading..." : leagueLogoUrl ? "Replace" : "Upload"}</span>
+                          </Button>
+                          <input type="file" accept="image/*" className="hidden" onChange={handleLeagueLogo} disabled={!!uploading} />
+                        </label>
+                        {leagueLogoUrl && (
+                          <Button variant="outline" size="sm" onClick={() => { setLeagueLogoUrl(null); touch(); }} className="text-red-600 border-red-200 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4 mr-2" />Remove
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200">
+                  <CardHeader className="pb-2">
+                    <h2 className="font-semibold text-slate-800">Sponsors</h2>
+                    <p className="text-sm text-slate-500">Every sponsor gets a fixed spot, so viewers always find a logo in the same place. Nothing rotates. Use the arrows to set the left-to-right order in the footer.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <span className="flex gap-1">{Array.from({ length: MAX_FOOTER }).map((_, i) => <span key={i} className={`w-6 h-2 rounded ${i < footerCount ? "bg-orange-500" : "bg-slate-200"}`} />)}</span>
+                      <span>Footer spots used: {footerCount} of {MAX_FOOTER}{footerCount >= MAX_FOOTER ? " (full: untick one to swap)" : ""}</span>
+                    </div>
+                    {sponsors.length === 0 && <p className="text-sm text-slate-500">No sponsors yet. The footer shows only "Powered by Courtside by AI".</p>}
+                    <div className="space-y-2">
+                      {sponsors.map((s, i) => {
+                        const full = !s.in_footer && footerCount >= MAX_FOOTER;
+                        const spots = [s.in_footer && "Footer", timeoutSponsorUrl === s.url && "Presents timeouts", breakSponsorUrl === s.url && "Presents end of quarter"].filter(Boolean);
+                        return (
+                          <div key={s.url + i} className="flex flex-wrap sm:flex-nowrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+                            <div className="flex flex-col gap-0.5">
+                              <button type="button" aria-label="Move up" disabled={i === 0} onClick={() => moveSponsor(i, -1)} className="rounded bg-slate-50 p-0.5 text-slate-500 disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+                              <button type="button" aria-label="Move down" disabled={i === sponsors.length - 1} onClick={() => moveSponsor(i, 1)} className="rounded bg-slate-50 p-0.5 text-slate-500 disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+                            </div>
+                            <img src={s.url} alt="" className="h-9 w-24 object-contain rounded bg-slate-50" />
+                            <div className="flex-1 min-w-[140px] space-y-1">
+                              <Input value={s.name} onChange={(e) => updateSponsor(i, { name: e.target.value })} placeholder="Sponsor name" className="h-8 text-sm" />
+                              <div className="flex flex-wrap gap-1">
+                                {spots.length > 0
+                                  ? spots.map((t) => <span key={t} className="text-[11px] font-semibold rounded-full px-2 bg-orange-50 text-orange-700 border border-orange-200">{t}</span>)
+                                  : <span className="text-[11px] rounded-full px-2 bg-slate-50 text-slate-500 border border-slate-200">Not shown yet: add to the footer or pick it below</span>}
+                              </div>
+                            </div>
+                            <label className={`flex items-center gap-2 text-sm font-medium ${full ? "text-slate-300" : "text-slate-700"}`}>
+                              <input type="checkbox" className="w-4 h-4 accent-orange-500" checked={!!s.in_footer} disabled={full} onChange={(e) => updateSponsor(i, { in_footer: e.target.checked })} />
+                              Footer
+                            </label>
+                            <button type="button" aria-label="Remove sponsor" onClick={() => removeSponsor(i)} className="text-red-500 hover:text-red-700 p-1"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {sponsors.length < MAX_SPONSORS ? (
+                      <label className="block">
+                        <div className="flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 rounded-xl p-3 cursor-pointer hover:border-orange-400 text-sm font-medium text-slate-600">
+                          <Plus className="w-4 h-4" />{uploading === "sponsor" ? "Uploading..." : "Add sponsor logo"}
+                        </div>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleAddSponsor} disabled={!!uploading} />
+                      </label>
+                    ) : <p className="text-xs text-slate-400">8 sponsors is the most.</p>}
+                    <div className="grid sm:grid-cols-2 gap-4 border-t border-slate-100 pt-4">
+                      <label className="text-sm font-medium text-slate-700 space-y-1">
+                        <span>Timeout strip presented by</span>
+                        <select value={timeoutSponsorUrl} onChange={(e) => { setTimeoutSponsorUrl(e.target.value); touch(); }} className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
+                          <option value="">No sponsor</option>
+                          {sponsors.map((s, i) => <option key={s.url + i} value={s.url}>{s.name || `Sponsor ${i + 1}`}</option>)}
+                        </select>
+                        <span className="block text-xs font-normal text-slate-400">Shown while a timeout is on screen</span>
+                      </label>
+                      <label className="text-sm font-medium text-slate-700 space-y-1">
+                        <span>End-of-quarter strip presented by</span>
+                        <select value={breakSponsorUrl} onChange={(e) => { setBreakSponsorUrl(e.target.value); touch(); }} className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
+                          <option value="">No sponsor</option>
+                          {sponsors.map((s, i) => <option key={s.url + i} value={s.url}>{s.name || `Sponsor ${i + 1}`}</option>)}
+                        </select>
+                        <span className="block text-xs font-normal text-slate-400">Shown with the leaders at each break</span>
+                      </label>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200">
+                  <CardHeader className="pb-2">
+                    <h2 className="font-semibold text-slate-800">What shows on the stream</h2>
+                    <p className="text-sm text-slate-500">Everything is on by default. Pop-ups only appear when play is stopped, except player cards. For youth leagues, switch off the starting five, leaders and player cards: then no player names or stats are sent to the overlay at all.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Row title="Game clock" hint="Switch off if your scorer doesn't keep the in-app clock in sync with the court. The quarter always shows." checked={clockEnabled} onChange={set(setClockEnabled)} />
+                    <Row title="Starting five" hint="Before tip-off: home team on the left edge, away on the right." checked={startersOn} onChange={set(setStartersOn)} />
+                    <Row title="Timeout stats" hint="Strip above the scoreboard when a team calls a timeout." checked={timeoutOn} onChange={set(setTimeoutOn)} />
+                    <Row title="End-of-quarter leaders" hint="Strip above the scoreboard with the top 3 players at each break." checked={leadersOn} onChange={set(setLeadersOn)} />
+                    <Row title="Player highlight cards" hint="Small card bottom-left for about 6 seconds when a player hits a milestone." checked={cardsOn} onChange={set(setCardsOn)} />
+                  </CardContent>
+                </Card>
+
+                <Card className="border-slate-200">
+                  <CardHeader className="pb-2">
+                    <h2 className="font-semibold text-slate-800">Ticker</h2>
+                    <p className="text-sm text-slate-500">A scrolling line of text just above the scoreboard, for announcements. "Only when play stops" keeps viewers' eyes on the game during play.</p>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <label className="block text-sm font-medium text-slate-700 space-y-1">
+                      <span>When to show it</span>
+                      <select value={tickerMode} onChange={(e) => { setTickerMode(e.target.value); touch(); }} className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
+                        <option value="off">Off</option>
+                        <option value="stopped">Only when play stops (before tip-off, timeouts, breaks)</option>
+                        <option value="always">Always, including live play</option>
+                      </select>
+                    </label>
+                    <Textarea placeholder="e.g. Finals night! Tip-off 7 pm · Follow us @leaguename" value={tickerText} onChange={(e) => { setTickerText(e.target.value); touch(); }} className="resize-none" rows={2} />
+                  </CardContent>
+                </Card>
+              </>
             )}
-          </CardContent>
-        </Card>
+
+            <Card className="border-slate-200">
+              <CardHeader className="pb-2">
+                <h2 className="font-semibold text-slate-800">How to add the overlay to your stream</h2>
+                <p className="text-sm text-slate-500">Get the link first: <strong>Schedule</strong> → game card → <strong>Stream overlay</strong> → <strong>Copy link</strong>. One link per game. It works in both apps and needs no login.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex gap-2">
+                  <Button type="button" size="sm" variant={howTo === "obs" ? "default" : "outline"} onClick={() => setHowTo("obs")}>OBS (laptop)</Button>
+                  <Button type="button" size="sm" variant={howTo === "prism" ? "default" : "outline"} onClick={() => setHowTo("prism")}>PRISM (phone)</Button>
+                </div>
+                {howTo === "obs" ? (
+                  <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+                    <li>In OBS, add a <strong>Browser Source</strong> and paste the link.</li>
+                    <li>Set width <strong>1920</strong> and height <strong>1080</strong>.</li>
+                    <li>Tick <strong>Shutdown source when not visible</strong>. The background is already see-through.</li>
+                    <li>Put the Browser Source above your camera in the source list.</li>
+                  </ol>
+                ) : (
+                  <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
+                    <li>Unlock the phone's rotation and turn it sideways. PRISM locks the direction when you go live.</li>
+                    <li>Swipe right → <strong>My Studio</strong> → <strong>Widget</strong> → <strong>Web</strong> → paste the link → <strong>Save</strong>.</li>
+                    <li><strong>Stretch the widget to fill the whole screen.</strong> The league logo and pop-ups need the full picture, not just the bottom.</li>
+                    <li>Test with Facebook privacy set to <strong>Only me</strong>, then go live.</li>
+                  </ol>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {selectedLeagueId && (
+            <aside className="lg:sticky lg:top-4 order-first lg:order-none">
+              <div className="rounded-2xl bg-[#0B1628] p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-white">Preview</h2>
+                  <span className="text-xs text-slate-400">example teams and players</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {MOMENTS.map((m) => (
+                    <button key={m.key} type="button" onClick={() => setMoment(m.key)}
+                      className={`text-xs font-semibold rounded-full px-3 py-1 border ${moment === m.key ? "bg-orange-500 border-orange-500 text-white" : "border-white/20 text-slate-300"}`}>
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+                <div className="relative w-full overflow-hidden rounded-md" style={{ aspectRatio: "16 / 9", containerType: "inline-size", background: "linear-gradient(180deg,#3a3f4a 0%,#50607a 18%,#4a3a2a 40%,#8a6538 68%,#6b4a2a 100%)" }}>
+                  <LiveOverlayLayout d={d} clockText={previewClock} pop={pop} card={card} tickerText={showTicker ? tickerText : ""} />
+                </div>
+                <p className="text-xs text-slate-400 min-h-[16px]">{offNote || "Updates as you change settings. Save to send it to live overlays."}</p>
+              </div>
+            </aside>
+          )}
+        </div>
 
         {selectedLeagueId && (
-        <>
-        <Card className="border-slate-200 mb-6">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">Overlay Logos</h2>
-            <p className="text-sm text-slate-500">These logos will appear on your personal overlay. Switch either one off for a clean, logo-free overlay.</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Show sponsor logo</p>
-                  <p className="text-xs text-slate-400">Top right of the overlay</p>
-                </div>
-                <Switch checked={logoEnabled} onCheckedChange={setLogoEnabled} />
-              </div>
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Show league logo</p>
-                  <p className="text-xs text-slate-400">Top left of the overlay</p>
-                </div>
-                <Switch checked={leagueLogoEnabled} onCheckedChange={setLeagueLogoEnabled} />
-              </div>
+          <div className="sticky bottom-0 z-40 mt-6 rounded-xl border border-slate-200 bg-white/95 backdrop-blur px-4 py-3 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className={`text-sm ${message === "error" ? "text-red-600" : message === "saved" ? "text-green-600" : "text-slate-500"}`}>
+                {message === "error" ? "Couldn't save. Check your connection and try again."
+                  : message === "saved" ? "Saved. Live overlays pick this up within a few seconds."
+                  : dirty ? "You have unsaved changes" : "All changes saved"}
+              </span>
+              <Button onClick={handleSave} disabled={saving || !!uploading || !dirty} className="bg-purple-600 hover:bg-purple-700 text-white">
+                {message === "saved" && !dirty ? <><CheckCircle className="w-4 h-4 mr-2" />Saved</> : saving ? "Saving..." : "Save settings"}
+              </Button>
             </div>
-
-            <div className="border-t border-slate-100" />
-
-            <LogoUploadBlock
-              label="App / Sponsor Logo"
-              hint="E.g. Courtside by AI or a sponsor logo"
-              value={logoUrl}
-              field="logo"
-              uploading={uploading}
-              disabled={!logoEnabled}
-              onRemove={() => setLogoUrl(null)}
-              onUpload={handleFileUpload}
-            />
-
-            <div className="border-t border-slate-100" />
-
-            <LogoUploadBlock
-              label="League Logo"
-              hint="Your league's official logo"
-              value={leagueLogoUrl}
-              field="league_logo"
-              uploading={uploading}
-              disabled={!leagueLogoEnabled}
-              onRemove={() => setLeagueLogoUrl(null)}
-              onUpload={handleFileUpload}
-            />
-
-            <div className="border-t border-slate-100" />
-
-            {/* LIVE_OVERLAY_V2 - sponsor logos that rotate on the phone stream overlay */}
-            <div data-marker="LIVE_OVERLAY_V2">
-              <p className="text-sm font-medium text-slate-700">Phone stream sponsor logos</p>
-              <p className="text-xs text-slate-400 mb-3">Up to 8 logos. They take turns every 8 seconds at the bottom of the phone stream overlay. Press Save Settings after changing them.</p>
-              <div className="grid grid-cols-4 gap-2">
-                {sponsorLogos.map((u, i) => (
-                  <div key={u + i} className="relative border border-slate-200 rounded-lg bg-slate-50 h-16 flex items-center justify-center p-1">
-                    <img src={u} alt={`Sponsor ${i + 1}`} className="max-h-full max-w-full object-contain" />
-                    <button
-                      type="button"
-                      onClick={() => setSponsorLogos((prev) => prev.filter((_, j) => j !== i))}
-                      className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 text-slate-500 hover:text-red-600"
-                      aria-label={`Remove sponsor ${i + 1}`}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                {sponsorLogos.length < 8 && (
-                  <label className="border-2 border-dashed border-slate-200 rounded-lg h-16 flex flex-col items-center justify-center text-xs text-slate-500 cursor-pointer hover:border-orange-400">
-                    <Upload className="w-4 h-4 mb-1" />
-                    {uploading === "sponsor" ? "Uploading..." : "Add logo"}
-                    <input type="file" accept="image/*" className="hidden" disabled={!!uploading} onChange={handleSponsorUpload} />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            <Button
-              onClick={handleSave}
-              disabled={saving || !!uploading}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card data-marker="OVERLAY_TOGGLES_V1" className="border-slate-200 mb-6">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">Scoreboard &amp; Panels</h2>
-            <p className="text-sm text-slate-500">Choose what appears on the overlay for this league. Everything is on by default.</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="pr-6">
-                <p className="text-sm font-medium text-slate-700">Show game clock</p>
-                <p className="text-xs text-slate-400">Switch off if your scorer does not keep the in-app clock in sync with the clock on the court. The quarter is always shown.</p>
-              </div>
-              <Switch checked={clockEnabled} onCheckedChange={setClockEnabled} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="pr-6">
-                <p className="text-sm font-medium text-slate-700">Timeout stats panel</p>
-                <p className="text-xs text-slate-400">The team comparison panel that appears automatically when a team calls a timeout.</p>
-              </div>
-              <Switch checked={timeoutPanelEnabled} onCheckedChange={setTimeoutPanelEnabled} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="pr-6">
-                <p className="text-sm font-medium text-slate-700">End of period leaders</p>
-                <p className="text-xs text-slate-400">The player leaders board that appears at the end of each quarter or half.</p>
-              </div>
-              <Switch checked={breakPanelEnabled} onCheckedChange={setBreakPanelEnabled} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="pr-6">
-                <p className="text-sm font-medium text-slate-700">Starting five panel</p>
-                <p className="text-xs text-slate-400">The starting line-ups shown before tip-off.</p>
-              </div>
-              <Switch checked={startersPanelEnabled} onCheckedChange={setStartersPanelEnabled} />
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="pr-6">
-                <p className="text-sm font-medium text-slate-700">Player highlight cards</p>
-                <p className="text-xs text-slate-400">The card that pops up bottom-left when a player hits a milestone during play.</p>
-              </div>
-              <Switch checked={playerCardsEnabled} onCheckedChange={setPlayerCardsEnabled} />
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !!uploading}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="border-slate-200 mb-6">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">Ticker / Announcements</h2>
-            <p className="text-sm text-slate-500">A scrolling text bar at the bottom of the overlay for ads and announcements.</p>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-700">Enable Ticker</p>
-                <p className="text-xs text-slate-400">Show or hide the ticker on the overlay</p>
-              </div>
-              <Switch checked={tickerEnabled} onCheckedChange={setTickerEnabled} />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-700 mb-1">Ticker Text</p>
-              <Textarea
-                placeholder="e.g. Welcome to the game! Sponsored by ACME Corp. • Half-time show at 8pm • Follow us @leaguename"
-                value={tickerText}
-                onChange={(e) => setTickerText(e.target.value)}
-                className="resize-none"
-                rows={3}
-              />
-              <p className="text-xs text-slate-400 mt-1">The text will scroll continuously across the bottom of the screen.</p>
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={saving || !!uploading}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {saved ? <><CheckCircle className="w-4 h-4 mr-2" />Saved!</> : saving ? "Saving..." : "Save Settings"}
-            </Button>
-          </CardContent>
-        </Card>
-        </>
+          </div>
         )}
-
-        <Card className="border-slate-200">
-          <CardHeader className="pb-2">
-            <h2 className="font-semibold text-slate-800">How to Use in OBS</h2>
-          </CardHeader>
-          <CardContent>
-            <ol className="text-sm text-slate-600 space-y-2 list-decimal list-inside">
-              <li>In OBS, add a new <strong>Browser Source</strong>.</li>
-              <li>Go to the <strong>Schedule</strong> page and click <strong>Overlay</strong> on a live game.</li>
-              <li>Copy the generated URL and paste it into the OBS Browser Source URL field.</li>
-              <li>Set the width/height to match your stream resolution (e.g. 1920×1080).</li>
-              <li>Check <strong>"Shutdown source when not visible"</strong> and enable <strong>"Transparent background"</strong> (custom CSS: <code className="bg-slate-100 px-1 rounded">body {"{"} background: transparent; {"}"}</code>).</li>
-              <li>The overlay will automatically update in real-time as the game progresses.</li>
-            </ol>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
