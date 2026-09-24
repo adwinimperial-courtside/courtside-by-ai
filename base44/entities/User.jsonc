@@ -45,5 +45,17 @@
       "type": "string",
       "description": "CONSENT_FIELDS_V1 - version of the consent text the user accepted, for example 2026-04-privacy-consent-v1"
     }
+  },
+  "rls": {
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
   }
 }
