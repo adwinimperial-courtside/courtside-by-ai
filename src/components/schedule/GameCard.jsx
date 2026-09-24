@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import TeamLogo from "../teams/TeamLogo";
 import EditGameSettingsDialog from "./EditGameSettingsDialog";
+import PhoneStreamDialog from "./PhoneStreamDialog";
 import { useEffectiveRole } from "@/hooks/useEffectiveRole";
 // GAMECARD_FORMAT_V1: points math delegated to the stat engine (per-game format detection)
 import { calcPoints as engineCalcPoints, resolveGameFormat } from "@/components/stats/statEngine";
@@ -25,6 +26,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
   const [showEditSettings, setShowEditSettings] = useState(false);
   const [showDefaultDialog, setShowDefaultDialog] = useState(false);
   const [showOverlayCopied, setShowOverlayCopied] = useState(false);
+  const [showPhoneStream, setShowPhoneStream] = useState(false); // LIVE_OVERLAY_V2
   const [reopenConfirm, setReopenConfirm] = useState(false);
   const [reopening, setReopening] = useState(false);
 
@@ -437,6 +439,18 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   )}
                 </>
               )}
+              {/* LIVE_OVERLAY_V2 - no-login phone stream overlay link (PRISM) */}
+              {canAccessOverlay && !isDefaultResult && (liveGame.status === 'scheduled' || liveGame.status === 'in_progress') && (
+                <Button
+                  onClick={() => setShowPhoneStream(true)}
+                  variant="outline"
+                  className="w-full sm:w-auto border-orange-400 text-orange-600 hover:bg-orange-50"
+                  data-marker="LIVE_OVERLAY_V2"
+                >
+                  <MonitorPlay className="w-4 h-4 mr-2" />
+                  Phone stream
+                </Button>
+              )}
               {canOpenScoreboard && !isDefaultResult && isTimedGame && (liveGame.status === 'scheduled' || liveGame.status === 'in_progress') && (
                 <Button
                   asChild
@@ -629,6 +643,15 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
           )}
         </CardContent>
       </Card>
+      {showPhoneStream && (
+      <PhoneStreamDialog
+        open={showPhoneStream}
+        onOpenChange={setShowPhoneStream}
+        game={liveGame}
+        homeName={homeTeam?.name || "Home"}
+        awayName={awayTeam?.name || "Away"}
+      />
+      )}
       {showEditSettings && (
       <EditGameSettingsDialog
         open={showEditSettings}
