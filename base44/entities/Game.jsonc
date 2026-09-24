@@ -215,9 +215,18 @@
           }
         },
         {
-          "user_condition": {
-            "data.user_type": "league_admin"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
         }
       ]
     },

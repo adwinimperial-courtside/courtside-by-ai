@@ -67,20 +67,6 @@
         }
       ]
     },
-    "write": {
-      "$or": [
-        {
-          "user_condition": {
-            "data.user_type": "app_admin"
-          }
-        },
-        {
-          "user_condition": {
-            "data.user_type": "league_admin"
-          }
-        }
-      ]
-    },
     "create": {
       "$or": [
         {
