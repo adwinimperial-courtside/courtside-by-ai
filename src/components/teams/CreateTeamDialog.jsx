@@ -159,7 +159,7 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Add New Team</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4" data-marker="TEAM_SEASON_PICK_V1">
+        <form onSubmit={handleSubmit} className="space-y-4 min-w-0" data-marker="TEAM_SEASON_PICK_V1">
           {lastAdded && (
             <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
               <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
@@ -178,9 +178,9 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               value={formData.league_id}
               onValueChange={(value) => { setFormData((prev) => ({ ...prev, league_id: value })); setPickReason(null); }}
             >
-              <SelectTrigger id="season" className={`mt-1.5 ${formData.league_id ? "" : "border-amber-400 bg-amber-50"}`}>
+              <SelectTrigger id="season" className={`mt-1.5 w-full min-w-0 ${formData.league_id ? "" : "border-amber-400 bg-amber-50"}`}>
                 <SelectValue placeholder="Select a season">
-                  {selectedSeason ? seasonLabel(selectedSeason, true) : null}
+                  {selectedSeason ? <span className="block truncate text-left">{seasonLabel(selectedSeason, true)}</span> : null}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
