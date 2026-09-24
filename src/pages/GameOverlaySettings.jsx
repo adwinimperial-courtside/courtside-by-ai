@@ -88,6 +88,7 @@ export default function GameOverlaySettingsPage() {
   const [startersPanelEnabled, setStartersPanelEnabled] = useState(true);
   const [playerCardsEnabled, setPlayerCardsEnabled] = useState(true);
   const [settingsId, setSettingsId] = useState(null);
+  const [sponsorLogos, setSponsorLogos] = useState([]); // LIVE_OVERLAY_V2
   const [uploading, setUploading] = useState(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -131,6 +132,7 @@ export default function GameOverlaySettingsPage() {
     if (rec) {
       setLogoUrl(rec.logo_url || null);
       setLeagueLogoUrl(rec.league_logo_url || null);
+      setSponsorLogos(Array.isArray(rec.sponsor_logos) ? rec.sponsor_logos : []);
       setLogoEnabled(rec.logo_enabled !== false);
       setLeagueLogoEnabled(rec.league_logo_enabled !== false);
       setTickerText(rec.ticker_text || "");
@@ -144,6 +146,7 @@ export default function GameOverlaySettingsPage() {
     } else {
       setLogoUrl(null);
       setLeagueLogoUrl(null);
+      setSponsorLogos([]);
       setLogoEnabled(true);
       setLeagueLogoEnabled(true);
       setTickerText("");
@@ -172,6 +175,20 @@ export default function GameOverlaySettingsPage() {
     setUploading(null);
   };
 
+  // LIVE_OVERLAY_V2 - add one sponsor logo for the phone stream overlay (max 8)
+  const handleSponsorUpload = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading("sponsor");
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setSponsorLogos((prev) => (prev.length >= 8 ? prev : [...prev, file_url]));
+    } finally {
+      setUploading(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!selectedLeagueId) return;
     setSaving(true);
@@ -180,6 +197,7 @@ export default function GameOverlaySettingsPage() {
       league_id: selectedLeagueId,
       logo_url: logoUrl,
       league_logo_url: leagueLogoUrl,
+      sponsor_logos: sponsorLogos,
       logo_enabled: logoEnabled,
       league_logo_enabled: leagueLogoEnabled,
       ticker_text: tickerText,
@@ -309,6 +327,36 @@ export default function GameOverlaySettingsPage() {
               onRemove={() => setLeagueLogoUrl(null)}
               onUpload={handleFileUpload}
             />
+
+            <div className="border-t border-slate-100" />
+
+            {/* LIVE_OVERLAY_V2 - sponsor logos that rotate on the phone stream overlay */}
+            <div data-marker="LIVE_OVERLAY_V2">
+              <p className="text-sm font-medium text-slate-700">Phone stream sponsor logos</p>
+              <p className="text-xs text-slate-400 mb-3">Up to 8 logos. They take turns every 8 seconds at the bottom of the phone stream overlay. Press Save Settings after changing them.</p>
+              <div className="grid grid-cols-4 gap-2">
+                {sponsorLogos.map((u, i) => (
+                  <div key={u + i} className="relative border border-slate-200 rounded-lg bg-slate-50 h-16 flex items-center justify-center p-1">
+                    <img src={u} alt={`Sponsor ${i + 1}`} className="max-h-full max-w-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => setSponsorLogos((prev) => prev.filter((_, j) => j !== i))}
+                      className="absolute -top-2 -right-2 bg-white border border-slate-200 rounded-full p-1 text-slate-500 hover:text-red-600"
+                      aria-label={`Remove sponsor ${i + 1}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {sponsorLogos.length < 8 && (
+                  <label className="border-2 border-dashed border-slate-200 rounded-lg h-16 flex flex-col items-center justify-center text-xs text-slate-500 cursor-pointer hover:border-orange-400">
+                    <Upload className="w-4 h-4 mb-1" />
+                    {uploading === "sponsor" ? "Uploading..." : "Add logo"}
+                    <input type="file" accept="image/*" className="hidden" disabled={!!uploading} onChange={handleSponsorUpload} />
+                  </label>
+                )}
+              </div>
+            </div>
 
             <Button
               onClick={handleSave}
