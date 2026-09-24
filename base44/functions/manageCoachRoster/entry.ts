@@ -281,7 +281,8 @@ Deno.serve(async (req) => {
             name: row.name,
             jersey_number: row.jersey_number,
             position: row.position,
-            team_id: teamId
+            team_id: teamId,
+            league_id: leagueId // SECURITY_F5_B_PLAYER_V1
           });
           auditLines.push('Added ' + row.name + ' #' + row.jersey_number);
         }

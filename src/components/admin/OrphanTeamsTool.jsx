@@ -207,7 +207,7 @@ export default function OrphanTeamsTool() {
 
           const roster = await base44.entities.Player.filter({ team_id: team.id });
           for (const p of roster || []) {
-            const playerData = { team_id: newTeam.id, name: p.name };
+            const playerData = { team_id: newTeam.id, name: p.name, league_id: target.id }; // SECURITY_F5_B_PLAYER_V1
             if (p.jersey_number !== undefined && p.jersey_number !== null && p.jersey_number !== "") playerData.jersey_number = p.jersey_number;
             if (p.position) playerData.position = p.position;
             if (p.photo_url) playerData.photo_url = p.photo_url;

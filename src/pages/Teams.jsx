@@ -137,7 +137,8 @@ export default function TeamsPage() {
           name: captain.name,
           team_id: newTeam.id,
           jersey_number: captain.jersey_number,
-          position: captain.position
+          position: captain.position,
+          league_id: newTeam.league_id || teamInfo.league_id || '' // SECURITY_F5_B_PLAYER_V1
         });
         
         // Update team with captain reference

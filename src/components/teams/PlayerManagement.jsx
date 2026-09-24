@@ -125,7 +125,8 @@ export default function PlayerManagement({ teamId, team, userType }) {
               name,
               jersey_number: parsedJersey,
               position: row.position || 'PG',
-              team_id: teamId
+              team_id: teamId,
+              league_id: currentTeam?.league_id || team?.league_id || '' // SECURITY_F5_B_PLAYER_V1
             });
           }
           savedCount++;
