@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
-import { Upload } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Upload, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
+
+// TEAM_SEASON_PICK_V1 — a team always belongs to a season. The season is picked for the
+// admin (Teams page filter → ★ default season → only current season), stays picked after
+// each team is added, and "Add Team" stays off until a season is chosen.
 
 const TEAM_COLORS = [
   { name: "Orange", value: "#f97316" },
@@ -22,32 +27,115 @@ const TEAM_COLORS = [
   { name: "Yellow", value: "#eab308" },
 ];
 
-export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoading, leagues }) {
-  const [formData, setFormData] = useState({
-    name: "",
-    league_id: "",
-    color: "#f97316",
-    logo_url: "",
-    head_coach: "",
-    manager: "",
-    bracket: ""
-  });
-  const [captainData, setCaptainData] = useState({
-    name: "",
-    jersey_number: "",
-    position: "PG"
-  });
-  const [uploadingLogo, setUploadingLogo] = useState(false);
+const EMPTY_TEAM = { name: "", color: "#f97316", logo_url: "", head_coach: "", manager: "", bracket: "" };
+const EMPTY_CAPTAIN = { name: "", jersey_number: "", position: "PG" };
 
-  const handleSubmit = (e) => {
+const PICK_REASON_TEXT = {
+  viewing: "the season you are viewing on the Teams page",
+  default: "your \u2605 default season",
+  only: "your only current season",
+};
+
+function shortSeasonName(season, groupName) {
+  const name = (season.name || "").trim();
+  if (groupName && name.toLowerCase().startsWith(groupName.toLowerCase())) {
+    const rest = name.slice(groupName.length).replace(/^[\s\-\u2013\u2014\u00b7:]+/, "").trim();
+    if (rest) return rest;
+  }
+  return name;
+}
+
+export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoading, leagues, preferredLeagueId, defaultLeagueId }) {
+  const [formData, setFormData] = useState({ ...EMPTY_TEAM, league_id: "" });
+  const [captainData, setCaptainData] = useState(EMPTY_CAPTAIN);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [pickReason, setPickReason] = useState(null);
+  const [lastAdded, setLastAdded] = useState(null);
+  const [errorText, setErrorText] = useState("");
+
+  const { data: leagueGroups = [] } = useQuery({
+    queryKey: ['leagueGroups'],
+    queryFn: () => base44.entities.LeagueGroup.list(),
+    enabled: open,
+  });
+
+  const groupNameById = useMemo(() => {
+    const map = {};
+    leagueGroups.forEach((g) => { map[g.id] = g.name; });
+    return map;
+  }, [leagueGroups]);
+
+  const seasons = useMemo(
+    () => (leagues || []).filter((l) => !l.is_archived),
+    [leagues]
+  );
+
+  const seasonGroups = useMemo(() => {
+    const byGroup = {};
+    seasons.forEach((s) => {
+      const groupName = groupNameById[s.group_id] || "Other seasons";
+      if (!byGroup[groupName]) byGroup[groupName] = [];
+      byGroup[groupName].push(s);
+    });
+    return Object.keys(byGroup)
+      .sort((a, b) => a.localeCompare(b))
+      .map((groupName) => ({
+        groupName,
+        items: byGroup[groupName].sort((a, b) =>
+          (b.season || "").localeCompare(a.season || "") || (a.name || "").localeCompare(b.name || "")
+        ),
+      }));
+  }, [seasons, groupNameById]);
+
+  const seasonLabel = (s, withLeague) => {
+    const groupName = groupNameById[s.group_id];
+    const base = shortSeasonName(s, groupName) + (s.season ? ` \u00b7 ${s.season}` : "");
+    return withLeague && groupName ? `${groupName} \u00b7 ${base}` : base;
+  };
+
+  const selectedSeason = seasons.find((s) => s.id === formData.league_id) || null;
+
+  useEffect(() => {
+    if (open) { setLastAdded(null); setErrorText(""); }
+  }, [open]);
+
+  const seasonIdsKey = seasons.map((s) => s.id).join(",");
+
+  // Pick a season for the admin when the dialog opens.
+  useEffect(() => {
+    if (!open) return;
+    const ids = seasons.map((s) => s.id);
+    if (formData.league_id && ids.includes(formData.league_id)) return;
+    let pick = "";
+    let reason = null;
+    if (preferredLeagueId && preferredLeagueId !== "all" && ids.includes(preferredLeagueId)) {
+      pick = preferredLeagueId; reason = "viewing";
+    } else if (defaultLeagueId && ids.includes(defaultLeagueId)) {
+      pick = defaultLeagueId; reason = "default";
+    } else if (ids.length === 1) {
+      pick = ids[0]; reason = "only";
+    }
+    setFormData((prev) => ({ ...prev, league_id: pick }));
+    setPickReason(pick ? reason : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, seasonIdsKey, preferredLeagueId, defaultLeagueId]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.league_id) return;
+    setErrorText("");
     const submitData = { ...formData };
     if (captainData.name && captainData.jersey_number) {
       submitData.captain = captainData;
     }
-    onSubmit(submitData);
-    setFormData({ name: "", league_id: "", color: "#f97316", logo_url: "", head_coach: "", manager: "", bracket: "" });
-    setCaptainData({ name: "", jersey_number: "", position: "PG" });
+    try {
+      await onSubmit(submitData);
+      setLastAdded({ name: formData.name, seasonText: selectedSeason ? seasonLabel(selectedSeason, true) : "" });
+      setFormData((prev) => ({ ...EMPTY_TEAM, league_id: prev.league_id }));
+      setCaptainData(EMPTY_CAPTAIN);
+    } catch (error) {
+      setErrorText(error?.message ? `Could not add the team: ${error.message}` : "Could not add the team. Please try again.");
+    }
   };
 
   const handleLogoUpload = async (e) => {
@@ -57,9 +145,9 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
     setUploadingLogo(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setFormData({ ...formData, logo_url: file_url });
+      setFormData((prev) => ({ ...prev, logo_url: file_url }));
     } catch (error) {
-      alert("Failed to upload logo: " + error.message);
+      setErrorText("Failed to upload logo: " + (error?.message || "please try again."));
     } finally {
       setUploadingLogo(false);
     }
@@ -71,7 +159,56 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Add New Team</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" data-marker="TEAM_SEASON_PICK_V1">
+          {lastAdded && (
+            <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
+              <span><b>{lastAdded.name}</b> added{lastAdded.seasonText ? ` to ${lastAdded.seasonText}` : ""}. Add the next team or tap Done.</span>
+            </div>
+          )}
+          {errorText && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+              <span>{errorText}</span>
+            </div>
+          )}
+          <div>
+            <Label htmlFor="season">Season <span className="text-red-600">*</span></Label>
+            <Select
+              value={formData.league_id}
+              onValueChange={(value) => { setFormData((prev) => ({ ...prev, league_id: value })); setPickReason(null); }}
+            >
+              <SelectTrigger id="season" className={`mt-1.5 ${formData.league_id ? "" : "border-amber-400 bg-amber-50"}`}>
+                <SelectValue placeholder="Select a season">
+                  {selectedSeason ? seasonLabel(selectedSeason, true) : null}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {seasonGroups.map((group) => (
+                  <SelectGroup key={group.groupName}>
+                    <SelectLabel className="text-[11px] uppercase tracking-wide text-slate-500">{group.groupName}</SelectLabel>
+                    {group.items.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {seasonLabel(s, false)}{s.id === defaultLeagueId ? " \u2605" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ))}
+              </SelectContent>
+            </Select>
+            {formData.league_id && pickReason && (
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                <Info className="w-4 h-4 shrink-0" />
+                <span>Picked for you: {PICK_REASON_TEXT[pickReason]}. Change it here if this team plays in another season.</span>
+              </div>
+            )}
+            {!formData.league_id && (
+              <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Pick a season first. Every team must belong to a season. Tip: set a {"\u2605"} default season on the Leagues page and it will be picked for you.</span>
+              </div>
+            )}
+          </div>
           <div>
             <Label htmlFor="name">Team Name</Label>
             <Input
@@ -92,25 +229,6 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               placeholder="e.g., East, West, Group A"
               className="mt-1.5"
             />
-          </div>
-          <div>
-            <Label htmlFor="league">League</Label>
-            <Select
-              value={formData.league_id}
-              onValueChange={(value) => setFormData({ ...formData, league_id: value })}
-              required
-            >
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Select a league" />
-              </SelectTrigger>
-              <SelectContent>
-                {leagues.map(league => (
-                  <SelectItem key={league.id} value={league.id}>
-                    {league.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
           <div>
             <Label htmlFor="head_coach">Head Coach (Optional)</Label>
@@ -245,11 +363,11 @@ export default function CreateTeamDialog({ open, onOpenChange, onSubmit, isLoadi
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
             >
-              Cancel
+              {lastAdded ? "Done" : "Cancel"}
             </Button>
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || !formData.league_id}
               className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
             >
               {isLoading ? "Adding..." : "Add Team"}

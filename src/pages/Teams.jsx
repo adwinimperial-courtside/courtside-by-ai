@@ -162,7 +162,7 @@ export default function TeamsPage() {
       }
       queryClient.invalidateQueries({ queryKey: ['teams'] });
       queryClient.invalidateQueries({ queryKey: ['players'] });
-      setShowCreateDialog(false);
+      // TEAM_SEASON_PICK_V1 — the dialog stays open so the admin can add the next team.
     },
   });
 
@@ -461,9 +461,11 @@ export default function TeamsPage() {
         <CreateTeamDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
-          onSubmit={(data) => createTeamMutation.mutate(data)}
+          onSubmit={(data) => createTeamMutation.mutateAsync(data)}
           isLoading={createTeamMutation.isPending}
           leagues={assignedLeagues}
+          preferredLeagueId={selectedLeague}
+          defaultLeagueId={currentUser?.default_league_id}
         />
 
         <EditTeamDialog

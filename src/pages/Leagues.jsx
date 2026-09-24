@@ -199,10 +199,29 @@ export default function LeaguesPage() {
       group.owner_user_id === currentUser?.id ||
       (group.owner_email && currentUser?.email && group.owner_email === currentUser.email)
     ));
-  const canDeleteGroup = (group) => !groupHasSeasons(group.id) && isGroupOwner(group);
+  // SECURITY_F5_A5 — only the app admin can delete a league (and only when it has no seasons).
+  const canDeleteGroup = (group) => isAppAdmin && !groupHasSeasons(group.id);
   const handleDeleteGroup = (group) => {
     if (!window.confirm(`Delete league "${group.name}"? This cannot be undone.`)) return;
     deleteGroupMutation.mutate(group);
+  };
+  // LEAGUE_RENAME_V1 — rename a league (LeagueGroup); season names are not touched.
+  const handleRenameGroup = async (group, newName) => {
+    const oldName = group.name || "";
+    await base44.entities.LeagueGroup.update(group.id, { name: newName });
+    try {
+      await base44.entities.LeagueAuditLog.create({
+        action: "edit",
+        league_id: group.id,
+        league_name: `${oldName} → ${newName}`,
+        performed_by: currentUser?.email || "",
+        performed_by_name: currentUser?.full_name || "",
+        performed_at: new Date().toISOString(),
+      });
+    } catch (auditError) {
+      console.warn("LEAGUE_RENAME_V1: audit log not saved", auditError);
+    }
+    queryClient.invalidateQueries({ queryKey: ['leagueGroups'] });
   };
   const handleUploadLogo = async (group, file) => {
     try {
@@ -302,6 +321,7 @@ export default function LeaguesPage() {
                   onDelete={setDeletingLeague}
                   onNewSeason={isAppAdmin || isLeagueAdmin ? setNewSeasonGroup : null}
                   onDeleteGroup={canDeleteGroup(group) ? handleDeleteGroup : null}
+                  onRenameGroup={isAppAdmin || isLeagueAdmin ? handleRenameGroup : null}
                   onUploadLogo={isGroupOwner(group) ? handleUploadLogo : null}
                 />
               ))}

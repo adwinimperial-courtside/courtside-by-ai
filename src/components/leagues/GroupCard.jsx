@@ -64,9 +64,36 @@ function SeasonRow({ league, isViewer, isDefault, onSetDefault, canManage, onEdi
   );
 }
 
-export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason, onDeleteGroup, onUploadLogo }) {
+export default function GroupCard({ group, seasons, userType, defaultLeagueId, onSetDefault, canManageSeason, onEdit, onDelete, onNewSeason, onDeleteGroup, onUploadLogo, onRenameGroup }) {
   const [showArchived, setShowArchived] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // LEAGUE_RENAME_V1 — League Admins can fix their league's name in place.
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  const [renameError, setRenameError] = useState("");
+
+  const startRename = () => {
+    setRenameValue(group.name || "");
+    setRenameError("");
+    setRenaming(true);
+  };
+
+  const saveRename = async () => {
+    const next = renameValue.trim();
+    if (!next) { setRenameError("The league name can't be empty."); return; }
+    if (next === (group.name || "").trim()) { setRenaming(false); return; }
+    setRenameSaving(true);
+    setRenameError("");
+    try {
+      await onRenameGroup(group, next);
+      setRenaming(false);
+    } catch (err) {
+      setRenameError(err?.message ? `Could not rename: ${err.message}` : "Could not rename the league. Please try again.");
+    } finally {
+      setRenameSaving(false);
+    }
+  };
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const isViewer = userType === "viewer";
@@ -140,11 +167,62 @@ export default function GroupCard({ group, seasons, userType, defaultLeagueId, o
               />
             )}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-lg font-bold text-slate-900 truncate">{group.name}</p>
-            <p className="text-xs text-slate-500">
-              League · {currentSeasons.length} current season{currentSeasons.length === 1 ? "" : "s"}
-            </p>
+          <div className="flex-1 min-w-0" data-marker="LEAGUE_RENAME_V1">
+            {renaming ? (
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); saveRename(); }
+                      if (e.key === "Escape") { e.preventDefault(); setRenaming(false); }
+                    }}
+                    maxLength={100}
+                    disabled={renameSaving}
+                    className="flex-1 min-w-0 rounded-lg border border-orange-400 px-2.5 py-1.5 text-sm font-semibold text-slate-900 outline-none focus:ring-2 focus:ring-orange-200"
+                  />
+                  <button
+                    onClick={saveRename}
+                    disabled={renameSaving}
+                    className="rounded-lg bg-orange-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-orange-700 disabled:opacity-50"
+                  >
+                    {renameSaving ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => setRenaming(false)}
+                    disabled={renameSaving}
+                    className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {renameError ? (
+                  <p className="text-xs text-red-600 mt-1">{renameError}</p>
+                ) : (
+                  <p className="text-xs text-slate-500 mt-1">Renames the league for everyone. Season names don't change.</p>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-lg font-bold text-slate-900 truncate">{group.name}</p>
+                  {onRenameGroup && (
+                    <button
+                      onClick={startRename}
+                      title="Rename league"
+                      className="p-1 rounded-md text-slate-400 hover:text-orange-600 hover:bg-orange-50 shrink-0"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  League · {currentSeasons.length} current season{currentSeasons.length === 1 ? "" : "s"}
+                </p>
+              </>
+            )}
           </div>
           {onDeleteGroup && (
             <button

@@ -25,7 +25,8 @@ export const HELP_TOPICS = [
       "Past seasons sit under Archived seasons at the bottom of a league card — tap to expand and view their stats.",
       "The star sets your default season; if a league you expect is missing, ask your league admin to add you.",
       "Admins: tap the logo square on a league card to upload or replace its logo (the small camera badge marks it).",
-      "Admins: a league with no seasons shows a trash icon to delete it — once it has any season (even archived), it can no longer be deleted.",
+      "Admins: tap the pencil next to the league name to rename the league. Season names don't change.",
+      "Only the Courtside app admin can delete a league, and only when it has no seasons (not even archived ones).",
     ],
   },
   {
@@ -38,6 +39,7 @@ export const HELP_TOPICS = [
       "Tap a team to see its full roster and details.",
       "Jersey numbers and player photos are managed by the team's coach or the league admin.",
       "Admins: the Coach roster editing panel at the top sets the roster deadline and lets you remind coaches who have not finished. See Roster deadlines & reminders in the Help Center.",
+      "Admins: Add Team puts the team in a season. The season is picked for you (the season you are viewing, else your ★ default season, else your only season) and stays picked, so you can add several teams in a row.",
     ],
   },
   {
