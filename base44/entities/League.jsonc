@@ -108,6 +108,25 @@
           }
         }
       ]
+    },
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
     }
   }
 }
