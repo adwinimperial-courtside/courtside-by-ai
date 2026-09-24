@@ -439,7 +439,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   )}
                 </>
               )}
-              {/* LIVE_OVERLAY_V2 - no-login phone stream overlay link (PRISM) */}
+              {/* LIVE_OVERLAY_V2 / STREAM_OVERLAY_V1 - no-login stream overlay link (OBS + PRISM) */}
               {canAccessOverlay && !isDefaultResult && (liveGame.status === 'scheduled' || liveGame.status === 'in_progress') && (
                 <Button
                   onClick={() => setShowPhoneStream(true)}
@@ -448,7 +448,7 @@ export default function GameCard({ game, teams, leagues, onStartGame, currentUse
                   data-marker="LIVE_OVERLAY_V2"
                 >
                   <MonitorPlay className="w-4 h-4 mr-2" />
-                  Phone stream
+                  Stream overlay
                 </Button>
               )}
               {canOpenScoreboard && !isDefaultResult && isTimedGame && (liveGame.status === 'scheduled' || liveGame.status === 'in_progress') && (

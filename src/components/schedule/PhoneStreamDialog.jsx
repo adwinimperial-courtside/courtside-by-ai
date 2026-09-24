@@ -57,9 +57,9 @@ export default function PhoneStreamDialog({ open, onOpenChange, game, homeName, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" data-marker="LIVE_OVERLAY_V2">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-orange-500" />Phone stream</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><Smartphone className="w-5 h-5 text-orange-500" />Stream overlay</DialogTitle>
           <DialogDescription>
-            {homeName} vs {awayName}. Paste this link into PRISM Live Studio to show the live scoreboard on your Facebook stream. It works without logging in.
+            {homeName} vs {awayName}. One link for OBS and PRISM Live Studio: it shows the live scoreboard and pop-ups on your stream. It works without logging in.
           </DialogDescription>
         </DialogHeader>
 
@@ -80,15 +80,25 @@ export default function PhoneStreamDialog({ open, onOpenChange, game, homeName, 
               <p className="text-sm text-slate-600">Scan this with the streaming phone to open the link there, or send the link to it.</p>
             </div>
 
-            {resetDone ? <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">New link made. The old link has stopped working. Paste the new one into PRISM.</p> : null}
+            {resetDone ? <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">New link made. The old link has stopped working. Paste the new one into OBS or PRISM.</p> : null}
+
+            {/* STREAM_OVERLAY_V1 - the same link works as an OBS Browser Source */}
+            <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
+              <p className="text-sm font-semibold text-slate-800 mb-2">Set up OBS (laptop)</p>
+              <ol className="list-decimal pl-5 text-sm text-slate-600 space-y-1">
+                <li>Add a Browser Source and paste the link.</li>
+                <li>Set width 1920 and height 1080.</li>
+                <li>Put the Browser Source above your camera in the source list.</li>
+              </ol>
+            </div>
 
             <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
-              <p className="text-sm font-semibold text-slate-800 mb-2">Set up PRISM</p>
+              <p className="text-sm font-semibold text-slate-800 mb-2">Set up PRISM (phone)</p>
               <ol className="list-decimal pl-5 text-sm text-slate-600 space-y-1">
                 <li>Open PRISM, tap LIVE, then Camera, and pick your Facebook Page.</li>
                 <li>Swipe right to open My Studio, then Widget, then Web.</li>
                 <li>Paste the link and tap Save.</li>
-                <li>Stretch the widget to full screen and turn on layer lock.</li>
+                <li>Stretch the widget to fill the whole screen (the league logo and pop-ups need it) and turn on layer lock.</li>
                 <li>Hold the phone sideways. Test with privacy set to Only me, then go live.</li>
               </ol>
             </div>
