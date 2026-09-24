@@ -1,36 +1,33 @@
 import React, { useEffect, useRef, useState } from "react";
 import { appParams } from "@/lib/app-params";
+import { usePlayerCardQueue } from "@/components/overlay/OverlayPlayerCards";
+import { LiveOverlayLayout, fmtClock, periodLabel, teamAbbr } from "@/components/overlay/LiveOverlayPanels";
 
-// LIVE_OVERLAY_V1 — no-login scoreboard for phone streaming apps (PRISM Web widget).
-// Opened at /live/<token>. Rendered by App.jsx BEFORE any login check. Never reads
-// data tables: it only calls the getLiveOverlay backend function with the token.
-// LIVE_OVERLAY_V2 — full design: landscape bottom bar, compact portrait card, team fouls,
-// bonus flag, timeouts left, rotating sponsor logos, league logo and ticker.
+// LIVE_OVERLAY_V1 — no-login scoreboard for streaming apps. Opened at /live/<token>.
+// Rendered by App.jsx BEFORE any login check. Never reads data tables: it only calls the
+// getLiveOverlay backend function with the token.
+// LIVE_OVERLAY_V4 — one overlay for OBS and PRISM: league logo top-left, the scoreboard bar,
+// "Powered by Courtside by AI" + fixed sponsor logos (nothing rotates), and the pop-ups:
+// starting five before tip-off (split wings), timeout team stats and end-of-period leaders
+// (strips above the scoreboard), and player cards during play (glass card). Same trigger
+// rules as the OBS overlay (GameOverlay.jsx). Each pop-up follows the league's switches.
 const POLL_MS = 2000;
-const SPONSOR_MS = 8000;
+const TIMEOUT_MAX_MS = 75000;
+const LEADER_PAGE_MS = 8000;
 const NAVY = "#0B1F3A";
 const INK = "#07142A";
 const ORANGE = "#F26B1F";
 const MUTED = "#9AAAC2";
 const FONT = "'Barlow Condensed','Arial Narrow','Roboto Condensed',Arial,sans-serif";
 
-function fmt(secs) {
-  const s = Math.max(0, secs);
-  if (s < 60) return s.toFixed(1);
-  const whole = Math.ceil(s);
-  const m = Math.floor(whole / 60);
-  return `${m}:${String(whole % 60).padStart(2, "0")}`;
-}
-
-function periodLabel(d) {
-  if (!d) return "";
-  if (d.status === "completed") return "FINAL";
-  if (d.status !== "in_progress") return "PRE-GAME";
-  const max = d.period_count || (d.period_type === "halves" ? 2 : 4);
-  if (d.period > max) return d.period - max === 1 ? "OT" : `OT${d.period - max}`;
-  if (d.period_type === "halves") return d.period === 1 ? "1ST HALF" : "2ND HALF";
-  return `Q${d.period}`;
-}
+const num = (v) => Number(v) || 0;
+const ptsOf = (s) => num(s.points_2) * 2 + num(s.points_3) * 3 + num(s.free_throws);
+const rebOf = (s) => num(s.offensive_rebounds) + num(s.defensive_rebounds);
+const LEADER_PAGES = [
+  { title: "SCORING LEADERS", label: "PTS", key: ptsOf, sub: [["REB", rebOf], ["AST", (s) => num(s.assists)]] },
+  { title: "REBOUND LEADERS", label: "REB", key: rebOf, sub: [["PTS", ptsOf], ["BLK", (s) => num(s.blocks)]] },
+  { title: "ASSIST LEADERS", label: "AST", key: (s) => num(s.assists), sub: [["PTS", ptsOf], ["STL", (s) => num(s.steals)]] },
+];
 
 function nameSize(name, big, mid, small) {
   const n = (name || "").length;
@@ -57,25 +54,19 @@ function Dots({ left, size }) {
   );
 }
 
-function Sponsor({ list, index, height }) {
-  if (!list || list.length === 0) return null;
-  return (
-    <div style={{ position: "relative", height, width: `calc(${height} * 3.2)`, flex: "none" }}>
-      {list.map((u, i) => (
-        <img key={u} src={u} alt="" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: i === index % list.length ? 1 : 0, transition: "opacity .6s" }} />
-      ))}
-    </div>
-  );
-}
-
 export default function PhoneOverlay() {
   const token = decodeURIComponent((window.location.pathname.split("/")[2] || "").trim());
   const [data, setData] = useState(null);
   const [missing, setMissing] = useState(false);
   const [, setTick] = useState(0);
-  const [sponsorIdx, setSponsorIdx] = useState(0);
   const [portrait, setPortrait] = useState(() => window.innerHeight > window.innerWidth);
+  const [timeoutSide, setTimeoutSide] = useState(null);
+  const [leaderPage, setLeaderPage] = useState(0);
   const baseRef = useRef({ secs: 0, at: 0 });
+  const prevUsedRef = useRef(null);
+  const timeoutHideRef = useRef(null);
+  const tippedRef = useRef(false);
+  const wasBreakRef = useRef(false);
 
   useEffect(() => {
     const els = [document.documentElement, document.body, document.getElementById("root")];
@@ -89,8 +80,8 @@ export default function PhoneOverlay() {
     }
     const onResize = () => setPortrait(window.innerHeight > window.innerWidth);
     window.addEventListener("resize", onResize);
-    const rot = setInterval(() => setSponsorIdx((i) => i + 1), SPONSOR_MS);
-    return () => { window.removeEventListener("resize", onResize); clearInterval(rot); };
+    const rot = setInterval(() => setLeaderPage((p) => (p + 1) % LEADER_PAGES.length), LEADER_PAGE_MS);
+    return () => { window.removeEventListener("resize", onResize); clearInterval(rot); clearTimeout(timeoutHideRef.current); };
   }, []);
 
   useEffect(() => {
@@ -118,6 +109,47 @@ export default function PhoneOverlay() {
     return () => { stop = true; clearInterval(poll); clearInterval(tick); };
   }, [token]);
 
+  // Timeout pop-up: a team's used-timeouts count went up (same rule as the OBS overlay).
+  // It closes when the clock restarts, or after 75 seconds at most.
+  useEffect(() => {
+    if (!data) return;
+    const used = { home: num(data.home_timeouts_used), away: num(data.away_timeouts_used) };
+    const prev = prevUsedRef.current;
+    prevUsedRef.current = used;
+    if (data.clock_running) {
+      tippedRef.current = true;
+      if (timeoutSide) { clearTimeout(timeoutHideRef.current); setTimeoutSide(null); }
+      return;
+    }
+    if (!prev) return;
+    let side = null;
+    if (used.home > prev.home) side = "home";
+    else if (used.away > prev.away) side = "away";
+    if (!side) return;
+    setTimeoutSide(side);
+    clearTimeout(timeoutHideRef.current);
+    timeoutHideRef.current = setTimeout(() => setTimeoutSide(null), TIMEOUT_MAX_MS);
+  }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onBreak = !!data && data.status === "in_progress" && data.period_status === "completed";
+  useEffect(() => {
+    if (onBreak && !wasBreakRef.current) setLeaderPage(0);
+    wasBreakRef.current = onBreak;
+  }, [onBreak]);
+
+  const stats = Array.isArray(data?.stats) ? data.stats : [];
+  const players = Array.isArray(data?.players) ? data.players : [];
+  const panels = data?.panels || { starters: true, timeout: true, leaders: true, cards: true };
+  const card = usePlayerCardQueue({
+    stats,
+    players,
+    game: { game_rules: data?.game_rules || {}, period_status: data?.period_status },
+    homeTeam: { id: "home", name: data?.home?.name || "" },
+    awayTeam: { id: "away", name: data?.away?.name || "" },
+    timeoutPanel: timeoutSide,
+    photosEnabled: false,
+  });
+
   if (missing) {
     return (
       <div style={{ position: "fixed", left: 16, bottom: 16, background: "rgba(11,31,58,.9)", color: "#fff", padding: "8px 14px", borderRadius: 8, font: "600 14px system-ui" }}>
@@ -130,14 +162,14 @@ export default function PhoneOverlay() {
   const live = data.status === "in_progress" && data.clock_running;
   const secs = live ? baseRef.current.secs - (Date.now() - baseRef.current.at) / 1000 : baseRef.current.secs;
   const showClock = data.status === "in_progress" && data.clock_enabled !== false;
-  const clockText = showClock ? fmt(secs) : data.status === "in_progress" ? "" : "--:--";
-  const sponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
+  const clockText = showClock ? fmtClock(secs) : data.status === "in_progress" ? "" : "--:--";
+  const footer = Array.isArray(data.footer_sponsors) ? data.footer_sponsors : [];
+  const tickerMode = data.ticker_mode || "off";
+  const tickerText = tickerMode === "always" || (tickerMode === "stopped" && !live) ? data.ticker_text || "" : "";
   const bonus = (on, fs) => on ? <span style={{ background: "#EF4444", color: "#fff", padding: "0 0.4em", borderRadius: 3, fontSize: fs }}>BONUS</span> : null;
 
-  // LIVE_OVERLAY_V3 - always the side-by-side bar so the scores never stack. The compact
-  // two-line card only shows when the link ends with ?layout=card.
+  // Compact two-line card only when the link ends with ?layout=card and the phone is upright.
   if (portrait && new URLSearchParams(window.location.search).get("layout") === "card") {
-    // Compact card for a phone held upright: two team rows, clock on the right.
     const Row = ({ t }) => (
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "2.4vw", padding: "1.6vw 2.6vw", background: NAVY, borderBottom: "1px solid rgba(255,255,255,.07)" }}>
         <Logo url={t.logo_url} color={t.color} size="8vw" />
@@ -153,7 +185,7 @@ export default function PhoneOverlay() {
       </div>
     );
     return (
-      <div data-marker="LIVE_OVERLAY_V2" style={{ position: "fixed", left: "3vw", right: "3vw", bottom: "3vw", fontFamily: FONT, borderRadius: "2.4vw", overflow: "hidden", boxShadow: "0 1vw 4vw rgba(0,0,0,.45)" }}>
+      <div data-marker="LIVE_OVERLAY_V4" style={{ position: "fixed", left: "3vw", right: "3vw", bottom: "3vw", fontFamily: FONT, borderRadius: "2.4vw", overflow: "hidden", boxShadow: "0 1vw 4vw rgba(0,0,0,.45)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto" }}>
           <div>{Row({ t: data.home })}{Row({ t: data.away })}</div>
           <div style={{ background: INK, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 3.4vw", minWidth: "21vw" }}>
@@ -164,61 +196,62 @@ export default function PhoneOverlay() {
         </div>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "3vw", background: "rgba(7,20,42,.95)", color: MUTED, fontSize: "2.8vw", padding: "1.4vw 2.6vw", letterSpacing: "0.05em" }}>
           <span>Powered by <b style={{ color: "#fff" }}>COURTSIDE BY AI</b></span>
-          <Sponsor list={sponsors} index={sponsorIdx} height="6vw" />
+          <div style={{ display: "flex", gap: "1.6vw" }}>
+            {footer.map((s, i) => <img key={s.url + i} src={s.url} alt={s.name || ""} style={{ height: "6vw", width: "14vw", objectFit: "contain" }} />)}
+          </div>
         </div>
-        {data.ticker ? <Ticker text={data.ticker} size="3vw" /> : null}
       </div>
     );
   }
 
-  // Landscape: full-width bar at the bottom.
-  const Team = ({ t, right }) => (
-    <div style={{ display: "flex", alignItems: "center", gap: "1.2vw", flexDirection: right ? "row-reverse" : "row", padding: "0.7vw 1.4vw", background: NAVY, minWidth: 0 }}>
-      <Logo url={t.logo_url} color={t.color} size="4.2vw" />
-      <div style={{ minWidth: 0, textAlign: right ? "right" : "left" }}>
-        <div style={{ color: "#fff", fontWeight: 800, fontSize: nameSize(t.name, "2.9vw", "2.4vw", "2vw"), textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.05 }}>{t.name}</div>
-        <div style={{ color: MUTED, fontSize: "1.3vw", fontWeight: 600, letterSpacing: "0.06em", display: "flex", gap: "1vw", alignItems: "center", justifyContent: right ? "flex-end" : "flex-start", marginTop: "0.3vw" }}>
-          <span>FOULS <b style={{ color: "#fff" }}>{t.fouls}</b></span>
-          <span style={{ display: "inline-flex", gap: "0.5vw", alignItems: "center" }}>TO <Dots left={t.timeouts_left} size="0.8vw" /></span>
-          {bonus(t.bonus, "1.2vw")}
-        </div>
-      </div>
-    </div>
-  );
-  const Score = ({ v }) => (
-    <div style={{ background: "#fff", color: INK, fontWeight: 800, fontSize: "4.4vw", display: "grid", placeItems: "center", minWidth: "8vw", fontVariantNumeric: "tabular-nums" }}>{v}</div>
-  );
+  // Landscape (OBS 1920x1080 and PRISM held sideways): pick at most one pop-up.
+  const playerById = {};
+  players.forEach((p) => { if (p?.id) playerById[p.id] = p; });
+  const gameOver = data.status === "completed";
+  let pop = null;
+
+  if (timeoutSide && !gameOver && panels.timeout) {
+    const ts = data.team_stats || { home: {}, away: {} };
+    const row = (label, key) => ({ label, home: num(ts.home?.[key]), away: num(ts.away?.[key]) });
+    pop = {
+      kind: "timeout",
+      calledBy: (timeoutSide === "home" ? data.home.name : data.away.name) || "",
+      rows: [
+        { label: "POINTS", home: num(data.home.score), away: num(data.away.score) },
+        row("3-POINTERS", "three"), row("REBOUNDS", "reb"), row("ASSISTS", "ast"), row("STEALS", "stl"), row("BLOCKS", "blk"),
+      ],
+      run: data.run || null,
+      sponsorUrl: data.timeout_sponsor || "",
+    };
+  } else if (onBreak && panels.leaders && stats.length > 0) {
+    const pg = LEADER_PAGES[leaderPage % LEADER_PAGES.length];
+    const leaders = stats
+      .filter((s) => pg.key(s) > 0)
+      .sort((a, b) => pg.key(b) - pg.key(a))
+      .slice(0, 3)
+      .map((s) => {
+        const p = playerById[s.player_id] || {};
+        const team = s.team_id === "home" ? data.home : data.away;
+        const bits = [`#${p.jersey_number ?? ""} ${teamAbbr(team?.name)}`.trim()].concat(pg.sub.map(([l, f]) => `${f(s)} ${l}`));
+        return { name: p.name || "PLAYER", value: pg.key(s), label: pg.label, sub: bits.join(" · ") };
+      });
+    if (leaders.length > 0) {
+      pop = { kind: "leaders", title: `End of ${periodLabel(data)} · ${pg.title}`, page: leaderPage % LEADER_PAGES.length, pages: LEADER_PAGES.length, leaders, sponsorUrl: data.break_sponsor || "" };
+    }
+  } else if (!gameOver && panels.starters && !tippedRef.current && !data.clock_running && num(data.period) <= 1 && num(data.home.score) === 0 && num(data.away.score) === 0) {
+    const five = (side) => stats
+      .filter((s) => s.team_id === side && s.is_starter)
+      .map((s) => ({ jersey: playerById[s.player_id]?.jersey_number ?? "", name: playerById[s.player_id]?.name || "" }))
+      .filter((p) => p.name)
+      .sort((a, b) => num(a.jersey) - num(b.jersey));
+    const homeFive = five("home");
+    const awayFive = five("away");
+    if (homeFive.length > 0 || awayFive.length > 0) pop = { kind: "starters", homeFive, awayFive };
+  }
 
   return (
-    <div data-marker="LIVE_OVERLAY_V2" style={{ position: "fixed", left: 0, right: 0, bottom: 0, fontFamily: FONT }}>
-      {data.ticker ? <div style={{ margin: "0 3vw" }}><Ticker text={data.ticker} size="1.4vw" /></div> : null}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto 1fr", margin: "0 3vw 1vw", borderRadius: "1.1vw", overflow: "hidden", boxShadow: "0 0.6vw 2vw rgba(0,0,0,.45)" }}>
-        {Team({ t: data.home })}
-        {Score({ v: data.home.score })}
-        <div style={{ background: INK, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0.4vw 2vw", minWidth: "12vw" }}>
-          {clockText ? <div style={{ fontWeight: 800, fontSize: "3.3vw", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{clockText}</div> : null}
-          <div style={{ color: ORANGE, fontWeight: 700, fontSize: "1.45vw", letterSpacing: "0.1em" }}>{periodLabel(data)}</div>
-        </div>
-        {Score({ v: data.away.score })}
-        {Team({ t: data.away, right: true })}
-      </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "2vw", background: "rgba(7,20,42,.95)", color: MUTED, fontSize: "1.35vw", padding: "0.5vw 3vw", letterSpacing: "0.05em" }}>
-        <span>Powered by <b style={{ color: "#fff" }}>COURTSIDE BY AI</b></span>
-        <div style={{ display: "flex", alignItems: "center", gap: "1.5vw" }}>
-          {sponsors.length > 0 ? <span style={{ textTransform: "uppercase", letterSpacing: "0.12em", fontSize: "1.1vw" }}>Sponsored by</span> : null}
-          <Sponsor list={sponsors} index={sponsorIdx} height="2.8vw" />
-          {data.league_logo ? <img src={data.league_logo} alt="" style={{ height: "2.8vw", width: "2.8vw", objectFit: "contain" }} /> : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Ticker({ text, size }) {
-  return (
-    <div style={{ overflow: "hidden", whiteSpace: "nowrap", background: ORANGE, color: "#fff", fontWeight: 700, fontSize: size, padding: "0.25em 0", letterSpacing: "0.04em" }}>
-      <style>{"@keyframes cs-live-ticker{from{transform:translateX(100%)}to{transform:translateX(-100%)}}"}</style>
-      <div style={{ display: "inline-block", animation: "cs-live-ticker 22s linear infinite" }}>{text}</div>
+    <div data-marker="LIVE_OVERLAY_V4" style={{ position: "fixed", inset: 0, containerType: "inline-size", pointerEvents: "none" }}>
+      <LiveOverlayLayout d={data} clockText={clockText} pop={pop} card={panels.cards && !pop ? card : null} tickerText={tickerText} />
     </div>
   );
 }
