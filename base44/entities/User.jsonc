@@ -15,7 +15,14 @@
     },
     "phone_verified": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "rls": {
+        "write": {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        }
+      }
     },
     "phone_verify_code": {
       "type": "string"
@@ -44,6 +51,42 @@
     "consent_version": {
       "type": "string",
       "description": "CONSENT_FIELDS_V1 - version of the consent text the user accepted, for example 2026-04-privacy-consent-v1"
+    },
+    "user_type": {
+      "type": "string",
+      "description": "SECURITY_F8_V1 - app role. Only app_admin or backend functions may change it.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        }
+      }
+    },
+    "assigned_league_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "SECURITY_F8_V1 - leagues this user belongs to. Only app_admin or backend functions may change it.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        }
+      }
+    },
+    "league_role_map": {
+      "type": "object",
+      "description": "SECURITY_F8_V1 - per-league role map. Only app_admin or backend functions may change it.",
+      "rls": {
+        "write": {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        }
+      }
     }
   },
   "rls": {
