@@ -38,6 +38,7 @@ import LeagueGroupsPage from './pages/LeagueGroups';
 import AcceptInvitePage from './pages/AcceptInvite';
 import SeasonRecordsPage from './pages/SeasonRecords';
 import ScoreboardPage from './pages/Scoreboard';
+import PhoneOverlayPage from './pages/PhoneOverlay';
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
@@ -58,6 +59,8 @@ const AuthenticatedApp = () => {
   // POLICY_PATH_ALIASES_V1 - common alternative addresses open the same public pages
   if (['/privacy-policy', '/privacypolicy', '/privacy'].includes(policyPath)) return <PrivacyPolicyPage />;
   if (['/terms-of-use', '/termsofuse', '/terms', '/termsofservice', '/terms-of-service'].includes(policyPath)) return <TermsOfUsePage />;
+  // LIVE_OVERLAY_V1 - the no-login phone-stream overlay (/live/<token>) renders before any login check, like the policy pages
+  if (policyPath.startsWith('/live/')) return <PhoneOverlayPage />;
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
