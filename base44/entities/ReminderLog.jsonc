@@ -28,5 +28,27 @@
     "user_id",
     "user_email",
     "sent_at"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

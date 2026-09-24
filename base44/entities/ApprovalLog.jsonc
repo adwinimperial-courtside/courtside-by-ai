@@ -77,5 +77,45 @@
     "approved_by_email",
     "approver_type",
     "decided_at"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

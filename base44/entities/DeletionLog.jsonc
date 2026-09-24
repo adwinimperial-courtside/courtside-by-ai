@@ -30,5 +30,41 @@
     "entity_details",
     "deleted_by",
     "deletion_date"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "league_admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

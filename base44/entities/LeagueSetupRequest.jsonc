@@ -33,5 +33,54 @@
     "contact_person",
     "email",
     "message"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

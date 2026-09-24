@@ -31,5 +31,69 @@
   },
   "required": [
     "email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        }
+      ]
+    }
+  }
 }
