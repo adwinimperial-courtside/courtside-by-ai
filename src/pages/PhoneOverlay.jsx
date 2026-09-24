@@ -134,7 +134,9 @@ export default function PhoneOverlay() {
   const sponsors = Array.isArray(data.sponsors) ? data.sponsors : [];
   const bonus = (on, fs) => on ? <span style={{ background: "#EF4444", color: "#fff", padding: "0 0.4em", borderRadius: 3, fontSize: fs }}>BONUS</span> : null;
 
-  if (portrait) {
+  // LIVE_OVERLAY_V3 - always the side-by-side bar so the scores never stack. The compact
+  // two-line card only shows when the link ends with ?layout=card.
+  if (portrait && new URLSearchParams(window.location.search).get("layout") === "card") {
     // Compact card for a phone held upright: two team rows, clock on the right.
     const Row = ({ t }) => (
       <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: "2.4vw", padding: "1.6vw 2.6vw", background: NAVY, borderBottom: "1px solid rgba(255,255,255,.07)" }}>
