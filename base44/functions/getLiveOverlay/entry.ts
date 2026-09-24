@@ -6,8 +6,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // video_admin of that game's league. Returns the game's overlay token (creates it if missing,
 // replaces it when reset is true, which makes the old link stop working).
 // LIVE_OVERLAY_V2 — adds team fouls, bonus flag, timeouts left, league logo, sponsor logos and ticker.
+// LIVE_OVERLAY_V4 — one overlay for OBS and phone: adds the pop-up switches, fixed sponsor spots
+// (footer max 4 + "presented by" logos), ticker mode, timeouts-used totals, team stats, and
+// player lines. Player names and stats are only sent when a player pop-up (starting five,
+// leaders, player cards) is switched on for the league.
 const LIVE_OVERLAY_V1 = true;
 const LIVE_OVERLAY_V2 = true;
+const LIVE_OVERLAY_V4 = true;
+const MAX_FOOTER = 4;
+const num = (v: any) => Number(v) || 0;
+const usedTotal = (obj: any) => Object.values(obj || {}).reduce((a: number, b: any) => a + num(b), 0);
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
 const MAX_SPONSORS = 8;
 
@@ -108,7 +116,11 @@ Deno.serve(async (req) => {
     ]);
 
     const list = Array.isArray(settingsList) ? settingsList : [];
-    const settings = list.find((s: any) => Array.isArray(s.sponsor_logos) && s.sponsor_logos.length > 0) || list[0] || null;
+    // LIVE_OVERLAY_V4 - a record saved by the new settings page (has a sponsors list) wins; the
+    // settings page uses the same rule, so what an admin saves is what the overlay shows.
+    const settings = list.find((s: any) => Array.isArray(s.sponsors))
+      || list.find((s: any) => Array.isArray(s.sponsor_logos) && s.sponsor_logos.length > 0)
+      || list[0] || null;
     const sponsors: string[] = [];
     if (settings) {
       if (settings.logo_enabled !== false && settings.logo_url) sponsors.push(settings.logo_url);
@@ -126,6 +138,82 @@ Deno.serve(async (req) => {
     }
     const ts = teamState(game);
 
+    // LIVE_OVERLAY_V4 - fixed sponsor spots (nothing rotates)
+    let footer: { url: string; name: string }[] = [];
+    let timeoutSponsor = '';
+    let breakSponsor = '';
+    if (settings && Array.isArray(settings.sponsors)) {
+      footer = settings.sponsors
+        .filter((x: any) => x && x.in_footer && typeof x.url === 'string' && x.url)
+        .slice(0, MAX_FOOTER)
+        .map((x: any) => ({ url: x.url, name: String(x.name || '') }));
+      timeoutSponsor = typeof settings.timeout_sponsor_url === 'string' ? settings.timeout_sponsor_url : '';
+      breakSponsor = typeof settings.break_sponsor_url === 'string' ? settings.break_sponsor_url : '';
+    } else {
+      footer = sponsors.slice(0, MAX_FOOTER).map((url) => ({ url, name: '' }));
+    }
+    const tickerText = settings && settings.ticker_text ? String(settings.ticker_text) : '';
+    let tickerMode = settings && ['off', 'stopped', 'always'].includes(settings.ticker_mode) ? settings.ticker_mode : '';
+    if (!tickerMode) tickerMode = settings && settings.ticker_enabled !== false && tickerText ? 'always' : 'off';
+    if (!tickerText) tickerMode = 'off';
+    const panels = {
+      starters: settings ? settings.starters_panel_enabled !== false : true,
+      timeout: settings ? settings.timeout_panel_enabled !== false : true,
+      leaders: settings ? settings.break_panel_enabled !== false : true,
+      cards: settings ? settings.player_cards_enabled !== false : true,
+    };
+    const playerPanels = panels.starters || panels.leaders || panels.cards;
+
+    // Team stats (always team totals only) and, when a player pop-up is on, player lines.
+    const sideOf = (teamId: any) => (teamId === game.home_team_id ? 'home' : teamId === game.away_team_id ? 'away' : '');
+    let teamStats: any = null;
+    let statRows: any[] = [];
+    let players: any[] = [];
+    if (panels.timeout || playerPanels) {
+      const rows = await svc.PlayerStats.filter({ game_id: game.id }, '-created_date', 200).catch(() => []);
+      const list2 = (Array.isArray(rows) ? rows : []).filter((r: any) => sideOf(r.team_id));
+      const zero = () => ({ three: 0, reb: 0, ast: 0, stl: 0, blk: 0 });
+      teamStats = { home: zero(), away: zero() };
+      for (const r of list2) {
+        const t = teamStats[sideOf(r.team_id)];
+        t.three += num(r.points_3);
+        t.reb += num(r.offensive_rebounds) + num(r.defensive_rebounds);
+        t.ast += num(r.assists);
+        t.stl += num(r.steals);
+        t.blk += num(r.blocks);
+      }
+      if (playerPanels) {
+        statRows = list2.map((r: any) => ({
+          player_id: r.player_id, team_id: sideOf(r.team_id), is_starter: r.is_starter === true, did_play: r.did_play,
+          points_2: num(r.points_2), points_3: num(r.points_3), free_throws: num(r.free_throws),
+          offensive_rebounds: num(r.offensive_rebounds), defensive_rebounds: num(r.defensive_rebounds),
+          assists: num(r.assists), steals: num(r.steals), blocks: num(r.blocks), fouls: num(r.fouls),
+        }));
+        const ids = [...new Set(statRows.map((r) => r.player_id).filter(Boolean))];
+        if (ids.length > 0) {
+          const pl = await svc.Player.filter({ id: { $in: ids } }, '-created_date', 200).catch(() => []);
+          players = (Array.isArray(pl) ? pl : []).map((p: any) => ({ id: p.id, name: p.name || '', jersey_number: p.jersey_number ?? '' }));
+        }
+      }
+    }
+
+    // Scoring run for the timeout strip: only read while the clock is stopped (same rule as OBS).
+    let run: any = null;
+    if (panels.timeout && game.status === 'in_progress' && !game.clock_running) {
+      const logs = await svc.GameLog.filter({ game_id: game.id }, '-created_date', 60).catch(() => []);
+      let h = 0, a = 0, bestDiff = 0, bestH = 0, bestA = 0;
+      for (const l of (Array.isArray(logs) ? logs : [])) {
+        const pts = num(l.stat_points);
+        if (pts === 0) continue;
+        if (l.team_id === game.home_team_id) h += pts;
+        else if (l.team_id === game.away_team_id) a += pts;
+        else continue;
+        const diff = Math.abs(h - a);
+        if (diff > bestDiff) { bestDiff = diff; bestH = h; bestA = a; }
+      }
+      if (bestDiff >= 6) run = bestH > bestA ? { side: 'home', pf: bestH, pa: bestA } : { side: 'away', pf: bestA, pa: bestH };
+    }
+
     return Response.json({
       status: game.status || 'scheduled',
       period: Number(game.clock_period) || 1,
@@ -140,6 +228,21 @@ Deno.serve(async (req) => {
       league_logo: leagueLogo,
       sponsors: sponsors.slice(0, MAX_SPONSORS),
       ticker: settings && settings.ticker_enabled !== false && settings.ticker_text ? String(settings.ticker_text) : '',
+      // LIVE_OVERLAY_V4
+      v: 4,
+      footer_sponsors: footer,
+      timeout_sponsor: timeoutSponsor,
+      break_sponsor: breakSponsor,
+      ticker_text: tickerText,
+      ticker_mode: tickerMode,
+      panels,
+      home_timeouts_used: usedTotal(game.home_timeouts),
+      away_timeouts_used: usedTotal(game.away_timeouts),
+      game_rules: game.game_rules || {},
+      team_stats: teamStats,
+      stats: statRows,
+      players,
+      run,
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     return Response.json({ error: String((e as any)?.message || e) }, { status: 500 });
