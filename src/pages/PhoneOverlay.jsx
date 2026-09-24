@@ -39,7 +39,7 @@ function nameSize(name, big, mid, small) {
 
 function Logo({ url, color, size }) {
   return url ? (
-    <img src={url} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flex: "none", background: "#fff" }} />
+    <img src={url} alt="" style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flex: "none" }} />
   ) : (
     <div style={{ width: size, height: size, borderRadius: "50%", background: color || ORANGE, flex: "none" }} />
   );
@@ -153,7 +153,7 @@ export default function PhoneOverlay() {
     return (
       <div data-marker="LIVE_OVERLAY_V2" style={{ position: "fixed", left: "3vw", right: "3vw", bottom: "3vw", fontFamily: FONT, borderRadius: "2.4vw", overflow: "hidden", boxShadow: "0 1vw 4vw rgba(0,0,0,.45)" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto" }}>
-          <div><Row t={data.home} /><Row t={data.away} /></div>
+          <div>{Row({ t: data.home })}{Row({ t: data.away })}</div>
           <div style={{ background: INK, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 3.4vw", minWidth: "21vw" }}>
             {data.league_logo ? <img src={data.league_logo} alt="" style={{ width: "8vw", height: "8vw", objectFit: "contain", marginBottom: "1.4vw" }} /> : null}
             {clockText ? <div style={{ fontWeight: 800, fontSize: "7vw", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{clockText}</div> : null}
@@ -191,14 +191,14 @@ export default function PhoneOverlay() {
     <div data-marker="LIVE_OVERLAY_V2" style={{ position: "fixed", left: 0, right: 0, bottom: 0, fontFamily: FONT }}>
       {data.ticker ? <div style={{ margin: "0 3vw" }}><Ticker text={data.ticker} size="1.4vw" /></div> : null}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto auto 1fr", margin: "0 3vw 1vw", borderRadius: "1.1vw", overflow: "hidden", boxShadow: "0 0.6vw 2vw rgba(0,0,0,.45)" }}>
-        <Team t={data.home} />
-        <Score v={data.home.score} />
+        {Team({ t: data.home })}
+        {Score({ v: data.home.score })}
         <div style={{ background: INK, color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0.4vw 2vw", minWidth: "12vw" }}>
           {clockText ? <div style={{ fontWeight: 800, fontSize: "3.3vw", lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>{clockText}</div> : null}
           <div style={{ color: ORANGE, fontWeight: 700, fontSize: "1.45vw", letterSpacing: "0.1em" }}>{periodLabel(data)}</div>
         </div>
-        <Score v={data.away.score} />
-        <Team t={data.away} right />
+        {Score({ v: data.away.score })}
+        {Team({ t: data.away, right: true })}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "2vw", background: "rgba(7,20,42,.95)", color: MUTED, fontSize: "1.35vw", padding: "0.5vw 3vw", letterSpacing: "0.05em" }}>
         <span>Powered by <b style={{ color: "#fff" }}>COURTSIDE BY AI</b></span>
