@@ -1277,6 +1277,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         gameId: game.id,
         data: { status: 'completed', player_of_game: findPlayerOfGame(existingStats, game) }
       });
+      try { base44.functions.invoke('stampGameStats', { game_id: game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
 
       await updateTeamRecordMutation.mutateAsync({ teamId: game.home_team_id, isWin: homeWins });
       await updateTeamRecordMutation.mutateAsync({ teamId: game.away_team_id, isWin: !homeWins });
@@ -1527,6 +1528,7 @@ export default function LiveStatTracker({ game, homeTeam, awayTeam, players, exi
         status: 'completed',
         player_of_game: findPlayerOfGame(existingStats, game)
       });
+      try { base44.functions.invoke('stampGameStats', { game_id: game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
 
       const homeTeamData = await base44.entities.Team.get(game.home_team_id);
       await base44.entities.Team.update(game.home_team_id, {
