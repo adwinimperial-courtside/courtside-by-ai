@@ -403,6 +403,10 @@ export const HELP_TOPICS = [
       "Set your OBS browser source to exactly 1920 x 1080. The scoreboard is drawn at that size, so a smaller browser source makes it look shrunken and hard to read on stream.",
       "Scoreboard and Panels in overlay settings lets you switch off the game clock, the timeout stats panel, the end of period leaders board, the starting five panel and the player highlight cards - per league. Everything is on by default.",
       "Switch off Show game clock if your scorer does not keep the in-app clock in sync with the clock on the court. The quarter is still shown.",
+      "Streaming from a phone? On the game card on the Schedule page, tap Phone stream. Copy the link and paste it into PRISM Live Studio: swipe right to My Studio, then Widget, then Web. It works without logging in.",
+      "Each game has its own phone stream link. It only shows that game's scoreboard. If the link is shared by mistake, tap Reset link and paste the new one into PRISM.",
+      "Hold the phone sideways for the full scoreboard bar. Held upright, the overlay switches to a smaller two-line scoreboard.",
+      "Add up to 8 sponsor logos under Phone stream sponsor logos in overlay settings. They take turns every 8 seconds at the bottom of the phone stream overlay.",
     ],
   },
   {
