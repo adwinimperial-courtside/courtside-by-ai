@@ -67,7 +67,45 @@
       "items": {
         "type": "string"
       },
-      "description": "LIVE_OVERLAY_V2 - up to 8 sponsor logo image URLs that rotate on the phone-stream overlay"
+      "description": "LIVE_OVERLAY_V2 - legacy list of sponsor logo URLs. Replaced by sponsors (OVERLAY_V3_FIELDS); still read as a fallback"
+    },
+    "sponsors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "Sponsor logo image URL"
+          },
+          "name": {
+            "type": "string",
+            "description": "Sponsor name, shown in settings menus and used as the logo's alt text"
+          },
+          "in_footer": {
+            "type": "boolean",
+            "description": "true = logo shown in the overlay footer (max 4 sponsors)"
+          }
+        }
+      },
+      "description": "OVERLAY_V3_FIELDS - the league's sponsors in footer order, max 8. Logos never rotate: each sponsor has a fixed spot"
+    },
+    "timeout_sponsor_url": {
+      "type": "string",
+      "description": "OVERLAY_V3_FIELDS - logo URL of the sponsor presenting the timeout strip. Blank = no sponsor"
+    },
+    "break_sponsor_url": {
+      "type": "string",
+      "description": "OVERLAY_V3_FIELDS - logo URL of the sponsor presenting the end-of-quarter strip. Blank = no sponsor"
+    },
+    "ticker_mode": {
+      "type": "string",
+      "enum": [
+        "off",
+        "stopped",
+        "always"
+      ],
+      "description": "OVERLAY_V3_FIELDS - when the ticker shows: off, stopped (only when play stops: before tip-off, timeouts, breaks) or always. Blank = older records, follow ticker_enabled"
     }
   },
   "required": [],
