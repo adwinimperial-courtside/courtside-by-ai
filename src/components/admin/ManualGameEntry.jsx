@@ -127,6 +127,7 @@ export default function ManualGameEntry({ leagues, teams, players, onClose }) {
           })
         )
       );
+      try { base44.functions.invoke('stampGameStats', { game_id: game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
 
       // Update team records
       const homeWon = data.home_score > data.away_score;

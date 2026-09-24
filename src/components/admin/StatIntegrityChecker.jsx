@@ -134,6 +134,7 @@ export default function StatIntegrityChecker({ leagues, teams }) {
           updatedCount++;
         }
       }
+      try { base44.functions.invoke('stampGameStats', { game_id: game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
 
       setRepairLog(prev => ({
         ...prev,

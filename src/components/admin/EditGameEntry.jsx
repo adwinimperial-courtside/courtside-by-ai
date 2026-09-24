@@ -181,6 +181,7 @@ export default function EditGameEntry({ leagues, teams, players, onClose }) {
         player_of_game: data.player_of_game,
         edited: true,
       });
+      try { base44.functions.invoke('stampGameStats', { game_id: data.game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
 
       return data.game;
     },

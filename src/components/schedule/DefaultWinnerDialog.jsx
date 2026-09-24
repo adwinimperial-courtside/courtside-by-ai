@@ -44,6 +44,7 @@ export default function DefaultWinnerDialog({ open, onOpenChange, game, homeTeam
         result_updated_by: currentUser?.email || "",
         result_updated_at: new Date().toISOString(),
       });
+      try { base44.functions.invoke('stampGameStats', { game_id: game.id }).catch(() => {}); } catch (_e) {} // SECURITY_F5_B_STAMP_V1
       onSaved?.();
       onOpenChange(false);
       setSelectedWinnerTeamId(null);
