@@ -24,6 +24,28 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Invalid or missing event_type' }, { status: 400 });
     }
 
+    // SECURITY_LOG_V1 — only app_admin / ops_admin may write any log entry. Anyone else may
+    // only record their OWN pending invite being applied (ApplyPendingAssignments on login),
+    // and only if such an invite really was applied for their email.
+    const isStaff = me.user_type === 'app_admin' || me.user_type === 'ops_admin';
+    if (!isStaff) {
+      if (event_type !== 'pending_assignment_applied') {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      const myEmail = String(me.email || '').trim().toLowerCase();
+      const applied = await base44.asServiceRole.entities.PendingUserAssignment.filter({ email: myEmail, applied: true });
+      if (!applied || applied.length === 0) {
+        return Response.json({ error: 'Forbidden' }, { status: 403 });
+      }
+      body.applicant_email = me.email;
+      body.applicant_name = me.full_name || me.email;
+      body.approver_type = 'system';
+      body.application_id = '';
+      body.decision = 'approved';
+      body.decided_at = new Date().toISOString();
+      body.notes = '';
+    }
+
     const decision = body.decision
       || ((event_type === 'application_rejected' || event_type === 'direct_revoke') ? 'rejected' : 'approved');
 
