@@ -147,6 +147,13 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         ...seasonFields,
       });
 
+      // SECURITY_F8_V1 — the server adds the new season to this admin and to the other
+      // league admins of the same league group (NEW_SEASON_ADMIN_V1).
+      // SECURITY_F5_A3 — done right after League.create, before any Team.create.
+      if (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') {
+        await base44.functions.invoke('updateMyProfile', { action: 'add_new_season', league_id: newLeague.id });
+      }
+
       if (rosterDeadline) {
         try {
           await base44.entities.RosterSettings.create({
@@ -178,12 +185,6 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
           const newTeam = await base44.entities.Team.create(teamData);
 
         }
-      }
-
-      // SECURITY_F8_V1 — the server adds the new season to this admin and to the other
-      // league admins of the same league group (NEW_SEASON_ADMIN_V1).
-      if (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') {
-        await base44.functions.invoke('updateMyProfile', { action: 'add_new_season', league_id: newLeague.id });
       }
 
       if (registrationMode === "open") {
