@@ -70,5 +70,76 @@
       "description": "LIVE_OVERLAY_V2 - up to 8 sponsor logo image URLs that rotate on the phone-stream overlay"
     }
   },
-  "required": []
+  "required": [],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "data.user_type": "league_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "data.user_type": "video_admin"
+                  }
+                }
+              ]
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "$or": [
+                {
+                  "user_condition": {
+                    "data.user_type": "league_admin"
+                  }
+                },
+                {
+                  "user_condition": {
+                    "data.user_type": "video_admin"
+                  }
+                }
+              ]
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

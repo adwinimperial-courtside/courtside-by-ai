@@ -45,5 +45,59 @@
     "league_id",
     "changed_by",
     "changed_at"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "data.league_id": {
+            "$in": "{{user.data.assigned_league_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
 }

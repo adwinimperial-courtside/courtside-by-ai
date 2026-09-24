@@ -100,5 +100,110 @@
   "required": [
     "user_id",
     "league_id"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "data.league_id": {
+            "$in": "{{user.data.assigned_league_ids}}"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "user_condition": {
+            "data.user_type": "app_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "data.user_type": "ops_admin"
+          }
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "data.league_id": {
+                "$in": "{{user.data.assigned_league_ids}}"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
 }
