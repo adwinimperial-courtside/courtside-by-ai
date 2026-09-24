@@ -5,8 +5,11 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 // Mode 2: { action: 'link', gameId, reset } — logged-in app_admin, or a league_admin /
 // video_admin of that game's league. Returns the game's overlay token (creates it if missing,
 // replaces it when reset is true, which makes the old link stop working).
+// LIVE_OVERLAY_V2 — adds team fouls, bonus flag, timeouts left, league logo, sponsor logos and ticker.
 const LIVE_OVERLAY_V1 = true;
+const LIVE_OVERLAY_V2 = true;
 const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+const MAX_SPONSORS = 8;
 
 function newToken() {
   const bytes = new Uint8Array(24);
@@ -21,6 +24,35 @@ function secondsLeft(game: any) {
   if (!game.clock_running || !game.clock_started_at) return Math.max(0, left);
   const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
   return Math.max(0, left - elapsed);
+}
+
+// Same rules as the OBS overlay (GameOverlay.jsx) and the TV scoreboard (scoreboardLogic.js).
+function teamState(game: any) {
+  const period = Number(game.clock_period) || 1;
+  const periodType = game.period_type || 'quarters';
+  const total = Number(game.period_count) || (periodType === 'halves' ? 2 : 4);
+  const foulKey = period > total ? String(period) : (periodType === 'halves' ? (period === 1 ? 'h1' : 'h2') : String(period));
+  const segment = period > total ? 'OVERTIME' : (periodType === 'halves' ? (period === 1 ? 'FIRST_HALF' : 'SECOND_HALF') : (period <= 2 ? 'FIRST_HALF' : 'SECOND_HALF'));
+  let allowance: number;
+  const configured = game.game_rules?.timeoutsPerSegment;
+  if (Array.isArray(configured)) {
+    const idx = period - 1;
+    allowance = idx >= 0 && idx < configured.length ? Number(configured[idx]) || 0 : 1;
+  } else if (configured != null) {
+    allowance = Number(configured) || 0;
+  } else if (segment === 'OVERTIME') allowance = 1;
+  else if (segment === 'FIRST_HALF') allowance = 2;
+  else if (periodType === 'halves') allowance = 2;
+  else allowance = 3;
+  const thresholdCfg = Number(game.game_rules?.teamFoulBonusThreshold);
+  const threshold = thresholdCfg > 0 ? thresholdCfg : (periodType === 'halves' ? 7 : 5);
+  const homeFouls = Number(game.home_team_fouls?.[foulKey]) || 0;
+  const awayFouls = Number(game.away_team_fouls?.[foulKey]) || 0;
+  return {
+    total,
+    home: { fouls: homeFouls, bonus: homeFouls >= threshold, timeouts_left: Math.max(0, allowance - (Number(game.home_timeouts?.[segment]) || 0)) },
+    away: { fouls: awayFouls, bonus: awayFouls >= threshold, timeouts_left: Math.max(0, allowance - (Number(game.away_timeouts?.[segment]) || 0)) },
+  };
 }
 
 Deno.serve(async (req) => {
@@ -68,20 +100,46 @@ Deno.serve(async (req) => {
 
     const game = await svc.Game.get(link.game_id).catch(() => null);
     if (!game) return Response.json({ error: 'Not found' }, { status: 404 });
-    const [home, away] = await Promise.all([
+    const [home, away, settingsList, league] = await Promise.all([
       svc.Team.get(game.home_team_id).catch(() => null),
       svc.Team.get(game.away_team_id).catch(() => null),
+      svc.OverlaySettings.filter({ league_id: game.league_id }, '-updated_date', 50).catch(() => []),
+      svc.League.get(game.league_id).catch(() => null),
     ]);
+
+    const list = Array.isArray(settingsList) ? settingsList : [];
+    const settings = list.find((s: any) => Array.isArray(s.sponsor_logos) && s.sponsor_logos.length > 0) || list[0] || null;
+    const sponsors: string[] = [];
+    if (settings) {
+      if (settings.logo_enabled !== false && settings.logo_url) sponsors.push(settings.logo_url);
+      for (const u of (Array.isArray(settings.sponsor_logos) ? settings.sponsor_logos : [])) {
+        if (typeof u === 'string' && u && !sponsors.includes(u)) sponsors.push(u);
+      }
+    }
+    let leagueLogo = '';
+    if (!settings || settings.league_logo_enabled !== false) {
+      leagueLogo = settings?.league_logo_url || '';
+      if (!leagueLogo && league?.group_id) {
+        const grp = await svc.LeagueGroup.get(league.group_id).catch(() => null);
+        leagueLogo = grp?.logo_url || '';
+      }
+    }
+    const ts = teamState(game);
 
     return Response.json({
       status: game.status || 'scheduled',
       period: Number(game.clock_period) || 1,
       period_type: game.period_type || 'quarters',
+      period_count: ts.total,
       period_status: game.period_status || 'active',
       clock_running: !!game.clock_running,
       clock_seconds_left: secondsLeft(game),
-      home: { name: home?.name || 'Home', logo_url: home?.logo_url || '', color: home?.color || '#F26B1F', score: Number(game.home_score) || 0 },
-      away: { name: away?.name || 'Away', logo_url: away?.logo_url || '', color: away?.color || '#F26B1F', score: Number(game.away_score) || 0 },
+      clock_enabled: settings ? settings.clock_enabled !== false : true,
+      home: { name: home?.name || 'Home', logo_url: home?.logo_url || '', color: home?.color || '#F26B1F', score: Number(game.home_score) || 0, ...ts.home },
+      away: { name: away?.name || 'Away', logo_url: away?.logo_url || '', color: away?.color || '#F26B1F', score: Number(game.away_score) || 0, ...ts.away },
+      league_logo: leagueLogo,
+      sponsors: sponsors.slice(0, MAX_SPONSORS),
+      ticker: settings && settings.ticker_enabled !== false && settings.ticker_text ? String(settings.ticker_text) : '',
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (e) {
     return Response.json({ error: String((e as any)?.message || e) }, { status: 500 });

@@ -61,6 +61,13 @@
       "type": "boolean",
       "default": true,
       "description": "Whether player highlight cards are shown on the overlay"
+    },
+    "sponsor_logos": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "LIVE_OVERLAY_V2 - up to 8 sponsor logo image URLs that rotate on the phone-stream overlay"
     }
   },
   "required": []
