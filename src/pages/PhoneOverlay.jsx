@@ -100,7 +100,15 @@ export default function PhoneOverlay() {
         const d = await res.json();
         baseRef.current = { secs: Number(d.clock_seconds_left) || 0, at: Date.now() };
         setMissing(false);
-        setData(d);
+        // LIVE_OVERLAY_V5 - a busy moment can return an empty player list; keep the last good one
+        setData((prev) => {
+          if (prev && d.panels && (d.panels.starters || d.panels.leaders || d.panels.cards)) {
+            if ((!Array.isArray(d.stats) || d.stats.length === 0) && Array.isArray(prev.stats) && prev.stats.length > 0) d.stats = prev.stats;
+            if ((!Array.isArray(d.players) || d.players.length === 0) && Array.isArray(prev.players) && prev.players.length > 0) d.players = prev.players;
+          }
+          if (prev && !d.team_stats && prev.team_stats) d.team_stats = prev.team_stats;
+          return d;
+        });
       } catch (e) { /* keep the last good numbers on a network blip */ }
     };
     load();
@@ -224,7 +232,10 @@ export default function PhoneOverlay() {
       sponsorUrl: data.timeout_sponsor || "",
     };
   } else if (onBreak && panels.leaders && stats.length > 0) {
-    const pg = LEADER_PAGES[leaderPage % LEADER_PAGES.length];
+    // LIVE_OVERLAY_V5 - only rotate through pages that have someone on them
+    const pages = LEADER_PAGES.filter((p) => stats.some((s) => p.key(s) > 0));
+    const pgIndex = pages.length > 0 ? leaderPage % pages.length : 0;
+    const pg = pages[pgIndex] || LEADER_PAGES[0];
     const leaders = stats
       .filter((s) => pg.key(s) > 0)
       .sort((a, b) => pg.key(b) - pg.key(a))
@@ -236,7 +247,7 @@ export default function PhoneOverlay() {
         return { name: p.name || "PLAYER", value: pg.key(s), label: pg.label, sub: bits.join(" · ") };
       });
     if (leaders.length > 0) {
-      pop = { kind: "leaders", title: `End of ${periodLabel(data)} · ${pg.title}`, page: leaderPage % LEADER_PAGES.length, pages: LEADER_PAGES.length, leaders, sponsorUrl: data.break_sponsor || "" };
+      pop = { kind: "leaders", title: `End of ${periodLabel(data)} · ${pg.title}`, page: pgIndex, pages: pages.length, leaders, sponsorUrl: data.break_sponsor || "" };
     }
   } else if (!gameOver && panels.starters && !tippedRef.current && !data.clock_running && num(data.period) <= 1 && num(data.home.score) === 0 && num(data.away.score) === 0) {
     const five = (side) => stats

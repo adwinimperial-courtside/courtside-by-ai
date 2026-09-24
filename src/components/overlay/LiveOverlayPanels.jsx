@@ -169,7 +169,8 @@ const stripBox = {
 export function StartersWings({ home, away, homeFive, awayFive }) {
   const wing = (team, five, right) => (
     <div style={{
-      position: "absolute", top: "50%", transform: "translateY(-50%)", width: "25cqw", padding: "1.4cqw 2cqw",
+      // LIVE_OVERLAY_V5 - start below the league logo so wide phone screens never overlap it
+      position: "absolute", top: "9.5cqw", width: "25cqw", padding: "1.4cqw 2cqw",
       [right ? "right" : "left"]: 0, [right ? "paddingRight" : "paddingLeft"]: "3cqw", textAlign: right ? "right" : "left",
       background: `linear-gradient(${right ? 270 : 90}deg, rgba(9,24,48,.8) 0%, rgba(9,24,48,.6) 65%, rgba(9,24,48,0) 100%)`,
       color: "#fff", textShadow: SHADOW,

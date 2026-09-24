@@ -28,6 +28,13 @@ function newToken() {
 }
 
 function secondsLeft(game: any) {
+  // LIVE_OVERLAY_V5 - before the clock has ever run, show the full period length (not 0.0)
+  if (game.clock_time_left == null && !game.clock_running) {
+    const per = game.game_rules?.periodMinutes;
+    const p = Number(game.clock_period) || 1;
+    const mins = Array.isArray(per) ? Number(per[p - 1]) : Number(game.period_minutes);
+    return (mins > 0 ? mins : 10) * 60;
+  }
   const left = Number(game.clock_time_left) || 0;
   if (!game.clock_running || !game.clock_started_at) return Math.max(0, left);
   const elapsed = (Date.now() - new Date(game.clock_started_at).getTime()) / 1000;
