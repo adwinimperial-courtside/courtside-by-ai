@@ -254,7 +254,7 @@ export default function JoinKOE() {
         }
       }
 
-      await base44.auth.updateMe({
+      await base44.functions.invoke('updateMyProfile', {
         application_status: "Pending",
         ...(name ? { full_name: name } : {}),
         ...(consentData || {}),

@@ -18,7 +18,7 @@ export default function UpdateNameModal({ user, onComplete }) {
     }
     setSaving(true);
     setError("");
-    await base44.entities.User.update(user.id, { full_name: name.trim() });
+    await base44.functions.invoke('updateMyProfile', { full_name: name.trim() }); // SECURITY_F8_V1
     setSaving(false);
     onComplete();
   };

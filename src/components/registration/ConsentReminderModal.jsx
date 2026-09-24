@@ -16,7 +16,7 @@ export default function ConsentReminderModal({ user, onDismiss }) {
     setIsSaving(true);
     const now = new Date().toISOString();
     try {
-      await base44.auth.updateMe({
+      await base44.functions.invoke('updateMyProfile', {
         privacy_terms_accepted: true,
         privacy_terms_accepted_at: now,
         marketing_email_consent: marketingConsent,

@@ -28,14 +28,14 @@ export default function PlayerProfileHeader({ currentUser, team, playerRecord, o
     }
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    await base44.auth.updateMe({ profile_photo_url: file_url });
+    await base44.functions.invoke('updateMyProfile', { profile_photo_url: file_url });
     setUploading(false);
     onPhotoUpdate?.();
     e.target.value = "";
   };
 
   const handleRemovePhoto = async () => {
-    await base44.auth.updateMe({ profile_photo_url: null });
+    await base44.functions.invoke('updateMyProfile', { profile_photo_url: null });
     onPhotoUpdate?.();
   };
 

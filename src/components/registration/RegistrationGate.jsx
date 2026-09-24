@@ -344,7 +344,7 @@ export default function RegistrationGate({ user }) {
         status: "New",
       });
       if (consentData) {
-        try { await base44.auth.updateMe({ ...consentData }); }
+        try { await base44.functions.invoke('updateMyProfile', { ...consentData }); }
         catch (e) { console.error("LEAGUE_REQUEST_V1 consent save failed:", e && e.message); }
       }
     } catch (e) {
@@ -466,7 +466,7 @@ export default function RegistrationGate({ user }) {
           });
         } catch (e) { console.error("OnboardingBooking create failed (non-blocking):", e?.message); }
       }
-      await base44.auth.updateMe({
+      await base44.functions.invoke('updateMyProfile', {
         application_status: "Pending",
         ...(formData.full_name?.trim() ? { full_name: formData.full_name.trim() } : {}),
         ...(consentData || {}),

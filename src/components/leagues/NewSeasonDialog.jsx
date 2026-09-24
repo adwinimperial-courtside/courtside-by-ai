@@ -180,11 +180,10 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
         }
       }
 
-      if (currentUser?.user_type === 'league_admin') {
-        const mine = currentUser.assigned_league_ids || [];
-        if (!mine.includes(newLeague.id)) {
-          await base44.auth.updateMe({ assigned_league_ids: [...mine, newLeague.id] });
-        }
+      // SECURITY_F8_V1 — the server adds the new season to this admin and to the other
+      // league admins of the same league group (NEW_SEASON_ADMIN_V1).
+      if (currentUser?.user_type === 'league_admin' || currentUser?.user_type === 'app_admin') {
+        await base44.functions.invoke('updateMyProfile', { action: 'add_new_season', league_id: newLeague.id });
       }
 
       if (registrationMode === "open") {
@@ -201,26 +200,6 @@ export default function NewSeasonDialog({ open, onOpenChange, group, groupSeason
           console.warn("SEASON_SETUP_V1: could not create SignupCampaign", campaignError);
         }
       }
-      try {
-        const groupLeagueIds = groupSeasons.map(l => l.id);
-        const allUsers = await base44.entities.User.list();
-        const groupAdmins = allUsers.filter(u =>
-          u.user_type === 'league_admin' &&
-          u.id !== currentUser?.id &&
-          (u.assigned_league_ids || []).some(id => groupLeagueIds.includes(id))
-        );
-        for (const admin of groupAdmins) {
-          const existing = admin.assigned_league_ids || [];
-          if (!existing.includes(newLeague.id)) {
-            await base44.entities.User.update(admin.id, {
-              assigned_league_ids: [...existing, newLeague.id],
-            });
-          }
-        }
-      } catch (propagationError) {
-        console.warn('NEW_SEASON_ADMIN_V1: could not update other group admins', propagationError);
-      }
-
       return newLeague;
     },
     onSuccess: (newLeague) => {

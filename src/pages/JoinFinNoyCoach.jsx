@@ -218,7 +218,7 @@ export default function JoinFinNoyCoach() {
 
       await base44.entities.UserApplication.create(applicationData);
 
-      await base44.auth.updateMe({
+      await base44.functions.invoke('updateMyProfile', {
         application_status: "Pending",
         ...(name ? { full_name: name } : {}),
         ...(consentData || {}),

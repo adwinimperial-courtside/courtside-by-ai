@@ -409,7 +409,7 @@ export default function JoinLeague() {
       // FAN_INSTANT_FOLLOW_V1 — the fan's assigned_league_ids, user_type, favourite team and
       // welcome email are all the server's job now, so the fan falls through to the same tail
       // every other role uses. Only the account's own name and consent are written from here.
-      await base44.auth.updateMe({
+      await base44.functions.invoke('updateMyProfile', {
         // CODE_AUTO_APPROVE_V1 — an auto-approved coach is already Approved on their account;
         // writing Pending here would put them straight back in the queue. The same is true of a
         // fan who is now following. The state set above has not landed yet in this render, so

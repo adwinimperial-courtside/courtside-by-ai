@@ -220,7 +220,7 @@ export default function PlayerDashboardCard({
     setUploading(true);
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file: croppedFile });
-      await base44.auth.updateMe({ profile_photo_url: file_url });
+      await base44.functions.invoke('updateMyProfile', { profile_photo_url: file_url });
       onPhotoUpdate?.();
       toast({ title: "Photo saved", description: "Your profile photo has been updated." });
     } catch (error) {
@@ -247,7 +247,7 @@ export default function PlayerDashboardCard({
   };
 
   const handleRemovePhoto = async () => {
-    await base44.auth.updateMe({ profile_photo_url: null });
+    await base44.functions.invoke('updateMyProfile', { profile_photo_url: null });
     onPhotoUpdate?.();
   };
 

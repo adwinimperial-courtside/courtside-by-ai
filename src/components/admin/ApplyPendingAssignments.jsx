@@ -14,23 +14,13 @@ export default function ApplyPendingAssignments() {
         const currentUser = await base44.auth.me();
         if (!currentUser?.email) return;
 
-        const pendingAssignments = await base44.entities.PendingUserAssignment.filter({
-          email: currentUser.email.toLowerCase(),
-          applied: false,
-        });
+        // SECURITY_F8_V1 — the server applies the invite; the browser never writes user_type.
+        const pendingRes = await base44.functions.invoke('updateMyProfile', { action: 'apply_pending_assignment' });
+        const pendingResult = (pendingRes && pendingRes.data) || {};
 
-        if (pendingAssignments.length > 0) {
-          const assignment = pendingAssignments[0];
+        if (pendingResult.applied) {
+          const assignment = pendingResult.assignment || {};
           
-          await base44.entities.User.update(currentUser.id, {
-            user_type: assignment.user_type,
-            assigned_league_ids: assignment.assigned_league_ids,
-          });
-
-          await base44.entities.PendingUserAssignment.update(assignment.id, {
-            applied: true,
-          });
-
           // Audit: this is a silent, system-triggered grant — it applies on the
           // user's login, not by an admin clicking at this moment. Record it in
           // the ApprovalLog ledger, credited to the admin who queued it.

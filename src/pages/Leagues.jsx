@@ -141,7 +141,7 @@ export default function LeaguesPage() {
   });
 
   const setDefaultLeagueMutation = useMutation({
-    mutationFn: (leagueId) => base44.auth.updateMe({ default_league_id: leagueId }),
+    mutationFn: (leagueId) => base44.functions.invoke('updateMyProfile', { default_league_id: leagueId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
