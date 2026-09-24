@@ -2,6 +2,10 @@
   "name": "GameLog",
   "type": "object",
   "properties": {
+    "league_id": {
+      "type": "string",
+      "description": "SECURITY_F5_B - league/season this row belongs to (from Game.league_id for GameLog/PlayerStats, Team.league_id for Player). Optional; empty on existing rows."
+    },
     "game_id": {
       "type": "string",
       "description": "Reference to the game"
