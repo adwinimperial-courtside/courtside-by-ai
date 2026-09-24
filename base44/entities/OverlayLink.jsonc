@@ -1,0 +1,48 @@
+{
+  "name": "OverlayLink",
+  "type": "object",
+  "properties": {
+    "game_id": {
+      "type": "string",
+      "description": "Game this phone-stream overlay link shows"
+    },
+    "league_id": {
+      "type": "string",
+      "description": "League of that game"
+    },
+    "token": {
+      "type": "string",
+      "description": "Secret code in the /live/<token> link. Only readable by the backend."
+    },
+    "created_by_email": {
+      "type": "string",
+      "description": "Who created or last reset the link"
+    }
+  },
+  "required": [
+    "game_id",
+    "token"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "data.user_type": "app_admin"
+      }
+    }
+  }
+}
