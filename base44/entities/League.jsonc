@@ -129,6 +129,18 @@
               }
             }
           ]
+        },
+        {
+          "$and": [
+            {
+              "user_condition": {
+                "data.user_type": "league_admin"
+              }
+            },
+            {
+              "created_by": "{{user.email}}"
+            }
+          ]
         }
       ]
     }
