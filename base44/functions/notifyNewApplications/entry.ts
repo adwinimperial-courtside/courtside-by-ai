@@ -4,6 +4,18 @@ const NAVY = '#0B1F3A';
 const ORANGE = '#F26B1F';
 const APP_URL = 'https://courtside-by-ai.com/requestmanagement';
 
+// SECURITY_F1_V1 — only runs for a real UserApplication created in the last 15 minutes.
+// The record is re-read from the database; the posted data is never trusted.
+const SECURITY_F1_V1 = true;
+const FRESH_MS = 15 * 60 * 1000;
+
+function tsMs(v) {
+  if (!v) return NaN;
+  let s = String(v);
+  if (!/(Z|[+-]\d\d:?\d\d)$/i.test(s)) s += 'Z';
+  return Date.parse(s);
+}
+
 const ROLE_LABELS = {
   league_admin: 'League Admin',
   coach: 'Coach',
@@ -30,13 +42,23 @@ function row(label, value) {
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { event, data } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const event = body && body.event;
 
-    if (event.type !== 'create') {
+    if (!event || event.type !== 'create') {
       return Response.json({ success: true });
     }
 
-    const app = data;
+    const recordId = event.entity_id || (body.data && body.data.id);
+    if (!recordId) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const foundApp = await base44.asServiceRole.entities.UserApplication.filter({ id: recordId });
+    const app = foundApp && foundApp[0];
+    const age = app ? Date.now() - tsMs(app.created_date) : NaN;
+    if (!app || !(age >= -5 * 60 * 1000 && age <= FRESH_MS)) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
     const svc = base44.asServiceRole.entities;
 
     const leagueIds = new Set();
