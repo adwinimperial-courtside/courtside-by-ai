@@ -243,6 +243,34 @@ function buildDeclineHtml(firstName, reason, note, rejections) {
 + '</html>';
 }
 
+// SECURITY_F1_V1 — who may trigger this email:
+//  1) a signed-in app_admin (People page buttons, roster matching), or
+//  2) the approval flow, right after it saved the decision: the application must exist,
+//     already be marked as emailed, have been updated in the last 15 minutes, and the
+//     address must match the one on the record. Anyone else gets 403.
+const SECURITY_F1_V1 = true;
+const FRESH_MS = 15 * 60 * 1000;
+
+function tsMs(v) {
+  if (!v) return NaN;
+  let s = String(v);
+  if (!/(Z|[+-]\d\d:?\d\d)$/i.test(s)) s += 'Z';
+  return Date.parse(s);
+}
+
+async function checkCaller(base44, application, flagField) {
+  const me = await base44.auth.me().catch(() => null);
+  if (me && me.user_type === 'app_admin') return { ok: true, email: null };
+  if (!application || !application.id) return { ok: false };
+  const rows = await base44.asServiceRole.entities.UserApplication.filter({ id: application.id }).catch(() => []);
+  const rec = rows && rows[0];
+  if (!rec || rec[flagField] !== true) return { ok: false };
+  const age = Date.now() - tsMs(rec.updated_date);
+  if (!(age >= -5 * 60 * 1000 && age <= FRESH_MS)) return { ok: false };
+  if (String(rec.user_email || '').trim().toLowerCase() !== String(application.user_email || '').trim().toLowerCase()) return { ok: false };
+  return { ok: true, email: rec.user_email };
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -253,6 +281,10 @@ Deno.serve(async (req) => {
     if (eventType) return Response.json({ skipped: true, reason: 'Sent only by direct approval-page call' });
     if (application?.decline_email_sent) return Response.json({ skipped: true, reason: 'Decline email already sent' });
     if (!application?.user_email) return Response.json({ error: 'No user_email in application' }, { status: 400 });
+
+    const gate = await checkCaller(base44, application, 'decline_email_sent');
+    if (!gate.ok) return Response.json({ error: 'Forbidden' }, { status: 403 });
+    const toEmail = gate.email || application.user_email;
 
     // league_rejections: [{ league_name, reason_code }] — one entry per rejected league.
     const rejections = Array.isArray(application.league_rejections) ? application.league_rejections.filter(Boolean) : [];
@@ -282,7 +314,7 @@ Deno.serve(async (req) => {
     const htmlBody = buildDeclineHtml(firstName, reason, application.decline_reason_note, rejections);
 
     await base44.asServiceRole.integrations.Core.SendEmail({
-      to: application.user_email,
+      to: toEmail,
       subject: "Update on your Courtside by AI request",
       body: htmlBody,
       from_name: "Courtside by AI",
@@ -292,7 +324,7 @@ Deno.serve(async (req) => {
       await base44.asServiceRole.entities.UserApplication.update(application.id, { decline_email_sent: true });
     }
 
-    return Response.json({ success: true, sent_to: application.user_email, mode: usedMode, reason_code: application.decline_reason_code || null });
+    return Response.json({ success: true, sent_to: toEmail, mode: usedMode, reason_code: application.decline_reason_code || null });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

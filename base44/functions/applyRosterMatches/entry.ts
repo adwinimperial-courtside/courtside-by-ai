@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
           try { if (teamId) { const t = await base44.asServiceRole.entities.Team.get(teamId); teamName = t?.name || null; } } catch (_e) {}
           try { const l = await base44.asServiceRole.entities.League.get(targetLeagueId); leagueName = l?.name || null; } catch (_e) {}
           if (targetUser?.email) {
-            await base44.asServiceRole.functions.invoke('sendAccessApprovedEmail', {
+            await base44.functions.invoke('sendAccessApprovedEmail', { // SECURITY_F1_V1 — call as the signed-in app_admin
               application: {
                 user_email: targetUser.email,
                 user_name: targetUser.full_name,

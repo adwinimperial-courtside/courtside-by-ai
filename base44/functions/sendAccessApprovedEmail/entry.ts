@@ -768,6 +768,49 @@ function buildSubject(role, app) {
   return "Welcome to Courtside by AI \u2014 built for everyone in the game \u{1F3C0}";
 }
 
+// SECURITY_F1_V1 — who may trigger this email:
+//  1) a signed-in app_admin (People page buttons, roster matching), or
+//  2) the approval flow, right after it saved the decision: the application must exist,
+//     already be marked as emailed, have been updated in the last 15 minutes, and the
+//     address must match the one on the record. Anyone else gets 403.
+const SECURITY_F1_V1 = true;
+const FRESH_MS = 15 * 60 * 1000;
+
+function tsMs(v) {
+  if (!v) return NaN;
+  let s = String(v);
+  if (!/(Z|[+-]\d\d:?\d\d)$/i.test(s)) s += 'Z';
+  return Date.parse(s);
+}
+
+async function checkCaller(base44, application, flagField) {
+  const me = await base44.auth.me().catch(() => null);
+  if (me && me.user_type === 'app_admin') return { ok: true, email: null };
+  if (!application || !application.id) return { ok: false };
+  const rows = await base44.asServiceRole.entities.UserApplication.filter({ id: application.id }).catch(() => []);
+  const rec = rows && rows[0];
+  if (!rec || rec[flagField] !== true) return { ok: false };
+  const age = Date.now() - tsMs(rec.updated_date);
+  if (!(age >= -5 * 60 * 1000 && age <= FRESH_MS)) return { ok: false };
+  if (String(rec.user_email || '').trim().toLowerCase() !== String(application.user_email || '').trim().toLowerCase()) return { ok: false };
+  return { ok: true, email: rec.user_email };
+}
+
+function escHtml(v) {
+  return String(v === null || v === undefined ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeFields(app) {
+  const out = {};
+  for (const [k, v] of Object.entries(app || {})) out[k] = typeof v === 'string' ? escHtml(v) : v;
+  return out;
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -788,13 +831,20 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'No user_email in application' }, { status: 400 });
     }
 
+    const gate = await checkCaller(base44, application, 'approval_email_sent');
+    if (!gate.ok) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+    const toEmail = gate.email || application.user_email;
+
     const role = (application.requested_role || '').toLowerCase();
-    const firstName = (application.display_name || application.user_name)?.split(' ')[0] || null; // NAME_FALLBACK_V1
-    const htmlBody = buildEmailHtml(firstName, role, application);
+    const rawFirstName = (application.display_name || application.user_name)?.split(' ')[0] || null; // NAME_FALLBACK_V1
+    const firstName = rawFirstName ? escHtml(rawFirstName) : null;
+    const htmlBody = buildEmailHtml(firstName, role, escapeFields(application));
 
     await base44.asServiceRole.integrations.Core.SendEmail({
-      to: application.user_email,
-      subject: buildSubject(role, application),
+      to: toEmail,
+      subject: String(buildSubject(role, application)).replace(/[\r\n]+/g, ' '),
       body: htmlBody,
       from_name: "Courtside by AI",
     });
@@ -805,7 +855,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return Response.json({ success: true, sent_to: application.user_email, role_template: (role === 'coach' || role === 'player' || role === 'league_admin' || role === 'viewer') ? role : 'generic' });
+    return Response.json({ success: true, sent_to: toEmail, role_template: (role === 'coach' || role === 'player' || role === 'league_admin' || role === 'viewer') ? role : 'generic' });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }
